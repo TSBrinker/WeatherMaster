@@ -1,4 +1,4 @@
-// WeatherTestUI.jsx
+// components/WeatherTestUI.jsx
 import React, { useState, useEffect } from 'react';
 import WeatherService from '../services/weather-service';
 
@@ -85,8 +85,6 @@ const WeatherTestUI = () => {
         return '❄️';
       case 'Freezing Cold':
         return '🥶';
-      case 'High Winds':
-        return '💨';
       case 'Cold Winds':
         return '🌬️';
       case 'Scorching Heat':
@@ -104,6 +102,38 @@ const WeatherTestUI = () => {
     }
   };
 
+  // Get celestial event icon
+  const getCelestialIcon = (hour) => {
+    if (hour.hasMeteorImpact) {
+      return '💥';
+    } else if (hour.hasMeteorShower) {
+      return '🌠';
+    } else if (hour.hasShootingStar) {
+      return '☄️';
+    }
+    return null;
+  };
+
+  // Get wind intensity icon
+  const getWindIcon = (intensity) => {
+    switch (intensity) {
+      case 'Calm':
+        return null; // No icon for calm winds
+      case 'Breezy':
+        return '🍃';
+      case 'Windy':
+        return '💨';
+      case 'Strong Winds':
+        return '🌪️';
+      case 'Gale Force':
+        return '🌀';
+      case 'Storm Force':
+        return '🌪️';
+      default:
+        return null;
+    }
+  };
+
   // Format date for display
   const formatDate = (date) => {
     return date.toLocaleString('en-US', {
@@ -112,7 +142,7 @@ const WeatherTestUI = () => {
       month: 'long',
       day: 'numeric',
       hour: 'numeric',
-      minute: '2-digit',
+      // minute: '2-digit',
       hour12: true
     });
   };
@@ -129,9 +159,36 @@ const WeatherTestUI = () => {
   const formatTime = (date) => {
     return date.toLocaleString('en-US', {
       hour: 'numeric',
-      minute: 'numeric',
       hour12: true
     });
+  };
+  
+  // Get background color based on weather condition
+  const getWeatherBackground = (condition) => {
+    switch (condition) {
+      case 'Clear Skies':
+        return '#e9f5db';
+      case 'Light Clouds':
+        return '#e9f5db';
+      case 'Heavy Clouds':
+        return '#d8e2dc';
+      case 'Rain':
+        return '#cfe2f3';
+      case 'Heavy Rain':
+        return '#b6d0e2';
+      case 'Snow':
+        return '#e8f0f0';
+      case 'Freezing Cold':
+        return '#e0f3f8';
+      case 'Scorching Heat':
+        return '#ffe8d6';
+      case 'Thunderstorm':
+        return '#c9ccd5';
+      case 'Blizzard':
+        return '#d5d6ea';
+      default:
+        return '#e9f5db';
+    }
   };
 
   return (
@@ -190,27 +247,69 @@ const WeatherTestUI = () => {
       
       {/* Current Weather */}
       {forecast.length > 0 && (
-        <div style={{ padding: '20px', backgroundColor: '#e9f5db', borderRadius: '8px', marginBottom: '20px' }}>
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: getWeatherBackground(forecast[0].condition), 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
           <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Current Weather</h2>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-            <div style={{ fontSize: '4rem', marginRight: '20px' }}>
+            <div style={{ fontSize: '4rem', marginRight: '20px', position: 'relative' }}>
               {getWeatherIcon(forecast[0].condition)}
-              {forecast[0].hasShootingStar && <span style={{ marginLeft: '10px', fontSize: '2rem' }}>☄️</span>}
+              
+              {/* Celestial event icon */}
+              {getCelestialIcon(forecast[0]) && (
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-10px', 
+                  right: '-15px', 
+                  fontSize: '1.5rem'
+                }}>
+                  {getCelestialIcon(forecast[0])}
+                </span>
+              )}
+              
+              {/* Wind icon */}
+              {getWindIcon(forecast[0].windIntensity) && (
+                <span style={{ 
+                  position: 'absolute', 
+                  bottom: '-10px', 
+                  right: '-15px', 
+                  fontSize: '1.5rem'
+                }}>
+                  {getWindIcon(forecast[0].windIntensity)}
+                </span>
+              )}
             </div>
             <div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '5px' }}>
                 {forecast[0].condition}
                 {forecast[0].hasShootingStar && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Shooting Stars</span>}
+                {forecast[0].hasMeteorShower && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Meteor Shower!</span>}
+                {forecast[0].hasMeteorImpact && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Meteor Impact!!!</span>}
               </div>
               <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>
                 {forecast[0].temperature}°F
               </div>
-              <div style={{ fontSize: '1.1rem' }}>
-                Wind: {forecast[0].windSpeed} mph {forecast[0].windDirection}
+              <div style={{ 
+                fontSize: '1.1rem', 
+                display: 'flex', 
+                alignItems: 'center',
+                padding: '5px 10px',
+                backgroundColor: 'rgba(255,255,255,0.5)',
+                borderRadius: '5px',
+                width: 'fit-content'
+              }}>
+                {getWindIcon(forecast[0].windIntensity)} 
+                <span style={{ marginLeft: getWindIcon(forecast[0].windIntensity) ? '5px' : '0' }}>
+                  {forecast[0].windIntensity} - {forecast[0].windSpeed} mph {forecast[0].windDirection}
+                </span>
               </div>
             </div>
           </div>
-          <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+          <div style={{ padding: '15px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '5px' }}>
             <h3>Weather Effects:</h3>
             <p style={{ whiteSpace: 'pre-line' }}>{forecast[0].effects}</p>
           </div>
@@ -287,7 +386,9 @@ const WeatherTestUI = () => {
             <div key={index} style={{ 
               minWidth: '80px', 
               padding: '10px', 
-              backgroundColor: hour.hasShootingStar ? '#fff3cd' : 'white', 
+              backgroundColor: (hour.hasShootingStar || hour.hasMeteorShower || hour.hasMeteorImpact) 
+                ? (hour.hasMeteorImpact ? '#ffe0a3' : hour.hasMeteorShower ? '#fff0c0' : '#fff8e6') 
+                : 'white', 
               borderRadius: '5px', 
               textAlign: 'center',
               position: 'relative',
@@ -296,16 +397,83 @@ const WeatherTestUI = () => {
               <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '5px' }}>
                 {formatHour(hour.date)}
               </div>
-              <div style={{ fontSize: '1.5rem', marginBottom: '5px' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '5px', position: 'relative' }}>
                 {getWeatherIcon(hour.condition)}
-                {hour.hasShootingStar && <div style={{ fontSize: '0.8rem', display: 'inline-block', marginLeft: '2px' }}>☄️</div>}
+                
+                {/* Celestial event indicator */}
+                {getCelestialIcon(hour) && (
+                  <div style={{ 
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-10px',
+                    fontSize: '0.8rem'
+                  }}>
+                    {getCelestialIcon(hour)}
+                  </div>
+                )}
               </div>
               <div style={{ fontWeight: 'bold' }}>{hour.condition}</div>
               <div>{hour.temperature}°F</div>
-              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                {hour.windSpeed} mph {hour.windDirection}
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#666', 
+                marginTop: '5px', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {getWindIcon(hour.windIntensity) && (
+                  <span style={{ marginRight: '3px', fontSize: '0.9rem' }}>
+                    {getWindIcon(hour.windIntensity)}
+                  </span>
+                )}
+                <span>{hour.windSpeed} mph {hour.windDirection}</span>
               </div>
-              {hour.hasShootingStar && (
+              
+              {/* Meteor impact indicator */}
+              {hour.hasMeteorImpact && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-8px', 
+                  right: '-8px', 
+                  backgroundColor: 'red', 
+                  color: 'white', 
+                  borderRadius: '50%', 
+                  width: '22px', 
+                  height: '22px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  💥
+                </div>
+              )}
+              
+              {/* Meteor shower indicator */}
+              {hour.hasMeteorShower && !hour.hasMeteorImpact && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-8px', 
+                  right: '-8px', 
+                  backgroundColor: '#ffd700', 
+                  color: 'white', 
+                  borderRadius: '50%', 
+                  width: '22px', 
+                  height: '22px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  🌠
+                </div>
+              )}
+              
+              {/* Shooting star indicator */}
+              {hour.hasShootingStar && !hour.hasMeteorShower && !hour.hasMeteorImpact && (
                 <div style={{ 
                   position: 'absolute', 
                   top: '-5px', 
@@ -319,7 +487,7 @@ const WeatherTestUI = () => {
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   fontSize: '0.7rem', 
-                  fontWeight: 'bold'
+                  fontWeight: 'bold' 
                 }}>
                   ★
                 </div>

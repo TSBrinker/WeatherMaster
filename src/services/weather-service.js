@@ -1,9 +1,19 @@
-// weather-service.js
+// services/weather-service.js
 // Core functionality for generating and managing weather
 
 import { climateTables, biomeMap } from '../data-tables/climate-tables';
-import { temperatureRanges, windSpeedRanges, timeModifiers, maxTempChange } from '../data-tables/temperature-ranges';
-import { weatherEffects, shootingStarEffect } from '../data-tables/weather-effects';
+import { 
+  temperatureRanges, 
+  timeModifiers, 
+  maxTempChange, 
+  baseWindSpeedRanges,
+  windParameters
+} from '../data-tables/temperature-ranges';
+import { 
+  weatherEffects, 
+  windIntensityEffects,
+  shootingStarEffects
+} from '../data-tables/weather-effects';
 
 class WeatherService {
   constructor() {
@@ -15,6 +25,77 @@ class WeatherService {
     this.currentWindDirection = this.windDirections[Math.floor(Math.random() * this.windDirections.length)];
     this.currentWindSpeed = 5; // Default starting wind speed (mph)
     
+    // Weather condition persistence tracking
+    this.currentCondition = null;
+    this.currentConditionEnergy = 0;
+    
+    // Energy requirements for different weather conditions
+    this.conditionEnergyDC = {
+      // Default is 0 (always stable)
+      "Clear Skies": 0,
+      "Light Clouds": 0,
+      
+      // Moderate energy conditions
+      "Heavy Clouds": 10,
+      "Rain": 10,
+      "High Winds": 10,
+      "Cold Winds": 10,
+      
+      // High energy conditions
+      "Thunderstorm": 12,
+      "Heavy Rain": 12,
+      "Blizzard": 12,
+      
+      // Extreme conditions
+      "Scorching Heat": 15,
+      "Freezing Cold": 15,
+      "Snow": 15,
+      "High Humidity Haze": 10,
+      "Cold Snap": 15
+    };
+
+    // Energy increases per persistence block
+    this.energyIncrease = {
+      // Default is 0 (always stable)
+      "Clear Skies": 0,
+      "Light Clouds": 0,
+      
+      // Moderate energy conditions
+      "Heavy Clouds": 3,
+      "Rain": 3,
+      "High Winds": 3,
+      "Cold Winds": 3,
+      
+      // High energy conditions
+      "Thunderstorm": 4,
+      "Heavy Rain": 4,
+      "Blizzard": 4,
+      
+      // Extreme conditions
+      "Scorching Heat": 5,
+      "Freezing Cold": 5,
+      "Snow": 5,
+      "High Humidity Haze": 3,
+      "Cold Snap": 5
+    };
+
+    // Regression paths - where conditions go when they "burn out"
+    this.regressionPath = {
+      "Thunderstorm": "Heavy Rain",
+      "Heavy Rain": "Rain",
+      "Rain": "Heavy Clouds",
+      "Heavy Clouds": "Light Clouds",
+      "Light Clouds": "Clear Skies",
+      "Blizzard": "Snow",
+      "Snow": "Freezing Cold",
+      "Freezing Cold": "Heavy Clouds",
+      "Scorching Heat": "Clear Skies",
+      "High Winds": "Light Clouds",
+      "Cold Winds": "Light Clouds",
+      "High Humidity Haze": "Clear Skies",
+      "Cold Snap": "Freezing Cold"
+    };
+    
     // Use bell curve for weather generation
     this.useWeightedDistribution = true;
   }
@@ -23,6 +104,10 @@ class WeatherService {
   initializeWeather(biome, season, currentDate = new Date()) {
     // Clear any existing forecast
     this.forecast = [];
+    
+    // Reset weather condition tracking
+    this.currentCondition = null;
+    this.currentConditionEnergy = 0;
     
     // If season is 'auto', determine from the date
     if (season === 'auto') {
@@ -226,6 +311,46 @@ class WeatherService {
 
   // Apply slowly changing weather rules to determine next condition
   getNextWeatherCondition(currentCondition, biome, season) {
+    // First, check if the current condition needs to burn out due to energy loss
+    if (this.currentCondition === currentCondition) {
+      // Get the current condition's energy requirements
+      const baseDC = this.conditionEnergyDC[currentCondition] || 0;
+      const increaseFactor = this.energyIncrease[currentCondition] || 0;
+      
+      // Only do energy check for non-default conditions
+      if (baseDC > 0) {
+        // Calculate current DC based on how long it's persisted
+        const persistenceDC = baseDC + (this.currentConditionEnergy * increaseFactor);
+        
+        // Roll to maintain the condition (d20)
+        const energyRoll = this.rollD20();
+        
+        // If the condition fails its "save", regress toward default
+        if (energyRoll < persistenceDC) {
+          // Get the regression path
+          if (this.regressionPath[currentCondition]) {
+            // Condition burns out - return the regression path
+            const newCondition = this.regressionPath[currentCondition];
+            
+            // Reset energy counter since condition changed
+            this.currentConditionEnergy = 0;
+            this.currentCondition = newCondition;
+            
+            return newCondition;
+          }
+        } else {
+          // Passed the check, increase the counter
+          this.currentConditionEnergy++;
+        }
+      }
+    } else {
+      // Condition changed, reset the energy counter
+      this.currentConditionEnergy = 0;
+      this.currentCondition = currentCondition;
+    }
+    
+    // If we get here, the condition didn't burn out
+    // Now apply the normal slowly changing weather rule
     const currentIndex = this.findConditionIndex(currentCondition, biome, season);
     if (currentIndex === -1) {
       // Condition not found in current climate table, generate new random condition
@@ -250,7 +375,11 @@ class WeatherService {
       newIndex = currentIndex + 2;
     }
     
-    return this.getConditionByIndex(newIndex, biome, season);
+    const newCondition = this.getConditionByIndex(newIndex, biome, season);
+    this.currentCondition = newCondition;
+    this.currentConditionEnergy = 0;
+    
+    return newCondition;
   }
 
   // Generate a random temperature for a given condition, season, climate, and hour
@@ -290,49 +419,92 @@ class WeatherService {
     return currentTemp + tempDifference;
   }
 
+  // Get wind intensity level based on wind speed
+  getWindIntensity(windSpeed) {
+    for (const [level, data] of Object.entries(windIntensityEffects)) {
+      if (windSpeed >= data.min && windSpeed <= data.max) {
+        return { level, effect: data.effect };
+      }
+    }
+    return { level: "Calm", effect: windIntensityEffects["Calm"].effect };
+  }
+
   // Generate a random wind speed for a condition
   getRandomWindSpeed(condition) {
-    const range = windSpeedRanges[condition] || { min: 0, max: 10 };
+    const range = baseWindSpeedRanges[condition] || { min: 0, max: 10 };
     return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
   }
 
   // Get next wind direction (allowing only gradual changes)
-  getNextWindDirection(currentDirection, variability = 1) {
+  getNextWindDirection(currentDirection) {
     const currentIndex = this.windDirections.indexOf(currentDirection);
     if (currentIndex === -1) {
       // Invalid direction, just pick a random one
       return this.windDirections[Math.floor(Math.random() * this.windDirections.length)];
     }
     
-    // Roll to determine if and how the wind changes
-    const roll = this.rollD20();
-    let directionChange = 0;
-    
-    if (roll <= 2) {
-      // Change counter-clockwise
-      directionChange = -1 * variability;
-    } else if (roll >= 19) {
-      // Change clockwise
-      directionChange = 1 * variability;
+    // Only change direction sometimes
+    if (Math.random() > windParameters.changeFrequency) {
+      return currentDirection;
     }
     
+    // Roll to determine direction change
+    const directionChange = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+    const variability = windParameters.directionVariability;
+    const shift = directionChange * variability;
+    
     // Calculate new index with wrap-around
-    const newIndex = (currentIndex + directionChange + this.windDirections.length) % this.windDirections.length;
+    const newIndex = (currentIndex + shift + this.windDirections.length) % this.windDirections.length;
     
     return this.windDirections[newIndex];
   }
 
-  // Get next wind speed (allowing only gradual changes)
-  getNextWindSpeed(currentSpeed, targetSpeed, maxChange = 5) {
+  // Get next wind speed (allowing for more significant changes)
+  getNextWindSpeed(currentSpeed, targetSpeed) {
     // Determine how much the wind speed should change
     let speedDifference = targetSpeed - currentSpeed;
     
+    // Add some randomness to the speed change
+    const randomFactor = (Math.random() * 2 - 1) * 5; // -5 to +5
+    speedDifference += randomFactor;
+    
     // Limit the change to the max allowed per hour
-    if (Math.abs(speedDifference) > maxChange) {
-      speedDifference = Math.sign(speedDifference) * maxChange;
+    if (Math.abs(speedDifference) > windParameters.maxSpeedChange) {
+      speedDifference = Math.sign(speedDifference) * windParameters.maxSpeedChange;
     }
     
-    return currentSpeed + speedDifference;
+    // Ensure wind speed doesn't go negative
+    return Math.max(0, Math.round(currentSpeed + speedDifference));
+  }
+
+  // Check for shooting star and meteor impact events
+  generateCelestialEvents() {
+    const events = {
+      shootingStar: false,
+      meteorImpact: false
+    };
+    
+    // 1% chance of shooting star
+    if (this.rollD100() === 100) {
+      events.shootingStar = true;
+      
+      // If shooting star occurs, 5% chance (1 in 20) of meteor impact
+      if (this.rollD20() === 20) {
+        events.meteorImpact = true;
+      }
+    }
+    
+    return events;
+  }
+
+  // Get celestial event effects based on event type
+  getCelestialEventEffects(events) {
+    if (events.meteorImpact) {
+      return shootingStarEffects["Meteor Impact"];
+    } else if (events.shootingStar) {
+      return shootingStarEffects["Shooting Star"];
+    }
+    return "";
   }
 
   // Generate a chunk of weather forecast
@@ -348,33 +520,31 @@ class WeatherService {
       const lastWeather = this.forecast[this.forecast.length - 1];
       currentCondition = lastWeather.condition;
       previousTemperature = lastWeather.temperature;
-      
-      // Apply slowly changing weather rule to get next condition
-      currentCondition = this.getNextWeatherCondition(currentCondition, biome, season);
     } else {
       // No previous forecast, generate initial condition
       currentCondition = this.getRandomWeatherCondition(biome, season);
+      this.currentCondition = currentCondition;
+      this.currentConditionEnergy = 0;
     }
+    
+    // Apply weather condition persistence checks and transitions
+    currentCondition = this.getNextWeatherCondition(currentCondition, biome, season);
     
     // Target wind speed based on new condition
     const targetWindSpeed = this.getRandomWindSpeed(currentCondition);
-    
-    // Roll to see if this chunk includes a shooting star
-    const specialRoll = this.rollD100();
-    let shootingStarHour = -1;
-    if (specialRoll === 100) {
-      shootingStarHour = Math.floor(Math.random() * hours);
-    }
     
     // Generate conditions for each hour
     for (let i = 0; i < hours; i++) {
       // Calculate the exact date and hour for this forecast entry
       const forecastDate = new Date(chunkDate);
-      forecastDate.setHours(forecastDate.getHours() + i);
+      forecastDate.setHours(forecastDate.getHours() + i, 0, 0, 0); // Zero out minutes, seconds, milliseconds
       
       // Update wind (gradually)
       this.currentWindDirection = this.getNextWindDirection(this.currentWindDirection);
       this.currentWindSpeed = this.getNextWindSpeed(this.currentWindSpeed, targetWindSpeed);
+      
+      // Get wind intensity level
+      const windIntensity = this.getWindIntensity(this.currentWindSpeed);
       
       // Generate temperature based on condition, time, etc.
       let temperature;
@@ -389,15 +559,21 @@ class WeatherService {
       }
       previousTemperature = temperature;
       
-      // Determine if this hour has a shooting star
-      const hasShootingStar = (i === shootingStarHour);
+      // Check for celestial events
+      const celestialEvents = this.generateCelestialEvents();
       
       // Get the base weather effects
       let effects = weatherEffects[currentCondition] || "";
       
-      // Add shooting star effects if applicable
-      if (hasShootingStar) {
-        effects += "\n\n" + shootingStarEffect;
+      // Add wind effects if significant
+      if (this.currentWindSpeed >= 15) {
+        effects += "\n\n" + windIntensity.effect;
+      }
+      
+      // Add celestial event effects if applicable
+      const celestialEffects = this.getCelestialEventEffects(celestialEvents);
+      if (celestialEffects) {
+        effects += "\n\n" + celestialEffects;
       }
       
       chunk.push({
@@ -407,8 +583,10 @@ class WeatherService {
         date: forecastDate,
         windDirection: this.currentWindDirection,
         windSpeed: this.currentWindSpeed,
+        windIntensity: windIntensity.level,
         effects: effects,
-        hasShootingStar: hasShootingStar
+        hasShootingStar: celestialEvents.shootingStar,
+        hasMeteorImpact: celestialEvents.meteorImpact
       });
     }
     
@@ -451,6 +629,13 @@ class WeatherService {
     this.generateWeatherForecast(biome, season, new Date(currentDate.getTime() + hours * 3600000));
     
     return this.getCurrentWeather();
+  }
+  
+  // For future implementation: Allow setting custom starting date/time
+  // This is a placeholder for the future feature
+  setCustomDate(date) {
+    // TODO: Implement this functionality when adding support for custom start dates
+    return date;
   }
 }
 
