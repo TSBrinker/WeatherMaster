@@ -20,9 +20,9 @@ export const weatherEffects = {
     
     "Cold Winds": "Frigid blasts of air whip across the landscape. All creatures must make a DC 10 Constitution saving throw after each hour of travel or gain a level of exhaustion unless properly dressed for cold weather. Ranged attacks have disadvantage due to the wind.",
     
-    "Thunderstorm": "Lightning flashes and thunder crashes. All creatures are partially obscured if they are more than 20 feet from you. If you travel for 4 or more hours during a Thunderstorm, roll a d20. On a 1, you are struck by a lightning bolt dealing 3d12 lightning damage. Lightning and Thunder damage rolls have a +2. Also has the effect of Rain, Heavy Clouds.",
+    "Thunderstorm": "Lightning flashes and thunder crashes. All creatures are partially obscured if they are more than 20 feet from you. If you travel for 4 or more hours during a Thunderstorm, roll a d20. On a 1, you are struck by a lightning bolt dealing 3d12 lightning damage. Lightning and Thunder damage rolls have a +2. Also has the effect of Rain, High Winds, Heavy Clouds.",
     
-    "Blizzard": "At the end of every hour spend in a Blizzard, make a DC 12 Constitution saving. On failure, you take 3d4 cold damage and gain one level of exhaustion. You make this check with advantage if you have proper gear. All creatures are heavily obscured if they are more than 20 feet from you. All terrain is difficult terrain. Also has the effect of Snow, Freezing Cold.",
+    "Blizzard": "At the end of every hour spend in a Blizzard, make a DC 12 Constitution saving. On failure, you take 3d4 cold damage and gain one level of exhaustion. You make this check with advantage if you have proper gear. All creatures are heavily obscured if they are more than 20 feet from you. All terrain is difficult terrain. Also has the effect of Snow, High Winds, and Freezing Cold.",
     
     "High Humidity Haze": "The air feels thick and oppressive. Constitution checks related to endurance or physical exertion are made with disadvantage. Water consumption is doubled for all creatures.",
     
@@ -63,15 +63,11 @@ export const weatherEffects = {
     }
   };
   
-  // Shooting Star Effects with different levels
+  // Shooting Star and Meteor Impact Effects
   export const shootingStarEffects = {
-    // Regular shooting star effect (visible but no impact)
+    // Regular shooting star effect
     "Shooting Star": 
       "Shooting stars streak across the night sky. All creatures gain 1 luck point as per the Lucky feat, which lasts until used or the weather changes.",
-    
-    // Meteor shower effect (more dramatic sky event)
-    "Meteor Shower": 
-      "A spectacular meteor shower illuminates the night sky. The celestial display inspires awe in all who witness it. All creatures gain advantage on their next saving throw. Spellcasters who prepare spells while observing the meteor shower may prepare one additional spell of their highest available spell level.",
     
     // Meteor impact effect (rare event with significant consequences)
     "Meteor Impact": 
