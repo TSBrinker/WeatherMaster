@@ -12,6 +12,9 @@ const WeatherTestUI = () => {
   const [currentSeason, setCurrentSeason] = useState('');
   const [previousWeather, setPreviousWeather] = useState(null);
   const [weatherTransitionLog, setWeatherTransitionLog] = useState([]);
+  
+  // State for collapsible weather effects
+  const [effectsCollapsed, setEffectsCollapsed] = useState(false);
 
   // Initialize weather on first load
   useEffect(() => {
@@ -68,13 +71,22 @@ const WeatherTestUI = () => {
     updateForecastDisplay();
   };
 
-  // Get weather icon based on condition
-  const getWeatherIcon = (condition) => {
+  // Check if it's day or night
+  const isDaytime = (date) => {
+    const hour = date.getHours();
+    // Simple approximation: daytime is 6 AM to 6 PM
+    return hour >= 6 && hour < 18;
+  };
+
+  // Get weather icon based on condition and time of day
+  const getWeatherIcon = (condition, date) => {
+    const daytime = isDaytime(date);
+    
     switch (condition) {
       case 'Clear Skies':
-        return '☀️';
+        return daytime ? '☀️' : '🌙';
       case 'Light Clouds':
-        return '🌤️';
+        return daytime ? '🌤️' : '☁️';
       case 'Heavy Clouds':
         return '☁️';
       case 'Rain':
@@ -106,8 +118,6 @@ const WeatherTestUI = () => {
   const getCelestialIcon = (hour) => {
     if (hour.hasMeteorImpact) {
       return '💥';
-    } else if (hour.hasMeteorShower) {
-      return '🌠';
     } else if (hour.hasShootingStar) {
       return '☄️';
     }
@@ -159,6 +169,7 @@ const WeatherTestUI = () => {
   const formatTime = (date) => {
     return date.toLocaleString('en-US', {
       hour: 'numeric',
+      minute: 'numeric',
       hour12: true
     });
   };
@@ -257,7 +268,7 @@ const WeatherTestUI = () => {
           <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Current Weather</h2>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
             <div style={{ fontSize: '4rem', marginRight: '20px', position: 'relative' }}>
-              {getWeatherIcon(forecast[0].condition)}
+              {getWeatherIcon(forecast[0].condition, forecast[0].date)}
               
               {/* Celestial event icon */}
               {getCelestialIcon(forecast[0]) && (
@@ -287,7 +298,6 @@ const WeatherTestUI = () => {
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '5px' }}>
                 {forecast[0].condition}
                 {forecast[0].hasShootingStar && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Shooting Stars</span>}
-                {forecast[0].hasMeteorShower && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Meteor Shower!</span>}
                 {forecast[0].hasMeteorImpact && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Meteor Impact!!!</span>}
               </div>
               <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>
@@ -309,10 +319,35 @@ const WeatherTestUI = () => {
               </div>
             </div>
           </div>
-          <div style={{ padding: '15px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '5px' }}>
-            <h3>Weather Effects:</h3>
-            <p style={{ whiteSpace: 'pre-line' }}>{forecast[0].effects}</p>
+          
+          {/* Collapsible Weather Effects */}
+          <div 
+            style={{ 
+              cursor: 'pointer', 
+              padding: '10px', 
+              backgroundColor: 'rgba(255,255,255,0.5)', 
+              borderRadius: '5px',
+              marginBottom: effectsCollapsed ? '0' : '10px'
+            }}
+            onClick={() => setEffectsCollapsed(!effectsCollapsed)}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Weather Effects</h3>
+              <span>{effectsCollapsed ? '▼' : '▲'}</span>
+            </div>
           </div>
+          
+          {!effectsCollapsed && (
+            <div style={{ 
+              padding: '15px', 
+              backgroundColor: 'rgba(255,255,255,0.7)', 
+              borderRadius: '0 0 5px 5px',
+              height: '150px',
+              overflowY: 'auto'
+            }}>
+              <p style={{ whiteSpace: 'pre-line' }}>{forecast[0].effects}</p>
+            </div>
+          )}
         </div>
       )}
       
@@ -386,8 +421,8 @@ const WeatherTestUI = () => {
             <div key={index} style={{ 
               minWidth: '80px', 
               padding: '10px', 
-              backgroundColor: (hour.hasShootingStar || hour.hasMeteorShower || hour.hasMeteorImpact) 
-                ? (hour.hasMeteorImpact ? '#ffe0a3' : hour.hasMeteorShower ? '#fff0c0' : '#fff8e6') 
+              backgroundColor: (hour.hasShootingStar || hour.hasMeteorImpact) 
+                ? (hour.hasMeteorImpact ? '#ffe0a3' : '#fff8e6') 
                 : 'white', 
               borderRadius: '5px', 
               textAlign: 'center',
@@ -398,7 +433,7 @@ const WeatherTestUI = () => {
                 {formatHour(hour.date)}
               </div>
               <div style={{ fontSize: '1.5rem', marginBottom: '5px', position: 'relative' }}>
-                {getWeatherIcon(hour.condition)}
+                {getWeatherIcon(hour.condition, hour.date)}
                 
                 {/* Celestial event indicator */}
                 {getCelestialIcon(hour) && (
@@ -451,8 +486,8 @@ const WeatherTestUI = () => {
                 </div>
               )}
               
-              {/* Meteor shower indicator */}
-              {hour.hasMeteorShower && !hour.hasMeteorImpact && (
+              {/* Shooting star indicator */}
+              {hour.hasShootingStar && !hour.hasMeteorImpact && (
                 <div style={{ 
                   position: 'absolute', 
                   top: '-8px', 
@@ -468,28 +503,7 @@ const WeatherTestUI = () => {
                   fontSize: '0.7rem', 
                   fontWeight: 'bold' 
                 }}>
-                  🌠
-                </div>
-              )}
-              
-              {/* Shooting star indicator */}
-              {hour.hasShootingStar && !hour.hasMeteorShower && !hour.hasMeteorImpact && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '-5px', 
-                  right: '-5px', 
-                  backgroundColor: 'gold', 
-                  color: 'black', 
-                  borderRadius: '50%', 
-                  width: '20px', 
-                  height: '20px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  fontSize: '0.7rem', 
-                  fontWeight: 'bold' 
-                }}>
-                  ★
+                  ☄️
                 </div>
               )}
             </div>
@@ -518,6 +532,60 @@ const WeatherTestUI = () => {
           </ul>
         </div>
       </details>
+      
+      {/* Day/Night Cycle Visualization */}
+      <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
+        <h2>Day/Night Cycle</h2>
+        <div style={{ 
+          position: 'relative',
+          height: '30px',
+          borderRadius: '15px',
+          marginTop: '25px',
+          marginBottom: '25px',
+          overflow: 'hidden',
+          background: 'linear-gradient(to right, #0c1445 0%, #0c1445 20%, #5b6ee1 30%, #f9d71c 50%, #e86f2d 70%, #0c1445 80%, #0c1445 100%)'
+        }}>
+          {/* Time markers */}
+          <div style={{ position: 'absolute', left: '30%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Dawn</span>
+          </div>
+          <div style={{ position: 'absolute', left: '50%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Noon</span>
+          </div>
+          <div style={{ position: 'absolute', left: '70%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Dusk</span>
+          </div>
+          <div style={{ position: 'absolute', left: '90%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ position: 'absolute', top: '-20px', left: '-20px', fontSize: '0.7rem', color: '#333' }}>Midnight</span>
+          </div>
+          
+          {/* Current time marker */}
+          {forecast.length > 0 && (
+            <div style={{ 
+              position: 'absolute', 
+              left: `${(forecast[0].date.getHours() / 24) * 100}%`, 
+              top: 0, 
+              height: '100%', 
+              width: '3px', 
+              backgroundColor: 'white',
+              boxShadow: '0 0 5px rgba(255,255,255,0.8)'
+            }}>
+              <span style={{ 
+                position: 'absolute', 
+                top: '35px', 
+                left: '-15px', 
+                fontSize: '0.8rem', 
+                color: '#333',
+                backgroundColor: 'rgba(255,255,255,0.7)',
+                padding: '2px 5px',
+                borderRadius: '3px'
+              }}>
+                {formatHour(forecast[0].date)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
