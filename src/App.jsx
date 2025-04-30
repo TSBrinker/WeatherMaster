@@ -1,5 +1,6 @@
 // App.jsx
 import React, { useState, useEffect } from 'react';
+import WeatherTestUIWithRolls from './components/WeatherTestUIWithRolls';
 import WeatherTestUI from './components/WeatherTestUI';
 import StorageService from './services/storage-service';
 import { v4 as uuidv4 } from 'uuid'; // You'll need to install this package
@@ -128,6 +129,7 @@ function App() {
         </p>
       </header>
       
+      {/* <WeatherTestUIWithRolls /> */}
       <WeatherTestUI />
       
       <footer style={{ 

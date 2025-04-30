@@ -12,6 +12,7 @@ const WeatherTestUI = () => {
   const [currentSeason, setCurrentSeason] = useState('');
   const [previousWeather, setPreviousWeather] = useState(null);
   const [weatherTransitionLog, setWeatherTransitionLog] = useState([]);
+  const [weatherEnergyLog, setWeatherEnergyLog] = useState([]);
   
   // State for collapsible weather effects
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
@@ -34,6 +35,30 @@ const WeatherTestUI = () => {
   const updateForecastDisplay = () => {
     const newForecast = weatherService.get24HourForecast();
     setForecast(newForecast);
+    
+    // Get current energy data
+    const energyData = {
+      condition: weatherService.currentCondition,
+      energy: weatherService.currentConditionEnergy,
+      baseDC: weatherService.conditionEnergyDC[weatherService.currentCondition] || 0,
+      increaseFactor: weatherService.energyIncrease[weatherService.currentCondition] || 0
+    };
+    
+    // Calculate current DC
+    energyData.currentDC = energyData.baseDC + (energyData.energy * energyData.increaseFactor);
+    
+    // Track energy changes
+    setWeatherEnergyLog(prevLog => [
+      {
+        timestamp: new Date(),
+        condition: energyData.condition,
+        energy: energyData.energy,
+        currentDC: energyData.currentDC,
+        baseDC: energyData.baseDC,
+        increaseFactor: energyData.increaseFactor
+      },
+      ...prevLog.slice(0, 19) // Keep the last 20 entries
+    ]);
     
     // Track weather changes for debugging
     if (previousWeather && newForecast.length > 0) {
@@ -152,7 +177,7 @@ const WeatherTestUI = () => {
       month: 'long',
       day: 'numeric',
       hour: 'numeric',
-      // minute: '2-digit',
+      minute: '2-digit',
       hour12: true
     });
   };
@@ -511,10 +536,10 @@ const WeatherTestUI = () => {
         </div>
       </div>
       
-      {/* Weather Transition Log */}
+      {/* Weather Transition and Energy Logs */}
       <details>
         <summary style={{ cursor: 'pointer', padding: '10px', backgroundColor: '#eaeaea', borderRadius: '4px', marginBottom: '10px' }}>
-          Recent Weather Changes (Debug Info)
+          Weather System Debug Info
         </summary>
         <div style={{ 
           padding: '15px', 
@@ -530,6 +555,119 @@ const WeatherTestUI = () => {
               <li key={index}>{log}</li>
             ))}
           </ul>
+          
+          <h3 style={{ marginTop: '20px' }}>Weather Persistence System</h3>
+          
+          {/* Current weather persistence visualization */}
+          {weatherEnergyLog.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4>Current Condition: {weatherEnergyLog[0].condition}</h4>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '100px' }}>Base DC:</div>
+                <div>{weatherEnergyLog[0].baseDC}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '100px' }}>Energy Level:</div>
+                <div>{weatherEnergyLog[0].energy}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '100px' }}>Increase Factor:</div>
+                <div>+{weatherEnergyLog[0].increaseFactor} per hour</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '100px' }}>Current DC:</div>
+                <div>{weatherEnergyLog[0].currentDC}</div>
+              </div>
+              
+              {/* DC visualization */}
+              <div style={{ marginTop: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                  <span>15</span>
+                  <span>20</span>
+                </div>
+                <div style={{ 
+                  width: '100%', 
+                  height: '20px', 
+                  backgroundColor: '#ddd', 
+                  borderRadius: '10px',
+                  position: 'relative'
+                }}>
+                  {/* Success zone */}
+                  <div style={{ 
+                    position: 'absolute',
+                    left: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
+                    width: `${((20 - weatherEnergyLog[0].currentDC) / 20) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#4caf50',
+                    borderRadius: '0 10px 10px 0'
+                  }}></div>
+                  
+                  {/* Failure zone */}
+                  <div style={{ 
+                    position: 'absolute',
+                    left: '0',
+                    width: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#f44336',
+                    borderRadius: '10px 0 0 10px'
+                  }}></div>
+                  
+                  {/* Current DC marker */}
+                  <div style={{ 
+                    position: 'absolute',
+                    left: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
+                    top: '-10px',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'black',
+                    color: 'white',
+                    padding: '2px 5px',
+                    borderRadius: '3px',
+                    fontSize: '0.8rem'
+                  }}>
+                    DC {weatherEnergyLog[0].currentDC}
+                  </div>
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  marginTop: '5px',
+                  fontSize: '0.8rem',
+                  color: '#666'
+                }}>
+                  <span>Weather regresses on low roll</span>
+                  <span>Weather persists on high roll</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Energy history table */}
+          <h4>Energy History</h4>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#ddd' }}>
+                <th style={{ padding: '5px', textAlign: 'left' }}>Time</th>
+                <th style={{ padding: '5px', textAlign: 'left' }}>Condition</th>
+                <th style={{ padding: '5px', textAlign: 'left' }}>Energy</th>
+                <th style={{ padding: '5px', textAlign: 'left' }}>Current DC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weatherEnergyLog.map((log, index) => (
+                <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>
+                    {log.timestamp.toLocaleTimeString()}
+                  </td>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.condition}</td>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.energy}</td>
+                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.currentDC}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </details>
       
@@ -538,25 +676,161 @@ const WeatherTestUI = () => {
         <h2>Day/Night Cycle</h2>
         <div style={{ 
           position: 'relative',
-          height: '30px',
+          height: '40px',
           borderRadius: '15px',
-          marginTop: '25px',
-          marginBottom: '25px',
+          marginTop: '35px',
+          marginBottom: '35px',
           overflow: 'hidden',
           background: 'linear-gradient(to right, #0c1445 0%, #0c1445 20%, #5b6ee1 30%, #f9d71c 50%, #e86f2d 70%, #0c1445 80%, #0c1445 100%)'
         }}>
           {/* Time markers */}
-          <div style={{ position: 'absolute', left: '30%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Dawn</span>
+          <div style={{ position: 'absolute', left: '6.25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-35px', 
+              left: '-12px', 
+              fontSize: '1.2rem',
+              color: '#333' 
+            }}>
+              🌙
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '-14px', 
+              left: '-20px', 
+              fontSize: '0.7rem', 
+              color: '#333',
+              backgroundColor: 'rgba(255,255,255,0.7)',
+              padding: '1px 4px',
+              borderRadius: '2px'
+            }}>
+              3 AM
+            </span>
           </div>
+
+          <div style={{ position: 'absolute', left: '25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-35px', 
+              left: '-12px', 
+              fontSize: '1.2rem',
+              color: '#333' 
+            }}>
+              🌅
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '-14px', 
+              left: '-20px', 
+              fontSize: '0.7rem', 
+              color: '#333',
+              backgroundColor: 'rgba(255,255,255,0.7)',
+              padding: '1px 4px',
+              borderRadius: '2px'
+            }}>
+              6 AM
+            </span>
+          </div>
+
           <div style={{ position: 'absolute', left: '50%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Noon</span>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-35px', 
+              left: '-12px', 
+              fontSize: '1.2rem',
+              color: '#333' 
+            }}>
+              ☀️
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '-14px', 
+              left: '-20px', 
+              fontSize: '0.7rem', 
+              color: '#333',
+              backgroundColor: 'rgba(255,255,255,0.7)',
+              padding: '1px 4px',
+              borderRadius: '2px'
+            }}>
+              12 PM
+            </span>
           </div>
-          <div style={{ position: 'absolute', left: '70%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <span style={{ position: 'absolute', top: '-20px', left: '-10px', fontSize: '0.7rem', color: '#333' }}>Dusk</span>
+
+          <div style={{ position: 'absolute', left: '75%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-35px', 
+              left: '-12px', 
+              fontSize: '1.2rem',
+              color: '#333' 
+            }}>
+              🌇
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '-14px', 
+              left: '-20px', 
+              fontSize: '0.7rem', 
+              color: '#333',
+              backgroundColor: 'rgba(255,255,255,0.7)',
+              padding: '1px 4px',
+              borderRadius: '2px'
+            }}>
+              6 PM
+            </span>
           </div>
-          <div style={{ position: 'absolute', left: '90%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <span style={{ position: 'absolute', top: '-20px', left: '-20px', fontSize: '0.7rem', color: '#333' }}>Midnight</span>
+
+          <div style={{ position: 'absolute', left: '93.75%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-35px', 
+              left: '-12px', 
+              fontSize: '1.2rem',
+              color: '#333' 
+            }}>
+              🌑
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '-14px', 
+              left: '-20px', 
+              fontSize: '0.7rem', 
+              color: '#333',
+              backgroundColor: 'rgba(255,255,255,0.7)',
+              padding: '1px 4px',
+              borderRadius: '2px'
+            }}>
+              9 PM
+            </span>
+          </div>
+          
+          {/* Hour markers */}
+          {[...Array(24)].map((_, i) => (
+            <div 
+              key={i}
+              style={{ 
+                position: 'absolute', 
+                left: `${(i / 24) * 100}%`, 
+                bottom: 0, 
+                height: '5px', 
+                width: '1px', 
+                backgroundColor: 'rgba(255,255,255,0.5)'
+              }}
+            ></div>
+          ))}
+          
+          {/* Day phase labels */}
+          <div style={{ position: 'absolute', bottom: '-25px', left: '12.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
+            Night
+          </div>
+          <div style={{ position: 'absolute', bottom: '-25px', left: '37.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
+            Morning
+          </div>
+          <div style={{ position: 'absolute', bottom: '-25px', left: '62.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
+            Afternoon
+          </div>
+          <div style={{ position: 'absolute', bottom: '-25px', left: '87.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
+            Night
           </div>
           
           {/* Current time marker */}
@@ -568,23 +842,60 @@ const WeatherTestUI = () => {
               height: '100%', 
               width: '3px', 
               backgroundColor: 'white',
-              boxShadow: '0 0 5px rgba(255,255,255,0.8)'
+              boxShadow: '0 0 5px rgba(255,255,255,0.8)',
+              zIndex: 10
             }}>
+              <div style={{
+                position: 'absolute',
+                top: '-8px',
+                left: '-8px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: 'white',
+                boxShadow: '0 0 5px rgba(255,255,255,0.8)'
+              }}></div>
               <span style={{ 
                 position: 'absolute', 
-                top: '35px', 
-                left: '-15px', 
-                fontSize: '0.8rem', 
+                top: '45px', 
+                left: '-25px', 
+                fontSize: '0.9rem', 
                 color: '#333',
                 backgroundColor: 'rgba(255,255,255,0.7)',
-                padding: '2px 5px',
-                borderRadius: '3px'
+                padding: '2px 8px',
+                borderRadius: '3px',
+                fontWeight: 'bold'
               }}>
                 {formatHour(forecast[0].date)}
               </span>
             </div>
           )}
         </div>
+
+        {/* Additional time information */}
+        {forecast.length > 0 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            marginTop: '20px',
+            backgroundColor: 'rgba(255,255,255,0.5)',
+            padding: '10px',
+            borderRadius: '5px'
+          }}>
+            <div>
+              <strong>Sunrise:</strong> 6:00 AM
+            </div>
+            <div>
+              <strong>Sunset:</strong> 6:00 PM
+            </div>
+            <div>
+              <strong>Moon Phase:</strong> Waxing Gibbous
+            </div>
+            <div>
+              <strong>Daylight:</strong> 12 hours
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
