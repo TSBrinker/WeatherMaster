@@ -65,7 +65,7 @@ const useWeatherIntegration = () => {
       // Initialize weather with location settings
       initializeWeather();
     }
-  }, [activeLocation, activeRegion, setBiome, initializeWeather]);
+  }, [activeLocation, activeRegion, setBiome, setDate, initializeWeather]);
   
   // Save current weather data to the active location
   const saveCurrentWeather = useCallback(() => {

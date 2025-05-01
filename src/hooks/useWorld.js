@@ -368,19 +368,19 @@ const useWorld = () => {
   }, [getActiveRegion, state.activeLocationId]);
 
   // Add this to useWorld.js
-  const getLocationDate = useCallback((locationId) => {
-  const location = getActiveLocation();
-  const world = getActiveWorld();
-  
-  if (!location || !world) return new Date();
-  
-  // If the location has its own explicit date, use that
-  if (location.currentDate) {
-    return new Date(location.currentDate);
-  }
-  
-  // Otherwise, use the world date (future: could add time zone offset)
-  return new Date(world.startDate);
+  const getLocationDate = useCallback(() => {
+    const location = getActiveLocation();
+    const world = getActiveWorld();
+    
+    if (!location || !world) return new Date();
+    
+    // If the location has its own explicit date, use that
+    if (location.currentDate) {
+        return new Date(location.currentDate);
+    }
+    
+    // Otherwise, use the world date (future: could add time zone offset)
+    return new Date(world.startDate);
 }, [getActiveLocation, getActiveWorld]);
 
   // Create example world for first-time users
@@ -451,7 +451,7 @@ const useWorld = () => {
     setActiveLocation,
     saveWeatherData,
     createExampleWorld,
-    getLocationDate
+    getLocationDate,
   };
 };
 
