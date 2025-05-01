@@ -3,13 +3,14 @@ import React, { useState } from "react";
 import useWorld from "../../hooks/useWorld";
 
 const LocationCreationForm = ({ worldId, regionId, onCancel, onSuccess }) => {
-  const { createLocation, isLoading } = useWorld();
+  const { createLocation, getActiveWorld, isLoading } = useWorld();
 
+  const worldDate = getActiveWorld()?.startDate || new Date().toISOString();
   // Form state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    currentDate: new Date().toISOString().split("T")[0], // YYYY-MM-DD format
+    currentDate: worldDate.split("T")[0], // YYYY-MM-DD format
   });
 
   // Form validation state

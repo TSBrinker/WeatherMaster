@@ -11,6 +11,7 @@ import { mapBiomeToClimate } from '../utils/weatherUtils';
 const useWeatherIntegration = () => {
   const {
     getActiveWorld,
+    getLocationDate,
     getActiveRegion,
     getActiveLocation,
     saveWeatherData,
@@ -28,6 +29,7 @@ const useWeatherIntegration = () => {
     initialized,
     setBiome,
     setSeason,
+    setDate,
     initializeWeather,
     applySettings
   } = useWeather();
@@ -47,8 +49,10 @@ const useWeatherIntegration = () => {
     
     // Set initial date from location
     if (activeLocation.currentDate) {
-      const locationDate = new Date(activeLocation.currentDate);
+      const locationDate = getLocationDate();
       
+      setDate(locationDate)
+
       // Set biome based on region climate
       if (activeRegion && activeRegion.climate) {
         // Map region climate to biome for weather service
