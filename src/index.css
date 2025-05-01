@@ -432,3 +432,26 @@ body {
 .scale-102 {
   transform: scale(1.02);
 }
+
+.app-content {
+  max-width: 100%;
+  /* overflow-x: hidden; */
+}
+
+.forecast-display {
+  max-width: 100%;
+  width: 100%; /* ensure it's constrained to its parent */
+  overflow: hidden; /* just in case */
+}
+
+.forecast-scroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.forecast-container {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  min-width: max-content; /* key: just wide enough for content */
+}
