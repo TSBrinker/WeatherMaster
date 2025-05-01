@@ -1,5 +1,5 @@
 // hooks/useWeatherIntegration.js
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import useWorld from './useWorld';
 import useWeather from './useWeather';
 import { mapBiomeToClimate } from '../utils/weatherUtils';
@@ -24,11 +24,18 @@ const useWeatherIntegration = () => {
     biome,
     season,
     currentDate,
+    isLoading,
+    initialized,
     setBiome,
     setSeason,
     initializeWeather,
     applySettings
   } = useWeather();
+  
+  // Reference to track actual location changes
+  const locationChangeRef = useRef(false);
+  // Reference to track the last saved timestamp to prevent infinite save cycles
+  const lastSavedRef = useRef(null);
   
   // Get active location data
   const activeLocation = getActiveLocation();
@@ -60,13 +67,23 @@ const useWeatherIntegration = () => {
   const saveCurrentWeather = useCallback(() => {
     if (!activeLocation || !forecast || forecast.length === 0) return;
     
+    // Generate a timestamp for this save
+    const saveTimestamp = new Date().toISOString();
+    
+    // Only save if we haven't just saved (prevents infinite loops)
+    if (lastSavedRef.current === saveTimestamp) {
+      return;
+    }
+    
     const weatherData = {
       forecast,
       currentDate,
       biome,
       season,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: saveTimestamp
     };
+    
+    lastSavedRef.current = saveTimestamp;
     
     saveWeatherData(
       activeWorldId,
@@ -88,7 +105,9 @@ const useWeatherIntegration = () => {
   
   // Load saved weather data from location
   const loadSavedWeather = useCallback(() => {
-    if (!activeLocation || !activeLocation.weatherData) {
+    if (!activeLocation) return;
+    
+    if (!activeLocation.weatherData) {
       // No saved weather data, initialize new weather
       initializeLocationWeather();
       return;
@@ -110,19 +129,33 @@ const useWeatherIntegration = () => {
     applySettings
   ]);
   
+  // Track when the location actually changes
+  useEffect(() => {
+    if (activeLocationId) {
+      locationChangeRef.current = true;
+    }
+  }, [activeLocationId]);
+  
   // Initialize or load weather when location changes
   useEffect(() => {
-    if (activeLocation) {
+    if (activeLocation && locationChangeRef.current) {
       loadSavedWeather();
+      // Reset the flag after handling
+      locationChangeRef.current = false;
     }
-  }, [activeLocationId, loadSavedWeather]);
+  }, [activeLocationId, activeLocation, loadSavedWeather]);
   
-  // Save weather data when it changes
+  // Save weather data when it changes but not on every render
   useEffect(() => {
-    if (activeLocation && forecast && forecast.length > 0) {
-      saveCurrentWeather();
+    if (activeLocation && forecast && forecast.length > 0 && !isLoading && initialized) {
+      // Use a debounce approach - only save after changes have settled
+      const saveTimer = setTimeout(() => {
+        saveCurrentWeather();
+      }, 300);
+      
+      return () => clearTimeout(saveTimer);
     }
-  }, [forecast, saveCurrentWeather]);
+  }, [forecast, currentDate, saveCurrentWeather, activeLocation, isLoading, initialized]);
   
   return {
     activeLocation,
@@ -133,4 +166,4 @@ const useWeatherIntegration = () => {
   };
 };
 
-export default useWeatherIntegration;
+export default useWeatherIntegration; 

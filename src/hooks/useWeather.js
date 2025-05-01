@@ -48,30 +48,30 @@ const useWeather = () => {
   }, [initializeWeather]);
 
   // Advance time by specified hours
-  const advanceTime = useCallback((hours) => {
-    dispatch({ type: ACTIONS.SET_LOADING, payload: true });
+const advanceTime = useCallback((hours) => {
+  dispatch({ type: ACTIONS.SET_LOADING, payload: true });
+  
+  try {
+    const newDate = new Date(state.currentDate);
+    newDate.setHours(newDate.getHours() + hours);
     
-    try {
-      const newDate = new Date(state.currentDate);
-      newDate.setHours(newDate.getHours() + hours);
-      
-      // Advance time in the weather service
-      weatherService.advanceTime(hours, state.biome, state.season, state.currentDate);
-      
-      // Get the updated forecast
-      const forecast = weatherService.get24HourForecast();
-      
-      dispatch({
-        type: ACTIONS.ADVANCE_TIME,
-        payload: { newDate, forecast }
-      });
-    } catch (error) {
-      dispatch({ 
-        type: ACTIONS.SET_ERROR, 
-        payload: `Failed to advance time: ${error.message}` 
-      });
-    }
-  }, [weatherService, state.biome, state.season, state.currentDate, dispatch]);
+    // Advance time in the weather service WITHOUT reinitializing
+    weatherService.advanceTime(hours, state.biome, state.season, state.currentDate);
+    
+    // Get the updated forecast WITHOUT resetting the entire thing
+    const forecast = weatherService.get24HourForecast();
+    
+    dispatch({
+      type: ACTIONS.ADVANCE_TIME,
+      payload: { newDate, forecast }
+    });
+  } catch (error) {
+    dispatch({ 
+      type: ACTIONS.SET_ERROR, 
+      payload: `Failed to advance time: ${error.message}` 
+    });
+  }
+}, [weatherService, state.biome, state.season, state.currentDate, dispatch]);
 
   // Jump to a specific date
   const jumpToDate = useCallback((targetDate) => {

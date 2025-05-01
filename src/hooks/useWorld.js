@@ -437,3 +437,5 @@ const useWorld = () => {
     createExampleWorld
   };
 };
+
+export default useWorld
