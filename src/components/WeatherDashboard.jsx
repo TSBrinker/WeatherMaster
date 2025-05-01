@@ -93,7 +93,10 @@ const WeatherDashboard = () => {
       </div>
 
       <div className="dashboard-grid grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="main-column lg:col-span-2">
+        <div
+          className="main-column lg:col-span-2"
+          style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}
+        >
           <CurrentWeatherDisplay />
           <WeatherEffectsPanel />
           <ForecastDisplay />

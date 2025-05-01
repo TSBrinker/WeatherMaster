@@ -435,13 +435,13 @@ body {
 
 .app-content {
   max-width: 100%;
-  /* overflow-x: hidden; */
+  /* Don't use overflow-x: hidden here */
 }
 
 .forecast-display {
   max-width: 100%;
   width: 100%; /* ensure it's constrained to its parent */
-  overflow: hidden; /* just in case */
+  overflow: hidden; /* contain the scrolling element */
 }
 
 .forecast-scroll {
