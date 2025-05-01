@@ -98,7 +98,7 @@ const WeatherDashboard = () => {
           style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}
         >
           <CurrentWeatherDisplay />
-          <WeatherEffectsPanel />
+          {/* <WeatherEffectsPanel /> */}
           <ForecastDisplay />
         </div>
 
