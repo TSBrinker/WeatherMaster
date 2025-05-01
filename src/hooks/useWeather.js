@@ -1,11 +1,19 @@
 // hooks/useWeather.js
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import WeatherService from '../services/weather-service';
 import { useWeatherContext, ACTIONS } from '../contexts/WeatherContext';
 
 const useWeather = () => {
   const { state, dispatch } = useWeatherContext();
-  const weatherService = new WeatherService();
+
+  const weatherServiceRef = new useRef(null);
+
+  if (!weatherServiceRef.current) {
+    weatherServiceRef.current = new WeatherService();
+  }
+  
+  // Use the reference throughout the hook
+  const weatherService = weatherServiceRef.current;
 
   // Initialize weather data
   const initializeWeather = useCallback(() => {
