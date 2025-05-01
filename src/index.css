@@ -87,6 +87,9 @@ body {
   padding: 1rem;
   margin-bottom: 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .card-title {
@@ -439,9 +442,9 @@ body {
 }
 
 .forecast-display {
+  width: 100%;
   max-width: 100%;
-  width: 100%; /* ensure it's constrained to its parent */
-  overflow: hidden; /* contain the scrolling element */
+  overflow: hidden;
 }
 
 .forecast-scroll {
@@ -450,8 +453,14 @@ body {
 }
 
 .forecast-container {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  min-width: max-content; /* key: just wide enough for content */
+  width: max-content; /* Allow natural width based on content */
+  margin: 0; /* Remove any margin that might cause overflow */
+}
+
+.app-container, 
+.container {
+  width: 100%;
+  max-width: 100vw; /* Ensure maximum width doesn't exceed viewport */
+  overflow-x: hidden; /* Hide overflow on the main container */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
