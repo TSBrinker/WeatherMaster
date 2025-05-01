@@ -50,6 +50,11 @@ const useWeather = () => {
     dispatch({ type: ACTIONS.SET_SEASON, payload: season });
   }, [dispatch]);
 
+  // Set Global Date
+  const setDate = useCallback((date) => {
+    dispatch({ type: ACTIONS.SET_DATE, payload: date });
+  }, [dispatch]);
+
   // Apply weather settings (biome and season)
   const applySettings = useCallback(() => {
     initializeWeather();
@@ -123,6 +128,7 @@ const advanceTime = useCallback((hours) => {
     getCurrentSeason,
     setBiome,
     setSeason,
+    setDate,
     applySettings,
     advanceTime,
     jumpToDate,
