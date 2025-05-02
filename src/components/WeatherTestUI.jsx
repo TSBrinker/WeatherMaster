@@ -11,11 +11,12 @@ const WeatherTestUI = () => {
   const [initialized, setInitialized] = useState(false);
   const [currentSeason, setCurrentSeason] = useState('');
   const [previousWeather, setPreviousWeather] = useState(null);
-  const [weatherTransitionLog, setWeatherTransitionLog] = useState([]);
-  const [weatherEnergyLog, setWeatherEnergyLog] = useState([]);
   
   // State for collapsible weather effects
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
+  
+  // State for custom time input
+  const [customHours, setCustomHours] = useState(1);
 
   // Initialize weather on first load
   useEffect(() => {
@@ -36,38 +37,10 @@ const WeatherTestUI = () => {
     const newForecast = weatherService.get24HourForecast();
     setForecast(newForecast);
     
-    // Get current energy data
-    const energyData = {
-      condition: weatherService.currentCondition,
-      energy: weatherService.currentConditionEnergy,
-      baseDC: weatherService.conditionEnergyDC[weatherService.currentCondition] || 0,
-      increaseFactor: weatherService.energyIncrease[weatherService.currentCondition] || 0
-    };
-    
-    // Calculate current DC
-    energyData.currentDC = energyData.baseDC + (energyData.energy * energyData.increaseFactor);
-    
-    // Track energy changes
-    setWeatherEnergyLog(prevLog => [
-      {
-        timestamp: new Date(),
-        condition: energyData.condition,
-        energy: energyData.energy,
-        currentDC: energyData.currentDC,
-        baseDC: energyData.baseDC,
-        increaseFactor: energyData.increaseFactor
-      },
-      ...prevLog.slice(0, 19) // Keep the last 20 entries
-    ]);
-    
     // Track weather changes for debugging
     if (previousWeather && newForecast.length > 0) {
       if (previousWeather.condition !== newForecast[0].condition) {
-        setWeatherTransitionLog(prevLog => [
-          `${formatTime(previousWeather.date)} - ${previousWeather.condition} (${previousWeather.temperature}°F) → 
-           ${formatTime(newForecast[0].date)} - ${newForecast[0].condition} (${newForecast[0].temperature}°F)`,
-          ...prevLog.slice(0, 9) // Keep the last 10 entries
-        ]);
+        // Weather changed - could log this if needed
       }
       setPreviousWeather(newForecast[0]);
     }
@@ -190,49 +163,51 @@ const WeatherTestUI = () => {
     });
   };
   
-  // Format time
-  const formatTime = (date) => {
-    return date.toLocaleString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
-  
   // Get background color based on weather condition
   const getWeatherBackground = (condition) => {
     switch (condition) {
       case 'Clear Skies':
-        return '#e9f5db';
+        return 'rgba(233, 245, 219, 0.2)';
       case 'Light Clouds':
-        return '#e9f5db';
+        return 'rgba(233, 245, 219, 0.1)';
       case 'Heavy Clouds':
-        return '#d8e2dc';
+        return 'rgba(216, 226, 220, 0.2)';
       case 'Rain':
-        return '#cfe2f3';
+        return 'rgba(207, 226, 243, 0.2)';
       case 'Heavy Rain':
-        return '#b6d0e2';
+        return 'rgba(182, 208, 226, 0.2)';
       case 'Snow':
-        return '#e8f0f0';
+        return 'rgba(232, 240, 240, 0.2)';
       case 'Freezing Cold':
-        return '#e0f3f8';
+        return 'rgba(224, 243, 248, 0.2)';
       case 'Scorching Heat':
-        return '#ffe8d6';
+        return 'rgba(255, 232, 214, 0.2)';
       case 'Thunderstorm':
-        return '#c9ccd5';
+        return 'rgba(201, 204, 213, 0.2)';
       case 'Blizzard':
-        return '#d5d6ea';
+        return 'rgba(213, 214, 234, 0.2)';
       default:
-        return '#e9f5db';
+        return 'rgba(233, 245, 219, 0.1)';
     }
   };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>GM Weather Companion - Test UI</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1>GM Weather Companion - Test UI</h1>
+        <button style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>⚙️</button>
+      </div>
       
-      {/* Controls */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+      {/* Navigation / Controls */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '20px', 
+        marginBottom: '20px', 
+        padding: '15px', 
+        backgroundColor: '#f5f5f5', 
+        borderRadius: '8px',
+        alignItems: 'center'
+      }}>
         <div>
           <label htmlFor="biome-select">Biome: </label>
           <select
@@ -270,175 +245,397 @@ const WeatherTestUI = () => {
         
         <button 
           onClick={applySettings}
-          style={{ padding: '5px 10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          style={{ 
+            padding: '5px 10px', 
+            backgroundColor: '#4CAF50', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px', 
+            cursor: 'pointer' 
+          }}
         >
           Apply Settings
         </button>
         
-        <div style={{ marginLeft: 'auto' }}>
-          <strong>Current Date:</strong> {formatDate(currentDate)}
-          {season === 'auto' && <div><strong>Season:</strong> {currentSeason}</div>}
+        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={{ fontWeight: 'bold' }}>{formatDate(currentDate)}</div>
+          {season === 'auto' && <div>Season: {currentSeason}</div>}
         </div>
       </div>
       
-      {/* Current Weather */}
-      {forecast.length > 0 && (
-        <div style={{ 
-          padding: '20px', 
-          backgroundColor: getWeatherBackground(forecast[0].condition), 
-          borderRadius: '8px', 
-          marginBottom: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Current Weather</h2>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-            <div style={{ fontSize: '4rem', marginRight: '20px', position: 'relative' }}>
-              {getWeatherIcon(forecast[0].condition, forecast[0].date)}
-              
-              {/* Celestial event icon */}
-              {getCelestialIcon(forecast[0]) && (
-                <span style={{ 
-                  position: 'absolute', 
-                  top: '-10px', 
-                  right: '-15px', 
-                  fontSize: '1.5rem'
-                }}>
-                  {getCelestialIcon(forecast[0])}
-                </span>
-              )}
-              
-              {/* Wind icon */}
-              {getWindIcon(forecast[0].windIntensity) && (
-                <span style={{ 
-                  position: 'absolute', 
-                  bottom: '-10px', 
-                  right: '-15px', 
-                  fontSize: '1.5rem'
-                }}>
-                  {getWindIcon(forecast[0].windIntensity)}
-                </span>
-              )}
-            </div>
-            <div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '5px' }}>
-                {forecast[0].condition}
-                {forecast[0].hasShootingStar && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Shooting Stars</span>}
-                {forecast[0].hasMeteorImpact && <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>with Meteor Impact!!!</span>}
-              </div>
-              <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>
-                {forecast[0].temperature}°F
-              </div>
-              <div style={{ 
-                fontSize: '1.1rem', 
-                display: 'flex', 
-                alignItems: 'center',
-                padding: '5px 10px',
-                backgroundColor: 'rgba(255,255,255,0.5)',
-                borderRadius: '5px',
-                width: 'fit-content'
-              }}>
-                {getWindIcon(forecast[0].windIntensity)} 
-                <span style={{ marginLeft: getWindIcon(forecast[0].windIntensity) ? '5px' : '0' }}>
-                  {forecast[0].windIntensity} - {forecast[0].windSpeed} mph {forecast[0].windDirection}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Collapsible Weather Effects */}
-          <div 
-            style={{ 
-              cursor: 'pointer', 
-              padding: '10px', 
-              backgroundColor: 'rgba(255,255,255,0.5)', 
-              borderRadius: '5px',
-              marginBottom: effectsCollapsed ? '0' : '10px'
-            }}
-            onClick={() => setEffectsCollapsed(!effectsCollapsed)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Weather Effects</h3>
-              <span>{effectsCollapsed ? '▼' : '▲'}</span>
-            </div>
-          </div>
-          
-          {!effectsCollapsed && (
+      {/* Main Content - 2 Column Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+        {/* Left Column */}
+        <div>
+          {/* Current Weather */}
+          {forecast.length > 0 && (
             <div style={{ 
-              padding: '15px', 
-              backgroundColor: 'rgba(255,255,255,0.7)', 
-              borderRadius: '0 0 5px 5px',
-              height: '150px',
-              overflowY: 'auto'
+              padding: '20px', 
+              backgroundColor: getWeatherBackground(forecast[0].condition), 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
-              <p style={{ whiteSpace: 'pre-line' }}>{forecast[0].effects}</p>
+              <h2 style={{ textAlign: 'center', marginBottom: '15px' }}>Current Weather</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <div style={{ fontSize: '4rem', marginRight: '20px', position: 'relative' }}>
+                  {getWeatherIcon(forecast[0].condition, forecast[0].date)}
+                  
+                  {/* Celestial event icon */}
+                  {getCelestialIcon(forecast[0]) && (
+                    <span style={{ 
+                      position: 'absolute', 
+                      top: '-10px', 
+                      right: '-15px', 
+                      fontSize: '1.5rem'
+                    }}>
+                      {getCelestialIcon(forecast[0])}
+                    </span>
+                  )}
+                  
+                  {/* Wind icon */}
+                  {getWindIcon(forecast[0].windIntensity) && (
+                    <span style={{ 
+                      position: 'absolute', 
+                      bottom: '-10px', 
+                      right: '-15px', 
+                      fontSize: '1.5rem'
+                    }}>
+                      {getWindIcon(forecast[0].windIntensity)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '5px' }}>
+                    {forecast[0].condition}
+                    {forecast[0].hasShootingStar && (
+                      <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>
+                        with Shooting Stars
+                      </span>
+                    )}
+                    {forecast[0].hasMeteorImpact && (
+                      <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>
+                        with Meteor Impact!!!
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>
+                    {forecast[0].temperature}°F
+                  </div>
+                  <div style={{ 
+                    fontSize: '1.1rem', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    padding: '5px 10px',
+                    backgroundColor: 'rgba(255,255,255,0.5)',
+                    borderRadius: '5px',
+                    width: 'fit-content'
+                  }}>
+                    {getWindIcon(forecast[0].windIntensity) && (
+                      <span style={{ marginRight: '5px' }}>
+                        {getWindIcon(forecast[0].windIntensity)}
+                      </span>
+                    )}
+                    <span>
+                      {forecast[0].windIntensity} - {forecast[0].windSpeed} mph {forecast[0].windDirection}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Collapsible Weather Effects */}
+              <div 
+                style={{ 
+                  cursor: 'pointer', 
+                  padding: '10px', 
+                  backgroundColor: 'rgba(255,255,255,0.5)', 
+                  borderRadius: '5px',
+                  marginBottom: effectsCollapsed ? '0' : '10px'
+                }}
+                onClick={() => setEffectsCollapsed(!effectsCollapsed)}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>Weather Effects</h3>
+                  <span>{effectsCollapsed ? '▼' : '▲'}</span>
+                </div>
+              </div>
+              
+              {!effectsCollapsed && (
+                <div style={{ 
+                  padding: '15px', 
+                  backgroundColor: 'rgba(255,255,255,0.7)', 
+                  borderRadius: '0 0 5px 5px',
+                  height: '150px',
+                  overflowY: 'auto'
+                }}>
+                  <p style={{ whiteSpace: 'pre-line' }}>{forecast[0].effects}</p>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
-      
-      {/* Time Controls */}
-      <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2>Time Controls</h2>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-          <button onClick={() => advanceTime(1)} style={{ flex: '1', padding: '10px', cursor: 'pointer' }}>
-            +1 Hour
-          </button>
-          <button onClick={() => advanceTime(4)} style={{ flex: '1', padding: '10px', cursor: 'pointer' }}>
-            +4 Hours
-          </button>
-          <button onClick={() => advanceTime(24)} style={{ flex: '1', padding: '10px', cursor: 'pointer' }}>
-            +24 Hours
-          </button>
-        </div>
-        
-        <details>
-          <summary style={{ cursor: 'pointer', padding: '10px', backgroundColor: '#eaeaea', borderRadius: '4px', marginBottom: '10px' }}>
-            Custom Time Advance
-          </summary>
-          <div style={{ padding: '15px', backgroundColor: '#f0f0f0', borderRadius: '4px', marginTop: '10px' }}>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input 
-                type="number" 
-                min="1"
-                placeholder="Custom hours..."
-                style={{ flex: '1', padding: '8px' }}
-                id="custom-hours"
-              />
+          
+          {/* Time Controls */}
+          <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
+            <h2>Time Controls</h2>
+            
+            {/* Day/Night Cycle */}
+            <div style={{ 
+              position: 'relative',
+              height: '40px',
+              borderRadius: '15px',
+              marginTop: '35px',
+              marginBottom: '35px',
+              overflow: 'hidden',
+              background: 'linear-gradient(to right, #0c1445 0%, #0c1445 20%, #5b6ee1 30%, #f9d71c 50%, #e86f2d 70%, #0c1445 80%, #0c1445 100%)'
+            }}>
+              {/* Time markers */}
+              <div style={{ position: 'absolute', left: '6.25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-35px', 
+                  left: '-12px', 
+                  fontSize: '1.2rem',
+                  color: '#333' 
+                }}>
+                  🌙
+                </div>
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-14px', 
+                  left: '-20px', 
+                  fontSize: '0.7rem', 
+                  color: '#333',
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  padding: '1px 4px',
+                  borderRadius: '2px'
+                }}>
+                  3 AM
+                </span>
+              </div>
+
+              <div style={{ position: 'absolute', left: '25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-35px', 
+                  left: '-12px', 
+                  fontSize: '1.2rem',
+                  color: '#333' 
+                }}>
+                  🌅
+                </div>
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-14px', 
+                  left: '-20px', 
+                  fontSize: '0.7rem', 
+                  color: '#333',
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  padding: '1px 4px',
+                  borderRadius: '2px'
+                }}>
+                  6 AM
+                </span>
+              </div>
+
+              <div style={{ position: 'absolute', left: '50%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-35px', 
+                  left: '-12px', 
+                  fontSize: '1.2rem',
+                  color: '#333' 
+                }}>
+                  ☀️
+                </div>
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-14px', 
+                  left: '-20px', 
+                  fontSize: '0.7rem', 
+                  color: '#333',
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  padding: '1px 4px',
+                  borderRadius: '2px'
+                }}>
+                  12 PM
+                </span>
+              </div>
+
+              <div style={{ position: 'absolute', left: '75%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '-35px', 
+                  left: '-12px', 
+                  fontSize: '1.2rem',
+                  color: '#333' 
+                }}>
+                  🌇
+                </div>
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '-14px', 
+                  left: '-20px', 
+                  fontSize: '0.7rem', 
+                  color: '#333',
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  padding: '1px 4px',
+                  borderRadius: '2px'
+                }}>
+                  6 PM
+                </span>
+              </div>
+
+              {/* Current time marker */}
+              {forecast.length > 0 && (
+                <div style={{ 
+                  position: 'absolute', 
+                  left: `${(forecast[0].date.getHours() / 24) * 100}%`, 
+                  top: 0, 
+                  height: '100%', 
+                  width: '3px', 
+                  backgroundColor: 'white',
+                  boxShadow: '0 0 5px rgba(255,255,255,0.8)',
+                  zIndex: 10
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    left: '-8px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
+                    boxShadow: '0 0 5px rgba(255,255,255,0.8)'
+                  }}></div>
+                  <span style={{ 
+                    position: 'absolute', 
+                    top: '45px', 
+                    left: '-25px', 
+                    fontSize: '0.9rem', 
+                    color: '#333',
+                    backgroundColor: 'rgba(255,255,255,0.7)',
+                    padding: '2px 8px',
+                    borderRadius: '3px',
+                    fontWeight: 'bold'
+                  }}>
+                    {formatHour(forecast[0].date)}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
               <button 
-                onClick={() => {
-                  const hours = parseInt(document.getElementById('custom-hours').value);
-                  if (hours && hours > 0) advanceTime(hours);
+                onClick={() => advanceTime(1)} 
+                style={{ 
+                  flex: '1', 
+                  padding: '10px', 
+                  cursor: 'pointer',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px'
                 }}
-                style={{ padding: '8px 15px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
               >
-                Advance
+                +1 Hour
+              </button>
+              <button 
+                onClick={() => advanceTime(4)} 
+                style={{ 
+                  flex: '1', 
+                  padding: '10px', 
+                  cursor: 'pointer',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                +4 Hours
+              </button>
+              <button 
+                onClick={() => advanceTime(24)} 
+                style={{ 
+                  flex: '1', 
+                  padding: '10px', 
+                  cursor: 'pointer',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px'
+                }}
+              >
+                +24 Hours
               </button>
             </div>
             
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
-                type="date" 
-                style={{ flex: '1', padding: '8px' }}
-                id="target-date"
-                defaultValue={currentDate.toISOString().split('T')[0]}
+                type="number" 
+                min="1"
+                value={customHours}
+                onChange={(e) => setCustomHours(parseInt(e.target.value) || 1)}
+                style={{ 
+                  flex: '1', 
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
+                }}
+                placeholder="Custom hours..."
               />
               <button 
-                onClick={() => {
-                  const targetDate = new Date(document.getElementById('target-date').value);
-                  const diffMs = targetDate - currentDate;
-                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                  if (diffHours > 0) advanceTime(diffHours);
+                onClick={() => advanceTime(customHours)}
+                style={{ 
+                  padding: '8px 15px', 
+                  backgroundColor: '#10b981',  
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer' 
                 }}
-                style={{ padding: '8px 15px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
               >
-                Jump to Date
+                Advance
               </button>
             </div>
           </div>
-        </details>
+        </div>
+        
+        {/* Right Column */}
+        <div>
+          {/* Celestial Info */}
+          <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
+            <h2>Celestial Information</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '15px 0' }}>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Sunrise</div>
+                <div>6:15 AM</div>
+              </div>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Sunset</div>
+                <div>6:45 PM</div>
+              </div>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Moonrise</div>
+                <div>8:30 PM</div>
+              </div>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Moonset</div>
+                <div>7:10 AM</div>
+              </div>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Moon Phase</div>
+                <div>Waxing Gibbous 🌔</div>
+              </div>
+              <div>
+                <div style={{ color: '#666', fontSize: '0.9rem' }}>Daylight</div>
+                <div>12 hours</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Weather Forecast */}
+      {/* 24-Hour Forecast */}
       <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
         <h2>24-Hour Forecast</h2>
         <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', padding: '10px 0' }}>
@@ -534,368 +731,6 @@ const WeatherTestUI = () => {
             </div>
           ))}
         </div>
-      </div>
-      
-      {/* Weather Transition and Energy Logs */}
-      <details>
-        <summary style={{ cursor: 'pointer', padding: '10px', backgroundColor: '#eaeaea', borderRadius: '4px', marginBottom: '10px' }}>
-          Weather System Debug Info
-        </summary>
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#f0f0f0', 
-          borderRadius: '4px', 
-          marginTop: '10px',
-          fontSize: '0.9rem',
-          fontFamily: 'monospace'
-        }}>
-          <h3>Weather Transitions</h3>
-          <ul style={{ padding: '0 0 0 20px' }}>
-            {weatherTransitionLog.map((log, index) => (
-              <li key={index}>{log}</li>
-            ))}
-          </ul>
-          
-          <h3 style={{ marginTop: '20px' }}>Weather Persistence System</h3>
-          
-          {/* Current weather persistence visualization */}
-          {weatherEnergyLog.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4>Current Condition: {weatherEnergyLog[0].condition}</h4>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ width: '100px' }}>Base DC:</div>
-                <div>{weatherEnergyLog[0].baseDC}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ width: '100px' }}>Energy Level:</div>
-                <div>{weatherEnergyLog[0].energy}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ width: '100px' }}>Increase Factor:</div>
-                <div>+{weatherEnergyLog[0].increaseFactor} per hour</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ width: '100px' }}>Current DC:</div>
-                <div>{weatherEnergyLog[0].currentDC}</div>
-              </div>
-              
-              {/* DC visualization */}
-              <div style={{ marginTop: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <span>1</span>
-                  <span>5</span>
-                  <span>10</span>
-                  <span>15</span>
-                  <span>20</span>
-                </div>
-                <div style={{ 
-                  width: '100%', 
-                  height: '20px', 
-                  backgroundColor: '#ddd', 
-                  borderRadius: '10px',
-                  position: 'relative'
-                }}>
-                  {/* Success zone */}
-                  <div style={{ 
-                    position: 'absolute',
-                    left: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
-                    width: `${((20 - weatherEnergyLog[0].currentDC) / 20) * 100}%`,
-                    height: '100%',
-                    backgroundColor: '#4caf50',
-                    borderRadius: '0 10px 10px 0'
-                  }}></div>
-                  
-                  {/* Failure zone */}
-                  <div style={{ 
-                    position: 'absolute',
-                    left: '0',
-                    width: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
-                    height: '100%',
-                    backgroundColor: '#f44336',
-                    borderRadius: '10px 0 0 10px'
-                  }}></div>
-                  
-                  {/* Current DC marker */}
-                  <div style={{ 
-                    position: 'absolute',
-                    left: `${(weatherEnergyLog[0].currentDC / 20) * 100}%`,
-                    top: '-10px',
-                    transform: 'translateX(-50%)',
-                    backgroundColor: 'black',
-                    color: 'white',
-                    padding: '2px 5px',
-                    borderRadius: '3px',
-                    fontSize: '0.8rem'
-                  }}>
-                    DC {weatherEnergyLog[0].currentDC}
-                  </div>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  marginTop: '5px',
-                  fontSize: '0.8rem',
-                  color: '#666'
-                }}>
-                  <span>Weather regresses on low roll</span>
-                  <span>Weather persists on high roll</span>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Energy history table */}
-          <h4>Energy History</h4>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#ddd' }}>
-                <th style={{ padding: '5px', textAlign: 'left' }}>Time</th>
-                <th style={{ padding: '5px', textAlign: 'left' }}>Condition</th>
-                <th style={{ padding: '5px', textAlign: 'left' }}>Energy</th>
-                <th style={{ padding: '5px', textAlign: 'left' }}>Current DC</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weatherEnergyLog.map((log, index) => (
-                <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>
-                    {log.timestamp.toLocaleTimeString()}
-                  </td>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.condition}</td>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.energy}</td>
-                  <td style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>{log.currentDC}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-      
-      {/* Day/Night Cycle Visualization */}
-      <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2>Day/Night Cycle</h2>
-        <div style={{ 
-          position: 'relative',
-          height: '40px',
-          borderRadius: '15px',
-          marginTop: '35px',
-          marginBottom: '35px',
-          overflow: 'hidden',
-          background: 'linear-gradient(to right, #0c1445 0%, #0c1445 20%, #5b6ee1 30%, #f9d71c 50%, #e86f2d 70%, #0c1445 80%, #0c1445 100%)'
-        }}>
-          {/* Time markers */}
-          <div style={{ position: 'absolute', left: '6.25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: '-35px', 
-              left: '-12px', 
-              fontSize: '1.2rem',
-              color: '#333' 
-            }}>
-              🌙
-            </div>
-            <span style={{ 
-              position: 'absolute', 
-              top: '-14px', 
-              left: '-20px', 
-              fontSize: '0.7rem', 
-              color: '#333',
-              backgroundColor: 'rgba(255,255,255,0.7)',
-              padding: '1px 4px',
-              borderRadius: '2px'
-            }}>
-              3 AM
-            </span>
-          </div>
-
-          <div style={{ position: 'absolute', left: '25%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: '-35px', 
-              left: '-12px', 
-              fontSize: '1.2rem',
-              color: '#333' 
-            }}>
-              🌅
-            </div>
-            <span style={{ 
-              position: 'absolute', 
-              top: '-14px', 
-              left: '-20px', 
-              fontSize: '0.7rem', 
-              color: '#333',
-              backgroundColor: 'rgba(255,255,255,0.7)',
-              padding: '1px 4px',
-              borderRadius: '2px'
-            }}>
-              6 AM
-            </span>
-          </div>
-
-          <div style={{ position: 'absolute', left: '50%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: '-35px', 
-              left: '-12px', 
-              fontSize: '1.2rem',
-              color: '#333' 
-            }}>
-              ☀️
-            </div>
-            <span style={{ 
-              position: 'absolute', 
-              top: '-14px', 
-              left: '-20px', 
-              fontSize: '0.7rem', 
-              color: '#333',
-              backgroundColor: 'rgba(255,255,255,0.7)',
-              padding: '1px 4px',
-              borderRadius: '2px'
-            }}>
-              12 PM
-            </span>
-          </div>
-
-          <div style={{ position: 'absolute', left: '75%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: '-35px', 
-              left: '-12px', 
-              fontSize: '1.2rem',
-              color: '#333' 
-            }}>
-              🌇
-            </div>
-            <span style={{ 
-              position: 'absolute', 
-              top: '-14px', 
-              left: '-20px', 
-              fontSize: '0.7rem', 
-              color: '#333',
-              backgroundColor: 'rgba(255,255,255,0.7)',
-              padding: '1px 4px',
-              borderRadius: '2px'
-            }}>
-              6 PM
-            </span>
-          </div>
-
-          <div style={{ position: 'absolute', left: '93.75%', top: 0, height: '100%', width: '2px', backgroundColor: 'rgba(255,255,255,0.5)' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: '-35px', 
-              left: '-12px', 
-              fontSize: '1.2rem',
-              color: '#333' 
-            }}>
-              🌑
-            </div>
-            <span style={{ 
-              position: 'absolute', 
-              top: '-14px', 
-              left: '-20px', 
-              fontSize: '0.7rem', 
-              color: '#333',
-              backgroundColor: 'rgba(255,255,255,0.7)',
-              padding: '1px 4px',
-              borderRadius: '2px'
-            }}>
-              9 PM
-            </span>
-          </div>
-          
-          {/* Hour markers */}
-          {[...Array(24)].map((_, i) => (
-            <div 
-              key={i}
-              style={{ 
-                position: 'absolute', 
-                left: `${(i / 24) * 100}%`, 
-                bottom: 0, 
-                height: '5px', 
-                width: '1px', 
-                backgroundColor: 'rgba(255,255,255,0.5)'
-              }}
-            ></div>
-          ))}
-          
-          {/* Day phase labels */}
-          <div style={{ position: 'absolute', bottom: '-25px', left: '12.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
-            Night
-          </div>
-          <div style={{ position: 'absolute', bottom: '-25px', left: '37.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
-            Morning
-          </div>
-          <div style={{ position: 'absolute', bottom: '-25px', left: '62.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
-            Afternoon
-          </div>
-          <div style={{ position: 'absolute', bottom: '-25px', left: '87.5%', transform: 'translateX(-50%)', fontSize: '0.75rem', color: '#333' }}>
-            Night
-          </div>
-          
-          {/* Current time marker */}
-          {forecast.length > 0 && (
-            <div style={{ 
-              position: 'absolute', 
-              left: `${(forecast[0].date.getHours() / 24) * 100}%`, 
-              top: 0, 
-              height: '100%', 
-              width: '3px', 
-              backgroundColor: 'white',
-              boxShadow: '0 0 5px rgba(255,255,255,0.8)',
-              zIndex: 10
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: '-8px',
-                left: '-8px',
-                width: '16px',
-                height: '16px',
-                borderRadius: '50%',
-                backgroundColor: 'white',
-                boxShadow: '0 0 5px rgba(255,255,255,0.8)'
-              }}></div>
-              <span style={{ 
-                position: 'absolute', 
-                top: '45px', 
-                left: '-25px', 
-                fontSize: '0.9rem', 
-                color: '#333',
-                backgroundColor: 'rgba(255,255,255,0.7)',
-                padding: '2px 8px',
-                borderRadius: '3px',
-                fontWeight: 'bold'
-              }}>
-                {formatHour(forecast[0].date)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Additional time information */}
-        {forecast.length > 0 && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-around',
-            marginTop: '20px',
-            backgroundColor: 'rgba(255,255,255,0.5)',
-            padding: '10px',
-            borderRadius: '5px'
-          }}>
-            <div>
-              <strong>Sunrise:</strong> 6:00 AM
-            </div>
-            <div>
-              <strong>Sunset:</strong> 6:00 PM
-            </div>
-            <div>
-              <strong>Moon Phase:</strong> Waxing Gibbous
-            </div>
-            <div>
-              <strong>Daylight:</strong> 12 hours
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
