@@ -103,7 +103,7 @@ const WeatherDashboard = () => {
         </div>
 
         <div className="sidebar-column">
-          <WeatherControlPanel />
+          {/* <WeatherControlPanel /> */}
           <TimeControlPanel />
           <TimeInfoDisplay currentDate={currentDate} />
         </div>
