@@ -1,7 +1,7 @@
 // components/EnhancedWeatherDashboard.jsx
 import React, { useEffect } from "react";
 import useWorld from "../hooks/useWorld";
-import useUnifiedWeather from "../hooks/useUnifiedWeather";
+import useUnifiedWeather from "../hooks/useUnifiedWeather.js";
 
 // Import Weather Components
 import RegionWeatherDisplay from "./weather/RegionWeatherDisplay";
