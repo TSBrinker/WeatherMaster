@@ -29,6 +29,7 @@ const EnhancedWeatherDashboard = () => {
     getActiveLocation,
   } = useWorld();
 
+  // Use a single source of weather data
   const { regionForecast, inTransition, initializeRegionWeather } =
     useRegionWeather();
 
@@ -115,7 +116,7 @@ const EnhancedWeatherDashboard = () => {
           {hasForecast ? (
             <>
               <RegionWeatherDisplay />
-              <ForecastDisplay forecast={regionForecast} />
+              <ForecastDisplay />
             </>
           ) : (
             <div className="card">

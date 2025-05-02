@@ -19,7 +19,7 @@ const useRegionWeather = () => {
   const {
     currentDate,
     initialized: weatherInitialized,
-    forecast,
+    forecast: globalForecast,
     setDate,
     advanceTime: advanceWeatherTime
   } = useWeather();
@@ -31,7 +31,17 @@ const useRegionWeather = () => {
   const [inTransition, setInTransition] = useState(false);
   const [targetRegionId, setTargetRegionId] = useState(null);
   const [transitionProgress, setTransitionProgress] = useState(0);
-  const [regionForecast, setRegionForecast] = useState([]);
+  
+  // Use ref for regionForecast to prevent excessive re-renders
+  const regionForecastRef = useRef([]);
+  
+  // Create a state variable that will trigger re-renders
+  const [forecastVersion, setForecastVersion] = useState(0);
+  
+  // Access regionForecast through a getter to maintain consistent reference
+  const getRegionForecast = useCallback(() => {
+    return regionForecastRef.current;
+  }, []);
   
   // Initialize region weather service if needed
   if (!regionWeatherServiceRef.current) {
@@ -54,7 +64,12 @@ const useRegionWeather = () => {
     
     // Update forecast
     const newForecast = regionWeatherService.getRegionForecast(activeRegion);
-    setRegionForecast(newForecast);
+    
+    // Store the forecast in the ref
+    regionForecastRef.current = newForecast;
+    
+    // Increment version to trigger re-render
+    setForecastVersion(v => v + 1);
   }, [getActiveRegion, getActiveWorld, currentDate, regionWeatherService]);
   
   // Start a transition to a new region
@@ -77,7 +92,12 @@ const useRegionWeather = () => {
     
     // Get the initial transition weather
     const transitionForecast = regionWeatherService.getTransitionWeather();
-    setRegionForecast(transitionForecast);
+    
+    // Store the forecast in the ref
+    regionForecastRef.current = transitionForecast;
+    
+    // Increment version to trigger re-render
+    setForecastVersion(v => v + 1);
     
     return true;
   }, [getActiveRegion, regionWeatherService]);
@@ -99,7 +119,9 @@ const useRegionWeather = () => {
         
         // Update the forecast
         const transitionForecast = regionWeatherService.getTransitionWeather();
-        setRegionForecast(transitionForecast);
+        
+        // Store the forecast in the ref
+        regionForecastRef.current = transitionForecast;
       } else {
         // Transition completed
         setInTransition(false);
@@ -109,7 +131,9 @@ const useRegionWeather = () => {
         const newRegionForecast = regionWeatherService.getRegionForecast(
           { id: targetRegionId }
         );
-        setRegionForecast(newRegionForecast);
+        
+        // Store the forecast in the ref
+        regionForecastRef.current = newRegionForecast;
       }
     } else if (activeRegion) {
       // Normal time advancement for the active region
@@ -117,8 +141,13 @@ const useRegionWeather = () => {
       
       // Update forecast
       const newForecast = regionWeatherService.getRegionForecast(activeRegion);
-      setRegionForecast(newForecast);
+      
+      // Store the forecast in the ref
+      regionForecastRef.current = newForecast;
     }
+    
+    // Increment version to trigger re-render
+    setForecastVersion(v => v + 1);
     
     // Also advance time in the weather context to keep date synchronized
     advanceWeatherTime(hours);
@@ -146,7 +175,12 @@ const useRegionWeather = () => {
     const newRegionForecast = regionWeatherService.getRegionForecast(
       { id: targetRegionId }
     );
-    setRegionForecast(newRegionForecast);
+    
+    // Store the forecast in the ref
+    regionForecastRef.current = newRegionForecast;
+    
+    // Increment version to trigger re-render
+    setForecastVersion(v => v + 1);
   }, [inTransition, targetRegionId, regionWeatherService]);
   
   // Get information about the current transition
@@ -165,7 +199,8 @@ const useRegionWeather = () => {
   
   // Return current region weather and transition state
   return {
-    regionForecast,
+    regionForecast: regionForecastRef.current, // Directly expose the current forecast
+    forecastVersion, // Include version to help components know when to update
     inTransition,
     transitionProgress,
     targetRegionId,

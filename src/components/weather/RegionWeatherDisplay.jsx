@@ -1,6 +1,4 @@
 // components/weather/RegionWeatherDisplay.jsx
-// Fix for the constant regeneration of current weather
-
 import React, { useState, useEffect, useRef } from "react";
 import useWorld from "../../hooks/useWorld";
 import useRegionWeather from "../../hooks/useRegionWeather";
@@ -9,6 +7,7 @@ import WindDisplay from "./WindDisplay";
 import { getCelestialData } from "../../utils/celestialUtils";
 
 const RegionWeatherDisplay = () => {
+  // Define all hooks at the top level - never conditionally
   const { getActiveRegion, getActiveWorld } = useWorld();
   const {
     regionForecast,
@@ -21,11 +20,13 @@ const RegionWeatherDisplay = () => {
   const [celestialData, setCelestialData] = useState(null);
   const [transitionInfo, setTransitionInfo] = useState(null);
 
-  // Use a ref to store the current weather to prevent unnecessary re-renders
+  // Use refs to store values that shouldn't trigger re-renders
   const currentWeatherRef = useRef(null);
-
-  // Track if this is the first render
   const firstRenderRef = useRef(true);
+  const renderCountRef = useRef(0);
+
+  // Increment render counter on each render
+  renderCountRef.current++;
 
   // Get the active region
   const activeRegion = getActiveRegion();
@@ -45,7 +46,11 @@ const RegionWeatherDisplay = () => {
       ) {
         // Store the new current weather
         currentWeatherRef.current = regionForecast[0];
-        firstRenderRef.current = false;
+
+        // Mark first render as complete
+        if (firstRenderRef.current) {
+          firstRenderRef.current = false;
+        }
 
         // Also update celestial data if region is available
         if (activeRegion) {
@@ -277,12 +282,12 @@ const RegionWeatherDisplay = () => {
         </div>
       )}
 
-      {/* Add this debug panel to monitor re-renders */}
+      {/* Debug panel - now fixed to avoid hook errors */}
       <div
         className="debug-info mt-4 p-3 bg-surface rounded-lg text-xs"
         style={{ display: "none" }}
       >
-        <p>Re-render count: {useRef(0).current++}</p>
+        <p>Re-render count: {renderCountRef.current}</p>
         <p>Current weather date: {currentWeather.date.toLocaleString()}</p>
         <p>First render: {firstRenderRef.current ? "true" : "false"}</p>
       </div>
