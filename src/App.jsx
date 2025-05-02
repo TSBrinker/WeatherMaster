@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { WeatherProvider } from "./contexts/WeatherContext";
 import { WorldProvider } from "./contexts/WorldContext";
-import WeatherDashboard from "./components/WeatherDashboard";
 import WorldManager from "./components/world/WorldManager";
 import StorageService from "./services/storage-service";
 import "./index.css";
@@ -80,17 +79,6 @@ function App() {
 
           <footer className="app-footer bg-primary-dark p-4 text-center text-gray-300 text-sm mt-10">
             <p>GM Weather Companion v1.0.0</p>
-            {/* Add a reset button for development testing */}
-            <button
-              className="btn btn-small mt-2 text-xs"
-              onClick={() => {
-                const storageService = new StorageService();
-                storageService.clearData();
-                window.location.reload();
-              }}
-            >
-              Reset App Data
-            </button>
           </footer>
         </div>
       </WeatherProvider>

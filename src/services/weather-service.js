@@ -637,6 +637,48 @@ class WeatherService {
     // TODO: Implement this functionality when adding support for custom start dates
     return date;
   }
+
+// Add methods for celestial calculations:
+
+getCelestialData(date, latitude) {
+    // Calculate sunrise/sunset based on date and latitude
+    const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+    
+    // Adjust daylight hours based on latitude and day of year
+    let daylightHours = 12; // Default at equator
+    
+    // Adjust for latitude (simplified calculation)
+    const latitudeEffect = Math.abs(latitude) / 90 * 6; // Max 6 hour variation at poles
+    
+    // Adjust for season (simplified)
+    const seasonalEffect = Math.sin((dayOfYear / 365) * Math.PI * 2) * latitudeEffect;
+    
+    // Northern/Southern hemisphere difference
+    const isNorthern = latitude >= 0;
+    daylightHours += isNorthern ? seasonalEffect : -seasonalEffect;
+    
+    // Calculate sunrise and sunset
+    const noon = new Date(date);
+    noon.setHours(12, 0, 0, 0);
+    
+    const sunrise = new Date(noon);
+    sunrise.setHours(12 - daylightHours/2);
+    
+    const sunset = new Date(noon);
+    sunset.setHours(12 + daylightHours/2);
+    
+    // Calculate moon phase
+    // ... (implement moon phase calculation)
+    
+    return {
+      sunrise,
+      sunset,
+      daylightHours,
+      moonPhase,
+      moonrise,
+      moonset
+    };
+  }
 }
 
 export default WeatherService;

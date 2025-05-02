@@ -1,16 +1,13 @@
 // contexts/WeatherContext.js
-import React, { createContext, useReducer, useContext, useRef, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, useRef } from 'react';
 import WeatherService from '../services/weather-service';
-import RegionWeatherService from '../services/region-weather-service';
 
 // Create the context
 export const WeatherContext = createContext();
 
 // Initial state for the weather context
 const initialState = {
-  currentWeather: null,
   forecast: [],
-  regionForecast: [],
   biome: 'temperate',
   season: 'auto',
   currentDate: new Date(),
@@ -19,15 +16,13 @@ const initialState = {
   transitionProgress: 0,
   isLoading: false,
   error: null,
-  initialized: false,
-  forecastVersion: 0
+  initialized: false
 };
 
 // Action types for the reducer
 export const ACTIONS = {
   INITIALIZE_WEATHER: 'initialize_weather',
   UPDATE_FORECAST: 'update_forecast',
-  UPDATE_REGION_FORECAST: 'update_region_forecast',
   SET_BIOME: 'set_biome',
   SET_SEASON: 'set_season',
   SET_DATE: 'set_date',
@@ -36,9 +31,7 @@ export const ACTIONS = {
   UPDATE_TRANSITION: 'update_transition',
   END_TRANSITION: 'end_transition',
   SET_LOADING: 'set_loading',
-  SET_ERROR: 'set_error',
-  INCREMENT_VERSION: 'increment_version',
-  RESET: 'reset'
+  SET_ERROR: 'set_error'
 };
 
 // Reducer function to handle state updates
@@ -48,26 +41,14 @@ const weatherReducer = (state, action) => {
       return {
         ...state,
         forecast: action.payload.forecast,
-        regionForecast: action.payload.regionForecast || action.payload.forecast,
-        currentWeather: action.payload.forecast[0] || null,
         initialized: true,
-        isLoading: false,
-        forecastVersion: state.forecastVersion + 1
+        isLoading: false
       };
     case ACTIONS.UPDATE_FORECAST:
       return {
         ...state,
         forecast: action.payload,
-        currentWeather: action.payload[0] || state.currentWeather,
-        isLoading: false,
-        forecastVersion: state.forecastVersion + 1
-      };
-    case ACTIONS.UPDATE_REGION_FORECAST:
-      return {
-        ...state,
-        regionForecast: action.payload,
-        isLoading: false,
-        forecastVersion: state.forecastVersion + 1
+        isLoading: false
       };
     case ACTIONS.SET_BIOME:
       return {
@@ -89,35 +70,31 @@ const weatherReducer = (state, action) => {
         ...state,
         currentDate: action.payload.newDate,
         forecast: action.payload.forecast,
-        regionForecast: action.payload.regionForecast || action.payload.forecast,
-        currentWeather: (action.payload.regionForecast || action.payload.forecast)[0] || state.currentWeather,
-        isLoading: false,
-        forecastVersion: state.forecastVersion + 1
+        isLoading: false
       };
     case ACTIONS.START_TRANSITION:
       return {
         ...state,
         inTransition: true,
         targetRegionId: action.payload.targetRegionId,
-        transitionProgress: 0,
-        regionForecast: action.payload.transitionForecast,
-        forecastVersion: state.forecastVersion + 1
+        transitionProgress: 0
       };
     case ACTIONS.UPDATE_TRANSITION:
       return {
         ...state,
+        currentDate: action.payload.newDate,
+        forecast: action.payload.forecast,
         transitionProgress: action.payload.progress,
-        regionForecast: action.payload.transitionForecast,
-        forecastVersion: state.forecastVersion + 1
+        isLoading: false
       };
     case ACTIONS.END_TRANSITION:
       return {
         ...state,
         inTransition: false,
-        transitionProgress: 1,
         targetRegionId: null,
-        regionForecast: action.payload.regionForecast,
-        forecastVersion: state.forecastVersion + 1
+        transitionProgress: 0,
+        forecast: action.payload.forecast,
+        isLoading: false
       };
     case ACTIONS.SET_LOADING:
       return {
@@ -130,16 +107,6 @@ const weatherReducer = (state, action) => {
         error: action.payload,
         isLoading: false
       };
-    case ACTIONS.INCREMENT_VERSION:
-      return {
-        ...state,
-        forecastVersion: state.forecastVersion + 1
-      };
-    case ACTIONS.RESET:
-      return {
-        ...initialState,
-        currentDate: new Date()
-      };
     default:
       return state;
   }
@@ -149,25 +116,14 @@ const weatherReducer = (state, action) => {
 export const WeatherProvider = ({ children }) => {
   const [state, dispatch] = useReducer(weatherReducer, initialState);
   
-  // Create services as refs so they persist between renders
-  const weatherServiceRef = useRef(null);
-  const regionWeatherServiceRef = useRef(null);
-  
-  // Initialize services on first render
-  if (!weatherServiceRef.current) {
-    weatherServiceRef.current = new WeatherService();
-  }
-  
-  if (!regionWeatherServiceRef.current) {
-    regionWeatherServiceRef.current = new RegionWeatherService();
-  }
+  // Create the weather service as a ref so it persists between renders
+  const weatherServiceRef = useRef(new WeatherService());
   
   // Create a memoized value to avoid unnecessary re-renders
   const value = React.useMemo(() => ({
     state,
     dispatch,
-    weatherService: weatherServiceRef.current,
-    regionWeatherService: regionWeatherServiceRef.current
+    weatherService: weatherServiceRef.current
   }), [state]);
 
   return (
