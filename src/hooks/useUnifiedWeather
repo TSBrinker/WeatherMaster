@@ -198,7 +198,7 @@ const useUnifiedWeather = () => {
       throw new Error('targetDate must be a Date object');
     }
     
-    const diffMs = targetDate - currentDate;
+    const diffMs = targetDate.getTime() - currentDate.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     
     if (diffHours > 0) {
