@@ -12,7 +12,7 @@ export const weatherEffects = {
     
     "Heavy Rain": "Same as rain, but the DC becomes 16 to benefit from a long rest without shelter and if Heavy Rain occurs two days in a row wagon travel becomes impossible until one day without rain occurs. May cause flooding. All fire damage rolls have a –4. Lightning and Cold damage rolls gain a +2.",
     
-    "Freezing Cold": "If you attempt to take a long rest without cover and heat, you must make a DC 15 Constitution saving throw gain the benefits for a long rest. If you fail by 5 or more, you gain an additional level of Exhaustion. All cold damage rolls have a +2.",
+    "Freezing Cold": "If you attempt to take a long rest without cover and heat, you must make a DC 15 Constitution saving throw in order to gain the benefits of a long rest. If you fail by 5 or more, you gain an additional level of Exhaustion. All cold damage rolls have a +2.",
     
     "Snow": "Unpleasant to travel in. All travel speed is halved. If snow occurs for two days in row, all terrain is difficult terrain and wagon travel is impossible until one day without snow passes. Also has the the effect of Heavy Clouds and Freezing Cold.",
     
@@ -67,7 +67,7 @@ export const weatherEffects = {
   export const shootingStarEffects = {
     // Regular shooting star effect
     "Shooting Star": 
-      "Shooting stars streak across the night sky. All creatures gain 1 luck point as per the Lucky feat, which lasts until used or the weather changes.",
+      "A shooting star streaks across the night sky. All creatures who witness it gain 1 luck point as per the Lucky feat.",
     
     // Meteor impact effect (rare event with significant consequences)
     "Meteor Impact": 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import WeatherService from '../services/weather-service';
 
-const WeatherTestUI = () => {
+const WeatherTestUI = ({region}) => {
   const [weatherService] = useState(() => new WeatherService());
   const [biome, setBiome] = useState('temperate');
   const [season, setSeason] = useState('auto');
@@ -45,6 +45,15 @@ const WeatherTestUI = () => {
       setPreviousWeather(newForecast[0]);
     }
   };
+
+  useEffect(() => {
+    if (region) {
+      setBiome(region.climate);
+      // Re-initialize weather with new climate
+      weatherService.initializeWeather(region.climate, season, currentDate);
+      updateForecastDisplay();
+    }
+  }, [region]);
 
   // Progress time by specified hours
   const advanceTime = (hours) => {
@@ -310,7 +319,7 @@ const WeatherTestUI = () => {
                     {forecast[0].condition}
                     {forecast[0].hasShootingStar && (
                       <span style={{ marginLeft: '10px', color: '#b5651d', fontSize: '1.2rem' }}>
-                        with Shooting Stars
+                        A shooting star!
                       </span>
                     )}
                     {forecast[0].hasMeteorImpact && (
