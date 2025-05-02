@@ -1,13 +1,11 @@
 // components/EnhancedWeatherDashboard.jsx
 import React, { useEffect } from "react";
 import useWorld from "../hooks/useWorld";
-import useWeather from "../hooks/useWeather";
-import useRegionWeather from "../hooks/useRegionWeather";
+import useUnifiedWeather from "../hooks/useUnifiedWeather";
 
 // Import Weather Components
 import RegionWeatherDisplay from "./weather/RegionWeatherDisplay";
 import ForecastDisplay from "./weather/ForecastDisplay";
-import WeatherControlPanel from "./weather/WeatherControlPanel";
 import RegionTransitionControls from "./weather/RegionTransitionControls";
 
 // Import Time Components
@@ -15,13 +13,7 @@ import TimeControlPanel from "./time/TimeControlPanel";
 import EnhancedTimeInfoDisplay from "./time/EnhancedTimeInfoDisplay";
 
 const EnhancedWeatherDashboard = () => {
-  const {
-    currentDate,
-    isLoading: weatherLoading,
-    error: weatherError,
-    initialized: weatherInitialized,
-  } = useWeather();
-
+  // Get world data
   const {
     isLoading: worldLoading,
     error: worldError,
@@ -29,9 +21,16 @@ const EnhancedWeatherDashboard = () => {
     getActiveLocation,
   } = useWorld();
 
-  // Use a single source of weather data
-  const { regionForecast, inTransition, initializeRegionWeather } =
-    useRegionWeather();
+  // Get unified weather data
+  const {
+    currentDate,
+    regionForecast,
+    isLoading: weatherLoading,
+    error: weatherError,
+    initialized: weatherInitialized,
+    inTransition,
+    initializeWeather,
+  } = useUnifiedWeather();
 
   // Loading state
   const isLoading = weatherLoading || worldLoading;
@@ -41,12 +40,12 @@ const EnhancedWeatherDashboard = () => {
   const activeRegion = getActiveRegion();
   const activeLocation = getActiveLocation();
 
-  // Initialize region weather on component mount
+  // Initialize weather on component mount
   useEffect(() => {
     if (activeRegion && weatherInitialized) {
-      initializeRegionWeather();
+      initializeWeather(activeRegion);
     }
-  }, [activeRegion, weatherInitialized, initializeRegionWeather]);
+  }, [activeRegion, weatherInitialized, initializeWeather]);
 
   // If no location or region is selected, show empty state
   if (!activeLocation || !activeRegion) {
@@ -90,7 +89,7 @@ const EnhancedWeatherDashboard = () => {
           <div>{error}</div>
           <button
             className="btn btn-primary mt-4"
-            onClick={() => initializeRegionWeather()}
+            onClick={() => initializeWeather(activeRegion)}
           >
             Try Again
           </button>
@@ -130,9 +129,7 @@ const EnhancedWeatherDashboard = () => {
         </div>
 
         <div className="sidebar-column">
-          {/* <WeatherControlPanel /> */}
-
-          {/* Show region transition controls if not in transition */}
+          {/* Show region transition controls */}
           <RegionTransitionControls />
 
           {/* Only show time controls if we're not in transition */}

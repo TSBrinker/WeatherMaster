@@ -1,69 +1,49 @@
 // components/weather/RegionWeatherDisplay.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import useWorld from "../../hooks/useWorld";
-import useRegionWeather from "../../hooks/useRegionWeather";
+import useUnifiedWeather from "../../hooks/useUnifiedWeather";
 import WeatherIcon from "./WeatherIcon";
 import WindDisplay from "./WindDisplay";
 import { getCelestialData } from "../../utils/celestialUtils";
 
 const RegionWeatherDisplay = () => {
-  // Define all hooks at the top level - never conditionally
+  // Get world data
   const { getActiveRegion, getActiveWorld } = useWorld();
+
+  // Get unified weather data
   const {
     regionForecast,
     inTransition,
     transitionProgress,
     targetRegionId,
     getTransitionInfo,
-  } = useRegionWeather();
+    forecastVersion,
+  } = useUnifiedWeather();
 
+  // Local state for UI components
   const [celestialData, setCelestialData] = useState(null);
   const [transitionInfo, setTransitionInfo] = useState(null);
 
-  // Use refs to store values that shouldn't trigger re-renders
-  const currentWeatherRef = useRef(null);
-  const firstRenderRef = useRef(true);
-  const renderCountRef = useRef(0);
-
-  // Increment render counter on each render
-  renderCountRef.current++;
-
-  // Get the active region
+  // Get references to active region and world
   const activeRegion = getActiveRegion();
   const activeWorld = getActiveWorld();
 
-  // Update the current weather ref when the forecast changes
+  // Create a stable reference to the current weather using useMemo
+  const currentWeather = useMemo(() => {
+    if (!regionForecast || regionForecast.length === 0) return null;
+    return regionForecast[0];
+  }, [regionForecast, forecastVersion]);
+
+  // Update celestial data when the current weather changes
   useEffect(() => {
-    if (regionForecast && regionForecast.length > 0) {
-      // Only update on first render or when the hour/date of the first forecast item changes
-      if (
-        firstRenderRef.current ||
-        !currentWeatherRef.current ||
-        currentWeatherRef.current.date.getHours() !==
-          regionForecast[0].date.getHours() ||
-        currentWeatherRef.current.date.getDate() !==
-          regionForecast[0].date.getDate()
-      ) {
-        // Store the new current weather
-        currentWeatherRef.current = regionForecast[0];
-
-        // Mark first render as complete
-        if (firstRenderRef.current) {
-          firstRenderRef.current = false;
-        }
-
-        // Also update celestial data if region is available
-        if (activeRegion) {
-          const data = getCelestialData(
-            regionForecast[0].date,
-            activeRegion.climate || "temperate-deciduous"
-          );
-
-          setCelestialData(data);
-        }
-      }
+    if (currentWeather && activeRegion) {
+      const data = getCelestialData(
+        currentWeather.date,
+        activeRegion.climate || "temperate-deciduous"
+      );
+      setCelestialData(data);
     }
-  }, [regionForecast, activeRegion]);
+  }, [currentWeather, activeRegion]);
 
   // Update transition info when in transition
   useEffect(() => {
@@ -76,7 +56,7 @@ const RegionWeatherDisplay = () => {
   }, [inTransition, transitionProgress, getTransitionInfo]);
 
   // If no weather or region data, show empty state
-  if (!currentWeatherRef.current || !activeRegion) {
+  if (!currentWeather || !activeRegion) {
     return (
       <div className="region-weather-display card">
         <div className="empty-state text-center py-6">
@@ -85,9 +65,6 @@ const RegionWeatherDisplay = () => {
       </div>
     );
   }
-
-  // Use the stored current weather from the ref
-  const currentWeather = currentWeatherRef.current;
 
   // Format date for display
   const formattedDate = currentWeather.date.toLocaleString("en-US", {
@@ -281,18 +258,9 @@ const RegionWeatherDisplay = () => {
           </div>
         </div>
       )}
-
-      {/* Debug panel - now fixed to avoid hook errors */}
-      <div
-        className="debug-info mt-4 p-3 bg-surface rounded-lg text-xs"
-        style={{ display: "none" }}
-      >
-        <p>Re-render count: {renderCountRef.current}</p>
-        <p>Current weather date: {currentWeather.date.toLocaleString()}</p>
-        <p>First render: {firstRenderRef.current ? "true" : "false"}</p>
-      </div>
     </div>
   );
 };
 
-export default RegionWeatherDisplay;
+// Wrap with React.memo to prevent unnecessary re-renders
+export default React.memo(RegionWeatherDisplay);
