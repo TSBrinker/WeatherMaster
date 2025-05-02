@@ -6,6 +6,7 @@ import WeatherDashboard from "./components/WeatherDashboard";
 import WorldManager from "./components/world/WorldManager";
 import StorageService from "./services/storage-service";
 import "./index.css";
+import EnhancedWeatherDashboard from "./components/EnhancedWeatherDashboard";
 
 function App() {
   const [view, setView] = useState("weather"); // 'weather', 'world-manager'
@@ -68,7 +69,7 @@ function App() {
                 <div className="text-xl mb-2">Loading...</div>
               </div>
             ) : view === "weather" ? (
-              <WeatherDashboard />
+              <EnhancedWeatherDashboard />
             ) : (
               <WorldManager
                 onLocationSelected={handleLocationSelected}
