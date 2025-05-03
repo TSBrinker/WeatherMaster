@@ -121,9 +121,9 @@ class WeatherService {
     // Generate first batch of weather conditions
     this.generateWeatherForecast(biome, season, currentDate);
 
-    console.log(`Initializing weather for climate: ${climate}, season: ${season}`);
-    console.log(`Using climate table: ${biomeMap[climate] || climate}`);
-    const table = this.getClimateTable(climate, season);
+    console.log(`Initializing weather for biome: ${biome}, season: ${season}`);
+    console.log(`Using climate table: ${biomeMap[biome] || biome}`);
+    const table = this.getClimateTable(biome, season);
     console.log(`Climate table for ${season}:`, table);
 
     return this.getCurrentWeather();
