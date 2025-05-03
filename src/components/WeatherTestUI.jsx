@@ -1,95 +1,170 @@
-// src/components/WeatherTestUI.jsx - Updated version with region integration
+// src/components/WeatherTestUI.jsx - Updated for persistent weather
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import WeatherService from "../services/weather-service";
 
+// Weather storage key prefix for localStorage
+const WEATHER_STORAGE_PREFIX = "gm-weather-companion-weather-";
+
 const WeatherTestUI = ({ region }) => {
-  const [weatherService] = useState(() => new WeatherService());
-  // Only set biome from region if region exists, otherwise use default
+  // Create a ref for the weather service to keep it consistent
+  const weatherServiceRef = useRef(null);
+
+  // States
   const [biome, setBiome] = useState(region?.climate || "temperate");
   const [season, setSeason] = useState("auto");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [forecast, setForecast] = useState([]);
   const [initialized, setInitialized] = useState(false);
   const [currentSeason, setCurrentSeason] = useState("");
-  const [previousWeather, setPreviousWeather] = useState(null);
   const [effectsCollapsed, setEffectsCollapsed] = useState(false);
   const [customHours, setCustomHours] = useState(1);
-  const [weatherInitKey, setWeatherInitKey] = useState(0); // Used to force re-initialization
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize weather when region changes or on first load
+  // Initialize weather service once
   useEffect(() => {
-    if (region) {
-      // Update biome to match region's climate
-      setBiome(region.climate);
+    if (!weatherServiceRef.current) {
+      weatherServiceRef.current = new WeatherService();
+    }
+  }, []);
 
-      // Reset initialization to force regeneration with new climate
-      setInitialized(false);
-      setWeatherInitKey((prev) => prev + 1);
+  // Load or initialize weather when region changes
+  useEffect(() => {
+    if (!region || !weatherServiceRef.current) return;
+
+    setIsLoading(true);
+
+    // Try to load saved weather state for this region
+    const savedWeatherKey = `${WEATHER_STORAGE_PREFIX}${region.id}`;
+    const savedWeatherData = localStorage.getItem(savedWeatherKey);
+
+    if (savedWeatherData) {
+      try {
+        // Parse the saved data
+        const weatherData = JSON.parse(savedWeatherData);
+
+        // Set states from saved data
+        setBiome(weatherData.biome);
+        setSeason(weatherData.season);
+        setCurrentDate(new Date(weatherData.currentDate));
+        setCurrentSeason(weatherData.currentSeason);
+        setForecast(
+          weatherData.forecast.map((hour) => ({
+            ...hour,
+            date: new Date(hour.date), // Convert date strings back to Date objects
+          }))
+        );
+
+        setInitialized(true);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading saved weather:", error);
+        // If loading fails, initialize fresh
+        initializeWeather(region.climate, "auto", new Date());
+      }
+    } else {
+      // No saved data, initialize fresh
+      initializeWeather(region.climate, "auto", new Date());
     }
   }, [region]);
 
-  // Initialize weather when needed
+  // Save weather state when it changes
   useEffect(() => {
-    if (!initialized || weatherInitKey > 0) {
-      const actualSeason =
-        season === "auto"
-          ? weatherService.getSeasonFromDate(currentDate)
-          : season;
-      setCurrentSeason(actualSeason);
+    if (!region || !initialized || forecast.length === 0) return;
 
-      const currentWeather = weatherService.initializeWeather(
-        biome,
-        season,
-        currentDate
-      );
-      setPreviousWeather(currentWeather);
+    // Prepare data to save
+    const weatherData = {
+      biome,
+      season,
+      currentDate: currentDate.toISOString(),
+      currentSeason,
+      forecast: forecast.map((hour) => ({
+        ...hour,
+        date: hour.date.toISOString(), // Convert Date objects to strings for storage
+      })),
+    };
 
-      updateForecastDisplay();
-      setInitialized(true);
+    // Save to localStorage
+    const savedWeatherKey = `${WEATHER_STORAGE_PREFIX}${region.id}`;
+    try {
+      localStorage.setItem(savedWeatherKey, JSON.stringify(weatherData));
+    } catch (error) {
+      console.error("Error saving weather data:", error);
     }
-  }, [initialized, biome, season, weatherService, currentDate, weatherInitKey]);
+  }, [
+    region,
+    initialized,
+    forecast,
+    biome,
+    season,
+    currentDate,
+    currentSeason,
+  ]);
 
-  // Update the forecast display
-  const updateForecastDisplay = () => {
-    const newForecast = weatherService.get24HourForecast();
+  // Initialize weather
+  const initializeWeather = (climate, seasonSetting, date) => {
+    if (!weatherServiceRef.current) return;
+
+    setIsLoading(true);
+    setBiome(climate);
+    setSeason(seasonSetting);
+    setCurrentDate(date);
+
+    // Get actual season if auto
+    const actualSeason =
+      seasonSetting === "auto"
+        ? weatherServiceRef.current.getSeasonFromDate(date)
+        : seasonSetting;
+    setCurrentSeason(actualSeason);
+
+    // Initialize weather
+    weatherServiceRef.current.initializeWeather(climate, seasonSetting, date);
+
+    // Get forecast
+    const newForecast = weatherServiceRef.current.get24HourForecast();
     setForecast(newForecast);
 
-    // Track weather changes for debugging
-    if (previousWeather && newForecast.length > 0) {
-      if (previousWeather.condition !== newForecast[0].condition) {
-        // Weather changed - could log this if needed
-      }
-      setPreviousWeather(newForecast[0]);
-    }
+    setInitialized(true);
+    setIsLoading(false);
   };
 
   // Progress time by specified hours
   const advanceTime = (hours) => {
+    if (!weatherServiceRef.current || !initialized) return;
+
+    // Calculate new date
     const newDate = new Date(currentDate);
     newDate.setHours(newDate.getHours() + hours);
 
     // Determine season from the new date if set to auto
     const actualSeason =
-      season === "auto" ? weatherService.getSeasonFromDate(newDate) : season;
+      season === "auto"
+        ? weatherServiceRef.current.getSeasonFromDate(newDate)
+        : season;
+
+    // Advance weather
+    weatherServiceRef.current.advanceTime(hours, biome, season, currentDate);
+
+    // Update states
+    setCurrentDate(newDate);
     setCurrentSeason(actualSeason);
 
-    weatherService.advanceTime(hours, biome, season, currentDate);
-    setCurrentDate(newDate);
-    updateForecastDisplay();
+    // Get updated forecast
+    const newForecast = weatherServiceRef.current.get24HourForecast();
+    setForecast(newForecast);
   };
 
-  // Apply weather settings
+  // Apply weather settings (regenerate)
   const applySettings = () => {
-    const actualSeason =
-      season === "auto"
-        ? weatherService.getSeasonFromDate(currentDate)
-        : season;
-    setCurrentSeason(actualSeason);
+    initializeWeather(biome, season, currentDate);
+  };
 
-    // Force re-initialization with new settings
-    setInitialized(false);
-    setWeatherInitKey((prev) => prev + 1);
+  // Format hour for display in forecast (just hour, no minutes)
+  const formatHour = (date) => {
+    return date.toLocaleString("en-US", {
+      hour: "numeric",
+      hour12: true,
+    });
   };
 
   // Check if it's day or night
@@ -173,15 +248,6 @@ const WeatherTestUI = ({ region }) => {
       month: "long",
       day: "numeric",
       hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  // Format hour for display in forecast (just hour, no minutes)
-  const formatHour = (date) => {
-    return date.toLocaleString("en-US", {
-      hour: "numeric",
       hour12: true,
     });
   };
@@ -229,6 +295,25 @@ const WeatherTestUI = ({ region }) => {
         <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🗺️</div>
         <h2 style={{ marginBottom: "1rem" }}>No Region Selected</h2>
         <p>Please select or create a region to view weather information.</p>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          padding: "20px",
+          textAlign: "center",
+          backgroundColor: "#1f2937",
+          borderRadius: "8px",
+          margin: "20px 0",
+        }}
+      >
+        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⏳</div>
+        <h2 style={{ marginBottom: "1rem" }}>Loading Weather</h2>
+        <p>Generating weather for {region.name}...</p>
       </div>
     );
   }
@@ -766,6 +851,7 @@ const WeatherTestUI = ({ region }) => {
                 min="1"
                 value={customHours}
                 onChange={(e) => setCustomHours(parseInt(e.target.value) || 1)}
+                onClick={(e) => e.target.select()} // Select all text when clicked
                 style={{
                   flex: "1",
                   padding: "8px",
