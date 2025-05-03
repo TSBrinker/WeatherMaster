@@ -150,13 +150,8 @@ export const WorldProvider = ({ children }) => {
       }
     };
     
-    // Call the function after a short delay to ensure component is fully mounted
-    const timer = setTimeout(() => {
-      loadFromStorage();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    loadFromStorage();
+  }, []);  // Empty dependency array means this runs once on mount
   
   // Save world state to localStorage
   useEffect(() => {
@@ -171,23 +166,19 @@ export const WorldProvider = ({ children }) => {
           weatherHistory: state.weatherHistory,
           lastUpdateTimes: state.lastUpdateTimes
         };
-        console.log("Saving weather history:", Object.keys(state.weatherHistory));
+        console.log("Saving weather history for regions:", Object.keys(state.weatherHistory));
         localStorage.setItem(WORLD_KEY, JSON.stringify(dataToSave));
         
         // Verify the save worked
         const savedData = localStorage.getItem(WORLD_KEY);
-        console.log("Verification - saved data size:", savedData ? savedData.length : 0);
+        console.log("Verification - saved data size:", savedData ? savedData.length : 0, "bytes");
       } catch (error) {
         console.error('Error saving world data to localStorage:', error);
       }
     };
     
-    // Debounce save operations to prevent too many writes
-    const timer = setTimeout(() => {
-      saveToStorage();
-    }, 300);
-    
-    return () => clearTimeout(timer);
+    // Save the current state
+    saveToStorage();
   }, [state.currentDate, state.weatherHistory, state.lastUpdateTimes]);
   
   // Create memoized context value
@@ -214,7 +205,16 @@ export const useWorld = () => {
   
   // Advance time for all regions
   const advanceTime = (hours) => {
+    // First dispatch the time advancement
     dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
+    
+    // Calculate the new date
+    const newDate = new Date(currentDate);
+    newDate.setHours(newDate.getHours() + hours);
+    const newDateString = newDate.toISOString();
+    
+    // No need to update timestamps here - we'll handle that
+    // in the WeatherDashboard component as needed
   };
   
   // Get weather for a specific region
@@ -256,5 +256,3 @@ export const useWorld = () => {
     updateRegionTimestamp
   };
 };
-
-export default WorldProvider;

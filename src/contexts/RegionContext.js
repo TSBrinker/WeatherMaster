@@ -1,5 +1,4 @@
-// src/contexts/RegionContext.js - Updated version
-
+// src/contexts/RegionContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -91,9 +90,9 @@ const regionReducer = (state, action) => {
 export const RegionProvider = ({ children }) => {
   const [state, dispatch] = useReducer(regionReducer, initialState);
 
-  // Load regions from localStorage on init
+  // Load regions from localStorage on init - ONCE ONLY
   useEffect(() => {
-    const loadData = () => {
+    const loadRegionsData = () => {
       dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       
       try {
@@ -112,8 +111,19 @@ export const RegionProvider = ({ children }) => {
         } else {
           console.log("No stored region data found");
         }
-        
-        // Load active region ID
+      } catch (error) {
+        console.error('Error loading data from localStorage:', error);
+        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
+      }
+    };
+    
+    loadRegionsData();
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Load active region ID - SEPARATE EFFECT to avoid race conditions
+  useEffect(() => {
+    const loadActiveRegion = () => {
+      try {
         const activeId = localStorage.getItem(ACTIVE_REGION_KEY);
         if (activeId) {
           console.log("Found active region ID:", activeId);
@@ -122,28 +132,34 @@ export const RegionProvider = ({ children }) => {
           console.log("No active region ID found");
         }
       } catch (error) {
-        console.error('Error loading data from localStorage:', error);
-        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
+        console.error('Error loading active region ID:', error);
       }
     };
     
-    // Short delay to ensure component is mounted
-    const timer = setTimeout(() => {
-      loadData();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    loadActiveRegion();
+  }, []); // Empty dependency array means this runs once on mount
 
   // Save regions to localStorage whenever they change
   useEffect(() => {
+    // Don't try to save empty regions array during initialization
+    if (state.regions.length === 0 && state.isLoading) {
+      return;
+    }
+    
     try {
       console.log("Saving regions to localStorage:", state.regions.length);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.regions));
+      // Convert to string first to help with debugging
+      const jsonData = JSON.stringify(state.regions);
+      console.log("Saving regions data size:", jsonData.length, "bytes");
+      localStorage.setItem(STORAGE_KEY, jsonData);
+      
+      // Verify save worked
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      console.log("Verify saved regions data:", savedData ? savedData.substring(0, 50) + "..." : "none");
     } catch (error) {
       console.error('Error saving regions to localStorage:', error);
     }
-  }, [state.regions]);
+  }, [state.regions, state.isLoading]);
   
   // Save active region ID whenever it changes
   useEffect(() => {
