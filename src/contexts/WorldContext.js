@@ -1,5 +1,6 @@
 // src/contexts/WorldContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
+import { storageUtils } from '../utils/storageUtils';
 
 // Storage keys
 const WORLD_KEY = 'gm-weather-companion-world';
@@ -93,92 +94,61 @@ const worldReducer = (state, action) => {
 export const WorldProvider = ({ children }) => {
   const [state, dispatch] = useReducer(worldReducer, initialState);
   
-  // Load world state from localStorage on init
+  // Load world data on initial render
   useEffect(() => {
-    const loadFromStorage = () => {
-      try {
-        console.log("Loading world data from localStorage...");
-        
-        // Load world time
-        const savedWorldTime = localStorage.getItem(WORLD_TIME_KEY);
-        if (savedWorldTime) {
-          console.log("Found saved world time:", savedWorldTime);
-          dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: savedWorldTime });
-        } else {
-          console.log("No saved world time found, using default");
-        }
-        
-        // Load weather history and timestamps
-        const savedWorldData = localStorage.getItem(WORLD_KEY);
-        if (savedWorldData) {
-          console.log("Found saved world data");
-          try {
-            const parsedData = JSON.parse(savedWorldData);
-            console.log("Parsed world data:", parsedData);
-            
-            // Restore weather history
-            if (parsedData.weatherHistory) {
-              const regions = Object.keys(parsedData.weatherHistory);
-              console.log("Found weather history for regions:", regions);
-              
-              Object.entries(parsedData.weatherHistory).forEach(([regionId, weatherData]) => {
-                console.log(`Restoring weather for region ${regionId}`);
-                dispatch({ 
-                  type: ACTIONS.UPDATE_REGION_WEATHER, 
-                  payload: { regionId, weatherData } 
-                });
-              });
-            }
-            
-            // Restore timestamps
-            if (parsedData.lastUpdateTimes) {
-              Object.entries(parsedData.lastUpdateTimes).forEach(([regionId, timestamp]) => {
-                dispatch({ 
-                  type: ACTIONS.UPDATE_REGION_TIMESTAMP, 
-                  payload: { regionId, timestamp } 
-                });
-              });
-            }
-          } catch (parseError) {
-            console.error("Error parsing saved world data:", parseError);
-          }
-        } else {
-          console.log("No saved world data found");
-        }
-      } catch (error) {
-        console.error('Error loading world data from localStorage:', error);
+    const loadWorldData = () => {
+      // Debug - list all localStorage keys
+      storageUtils.listKeys();
+      
+      // Load world time
+      const worldTime = storageUtils.loadData(WORLD_TIME_KEY, new Date().toISOString());
+      dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: worldTime });
+      
+      // Load world data
+      const worldData = storageUtils.loadData(WORLD_KEY, { weatherHistory: {}, lastUpdateTimes: {} });
+      
+      console.log("Loaded world data:", worldData);
+      
+      // Restore weather history
+      if (worldData.weatherHistory) {
+        Object.entries(worldData.weatherHistory).forEach(([regionId, weatherData]) => {
+          dispatch({ 
+            type: ACTIONS.UPDATE_REGION_WEATHER, 
+            payload: { regionId, weatherData } 
+          });
+        });
+      }
+      
+      // Restore last update times
+      if (worldData.lastUpdateTimes) {
+        Object.entries(worldData.lastUpdateTimes).forEach(([regionId, timestamp]) => {
+          dispatch({ 
+            type: ACTIONS.UPDATE_REGION_TIMESTAMP, 
+            payload: { regionId, timestamp } 
+          });
+        });
       }
     };
     
-    loadFromStorage();
-  }, []);  // Empty dependency array means this runs once on mount
+    loadWorldData();
+  }, []);
   
-  // Save world state to localStorage
+  // Save world data when it changes
   useEffect(() => {
-    const saveToStorage = () => {
-      try {
-        // Save current time
-        console.log("Saving world time to localStorage:", state.currentDate);
-        localStorage.setItem(WORLD_TIME_KEY, state.currentDate);
-        
-        // Save weather history and timestamps
-        const dataToSave = {
-          weatherHistory: state.weatherHistory,
-          lastUpdateTimes: state.lastUpdateTimes
-        };
-        console.log("Saving weather history for regions:", Object.keys(state.weatherHistory));
-        localStorage.setItem(WORLD_KEY, JSON.stringify(dataToSave));
-        
-        // Verify the save worked
-        const savedData = localStorage.getItem(WORLD_KEY);
-        console.log("Verification - saved data size:", savedData ? savedData.length : 0, "bytes");
-      } catch (error) {
-        console.error('Error saving world data to localStorage:', error);
-      }
+    // Save world time
+    storageUtils.saveData(WORLD_TIME_KEY, state.currentDate);
+    
+    // Save world data
+    const worldData = {
+      weatherHistory: state.weatherHistory,
+      lastUpdateTimes: state.lastUpdateTimes
     };
     
-    // Save the current state
-    saveToStorage();
+    const regionIds = Object.keys(state.weatherHistory);
+    if (regionIds.length > 0) {
+      console.log(`Saving weather data for ${regionIds.length} regions`);
+      storageUtils.saveData(WORLD_KEY, worldData);
+    }
   }, [state.currentDate, state.weatherHistory, state.lastUpdateTimes]);
   
   // Create memoized context value
@@ -205,16 +175,25 @@ export const useWorld = () => {
   
   // Advance time for all regions
   const advanceTime = (hours) => {
-    // First dispatch the time advancement
+    // Get all regions that have weather data
+    const regionsWithWeather = Object.keys(state.weatherHistory);
+    console.log(`Advancing time by ${hours} hours for ${regionsWithWeather.length} regions`);
+    
+    // Advance global time
     dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
     
     // Calculate the new date
     const newDate = new Date(currentDate);
     newDate.setHours(newDate.getHours() + hours);
-    const newDateString = newDate.toISOString();
     
-    // No need to update timestamps here - we'll handle that
-    // in the WeatherDashboard component as needed
+    // Update all regions' timestamps - this ensures we know they need updates
+    // when they become active
+    regionsWithWeather.forEach(regionId => {
+      dispatch({
+        type: ACTIONS.UPDATE_REGION_TIMESTAMP,
+        payload: { regionId, timestamp: newDate.toISOString() }
+      });
+    });
   };
   
   // Get weather for a specific region

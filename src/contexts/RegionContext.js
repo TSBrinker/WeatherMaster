@@ -1,6 +1,7 @@
 // src/contexts/RegionContext.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { storageUtils } from '../utils/storageUtils';
 
 // Storage keys for localStorage
 const STORAGE_KEY = 'gm-weather-companion-regions';
@@ -90,89 +91,53 @@ const regionReducer = (state, action) => {
 export const RegionProvider = ({ children }) => {
   const [state, dispatch] = useReducer(regionReducer, initialState);
 
-  // Load regions from localStorage on init - ONCE ONLY
+  // Load regions on initial render
   useEffect(() => {
-    const loadRegionsData = () => {
+    const loadRegions = () => {
       dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       
-      try {
-        console.log("Loading region data from localStorage");
-        // Load regions
-        const storedData = localStorage.getItem(STORAGE_KEY);
-        if (storedData) {
-          try {
-            console.log("Found stored region data");
-            const parsedData = JSON.parse(storedData);
-            console.log("Loaded regions:", parsedData.length);
-            dispatch({ type: ACTIONS.SET_REGIONS, payload: parsedData });
-          } catch (parseError) {
-            console.error("Error parsing stored region data:", parseError);
-          }
-        } else {
-          console.log("No stored region data found");
-        }
-      } catch (error) {
-        console.error('Error loading data from localStorage:', error);
-        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
-      }
-    };
-    
-    loadRegionsData();
-  }, []); // Empty dependency array means this runs once on mount
-
-  // Load active region ID - SEPARATE EFFECT to avoid race conditions
-  useEffect(() => {
-    const loadActiveRegion = () => {
-      try {
-        const activeId = localStorage.getItem(ACTIVE_REGION_KEY);
-        if (activeId) {
-          console.log("Found active region ID:", activeId);
-          dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
-        } else {
-          console.log("No active region ID found");
-        }
-      } catch (error) {
-        console.error('Error loading active region ID:', error);
-      }
-    };
-    
-    loadActiveRegion();
-  }, []); // Empty dependency array means this runs once on mount
-
-  // Save regions to localStorage whenever they change
-  useEffect(() => {
-    // Don't try to save empty regions array during initialization
-    if (state.regions.length === 0 && state.isLoading) {
-      return;
-    }
-    
-    try {
-      console.log("Saving regions to localStorage:", state.regions.length);
-      // Convert to string first to help with debugging
-      const jsonData = JSON.stringify(state.regions);
-      console.log("Saving regions data size:", jsonData.length, "bytes");
-      localStorage.setItem(STORAGE_KEY, jsonData);
+      // Debug - list all localStorage keys
+      storageUtils.listKeys();
       
-      // Verify save worked
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      console.log("Verify saved regions data:", savedData ? savedData.substring(0, 50) + "..." : "none");
-    } catch (error) {
-      console.error('Error saving regions to localStorage:', error);
-    }
-  }, [state.regions, state.isLoading]);
-  
-  // Save active region ID whenever it changes
-  useEffect(() => {
-    try {
-      if (state.activeRegionId) {
-        console.log("Saving active region ID:", state.activeRegionId);
-        localStorage.setItem(ACTIVE_REGION_KEY, state.activeRegionId);
-      } else {
-        console.log("Clearing active region ID");
-        localStorage.removeItem(ACTIVE_REGION_KEY);
+      // Load regions
+      const regions = storageUtils.loadData(STORAGE_KEY, []);
+      if (regions && regions.length > 0) {
+        console.log(`Loaded ${regions.length} regions from storage`);
+        dispatch({ type: ACTIONS.SET_REGIONS, payload: regions });
       }
-    } catch (error) {
-      console.error('Error saving active region to localStorage:', error);
+      
+      // Load active region ID
+      const activeId = storageUtils.loadData(ACTIVE_REGION_KEY, null);
+      if (activeId) {
+        console.log(`Loaded active region ID: ${activeId}`);
+        dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
+      }
+      
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
+    };
+    
+    loadRegions();
+  }, []);
+
+  // Save regions when they change
+  useEffect(() => {
+    // Don't save if we're still loading or if regions array is empty from initialization
+    if (state.isLoading) return;
+    
+    // Even if empty, save it (could be after deletion)
+    console.log(`Saving ${state.regions.length} regions to storage`);
+    storageUtils.saveData(STORAGE_KEY, state.regions);
+  }, [state.regions, state.isLoading]);
+
+  // Save active region ID when it changes
+  useEffect(() => {
+    // If there's an active region ID, save it
+    if (state.activeRegionId) {
+      console.log(`Saving active region ID: ${state.activeRegionId}`);
+      storageUtils.saveData(ACTIVE_REGION_KEY, state.activeRegionId);
+    } else {
+      // If there's no active region ID, remove it from storage
+      storageUtils.removeData(ACTIVE_REGION_KEY);
     }
   }, [state.activeRegionId]);
 
