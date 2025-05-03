@@ -1,69 +1,49 @@
 // src/App.jsx
-import React, { useState } from 'react';
-import { RegionProvider, useRegion } from './contexts/RegionContext';
-import WeatherTestUI from './components/WeatherTestUI';
-import RegionList from './components/region/RegionList';
-import RegionCreationForm from './components/forms/RegionCreationForm';
-import './index.css';
+import React, { useState } from "react";
+import { RegionProvider, useRegion } from "./contexts/RegionContext";
+import WeatherTestUI from "./components/WeatherTestUI";
+import RegionsDropdown from "./components/region/RegionsDropdown";
+import RegionFormModal from "./components/forms/RegionFormModal";
+import "./index.css";
 
 // Main app content inside providers
 const AppContent = () => {
-  const { regions, activeRegion } = useRegion();
-  const [view, setView] = useState(regions.length === 0 ? 'create-region' : 'weather');
-
-  const renderContent = () => {
-    if (view === 'create-region') {
-      return (
-        <RegionCreationForm
-          onComplete={() => setView('weather')}
-        />
-      );
-    }
-
-    if (view === 'region-list') {
-      return <RegionList />;
-    }
-
-    if (view === 'weather') {
-      return <WeatherTestUI region={activeRegion} />;
-    }
-
-    return null;
-  };
+  const { hasRegions, activeRegion } = useRegion();
+  const [showRegionForm, setShowRegionForm] = useState(!hasRegions);
 
   return (
     <div>
       <header className="header mb-4">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold">GM Weather Companion</h1>
-          
-          <nav className="nav">
-            <button
-              className={`nav-item ${view === 'weather' ? 'active' : ''}`}
-              onClick={() => setView('weather')}
-              disabled={!activeRegion}
-            >
-              Weather
-            </button>
-            <button
-              className={`nav-item ${view === 'region-list' ? 'active' : ''}`}
-              onClick={() => setView('region-list')}
-            >
-              Regions
-            </button>
-            <button
-              className={`nav-item ${view === 'create-region' ? 'active' : ''}`}
-              onClick={() => setView('create-region')}
-            >
-              + New Region
-            </button>
-          </nav>
+
+          <RegionsDropdown onShowCreateForm={() => setShowRegionForm(true)} />
         </div>
       </header>
 
       <main className="container mx-auto mb-6">
-        {renderContent()}
+        {activeRegion ? (
+          <WeatherTestUI region={activeRegion} />
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-icon">🗺️</div>
+            <h2 className="empty-state-title">No Region Selected</h2>
+            <p className="empty-state-desc">
+              Create a region to get started with weather generation.
+            </p>
+            <button
+              className="btn btn-primary mt-4"
+              onClick={() => setShowRegionForm(true)}
+            >
+              Create Your First Region
+            </button>
+          </div>
+        )}
       </main>
+
+      {showRegionForm && (
+        <RegionFormModal onClose={() => setShowRegionForm(false)} />
+      )}
 
       <footer className="footer">
         <div className="container mx-auto">

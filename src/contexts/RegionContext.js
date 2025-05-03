@@ -1,9 +1,11 @@
-// src/contexts/RegionContext.js
+// src/contexts/RegionContext.js - Updated version
+
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-// Storage key for local storage
+// Storage keys for localStorage
 const STORAGE_KEY = 'gm-weather-companion-regions';
+const ACTIVE_REGION_KEY = 'gm-weather-companion-active-region';
 
 // Initial state
 const initialState = {
@@ -40,7 +42,7 @@ const regionReducer = (state, action) => {
       return {
         ...state,
         regions: [...state.regions, action.payload],
-        activeRegionId: action.payload.id,
+        activeRegionId: action.payload.id, // Set as active when created
         isLoading: false
       };
     case ACTIONS.UPDATE_REGION:
@@ -51,13 +53,19 @@ const regionReducer = (state, action) => {
         ),
         isLoading: false
       };
-    case ACTIONS.DELETE_REGION:
+    case ACTIONS.DELETE_REGION: {
+      const updatedRegions = state.regions.filter(region => region.id !== action.payload);
+      const newActiveId = state.activeRegionId === action.payload 
+        ? (updatedRegions.length > 0 ? updatedRegions[0].id : null) 
+        : state.activeRegionId;
+      
       return {
         ...state,
-        regions: state.regions.filter(region => region.id !== action.payload),
-        activeRegionId: state.activeRegionId === action.payload ? null : state.activeRegionId,
+        regions: updatedRegions,
+        activeRegionId: newActiveId,
         isLoading: false
       };
+    }
     case ACTIONS.SET_ACTIVE_REGION:
       return {
         ...state,
@@ -88,14 +96,21 @@ export const RegionProvider = ({ children }) => {
     dispatch({ type: ACTIONS.SET_LOADING, payload: true });
     
     try {
+      // Load regions
       const storedData = localStorage.getItem(STORAGE_KEY);
       if (storedData) {
         const parsedData = JSON.parse(storedData);
         dispatch({ type: ACTIONS.SET_REGIONS, payload: parsedData });
       }
+      
+      // Load active region ID
+      const activeId = localStorage.getItem(ACTIVE_REGION_KEY);
+      if (activeId) {
+        dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
+      }
     } catch (error) {
-      console.error('Error loading regions from localStorage:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load regions' });
+      console.error('Error loading data from localStorage:', error);
+      dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
     }
   }, []);
 
@@ -107,6 +122,19 @@ export const RegionProvider = ({ children }) => {
       console.error('Error saving regions to localStorage:', error);
     }
   }, [state.regions]);
+  
+  // Save active region ID whenever it changes
+  useEffect(() => {
+    try {
+      if (state.activeRegionId) {
+        localStorage.setItem(ACTIVE_REGION_KEY, state.activeRegionId);
+      } else {
+        localStorage.removeItem(ACTIVE_REGION_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving active region to localStorage:', error);
+    }
+  }, [state.activeRegionId]);
 
   // Memoize value to avoid unnecessary re-renders
   const value = React.useMemo(() => ({
@@ -134,6 +162,9 @@ export const useRegion = () => {
   const activeRegion = React.useMemo(() => {
     return state.regions.find(region => region.id === state.activeRegionId) || null;
   }, [state.regions, state.activeRegionId]);
+
+  // Check if any regions exist
+  const hasRegions = state.regions.length > 0;
 
   // Action creators
   const createRegion = (regionData) => {
@@ -168,6 +199,7 @@ export const useRegion = () => {
   return {
     regions: state.regions,
     activeRegion,
+    hasRegions,
     isLoading: state.isLoading,
     error: state.error,
     createRegion,
