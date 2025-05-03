@@ -197,5 +197,8 @@ export const getWeatherIcon = (condition, hour = 12) => {
       "swamp": "tropical-seasonal"
     };
     
-    return biome ? biomeMap[biome] || "temperate-deciduous" : biomeMap;
+    // return biome ? biomeMap[biome] || "temperate-deciduous" : biomeMap;
+
+    console.log(`Mapping biome "${biome}" to climate table key:`, biomeMap[biome] || biome);
+    return biome ? biomeMap[biome] || biome : "temperate-deciduous";
   };

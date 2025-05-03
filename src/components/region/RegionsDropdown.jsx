@@ -1,5 +1,4 @@
 // src/components/region/RegionsDropdown.jsx
-
 import React, { useState, useRef, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 
@@ -36,8 +35,16 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
 
   return (
     <div className="relative inline-block" ref={dropdownRef}>
-      <button className="btn btn-primary" onClick={() => setIsOpen(!isOpen)}>
-        {hasRegions ? "Regions" : "+ New Region"}
+      <button
+        className="p-2 bg-primary text-white rounded hover:bg-primary-dark"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {activeRegion
+          ? activeRegion.name
+          : hasRegions
+          ? "Select Region"
+          : "+ New Region"}
+        <span className="ml-2">▼</span>
       </button>
 
       {isOpen && (

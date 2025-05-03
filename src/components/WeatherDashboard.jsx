@@ -73,10 +73,39 @@ const WeatherDashboard = () => {
   const handleAdvanceTime = (hours) => {
     if (!activeRegion) return;
 
+    setIsLoading(true);
+
     // Advance global time
     advanceTime(hours);
 
-    // Weather will update in the useEffect when currentDate changes
+    // Now we need to explicitly update the weather for this region
+    const actualSeason =
+      season === "auto"
+        ? weatherManager.getSeasonFromDate(currentDate)
+        : season;
+
+    // Use the weatherManager to advance time for this specific region
+    const newForecast = weatherManager.advanceTime(
+      activeRegion.id,
+      hours,
+      activeRegion.climate,
+      season,
+      currentDate
+    );
+
+    setForecast(newForecast);
+
+    // Save to world state
+    updateRegionWeather(activeRegion.id, {
+      season,
+      currentSeason: actualSeason,
+      forecast: newForecast.map((hour) => ({
+        ...hour,
+        date: hour.date.toISOString(),
+      })),
+    });
+
+    setIsLoading(false);
   };
 
   // Regenerate weather

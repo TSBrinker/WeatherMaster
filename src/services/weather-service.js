@@ -120,7 +120,12 @@ class WeatherService {
     
     // Generate first batch of weather conditions
     this.generateWeatherForecast(biome, season, currentDate);
-    
+
+    console.log(`Initializing weather for climate: ${climate}, season: ${season}`);
+    console.log(`Using climate table: ${biomeMap[climate] || climate}`);
+    const table = this.getClimateTable(climate, season);
+    console.log(`Climate table for ${season}:`, table);
+
     return this.getCurrentWeather();
   }
 
@@ -279,14 +284,17 @@ class WeatherService {
   getRandomWeatherCondition(biome, season) {
     const roll = this.useWeightedDistribution ? this.weightedD100() : this.rollD100();
     const table = this.getClimateTable(biome, season);
+    console.log(`Weather roll: ${roll} (using ${this.useWeightedDistribution ? 'weighted' : 'normal'} distribution)`);
     
     for (const entry of table) {
       if (roll >= entry.min && roll <= entry.max) {
+        console.log(`Selected condition: ${entry.condition} (range: ${entry.min}-${entry.max})`);
         return entry.condition;
       }
     }
     
     // Default fallback
+    console.log(`No condition matched roll ${roll}, using default: Clear Skies`);
     return "Clear Skies";
   }
 
@@ -630,54 +638,30 @@ class WeatherService {
     
     return this.getCurrentWeather();
   }
+
+  getClimateTable(biome, season) {
+    // Map UI biome name to climate table key
+    const climateKey = biomeMap[biome] || biome;
+    console.log(`Looking up climate table for "${climateKey}" in season "${season}"`);
+    
+    if (!climateTables[climateKey]) {
+      console.error(`Climate key "${climateKey}" not found in climate tables`);
+      return climateTables["temperate-deciduous"][season]; // Fallback
+    }
+    
+    if (!climateTables[climateKey][season]) {
+      console.error(`Season "${season}" not found in climate "${climateKey}"`);
+      return climateTables[climateKey]["spring"]; // Fallback
+    }
+    
+    return climateTables[climateKey][season];
+  }
   
   // For future implementation: Allow setting custom starting date/time
   // This is a placeholder for the future feature
   setCustomDate(date) {
     // TODO: Implement this functionality when adding support for custom start dates
     return date;
-  }
-
-// Add methods for celestial calculations:
-
-getCelestialData(date, latitude) {
-    // Calculate sunrise/sunset based on date and latitude
-    const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    
-    // Adjust daylight hours based on latitude and day of year
-    let daylightHours = 12; // Default at equator
-    
-    // Adjust for latitude (simplified calculation)
-    const latitudeEffect = Math.abs(latitude) / 90 * 6; // Max 6 hour variation at poles
-    
-    // Adjust for season (simplified)
-    const seasonalEffect = Math.sin((dayOfYear / 365) * Math.PI * 2) * latitudeEffect;
-    
-    // Northern/Southern hemisphere difference
-    const isNorthern = latitude >= 0;
-    daylightHours += isNorthern ? seasonalEffect : -seasonalEffect;
-    
-    // Calculate sunrise and sunset
-    const noon = new Date(date);
-    noon.setHours(12, 0, 0, 0);
-    
-    const sunrise = new Date(noon);
-    sunrise.setHours(12 - daylightHours/2);
-    
-    const sunset = new Date(noon);
-    sunset.setHours(12 + daylightHours/2);
-    
-    // Calculate moon phase
-    // ... (implement moon phase calculation)
-    
-    return {
-      sunrise,
-      sunset,
-      daylightHours,
-      moonPhase,
-      moonrise,
-      moonset
-    };
   }
 }
 
