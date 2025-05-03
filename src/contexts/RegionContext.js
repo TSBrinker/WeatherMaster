@@ -93,30 +93,52 @@ export const RegionProvider = ({ children }) => {
 
   // Load regions from localStorage on init
   useEffect(() => {
-    dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-    
-    try {
-      // Load regions
-      const storedData = localStorage.getItem(STORAGE_KEY);
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        dispatch({ type: ACTIONS.SET_REGIONS, payload: parsedData });
-      }
+    const loadData = () => {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       
-      // Load active region ID
-      const activeId = localStorage.getItem(ACTIVE_REGION_KEY);
-      if (activeId) {
-        dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
+      try {
+        console.log("Loading region data from localStorage");
+        // Load regions
+        const storedData = localStorage.getItem(STORAGE_KEY);
+        if (storedData) {
+          try {
+            console.log("Found stored region data");
+            const parsedData = JSON.parse(storedData);
+            console.log("Loaded regions:", parsedData.length);
+            dispatch({ type: ACTIONS.SET_REGIONS, payload: parsedData });
+          } catch (parseError) {
+            console.error("Error parsing stored region data:", parseError);
+          }
+        } else {
+          console.log("No stored region data found");
+        }
+        
+        // Load active region ID
+        const activeId = localStorage.getItem(ACTIVE_REGION_KEY);
+        if (activeId) {
+          console.log("Found active region ID:", activeId);
+          dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
+        } else {
+          console.log("No active region ID found");
+        }
+      } catch (error) {
+        console.error('Error loading data from localStorage:', error);
+        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
       }
-    } catch (error) {
-      console.error('Error loading data from localStorage:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load saved data' });
-    }
+    };
+    
+    // Short delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      loadData();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Save regions to localStorage whenever they change
   useEffect(() => {
     try {
+      console.log("Saving regions to localStorage:", state.regions.length);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.regions));
     } catch (error) {
       console.error('Error saving regions to localStorage:', error);
@@ -127,8 +149,10 @@ export const RegionProvider = ({ children }) => {
   useEffect(() => {
     try {
       if (state.activeRegionId) {
+        console.log("Saving active region ID:", state.activeRegionId);
         localStorage.setItem(ACTIVE_REGION_KEY, state.activeRegionId);
       } else {
+        console.log("Clearing active region ID");
         localStorage.removeItem(ACTIVE_REGION_KEY);
       }
     } catch (error) {

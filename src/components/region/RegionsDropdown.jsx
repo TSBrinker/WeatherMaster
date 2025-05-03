@@ -36,7 +36,7 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
   return (
     <div className="relative inline-block" ref={dropdownRef}>
       <button
-        className="p-2 bg-primary text-white rounded hover:bg-primary-dark"
+        className="region-selector-button"
         onClick={() => setIsOpen(!isOpen)}
       >
         {activeRegion

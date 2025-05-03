@@ -1,5 +1,4 @@
 // src/contexts/WorldContext.js
-
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 
 // Storage keys
@@ -10,6 +9,7 @@ const WORLD_TIME_KEY = 'gm-weather-companion-world-time';
 const initialState = {
   currentDate: new Date().toISOString(),
   weatherHistory: {}, // Will store weather history by regionId
+  lastUpdateTimes: {}, // Track when each region was last updated
   isLoading: false,
   error: null
 };
@@ -22,6 +22,7 @@ export const ACTIONS = {
   SET_CURRENT_DATE: 'set_current_date',
   ADVANCE_TIME: 'advance_time',
   UPDATE_REGION_WEATHER: 'update_region_weather',
+  UPDATE_REGION_TIMESTAMP: 'update_region_timestamp',
   SET_LOADING: 'set_loading',
   SET_ERROR: 'set_error'
 };
@@ -58,6 +59,18 @@ const worldReducer = (state, action) => {
       };
     }
     
+    case ACTIONS.UPDATE_REGION_TIMESTAMP: {
+      const { regionId, timestamp } = action.payload;
+      
+      return {
+        ...state,
+        lastUpdateTimes: {
+          ...state.lastUpdateTimes,
+          [regionId]: timestamp
+        }
+      };
+    }
+    
     case ACTIONS.SET_LOADING:
       return {
         ...state,
@@ -82,46 +95,100 @@ export const WorldProvider = ({ children }) => {
   
   // Load world state from localStorage on init
   useEffect(() => {
-    try {
-      // Load world time
-      const savedWorldTime = localStorage.getItem(WORLD_TIME_KEY);
-      if (savedWorldTime) {
-        dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: savedWorldTime });
-      }
-      
-      // Load weather history
-      const savedWorldData = localStorage.getItem(WORLD_KEY);
-      if (savedWorldData) {
-        const parsedData = JSON.parse(savedWorldData);
-        // Only restore weather history, not the full state
-        if (parsedData.weatherHistory) {
-          Object.entries(parsedData.weatherHistory).forEach(([regionId, weatherData]) => {
-            dispatch({ 
-              type: ACTIONS.UPDATE_REGION_WEATHER, 
-              payload: { regionId, weatherData } 
-            });
-          });
+    const loadFromStorage = () => {
+      try {
+        console.log("Loading world data from localStorage...");
+        
+        // Load world time
+        const savedWorldTime = localStorage.getItem(WORLD_TIME_KEY);
+        if (savedWorldTime) {
+          console.log("Found saved world time:", savedWorldTime);
+          dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: savedWorldTime });
+        } else {
+          console.log("No saved world time found, using default");
         }
+        
+        // Load weather history and timestamps
+        const savedWorldData = localStorage.getItem(WORLD_KEY);
+        if (savedWorldData) {
+          console.log("Found saved world data");
+          try {
+            const parsedData = JSON.parse(savedWorldData);
+            console.log("Parsed world data:", parsedData);
+            
+            // Restore weather history
+            if (parsedData.weatherHistory) {
+              const regions = Object.keys(parsedData.weatherHistory);
+              console.log("Found weather history for regions:", regions);
+              
+              Object.entries(parsedData.weatherHistory).forEach(([regionId, weatherData]) => {
+                console.log(`Restoring weather for region ${regionId}`);
+                dispatch({ 
+                  type: ACTIONS.UPDATE_REGION_WEATHER, 
+                  payload: { regionId, weatherData } 
+                });
+              });
+            }
+            
+            // Restore timestamps
+            if (parsedData.lastUpdateTimes) {
+              Object.entries(parsedData.lastUpdateTimes).forEach(([regionId, timestamp]) => {
+                dispatch({ 
+                  type: ACTIONS.UPDATE_REGION_TIMESTAMP, 
+                  payload: { regionId, timestamp } 
+                });
+              });
+            }
+          } catch (parseError) {
+            console.error("Error parsing saved world data:", parseError);
+          }
+        } else {
+          console.log("No saved world data found");
+        }
+      } catch (error) {
+        console.error('Error loading world data from localStorage:', error);
       }
-    } catch (error) {
-      console.error('Error loading world data from localStorage:', error);
-    }
+    };
+    
+    // Call the function after a short delay to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      loadFromStorage();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
   
   // Save world state to localStorage
   useEffect(() => {
-    try {
-      // Save current time
-      localStorage.setItem(WORLD_TIME_KEY, state.currentDate);
-      
-      // Save weather history
-      localStorage.setItem(WORLD_KEY, JSON.stringify({
-        weatherHistory: state.weatherHistory
-      }));
-    } catch (error) {
-      console.error('Error saving world data to localStorage:', error);
-    }
-  }, [state.currentDate, state.weatherHistory]);
+    const saveToStorage = () => {
+      try {
+        // Save current time
+        console.log("Saving world time to localStorage:", state.currentDate);
+        localStorage.setItem(WORLD_TIME_KEY, state.currentDate);
+        
+        // Save weather history and timestamps
+        const dataToSave = {
+          weatherHistory: state.weatherHistory,
+          lastUpdateTimes: state.lastUpdateTimes
+        };
+        console.log("Saving weather history:", Object.keys(state.weatherHistory));
+        localStorage.setItem(WORLD_KEY, JSON.stringify(dataToSave));
+        
+        // Verify the save worked
+        const savedData = localStorage.getItem(WORLD_KEY);
+        console.log("Verification - saved data size:", savedData ? savedData.length : 0);
+      } catch (error) {
+        console.error('Error saving world data to localStorage:', error);
+      }
+    };
+    
+    // Debounce save operations to prevent too many writes
+    const timer = setTimeout(() => {
+      saveToStorage();
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [state.currentDate, state.weatherHistory, state.lastUpdateTimes]);
   
   // Create memoized context value
   const value = React.useMemo(() => ({ state, dispatch }), [state]);
@@ -163,13 +230,31 @@ export const useWorld = () => {
     });
   };
   
+  // Get last update time for a region
+  const getRegionLastUpdateTime = (regionId) => {
+    return state.lastUpdateTimes[regionId] || null;
+  };
+
+  // Update last update time for a region
+  const updateRegionTimestamp = (regionId, timestamp = new Date().toISOString()) => {
+    dispatch({
+      type: ACTIONS.UPDATE_REGION_TIMESTAMP,
+      payload: { regionId, timestamp }
+    });
+  };
+  
   return {
     currentDate,
     weatherHistory: state.weatherHistory,
+    lastUpdateTimes: state.lastUpdateTimes,
     isLoading: state.isLoading,
     error: state.error,
     advanceTime,
     getRegionWeather,
-    updateRegionWeather
+    updateRegionWeather,
+    getRegionLastUpdateTime,
+    updateRegionTimestamp
   };
 };
+
+export default WorldProvider;
