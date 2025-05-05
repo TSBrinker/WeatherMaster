@@ -61,35 +61,35 @@ const WeatherDashboard = () => {
     const savedWeather = getRegionWeather(regionId);
     const lastUpdateTime = getRegionLastUpdateTime(regionId);
 
-    // Check if this region needs time advancement
+    // Check if this region needs time synchronization
     if (savedWeather && lastUpdateTime) {
       const lastUpdateDate = new Date(lastUpdateTime);
       const currentWorldDate = new Date(currentDate);
 
-      // If there's a difference in time, we need to advance this region's weather
-      if (currentWorldDate > lastUpdateDate) {
+      // Calculate time difference in milliseconds
+      const timeDiffMs = currentWorldDate.getTime() - lastUpdateDate.getTime();
+
+      // If there's a time difference greater than 1 minute
+      if (Math.abs(timeDiffMs) > 60000) {
         console.log(`Time sync needed for region ${regionId}`);
-        console.log(
-          `Last update: ${lastUpdateDate}, Current world time: ${currentWorldDate}`
-        );
+        console.log(`Last update: ${lastUpdateDate.toISOString()}`);
+        console.log(`Current world time: ${currentWorldDate.toISOString()}`);
+        console.log(`Time difference: ${timeDiffMs / (1000 * 60 * 60)} hours`);
 
-        // Calculate hours to advance
-        const hoursDiff = Math.floor(
-          (currentWorldDate - lastUpdateDate) / (1000 * 60 * 60)
-        );
+        // Calculate hours to advance (can be negative if going backward in time)
+        const hoursDiff = Math.round(timeDiffMs / (1000 * 60 * 60));
 
-        if (hoursDiff > 0) {
+        if (hoursDiff !== 0) {
           console.log(
-            `Advancing region time by ${hoursDiff} hours to catch up with world time`
+            `Syncing region time by ${hoursDiff} hours to match world time`
           );
 
-          // For very large time jumps (more than 7 days), reinitialize weather instead
-          if (hoursDiff > 168) {
-            // 24 * 7 = 168 hours in a week
+          // For very large time jumps (more than 3 days), reinitialize weather
+          if (Math.abs(hoursDiff) > 72) {
             console.log(
-              `Time gap exceeds 7 days (${hoursDiff} hours). Reinitializing weather.`
+              `Time gap exceeds 3 days (${hoursDiff} hours). Reinitializing weather.`
             );
-            // Logic to reinitialize weather instead of advancing
+
             const actualSeason =
               season === "auto"
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
@@ -122,14 +122,30 @@ const WeatherDashboard = () => {
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
                 : season;
 
+            // Use absolute value for advancing time - weatherManager needs positive hours
+            const absHoursDiff = Math.abs(hoursDiff);
+
             // Advance weather for this region
-            const newForecast = weatherManager.advanceTime(
-              regionId,
-              hoursDiff,
-              activeRegion.climate,
-              season === "auto" ? actualSeason : season,
-              currentWorldDate
-            );
+            let newForecast;
+
+            if (hoursDiff > 0) {
+              // Advancing forward in time
+              newForecast = weatherManager.advanceTime(
+                regionId,
+                absHoursDiff,
+                activeRegion.climate,
+                season === "auto" ? actualSeason : season,
+                new Date(lastUpdateDate.getTime()) // Start from last update time
+              );
+            } else {
+              // Going backward in time or any other case - reinitialize
+              newForecast = weatherManager.initializeWeather(
+                regionId,
+                activeRegion.climate,
+                season === "auto" ? actualSeason : season,
+                currentWorldDate
+              );
+            }
 
             setForecast(newForecast);
             setCurrentSeason(actualSeason);
@@ -145,7 +161,7 @@ const WeatherDashboard = () => {
             });
           }
 
-          // Update timestamp
+          // Update timestamp to current world time
           updateRegionTimestamp(regionId, currentWorldDate.toISOString());
 
           setIsLoading(false);
@@ -418,6 +434,7 @@ const WeatherDashboard = () => {
         </div>
       </div>
 
+      {/* Forecast display */}
       <div className="mb-4">
         {forecast.length > 0 && <ForecastDisplay forecast={forecast} />}
       </div>

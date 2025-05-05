@@ -175,25 +175,25 @@ export const useWorld = () => {
   
   // Advance time for all regions
   const advanceTime = (hours) => {
-    // Get all regions that have weather data
-    const regionsWithWeather = Object.keys(state.weatherHistory);
-    console.log(`Advancing time by ${hours} hours for ${regionsWithWeather.length} regions`);
-    
-    // Advance global time
+    console.log(`Advancing world time by ${hours} hours`);
+
+    // First dispatch the time advancement action
     dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
     
     // Calculate the new date
     const newDate = new Date(currentDate);
     newDate.setHours(newDate.getHours() + hours);
+    const newDateString = newDate.toISOString();
     
-    // Update all regions' timestamps - this ensures we know they need updates
-    // when they become active
-    regionsWithWeather.forEach(regionId => {
-      dispatch({
-        type: ACTIONS.UPDATE_REGION_TIMESTAMP,
-        payload: { regionId, timestamp: newDate.toISOString() }
-      });
-    });
+    // IMPORTANT: This is needed to mark all regions for updating
+    // Get all regions that have weather data
+    const regionsWithWeather = Object.keys(state.weatherHistory);
+    console.log(`Marking ${regionsWithWeather.length} regions for time sync`);
+    
+    // Instead of updating the lastUpdateTimes here, we'll just ensure each
+    // region knows it needs time sync by NOT updating their timestamps.
+    // This way, when a region is viewed, it will see the time difference
+    // and synchronize automatically.
   };
   
   // Get weather for a specific region

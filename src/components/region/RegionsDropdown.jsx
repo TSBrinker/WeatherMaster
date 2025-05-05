@@ -1,4 +1,4 @@
-// src/components/region/RegionsDropdown.jsx
+// src/components/region/RegionsDropdown.jsx - Fixed dropdown positioning
 import React, { useState, useRef, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 
@@ -34,7 +34,7 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
   };
 
   return (
-    <div className="relative inline-block" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
         className="region-selector-button"
         onClick={() => setIsOpen(!isOpen)}
@@ -48,7 +48,7 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-surface rounded shadow-lg z-10">
+        <div className="absolute right-0 mt-2 w-64 bg-surface rounded shadow-lg z-50">
           {hasRegions ? (
             <>
               <div className="p-2 text-sm text-gray-400 border-b border-border">

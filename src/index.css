@@ -555,3 +555,61 @@ textarea::placeholder {
 .region-selector-button:hover {
   background-color: var(--color-primary-dark);
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background-color: var(--color-surface);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  max-width: 90%;
+  width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Dropdown styles */
+.region-selector-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.region-selector-button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.relative {
+  position: relative;
+}
+
+/* Make sure dropdowns appear above other content */
+.z-50 {
+  z-index: 50;
+}
+
+/* Ensure header doesn't expand when dropdown opens */
+header {
+  overflow: visible;
+}
+
+/* Improve modal styling */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7); /* Darker background */
+}
