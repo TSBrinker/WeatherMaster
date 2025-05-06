@@ -6,6 +6,7 @@ import weatherManager from "../services/weatherManager";
 import WeatherDisplay from "./weather/WeatherDisplay";
 import TimeControls from "./weather/TimeControls";
 import ForecastDisplay from "./weather/ForecastDisplay";
+import { useWorldSettings } from "../contexts/WorldSettings";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -21,6 +22,8 @@ const WeatherDashboard = () => {
   const [season, setSeason] = useState("auto");
   const [currentSeason, setCurrentSeason] = useState("");
   const [forecast, setForecast] = useState([]);
+  const { state: worldSettings } = useWorldSettings();
+
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
@@ -375,6 +378,7 @@ const WeatherDashboard = () => {
         </div>
         <div className="text-right">
           <div className="font-bold">
+            {worldSettings.gameYear && <span>{worldSettings.gameYear} </span>}
             {currentDate.toLocaleDateString("en-US", {
               weekday: "long",
               year: "numeric",
@@ -385,6 +389,7 @@ const WeatherDashboard = () => {
           <div>
             {currentDate.toLocaleTimeString("en-US", {
               hour: "numeric",
+              minute: "numeric",
               hour12: true,
             })}
             {season === "auto" && ` • ${currentSeason}`}
