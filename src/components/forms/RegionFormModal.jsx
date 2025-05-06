@@ -1,4 +1,4 @@
-// src/components/forms/RegionFormModal.jsx - Updated modal with solid background
+// src/components/forms/RegionFormModal.jsx - Fixed with solid background
 import React, { useState } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 
@@ -37,11 +37,8 @@ const RegionFormModal = ({ onClose }) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 modal-overlay"
-      onClick={handleModalClick}
-    >
-      <div className="bg-surface rounded-lg shadow-lg w-full max-w-md m-4 max-h-90vh overflow-y-auto">
+    <div className="modal-overlay" onClick={handleModalClick}>
+      <div className="modal-content">
         <div className="flex justify-between items-center p-4 border-b border-border">
           <h2 className="text-xl font-semibold">Create New Region</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">

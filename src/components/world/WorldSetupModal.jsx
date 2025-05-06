@@ -1,4 +1,4 @@
-// src/components/world/WorldSetupModal.jsx
+// src/components/world/WorldSetupModal.jsx - Updated to force hours only
 import React, { useState } from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
 import { useWorld } from "../../contexts/WorldContext";
@@ -14,10 +14,7 @@ const WorldSetupModal = ({ onClose }) => {
     startDate: new Date(state.gameTime || currentDate)
       .toISOString()
       .split("T")[0],
-    startTime: new Date(state.gameTime || currentDate)
-      .toISOString()
-      .split("T")[1]
-      .substring(0, 5),
+    hourOfDay: new Date(state.gameTime || currentDate).getHours(),
     gameYear: state.gameYear || 1492,
   });
 
@@ -32,13 +29,15 @@ const WorldSetupModal = ({ onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Combine date and time
-    const dateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+    // Create new date with hour only (no minutes)
+    const dateTime = new Date(`${formData.startDate}T00:00:00`);
+    // Set hours only - force minutes to 0
+    dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
 
     // Update context
     setWorldName(formData.worldName);
     setGameTime(dateTime.toISOString());
-    setGameYear(formData.gameYear);
+    setGameYear(parseInt(formData.gameYear, 10));
     setIsConfigured(true);
 
     // Close modal
@@ -52,19 +51,31 @@ const WorldSetupModal = ({ onClose }) => {
     }
   };
 
+  // Generate hours for the select dropdown (1-12 AM/PM format)
+  const hoursOptions = [];
+  for (let i = 0; i < 24; i++) {
+    const hour12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
+    const ampm = i < 12 ? "AM" : "PM";
+    hoursOptions.push(
+      <option key={i} value={i}>
+        {hour12} {ampm}
+      </option>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={handleModalClick}>
-      <div className="bg-surface rounded-lg shadow-lg max-w-md w-full p-4">
-        <div className="flex justify-between items-center mb-4 pb-2 border-b border-border">
-          <h2 className="text-xl font-bold">World Settings</h2>
+      <div className="modal-content">
+        <div className="flex justify-between items-center p-4 border-b border-border">
+          <h2 className="text-xl font-semibold">World Settings</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="p-4">
           <div className="mb-4">
-            <label htmlFor="worldName" className="block mb-1">
+            <label htmlFor="worldName" className="block mb-2">
               World Name
             </label>
             <input
@@ -79,7 +90,7 @@ const WorldSetupModal = ({ onClose }) => {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="gameYear" className="block mb-1">
+            <label htmlFor="gameYear" className="block mb-2">
               Game Year
             </label>
             <input
@@ -99,7 +110,7 @@ const WorldSetupModal = ({ onClose }) => {
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="startDate" className="block mb-1">
+              <label htmlFor="startDate" className="block mb-2">
                 Start Date
               </label>
               <input
@@ -113,23 +124,24 @@ const WorldSetupModal = ({ onClose }) => {
               />
             </div>
             <div>
-              <label htmlFor="startTime" className="block mb-1">
-                Start Time
+              <label htmlFor="hourOfDay" className="block mb-2">
+                Hour of Day
               </label>
-              <input
-                type="time"
-                id="startTime"
-                name="startTime"
-                value={formData.startTime}
+              <select
+                id="hourOfDay"
+                name="hourOfDay"
+                value={formData.hourOfDay}
                 onChange={handleChange}
                 className="w-full p-2 rounded bg-surface-light text-white border border-border"
                 required
-              />
+              >
+                {hoursOptions}
+              </select>
             </div>
           </div>
 
-          <div className="flex justify-end mt-6 pt-2 border-t border-border">
-            <button type="button" onClick={onClose} className="btn mr-2">
+          <div className="flex justify-end gap-3 pt-3 border-t border-border mt-6">
+            <button type="button" onClick={onClose} className="btn">
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">

@@ -1,4 +1,4 @@
-// src/components/region/RegionsDropdown.jsx - Fixed dropdown positioning
+// src/components/region/RegionsDropdown.jsx - Complete fixed version
 import React, { useState, useRef, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 
@@ -34,32 +34,31 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="dropdown-wrapper" ref={dropdownRef}>
       <button
         className="region-selector-button"
         onClick={() => setIsOpen(!isOpen)}
+        type="button"
       >
         {activeRegion
           ? activeRegion.name
           : hasRegions
           ? "Select Region"
           : "+ New Region"}
-        <span className="ml-2">▼</span>
+        <span className="ml-2">{isOpen ? "▲" : "▼"}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-surface rounded shadow-lg z-50">
+        <div className="dropdown-menu">
           {hasRegions ? (
             <>
-              <div className="p-2 text-sm text-gray-400 border-b border-border">
-                Select a region
-              </div>
-              <div className="max-h-60 overflow-y-auto">
+              <div className="dropdown-header">Select a region</div>
+              <div className="dropdown-items">
                 {regions.map((region) => (
                   <div
                     key={region.id}
-                    className={`p-3 cursor-pointer hover:bg-surface-light ${
-                      activeRegion?.id === region.id ? "bg-primary" : ""
+                    className={`dropdown-item ${
+                      activeRegion?.id === region.id ? "active" : ""
                     }`}
                     onClick={() => handleRegionSelect(region.id)}
                   >
@@ -70,16 +69,13 @@ const RegionsDropdown = ({ onShowCreateForm }) => {
                   </div>
                 ))}
               </div>
-              <div
-                className="p-3 border-t border-border cursor-pointer hover:bg-surface-light text-center"
-                onClick={handleCreateNew}
-              >
+              <div className="dropdown-footer" onClick={handleCreateNew}>
                 + New Region
               </div>
             </>
           ) : (
             <div
-              className="p-3 cursor-pointer hover:bg-surface-light text-center"
+              className="dropdown-item text-center"
               onClick={handleCreateNew}
             >
               + Create Your First Region

@@ -1,4 +1,4 @@
-// src/contexts/WorldSettings.js
+// src/contexts/WorldSettings.js - Updated with hour-only time format
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageUtils } from '../utils/storageUtils';
 
@@ -36,7 +36,8 @@ export const ACTIONS = {
   SET_GAME_SEASON: 'set_game_season',
   SET_CALENDAR: 'set_calendar',
   SET_IS_CONFIGURED: 'set_is_configured',
-  RESET_SETTINGS: 'reset_settings'
+  RESET_SETTINGS: 'reset_settings',
+  LOAD_SETTINGS: 'load_settings'
 };
 
 // Reducer function
@@ -78,6 +79,12 @@ const worldSettingsReducer = (state, action) => {
         isConfigured: action.payload
       };
     
+    case ACTIONS.LOAD_SETTINGS:
+      return {
+        ...state,
+        ...action.payload
+      };
+    
     case ACTIONS.RESET_SETTINGS:
       return {
         ...initialState
@@ -94,45 +101,72 @@ export const WorldSettingsProvider = ({ children }) => {
   
   // Load settings from localStorage on init
   useEffect(() => {
-    const savedSettings = storageUtils.loadData(WORLD_SETTINGS_KEY, null);
-    if (savedSettings) {
-      // Convert back gameTime to Date object
-      const settings = {
-        ...savedSettings,
-        gameTime: savedSettings.gameTime || new Date().toISOString()
-      };
+    const loadSettings = () => {
+      const savedSettings = storageUtils.loadData(WORLD_SETTINGS_KEY, null);
       
-      // Handle individual settings
-      if (settings.worldName) {
-        dispatch({ type: ACTIONS.SET_WORLD_NAME, payload: settings.worldName });
+      if (savedSettings) {
+        console.log('Loading world settings from storage:', savedSettings);
+        
+        // Make sure gameTime is a valid ISO string
+        try {
+          if (savedSettings.gameTime) {
+            // Test that it's a valid date
+            new Date(savedSettings.gameTime);
+          } else {
+            savedSettings.gameTime = new Date().toISOString();
+          }
+        } catch (error) {
+          console.error('Invalid gameTime in savedSettings:', error);
+          savedSettings.gameTime = new Date().toISOString();
+        }
+        
+        // Load all settings at once
+        dispatch({ 
+          type: ACTIONS.LOAD_SETTINGS, 
+          payload: savedSettings 
+        });
       }
-      
-      if (settings.gameTime) {
-        dispatch({ type: ACTIONS.SET_GAME_TIME, payload: settings.gameTime });
-      }
-      
-      if (settings.gameYear) {
-        dispatch({ type: ACTIONS.SET_GAME_YEAR, payload: settings.gameYear });
-      }
-      
-      if (settings.gameSeason) {
-        dispatch({ type: ACTIONS.SET_GAME_SEASON, payload: settings.gameSeason });
-      }
-      
-      if (settings.calendar) {
-        dispatch({ type: ACTIONS.SET_CALENDAR, payload: settings.calendar });
-      }
-      
-      if (settings.isConfigured) {
-        dispatch({ type: ACTIONS.SET_IS_CONFIGURED, payload: settings.isConfigured });
-      }
-    }
+    };
+    
+    loadSettings();
   }, []);
   
   // Save settings to localStorage when they change
   useEffect(() => {
-    storageUtils.saveData(WORLD_SETTINGS_KEY, state);
+    // Only save if we've loaded initial state and modified something
+    if (state.worldName !== initialState.worldName || 
+        state.isConfigured !== initialState.isConfigured ||
+        state.gameYear !== initialState.gameYear) {
+      
+      console.log('Saving world settings to storage:', state);
+      storageUtils.saveData(WORLD_SETTINGS_KEY, state);
+    }
   }, [state]);
+  
+  // Format a date using the game calendar and game year (NOT system year)
+  const formatGameDate = (date) => {
+    if (!date) return '';
+    
+    const d = new Date(date);
+    
+    // Format using the current calendar settings but with game year
+    const month = state.calendar.monthNames[d.getMonth()];
+    const day = d.getDate();
+    
+    // Use game year instead of system year - no weekday to match screenshot
+    return `${month} ${day}, ${state.gameYear}`;
+  };
+  
+  // Format time only - HOURS ONLY, NO MINUTES
+  const formatGameTime = (date) => {
+    if (!date) return '';
+    
+    const d = new Date(date);
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      hour12: true
+    });
+  };
   
   // Create value object
   const contextValue = {
@@ -149,7 +183,7 @@ export const WorldSettingsProvider = ({ children }) => {
     },
     
     setGameYear: (year) => {
-      dispatch({ type: ACTIONS.SET_GAME_YEAR, payload: year });
+      dispatch({ type: ACTIONS.SET_GAME_YEAR, payload: parseInt(year, 10) });
     },
     
     setGameSeason: (season) => {
@@ -166,6 +200,15 @@ export const WorldSettingsProvider = ({ children }) => {
     
     resetSettings: () => {
       dispatch({ type: ACTIONS.RESET_SETTINGS });
+    },
+    
+    // Date formatting helpers
+    formatGameDate,
+    formatGameTime,
+    
+    // Combined format
+    formatGameDateTime: (date) => {
+      return `${formatGameDate(date)} ${formatGameTime(date)}`;
     }
   };
   
