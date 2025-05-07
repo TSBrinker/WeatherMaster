@@ -1,17 +1,14 @@
-// src/components/WeatherDashboard.jsx - Fixed imports
+// src/components/WeatherDashboard.jsx - Complete redesigned version with overlay
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
 import { useWorldSettings } from "../contexts/WorldSettings";
 import weatherManager from "../services/weatherManager";
 import skyColorService from "../services/SkyColorService";
-import WeatherDisplay from "./weather/WeatherDisplay";
-import TimeControls from "./weather/TimeControls";
+import sunriseSunsetService from "../services/SunriseSunsetService";
 import ForecastDisplay from "./weather/ForecastDisplay";
-import MoonPhaseDisplay from "./weather/MoonPhaseDisplay";
-import DayNightDisplay from "./weather/DayNightDisplay";
-// Comment out this import until we make sure it exists
 import CelestialArcDisplay from "./weather/CelestialArcDisplay";
+import "../weatherDashboard.css"; // Make sure to create this CSS file
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -27,6 +24,9 @@ const WeatherDashboard = () => {
   const [season, setSeason] = useState("auto");
   const [currentSeason, setCurrentSeason] = useState("");
   const [forecast, setForecast] = useState([]);
+  const [activeSection, setActiveSection] = useState(null); // null, 'forecast', 'region', or 'effects'
+  const [customHours, setCustomHours] = useState(1);
+
   const {
     state: worldSettings,
     formatGameDate,
@@ -47,6 +47,21 @@ const WeatherDashboard = () => {
   // Refs for tracking previous values to prevent effect re-runs
   const prevRegionIdRef = useRef(null);
   const prevDateRef = useRef(null);
+
+  // Get current celestial data for displaying sunrise/sunset info
+  const getCelestialInfo = useCallback(() => {
+    if (!activeRegion) return { 
+      sunrise: null, sunset: null, isDaytime: false, 
+      sunriseTime: "N/A", sunsetTime: "N/A" 
+    };
+
+    return sunriseSunsetService.getFormattedSunriseSunset(
+      activeRegion.latitudeBand || "temperate", 
+      currentDate
+    );
+  }, [activeRegion, currentDate]);
+  
+  const celestialInfo = getCelestialInfo();
 
   // Update theme colors based on time of day and weather
   useEffect(() => {
@@ -386,6 +401,13 @@ const WeatherDashboard = () => {
     updateRegionTimestamp,
   ]);
 
+  // Handle custom time advance
+  const handleCustomTimeAdvance = () => {
+    if (customHours > 0) {
+      handleAdvanceTime(customHours);
+    }
+  };
+
   // Empty state - no region selected
   if (!activeRegion) {
     return (
@@ -422,96 +444,197 @@ const WeatherDashboard = () => {
         : "none",
     transition: "background-color 2s, color 2s, background-image 2s",
   };
+  
+  // Get weather condition icon as emoji
+  const getWeatherIcon = (condition) => {
+    switch (condition) {
+      case 'Clear Skies':
+        return celestialInfo.isDaytime ? '☀️' : '🌙';
+      case 'Light Clouds':
+        return celestialInfo.isDaytime ? '🌤️' : '☁️';
+      case 'Heavy Clouds':
+        return '☁️';
+      case 'Rain':
+        return '🌧️';
+      case 'Heavy Rain':
+        return '⛈️';
+      case 'Snow':
+        return '❄️';
+      case 'Freezing Cold':
+        return '🥶';
+      case 'Cold Winds':
+        return '🌬️';
+      case 'Scorching Heat':
+        return '🔥';
+      case 'Thunderstorm':
+        return '⚡';
+      case 'Blizzard':
+        return '🌨️';
+      case 'High Humidity Haze':
+        return '🌫️';
+      case 'Cold Snap':
+        return '❄️';
+      default:
+        return '❓';
+    }
+  };
 
   return (
     <div className="weather-dashboard">
-      {/* Header with region info */}
-      <div className="flex justify-between items-center mb-4 p-4 bg-surface rounded-lg">
-        <div>
-          <h1 className="text-xl font-bold">Weather for {activeRegion.name}</h1>
-          <div className="text-gray-400 text-sm">
-            Climate: {activeRegion.climate.replace("-", " ")}
+      {/* Top Section: Time and Controls */}
+      <div className="time-control-panel">
+        <div className="custom-time-controls">
+          <div className="custom-time-input">
+            <input
+              type="number"
+              min="1"
+              value={customHours}
+              onChange={(e) => setCustomHours(parseInt(e.target.value) || 1)}
+              className="custom-hours-input"
+              aria-label="Custom hours"
+            />
+            <button 
+              onClick={handleCustomTimeAdvance}
+              className="custom-advance-button"
+            >
+              Advance
+            </button>
           </div>
         </div>
-        <div className="text-right">
-          {/* Use formatted game date from WorldSettings */}
-          <div className="font-bold">{formatGameDate(currentDate)}</div>
-          <div>
-            {formatGameTime(currentDate)}
-            {season === "auto" && ` • ${currentSeason}`}
+        
+        <div className="time-display">
+          <div className="date-display">{formatGameDate(currentDate)}</div>
+          <div className="time-display-large">{formatGameTime(currentDate)}</div>
+          <div className="current-weather-label">
+            {forecast.length > 0 ? forecast[0].condition : "Loading..."}
+            {season === "auto" && currentSeason ? ` • ${currentSeason}` : ""}
           </div>
         </div>
-      </div>
-
-      {/* Weather controls */}
-      <div className="flex items-center gap-4 mb-4 p-4 bg-surface rounded-lg">
-        <div>
-          <label htmlFor="season-select" className="mr-2">
-            Season:
-          </label>
-          <select
-            id="season-select"
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-            className="p-2 rounded bg-surface-light text-white border border-border"
-          >
-            <option value="auto">Auto (from date)</option>
-            <option value="winter">Winter</option>
-            <option value="spring">Spring</option>
-            <option value="summer">Summer</option>
-            <option value="fall">Fall</option>
-          </select>
+        
+        <div className="quick-time-controls">
+          <button onClick={() => handleAdvanceTime(1)}>+1h</button>
+          <button onClick={() => handleAdvanceTime(4)}>+4h</button>
+          <button onClick={() => handleAdvanceTime(24)}>+24h</button>
         </div>
-
-        <button onClick={regenerateWeather} className="btn btn-primary">
-          Regenerate Weather
-        </button>
       </div>
-
-      {/* Current weather with dynamic coloring */}
-      <div className="rounded-lg p-4 mb-4" style={dynamicWeatherStyle}>
-        {forecast.length > 0 && <WeatherDisplay weather={forecast[0]} />}
-      </div>
-
-      {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Left column - Time and day/night info */}
-
-        {/* Add Day/Night display */}
+      
+      {/* Central Section: Celestial Display with Weather Overlay */}
+      <div className="celestial-display-container" style={dynamicWeatherStyle}>
         {forecast.length > 0 && (
-          <DayNightDisplay
-            currentDate={currentDate}
-            latitudeBand={activeRegion.latitudeBand || "temperate"}
-            weatherCondition={forecast[0].condition}
-          />
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <TimeControls
-          currentDate={currentDate}
-          onAdvanceTime={handleAdvanceTime}
-          currentHour={forecast.length > 0 ? forecast[0].date.getHours() : 0}
-        />
-
-        {/* Right column - Moon info */}
-        <div className="space-y-4">
-          {/* Temporarily remove CelestialArcDisplay until we create it */}
-          {forecast.length > 0 && (
+          <>
+            <div className="weather-overlay">
+              <div className="weather-icon-large">
+                {getWeatherIcon(forecast[0].condition)}
+              </div>
+              <div className="weather-details">
+                <div className="temperature-display-large">
+                  {forecast[0].temperature}°F
+                </div>
+                <div className="wind-display-large">
+                  {forecast[0].windSpeed} mph {forecast[0].windDirection}
+                  <span className="wind-intensity">
+                    • {forecast[0].windIntensity}
+                  </span>
+                </div>
+                <div className="next-event-display">
+                  Next {celestialInfo.isDaytime ? "sunset" : "sunrise"}: {celestialInfo.isDaytime ? celestialInfo.sunsetTime : celestialInfo.sunriseTime}
+                </div>
+              </div>
+            </div>
+            
             <CelestialArcDisplay
               currentDate={currentDate}
               latitudeBand={activeRegion.latitudeBand || "temperate"}
             />
-          )}
-
-          <MoonPhaseDisplay currentDate={currentDate} />
+          </>
+        )}
+        
+        {/* Region name at the bottom of the display */}
+        <div className="region-name-overlay">
+          {activeRegion.name}
         </div>
       </div>
-
-      {/* Forecast display */}
-      <div className="mb-4">
-        {forecast.length > 0 && <ForecastDisplay forecast={forecast} />}
+      
+      {/* Bottom Section: Action Buttons */}
+      <div className="action-buttons">
+        <button 
+          className={`forecast-button ${activeSection === 'forecast' ? 'active' : ''}`}
+          onClick={() => setActiveSection(activeSection === 'forecast' ? null : 'forecast')}
+        >
+          Forecast
+        </button>
+        <button 
+          className={`region-details-button ${activeSection === 'region' ? 'active' : ''}`}
+          onClick={() => setActiveSection(activeSection === 'region' ? null : 'region')}
+        >
+          Region Details
+        </button>
+        <button 
+          className={`weather-effects-button ${activeSection === 'effects' ? 'active' : ''}`}
+          onClick={() => setActiveSection(activeSection === 'effects' ? null : 'effects')}
+        >
+          Weather Effects
+        </button>
       </div>
+      
+      {/* Expandable sections - now controlled by activeSection */}
+      {activeSection === 'forecast' && (
+        <div className="forecast-section">
+          <ForecastDisplay forecast={forecast} />
+        </div>
+      )}
+      
+      {activeSection === 'region' && (
+        <div className="region-details-section">
+          <div className="card p-4">
+            <h2 className="text-xl font-semibold mb-4">Region Details</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-gray-400">Climate:</span> {activeRegion.climate.replace("-", " ")}
+              </div>
+              <div>
+                <span className="text-gray-400">Latitude:</span> {activeRegion.latitudeBand || "temperate"}
+              </div>
+              <div>
+                <span className="text-gray-400">Season:</span> {currentSeason}
+              </div>
+              <div>
+                <span className="text-gray-400">Weather Mode:</span> 
+                <select
+                  value={season}
+                  onChange={(e) => setSeason(e.target.value)}
+                  className="ml-2 p-1 bg-surface-light border border-border rounded"
+                >
+                  <option value="auto">Auto (from date)</option>
+                  <option value="winter">Winter</option>
+                  <option value="spring">Spring</option>
+                  <option value="summer">Summer</option>
+                  <option value="fall">Fall</option>
+                </select>
+              </div>
+            </div>
+            <button 
+              onClick={regenerateWeather} 
+              className="btn btn-primary mt-4"
+            >
+              Regenerate Weather
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {activeSection === 'effects' && (
+        <div className="weather-effects-section">
+          <div className="card p-4">
+            <h2 className="text-xl font-semibold mb-4">Weather Effects</h2>
+            <div className="weather-effects-content">
+              {forecast.length > 0 && (
+                <p className="whitespace-pre-line">{forecast[0].effects}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
