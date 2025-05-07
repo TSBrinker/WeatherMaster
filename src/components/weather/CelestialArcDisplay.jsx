@@ -206,7 +206,7 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
 
   return (
     <div className="card p-4 celestial-arc-container">
-      <h2 className="card-title mb-4">Celestial Arc</h2>
+      {/* <h2 className="card-title mb-4">Celestial Arc</h2> */}
 
       <div className="flex justify-center mb-4">
         <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>

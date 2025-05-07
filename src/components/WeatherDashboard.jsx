@@ -13,6 +13,7 @@ import WeatherIcon from "./weather/WeatherIcon";
 import { formatTimeWithMinutes, formatHourOnly } from "../utils/timeUtils";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
 import { Wind } from "lucide-react";
+import '../weatherDashboard.css'
 
 // Import new components
 import RegionHeader from "./weather/RegionHeader";
