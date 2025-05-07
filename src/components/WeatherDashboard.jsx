@@ -1,13 +1,15 @@
-// src/components/WeatherDashboard.jsx - Complete with Moon Phase Display
+// src/components/WeatherDashboard.jsx - Updated with DayNightDisplay and color themes
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
 import { useWorldSettings } from "../contexts/WorldSettings";
 import weatherManager from "../services/weatherManager";
+import skyColorService from "../services/SkyColorService";
 import WeatherDisplay from "./weather/WeatherDisplay";
 import TimeControls from "./weather/TimeControls";
 import ForecastDisplay from "./weather/ForecastDisplay";
 import MoonPhaseDisplay from "./weather/MoonPhaseDisplay";
+import DayNightDisplay from "./weather/DayNightDisplay";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -30,12 +32,37 @@ const WeatherDashboard = () => {
     advanceGameTime,
   } = useWorldSettings();
 
+  // Add state for dynamic theme colors
+  const [themeColors, setThemeColors] = useState({
+    backgroundColor: "#1f2937", // Default background
+    textColor: "#f9fafb", // Default text
+    backgroundImage: "none", // Default no image
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
   // Refs for tracking previous values to prevent effect re-runs
   const prevRegionIdRef = useRef(null);
   const prevDateRef = useRef(null);
+
+  // Update theme colors based on time of day and weather
+  useEffect(() => {
+    if (forecast.length > 0 && activeRegion) {
+      const currentWeather = forecast[0];
+      const skyColors = skyColorService.calculateSkyColor(
+        currentWeather.date,
+        currentWeather.condition,
+        activeRegion.latitudeBand || "temperate"
+      );
+
+      setThemeColors({
+        backgroundColor: skyColors.backgroundColor,
+        textColor: skyColors.textColor,
+        backgroundImage: skyColors.backgroundImage,
+      });
+    }
+  }, [forecast, activeRegion, currentDate]);
 
   // Initialize or load weather data
   useEffect(() => {
@@ -376,6 +403,17 @@ const WeatherDashboard = () => {
     );
   }
 
+  // Create a dynamic style for the weather display based on theme colors
+  const dynamicWeatherStyle = {
+    backgroundColor: themeColors.backgroundColor,
+    color: themeColors.textColor,
+    backgroundImage:
+      themeColors.backgroundImage !== "none"
+        ? themeColors.backgroundImage
+        : "none",
+    transition: "background-color 2s, color 2s, background-image 2s",
+  };
+
   return (
     <div className="weather-dashboard">
       {/* Header with region info */}
@@ -421,24 +459,37 @@ const WeatherDashboard = () => {
         </button>
       </div>
 
-      {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        {/* Current weather - 2 columns */}
-        <div className="lg:col-span-2">
-          {forecast.length > 0 && <WeatherDisplay weather={forecast[0]} />}
-        </div>
+      {/* Current weather with dynamic coloring */}
+      <div className="rounded-lg p-4 mb-4" style={dynamicWeatherStyle}>
+        {forecast.length > 0 && <WeatherDisplay weather={forecast[0]} />}
+      </div>
 
-        {/* Right sidebar - 1 column */}
+      {/* Main content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {/* Left column - Time and day/night info */}
         <div className="space-y-4">
-          {/* Time controls */}
           <TimeControls
             currentDate={currentDate}
             onAdvanceTime={handleAdvanceTime}
             currentHour={forecast.length > 0 ? forecast[0].date.getHours() : 0}
           />
 
-          {/* Moon phase display */}
+          {/* Add Day/Night display */}
+          {forecast.length > 0 && (
+            <DayNightDisplay
+              currentDate={currentDate}
+              latitudeBand={activeRegion.latitudeBand || "temperate"}
+              weatherCondition={forecast[0].condition}
+            />
+          )}
+        </div>
+
+        {/* Right column - Moon info */}
+        <div className="space-y-4">
           <MoonPhaseDisplay currentDate={currentDate} />
+
+          {/* Add extra space for future components */}
+          <div className="h-4"></div>
         </div>
       </div>
 
