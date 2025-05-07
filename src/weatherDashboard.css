@@ -1,4 +1,4 @@
-/* weatherDashboard.css - Complete file */
+/* weatherDashboard.css - Complete updated file */
 
 /* Overall container */
 .weather-dashboard {
@@ -10,10 +10,10 @@
     gap: 0.5rem; /* Reduced gap between elements */
     min-height: 100vh;
     box-sizing: border-box;
-  }
+}
   
-  /* Top Section: Time and Controls */
-  .time-control-panel {
+/* Top Section: Time and Controls */
+.time-control-panel {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -21,10 +21,11 @@
     border-radius: var(--radius-md) var(--radius-md) 0 0; /* Only round the top corners */
     background-color: var(--color-surface);
     margin-bottom: 0; /* Remove bottom margin to connect with celestial section */
-  }
+    border-bottom: none; /* Remove any bottom border if present */
+}
   
-  /* Celestial section - combined with weather display */
-  .celestial-section {
+/* Celestial section - combined with weather display */
+.celestial-section {
     position: relative;
     min-height: 350px;
     border-radius: 0 0 var(--radius-md) var(--radius-md); /* Only round the bottom corners */
@@ -32,72 +33,73 @@
     transition: background-color 2s, color 2s, background-image 2s;
     margin-top: 0; /* Remove top margin to connect with time panel */
     padding-top: 0; /* Remove top padding */
-  }
+    border-top: none; /* Remove any top border if present */
+}
   
-  .celestial-arc-container {
+.celestial-arc-container {
     box-shadow: none;
     background: transparent;
     padding: 0;
     margin: 0;
-  }
+}
   
-  .celestial-arc-container h2 {
+.celestial-arc-container h2 {
     display: none; /* Hide the "Celestial Arc" title */
-  }
+}
 
-  .time-display {
+.time-display {
     text-align: center;
     flex: 2;
-  }
+}
   
-  .date-display {
+.date-display {
     font-size: 1rem;
     color: var(--color-text-secondary);
     margin-bottom: 0.25rem;
-  }
+}
   
-  .time-display-large {
+.time-display-large {
     font-size: 3rem;
     font-weight: 300;
     letter-spacing: 2px;
     margin-bottom: 0.5rem;
-  }
+}
   
-  .current-weather-label {
+.current-weather-label {
     font-size: 1.1rem;
     color: var(--color-text-secondary);
-  }
+}
   
-  .custom-time-controls,
-  .quick-time-controls {
+.custom-time-controls,
+.quick-time-controls {
     display: flex;
     gap: 0.5rem;
     flex: 1;
-  }
+}
   
-  .custom-time-controls {
+.custom-time-controls {
     justify-content: flex-start;
-  }
+}
   
-  .quick-time-controls {
+.quick-time-controls {
     justify-content: flex-end;
-  }
+}
   
-  .custom-time-input {
+.custom-time-input {
     display: flex;
     align-items: center;
-  }
+}
   
-  .custom-hours-input {
+.custom-hours-input {
     width: 60px;
     padding: 0.5rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-surface-light);
     color: var(--color-text);
     border: 1px solid var(--color-border);
-  }
+}
   
-  .custom-advance-button {
+.custom-advance-button {
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-secondary);
@@ -105,9 +107,9 @@
     border: none;
     cursor: pointer;
     margin-left: 0.5rem;
-  }
+}
   
-  .quick-time-controls button {
+.quick-time-controls button {
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-primary);
@@ -115,20 +117,20 @@
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
-  }
+}
   
-  .quick-time-controls button:hover {
+.quick-time-controls button:hover {
     background-color: var(--color-primary-dark);
-  }
+}
   
-  /* Weather Overlay on Celestial Display */
-  .celestial-display-container {
+/* Weather Overlay on Celestial Display */
+.celestial-display-container {
     position: relative;
     min-height: 300px;
     border-radius: var(--radius-md);
     overflow: hidden;
     transition: background-color 2s, color 2s;
-  }
+}
   
 /* Weather overlay on celestial display */
 .weather-overlay {
@@ -146,64 +148,76 @@
     z-index: 20;
     min-width: 200px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
+}
   
-  .weather-icon-large {
+.weather-icon-large {
     font-size: 3.5rem;
     margin-bottom: 1rem;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  }
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 5rem; /* Ensure consistent height */
+}
   
-  .weather-details {
+.weather-details {
     text-align: center;
-  }
+}
   
-  .temperature-display-large {
+.temperature-display-large {
     font-size: 2.5rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
-  }
+}
   
-  .wind-display-large {
+.wind-display-large {
     font-size: 1.1rem;
     margin-bottom: 0.75rem;
-  }
+}
   
-  .wind-intensity {
+.wind-intensity {
     margin-left: 0.5rem;
     font-style: italic;
-  }
+}
   
-  .next-event-display {
+.next-event-display {
     font-size: 0.9rem;
     padding: 0.5rem;
     background-color: rgba(0, 0, 0, 0.2);
     border-radius: var(--radius-sm);
-  }
+}
   
-  .region-name-overlay {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.5rem 1rem;
-    background-color: rgba(0, 0, 0, 0.3);
+/* Hide old region name overlay */
+.region-name-overlay {
+    display: none;
+}
+  
+/* Region Header */
+.region-header {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 0;
+    background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
     border-radius: var(--radius-sm);
+}
+
+.region-name {
+    margin: 0;
+    font-size: 1.25rem;
     font-weight: 500;
-    font-size: 1.1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 20;
-  }
-  
-  /* Action Buttons */
-  .action-buttons {
+}
+
+/* Action Buttons */
+.action-buttons {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
-  }
+}
   
-  .action-buttons button {
+.action-buttons button {
     padding: 0.75rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-surface-light);
@@ -213,81 +227,161 @@
     transition: background-color 0.2s;
     text-align: center;
     font-weight: 500;
-  }
+}
   
-  .action-buttons button:hover {
+.action-buttons button:hover {
     background-color: var(--color-surface);
-  }
+}
   
-  .action-buttons button.active {
+.action-buttons button.active {
     background-color: var(--color-surface);
     border-color: var(--color-primary);
     box-shadow: 0 0 0 1px var(--color-primary);
-  }
+}
   
-  .forecast-button {
+.forecast-button {
     color: var(--color-primary) !important;
-  }
+}
   
-  .forecast-button.active {
+.forecast-button.active {
     color: var(--color-primary) !important;
     font-weight: 600;
-  }
+}
   
-  .region-details-button {
+.region-details-button {
     color: var(--color-secondary) !important;
-  }
+}
   
-  .region-details-button.active {
+.region-details-button.active {
     color: var(--color-secondary) !important;
     font-weight: 600;
-  }
+}
   
-  .weather-effects-button {
+.weather-effects-button {
     color: var(--color-warning) !important;
-  }
+}
   
-  .weather-effects-button.active {
+.weather-effects-button.active {
     color: var(--color-warning) !important;
     font-weight: 600;
-  }
+}
   
-  /* Expandable sections */
-  .forecast-section,
-  .region-details-section,
-  .weather-effects-section {
+/* Expandable sections */
+.forecast-section,
+.region-details-section,
+.weather-effects-section {
     animation: fadeIn 0.3s ease-in-out;
-  }
+}
   
-  @keyframes fadeIn {
+@keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
-  }
+}
+
+/* Celestial info display */
+.celestial-info-display {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.5rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    background-color: var(--color-surface-light);
+    border-radius: var(--radius-sm);
+}
+
+.celestial-times {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.celestial-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.celestial-time .label {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Weather icon improvements */
+.weather-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.weather-icon-composite {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
   
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
+/* Forecast display improvements */
+.forecast-scroll {
+    overflow-x: auto;
+    padding-bottom: var(--spacing-4);
+    width: 100%;
+}
+  
+.forecast-container {
+    display: flex;
+    gap: var(--spacing-2);
+    width: max-content;
+}
+  
+.forecast-item {
+    flex-shrink: 0;
+    width: 6rem;
+    background-color: var(--color-surface-light);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-3);
+    text-align: center;
+    position: relative;
+}
+  
+/* Responsive adjustments */
+@media (max-width: 768px) {
     .time-control-panel {
-      flex-direction: column;
-      gap: 1rem;
+        flex-direction: column;
+        gap: 1rem;
     }
     
     .time-display {
-      order: -1;
-      margin-bottom: 1rem;
+        order: -1;
+        margin-bottom: 1rem;
     }
     
     .custom-time-controls,
     .quick-time-controls {
-      justify-content: center;
-      width: 100%;
+        justify-content: center;
+        width: 100%;
     }
     
     .action-buttons {
-      grid-template-columns: 1fr;
+        grid-template-columns: 1fr;
     }
     
     .weather-overlay {
-      width: 90%;
-      padding: 1rem;
+        width: 90%;
+        padding: 1rem;
     }
-  }
+
+    .celestial-info-display {
+        flex-direction: column;
+    }
+}
+
+/* Weather effects content */
+.weather-effects-content {
+    padding: 1rem;
+    background-color: var(--color-surface-light);
+    border-radius: var(--radius-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}

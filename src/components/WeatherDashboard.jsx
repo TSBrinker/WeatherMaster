@@ -6,13 +6,18 @@ import { useWorldSettings } from "../contexts/WorldSettings";
 import weatherManager from "../services/weatherManager";
 import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
+import moonService from "../services/MoonService"; // Make sure this is imported
 import ForecastDisplay from "./weather/ForecastDisplay";
 import CelestialArcDisplay from "./weather/CelestialArcDisplay";
 import WeatherIcon from "./weather/WeatherIcon";
 import { formatTimeWithMinutes, formatHourOnly } from "../utils/timeUtils";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
 import { Wind } from "lucide-react";
-import "../weatherDashboard.css";
+
+// Import new components
+import RegionHeader from "./weather/RegionHeader";
+import CurrentWeatherDisplay from "./weather/CurrentWeatherDisplay";
+import CelestialInfoDisplay from "./weather/CelestialInfoDisplay";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -56,13 +61,27 @@ const WeatherDashboard = () => {
   const getCelestialInfo = useCallback(() => {
     if (!activeRegion) return { 
       sunrise: null, sunset: null, isDaytime: false, 
-      sunriseTime: "N/A", sunsetTime: "N/A" 
+      sunriseTime: "N/A", sunsetTime: "N/A",
+      moonrise: null, moonset: null,
+      moonriseTime: "N/A", moonsetTime: "N/A"
     };
 
-    return sunriseSunsetService.getFormattedSunriseSunset(
+    // Get sun data
+    const sunData = sunriseSunsetService.getFormattedSunriseSunset(
       activeRegion.latitudeBand || "temperate", 
       currentDate
     );
+    
+    // Get moon data
+    const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
+    
+    return {
+      ...sunData,
+      moonrise,
+      moonset,
+      moonriseTime: formatTimeWithMinutes(moonrise),
+      moonsetTime: formatTimeWithMinutes(moonset)
+    };
   }, [activeRegion, currentDate]);
   
   const celestialInfo = getCelestialInfo();
@@ -497,34 +516,11 @@ const WeatherDashboard = () => {
       <div className="celestial-section" style={dynamicWeatherStyle}>
         {forecast.length > 0 && (
           <>
-            <div className="weather-overlay">
-              <div className="weather-icon-large">
-                <WeatherIcon 
-                  condition={forecast[0].condition} 
-                  isDaytime={celestialInfo.isDaytime} 
-                  size={64} 
-                  color="white"
-                />
-              </div>
-              <div className="weather-details">
-                <div className="temperature-display-large">
-                  {forecast[0].temperature}°F
-                </div>
-                <div className="wind-display-large">
-                  {forecast[0].windSpeed} mph {forecast[0].windDirection}
-                  <span className="wind-intensity">
-                    • {forecast[0].windIntensity}
-                  </span>
-                </div>
-                <div className="next-event-display">
-                  Next {celestialInfo.isDaytime ? "sunset" : "sunrise"}: {
-                    celestialInfo.isDaytime 
-                      ? formatTimeWithMinutes(celestialInfo.sunset) 
-                      : formatTimeWithMinutes(celestialInfo.sunrise)
-                  }
-                </div>
-              </div>
-            </div>
+            <CurrentWeatherDisplay 
+              currentWeather={forecast[0]} 
+              celestialInfo={celestialInfo}
+              isDaytime={celestialInfo.isDaytime} 
+            />
             
             <CelestialArcDisplay
               currentDate={currentDate}
@@ -532,12 +528,10 @@ const WeatherDashboard = () => {
             />
           </>
         )}
-        
-        {/* Region name at the bottom of the display */}
-        <div className="region-name-overlay">
-          {activeRegion.name}
-        </div>
       </div>
+
+      {/* Region Header (replacing region-name-overlay) */}
+      <RegionHeader regionName={activeRegion.name} />
       
       {/* Bottom Section: Action Buttons */}
       <div className="action-buttons">
@@ -575,7 +569,11 @@ const WeatherDashboard = () => {
         <div className="region-details-section">
           <div className="card p-4">
             <h2 className="text-xl font-semibold mb-4">Region Details</h2>
-            <div className="grid grid-cols-2 gap-4">
+            
+            {/* Add Celestial Info Display */}
+            <CelestialInfoDisplay celestialInfo={celestialInfo} />
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
                 <span className="text-gray-400">Climate:</span> {activeRegion.climate.replace("-", " ")}
               </div>

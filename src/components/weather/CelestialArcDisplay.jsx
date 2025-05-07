@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import moonService from "../../services/MoonService";
 import { useWorldSettings } from "../../contexts/WorldSettings";
+import { formatTimeWithMinutes } from "../../utils/timeUtils";
 
 const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
   const { formatGameTime } = useWorldSettings();
@@ -41,8 +42,11 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
 
   // Get moon info
   const moonInfo = moonService.getMoonPhase(currentDate);
-  const { moonrise, moonset, moonriseTime, moonsetTime } =
-    moonService.getMoonTimes(currentDate);
+  const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
+  const moonriseTime = formatTimeWithMinutes(moonrise);
+  const moonsetTime = formatTimeWithMinutes(moonset);
+
+  
 
   // Convert a Date to decimal hours (0-24)
   const getDecimalHours = (date) => {

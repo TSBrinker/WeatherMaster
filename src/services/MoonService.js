@@ -145,38 +145,42 @@ class MoonService {
   getMoonTimes(date) {
     const phase = this.getMoonPhase(date);
     
-    // Calculate a simplified moonrise/moonset based on phase
-    // New moon rises and sets with the sun
-    // Full moon rises at sunset and sets at sunrise
-    // Other phases are interpolated
+    // Calculate a more realistic moonrise/moonset based on phase
+    // Full moon rises at sunset, sets at sunrise
+    // New moon rises at sunrise, sets at sunset
+    // First quarter rises at noon, sets at midnight
+    // Last quarter rises at midnight, sets at noon
     
-    // Start with a base time (this would normally be calculated properly based on location)
+    // Start with base date
     const baseDate = new Date(date);
     baseDate.setHours(0, 0, 0, 0);
     
-    // Simplified sunrise/sunset times (6 AM and 6 PM)
-    const sunrise = new Date(baseDate);
-    sunrise.setHours(6);
+    // Get the phase percentage (0-100)
+    const phasePercent = phase.exactPercentage;
     
-    const sunset = new Date(baseDate);
-    sunset.setHours(18);
-    
-    // Calculate moonrise (ranges from sunrise at new moon to sunset at full moon)
+    // Calculate approximate moonrise time (using a simple model)
     const moonrise = new Date(baseDate);
-    const moonriseHour = 6 + (phase.exactPercentage / 100) * 12;
-    moonrise.setHours(moonriseHour);
+    // For phase 0% (new moon): rise at 6 AM
+    // For phase 50% (quarter): rise at 12 PM or 12 AM
+    // For phase 100% (full moon): rise at 6 PM
+    const moonriseHour = (6 + (phasePercent / 100) * 12) % 24;
+    moonrise.setHours(Math.floor(moonriseHour));
+    moonrise.setMinutes(Math.floor((moonriseHour % 1) * 60));
     
-    // Calculate moonset (ranges from sunset at new moon to sunrise + 24h at full moon)
+    // Calculate approximate moonset time
     const moonset = new Date(baseDate);
-    const moonsetHour = 18 + (phase.exactPercentage / 100) * 12;
+    // For phase 0% (new moon): set at 6 PM
+    // For phase 50% (quarter): set at 12 AM or 12 PM
+    // For phase 100% (full moon): set at 6 AM (next day)
+    const moonsetHour = (18 + (phasePercent / 100) * 12) % 24;
     
-    // Adjust if moonset is on the next day
-    if (moonsetHour >= 24) {
+    // If moonset is on the next day
+    if (phasePercent > 50 && moonsetHour < 12) {
       moonset.setDate(moonset.getDate() + 1);
-      moonset.setHours(moonsetHour - 24);
-    } else {
-      moonset.setHours(moonsetHour);
     }
+    
+    moonset.setHours(Math.floor(moonsetHour));
+    moonset.setMinutes(Math.floor((moonsetHour % 1) * 60));
     
     return {
       moonrise: moonrise,

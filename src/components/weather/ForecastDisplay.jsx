@@ -2,6 +2,7 @@
 import React from "react";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import WeatherIcon from "./WeatherIcon";
+import { Wind } from "lucide-react";
 
 const ForecastDisplay = ({ forecast, latitudeBand = "temperate" }) => {
   // Format hour with minutes
