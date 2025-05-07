@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - Updated with DayNightDisplay and color themes
+// src/components/WeatherDashboard.jsx - Fixed imports
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
@@ -10,6 +10,8 @@ import TimeControls from "./weather/TimeControls";
 import ForecastDisplay from "./weather/ForecastDisplay";
 import MoonPhaseDisplay from "./weather/MoonPhaseDisplay";
 import DayNightDisplay from "./weather/DayNightDisplay";
+// Comment out this import until we make sure it exists
+import CelestialArcDisplay from "./weather/CelestialArcDisplay";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -50,17 +52,24 @@ const WeatherDashboard = () => {
   useEffect(() => {
     if (forecast.length > 0 && activeRegion) {
       const currentWeather = forecast[0];
-      const skyColors = skyColorService.calculateSkyColor(
-        currentWeather.date,
-        currentWeather.condition,
-        activeRegion.latitudeBand || "temperate"
-      );
+      try {
+        const skyColors = skyColorService.calculateSkyColor(
+          currentWeather.date,
+          currentWeather.condition,
+          activeRegion.latitudeBand || "temperate"
+        );
 
-      setThemeColors({
-        backgroundColor: skyColors.backgroundColor,
-        textColor: skyColors.textColor,
-        backgroundImage: skyColors.backgroundImage,
-      });
+        // Log to check if colors are updating correctly
+        console.log("Sky colors updated:", skyColors);
+
+        setThemeColors({
+          backgroundColor: skyColors.backgroundColor,
+          textColor: skyColors.textColor,
+          backgroundImage: skyColors.backgroundImage,
+        });
+      } catch (error) {
+        console.error("Error calculating sky colors:", error);
+      }
     }
   }, [forecast, activeRegion, currentDate]);
 
@@ -467,29 +476,35 @@ const WeatherDashboard = () => {
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         {/* Left column - Time and day/night info */}
-        <div className="space-y-4">
-          <TimeControls
-            currentDate={currentDate}
-            onAdvanceTime={handleAdvanceTime}
-            currentHour={forecast.length > 0 ? forecast[0].date.getHours() : 0}
-          />
 
-          {/* Add Day/Night display */}
-          {forecast.length > 0 && (
-            <DayNightDisplay
-              currentDate={currentDate}
-              latitudeBand={activeRegion.latitudeBand || "temperate"}
-              weatherCondition={forecast[0].condition}
-            />
-          )}
-        </div>
+        {/* Add Day/Night display */}
+        {forecast.length > 0 && (
+          <DayNightDisplay
+            currentDate={currentDate}
+            latitudeBand={activeRegion.latitudeBand || "temperate"}
+            weatherCondition={forecast[0].condition}
+          />
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <TimeControls
+          currentDate={currentDate}
+          onAdvanceTime={handleAdvanceTime}
+          currentHour={forecast.length > 0 ? forecast[0].date.getHours() : 0}
+        />
 
         {/* Right column - Moon info */}
         <div className="space-y-4">
-          <MoonPhaseDisplay currentDate={currentDate} />
+          {/* Temporarily remove CelestialArcDisplay until we create it */}
+          {forecast.length > 0 && (
+            <CelestialArcDisplay
+              currentDate={currentDate}
+              latitudeBand={activeRegion.latitudeBand || "temperate"}
+            />
+          )}
 
-          {/* Add extra space for future components */}
-          <div className="h-4"></div>
+          <MoonPhaseDisplay currentDate={currentDate} />
         </div>
       </div>
 

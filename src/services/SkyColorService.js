@@ -232,9 +232,12 @@ class SkyColorService {
       textColor: this.getContrastColor(palette.base)
     };
     
+    // Initialize cloudLevel to null
+    let cloudLevel = null;
+    
     // Adjust for weather conditions
     if (weatherCondition) {
-      const cloudLevel = this.getCloudLevel(weatherCondition);
+      cloudLevel = this.getCloudLevel(weatherCondition);
       
       if (cloudLevel && palette.clouds) {
         const cloudColor = palette.clouds[cloudLevel];
@@ -272,10 +275,7 @@ class SkyColorService {
         }
         // For other moon phases, slightly adjust color
         else {
-          // Fixed: Add cloudLevel check and initialize to null if it's not defined
-          const cloudLevelCheck = cloudLevel || null;
-          
-          if (cloudLevelCheck !== 'heavy') {
+          if (cloudLevel !== 'heavy') {
             result.backgroundColor = this.blendColors(
               {backgroundColor: result.backgroundColor}, 
               {backgroundColor: palette.moon[moonLevel]}, 
