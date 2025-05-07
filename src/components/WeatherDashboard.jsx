@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - Updated with proper WorldSettings integration
+// src/components/WeatherDashboard.jsx - Complete with Moon Phase Display
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
@@ -7,6 +7,7 @@ import weatherManager from "../services/weatherManager";
 import WeatherDisplay from "./weather/WeatherDisplay";
 import TimeControls from "./weather/TimeControls";
 import ForecastDisplay from "./weather/ForecastDisplay";
+import MoonPhaseDisplay from "./weather/MoonPhaseDisplay";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -298,7 +299,7 @@ const WeatherDashboard = () => {
       currentDate,
       season,
       advanceTime,
-      advanceGameTime, // Add this from WorldSettings context
+      advanceGameTime,
       updateRegionWeather,
       updateRegionTimestamp,
     ]
@@ -427,13 +428,17 @@ const WeatherDashboard = () => {
           {forecast.length > 0 && <WeatherDisplay weather={forecast[0]} />}
         </div>
 
-        {/* Time controls - 1 column */}
-        <div>
+        {/* Right sidebar - 1 column */}
+        <div className="space-y-4">
+          {/* Time controls */}
           <TimeControls
             currentDate={currentDate}
             onAdvanceTime={handleAdvanceTime}
             currentHour={forecast.length > 0 ? forecast[0].date.getHours() : 0}
           />
+
+          {/* Moon phase display */}
+          <MoonPhaseDisplay currentDate={currentDate} />
         </div>
       </div>
 
