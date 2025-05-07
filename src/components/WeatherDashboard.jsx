@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - Updated with proper world settings integration
+// src/components/WeatherDashboard.jsx - Updated with proper WorldSettings integration
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
@@ -26,6 +26,7 @@ const WeatherDashboard = () => {
     state: worldSettings,
     formatGameDate,
     formatGameTime,
+    advanceGameTime,
   } = useWorldSettings();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -245,6 +246,9 @@ const WeatherDashboard = () => {
       // Advance global time
       advanceTime(hours);
 
+      // Also advance game time in WorldSettings to handle year progression
+      advanceGameTime(hours);
+
       // Use updated date from the context (add hours manually since the context update might not be instant)
       const afterDate = new Date(beforeDate);
       afterDate.setHours(afterDate.getHours() + hours);
@@ -294,6 +298,7 @@ const WeatherDashboard = () => {
       currentDate,
       season,
       advanceTime,
+      advanceGameTime, // Add this from WorldSettings context
       updateRegionWeather,
       updateRegionTimestamp,
     ]
@@ -381,7 +386,7 @@ const WeatherDashboard = () => {
           </div>
         </div>
         <div className="text-right">
-          {/* Show only game date and time, not system date */}
+          {/* Use formatted game date from WorldSettings */}
           <div className="font-bold">{formatGameDate(currentDate)}</div>
           <div>
             {formatGameTime(currentDate)}

@@ -1,4 +1,4 @@
-// src/contexts/WorldContext.js
+// src/contexts/WorldContext.js - Complete updated version
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageUtils } from '../utils/storageUtils';
 
@@ -100,8 +100,19 @@ export const WorldProvider = ({ children }) => {
       // Debug - list all localStorage keys
       storageUtils.listKeys();
       
-      // Load world time
-      const worldTime = storageUtils.loadData(WORLD_TIME_KEY, new Date().toISOString());
+      // Load world settings first to get the proper game time
+      const worldSettings = storageUtils.loadData('gm-weather-companion-world-settings', null);
+      
+      // Load world time from settings if available, otherwise use from world time storage
+      let worldTime;
+      if (worldSettings && worldSettings.gameTime) {
+        worldTime = worldSettings.gameTime;
+        console.log('Using time from world settings:', worldTime);
+      } else {
+        worldTime = storageUtils.loadData(WORLD_TIME_KEY, new Date().toISOString());
+        console.log('Using time from world time storage:', worldTime);
+      }
+      
       dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: worldTime });
       
       // Load world data

@@ -1,4 +1,4 @@
-// src/contexts/WorldSettings.js - Updated with hour-only time format
+// src/contexts/WorldSettings.js - Complete updated version
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageUtils } from '../utils/storageUtils';
 
@@ -37,7 +37,20 @@ export const ACTIONS = {
   SET_CALENDAR: 'set_calendar',
   SET_IS_CONFIGURED: 'set_is_configured',
   RESET_SETTINGS: 'reset_settings',
-  LOAD_SETTINGS: 'load_settings'
+  LOAD_SETTINGS: 'load_settings',
+  ADVANCE_GAME_TIME: 'advance_game_time'
+};
+
+// Helper function to check if a date crosses a year boundary
+const checkYearCrossed = (oldDate, newDate) => {
+  const oldDt = new Date(oldDate);
+  const newDt = new Date(newDate);
+  
+  // Check if we crossed from December to January
+  return (
+    oldDt.getMonth() === 11 && newDt.getMonth() === 0 && 
+    newDt.getTime() > oldDt.getTime()
+  );
 };
 
 // Reducer function
@@ -85,6 +98,28 @@ const worldSettingsReducer = (state, action) => {
         ...action.payload
       };
     
+    case ACTIONS.ADVANCE_GAME_TIME: {
+      const oldDate = state.gameTime;
+      const newDate = action.payload;
+      
+      // Check if year boundary crossed
+      const yearCrossed = checkYearCrossed(oldDate, newDate);
+      
+      // If year boundary crossed, increment game year
+      if (yearCrossed) {
+        return {
+          ...state,
+          gameTime: newDate,
+          gameYear: state.gameYear + 1
+        };
+      } else {
+        return {
+          ...state,
+          gameTime: newDate
+        };
+      }
+    }
+    
     case ACTIONS.RESET_SETTINGS:
       return {
         ...initialState
@@ -120,6 +155,11 @@ export const WorldSettingsProvider = ({ children }) => {
           savedSettings.gameTime = new Date().toISOString();
         }
         
+        // Make sure isConfigured is properly set
+        if (savedSettings.isConfigured === undefined) {
+          savedSettings.isConfigured = false;
+        }
+        
         // Load all settings at once
         dispatch({ 
           type: ACTIONS.LOAD_SETTINGS, 
@@ -133,14 +173,13 @@ export const WorldSettingsProvider = ({ children }) => {
   
   // Save settings to localStorage when they change
   useEffect(() => {
-    // Only save if we've loaded initial state and modified something
-    if (state.worldName !== initialState.worldName || 
-        state.isConfigured !== initialState.isConfigured ||
-        state.gameYear !== initialState.gameYear) {
-      
+    // Wait until after initial load
+    const timer = setTimeout(() => {
       console.log('Saving world settings to storage:', state);
       storageUtils.saveData(WORLD_SETTINGS_KEY, state);
-    }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [state]);
   
   // Format a date using the game calendar and game year (NOT system year)
@@ -165,6 +204,18 @@ export const WorldSettingsProvider = ({ children }) => {
     return d.toLocaleTimeString('en-US', {
       hour: 'numeric',
       hour12: true
+    });
+  };
+  
+  // Helper to advance game time (with option to increment game year)
+  const advanceGameTime = (hours) => {
+    const currentDate = new Date(state.gameTime);
+    const newDate = new Date(currentDate);
+    newDate.setHours(newDate.getHours() + hours);
+    
+    dispatch({
+      type: ACTIONS.ADVANCE_GAME_TIME,
+      payload: newDate.toISOString()
     });
   };
   
@@ -201,6 +252,8 @@ export const WorldSettingsProvider = ({ children }) => {
     resetSettings: () => {
       dispatch({ type: ACTIONS.RESET_SETTINGS });
     },
+    
+    advanceGameTime,
     
     // Date formatting helpers
     formatGameDate,
