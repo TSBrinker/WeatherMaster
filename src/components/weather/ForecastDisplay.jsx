@@ -1,15 +1,25 @@
 // src/components/weather/ForecastDisplay.jsx
-
 import React from "react";
-import { getWeatherIcon, getWindIcon } from "../../utils/weatherUtils";
+import sunriseSunsetService from "../../services/SunriseSunsetService";
+import WeatherIcon from "./WeatherIcon";
 
-const ForecastDisplay = ({ forecast }) => {
-  // Format hour without minutes
+const ForecastDisplay = ({ forecast, latitudeBand = "temperate" }) => {
+  // Format hour with minutes
   const formatHour = (date) => {
     return date.toLocaleString("en-US", {
       hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
+  };
+  
+  // Check if it's daytime for a given hour
+  const isDaytime = (date) => {
+    const { sunrise, sunset } = sunriseSunsetService.getFormattedSunriseSunset(
+      latitudeBand,
+      date
+    );
+    return date >= sunrise && date <= sunset;
   };
 
   return (
@@ -18,7 +28,10 @@ const ForecastDisplay = ({ forecast }) => {
 
       <div className="forecast-scroll">
         <div className="flex gap-2 pb-2">
-          {forecast.map((hour, index) => (
+          {forecast.map((hour, index) => {
+            const hourIsDaytime = isDaytime(hour.date);
+            
+            return (
             <div
               key={index}
               className={`forecast-item relative ${
@@ -33,16 +46,18 @@ const ForecastDisplay = ({ forecast }) => {
                 {formatHour(hour.date)}
               </div>
               <div className="text-2xl mb-1">
-                {getWeatherIcon(hour.condition, hour.date.getHours())}
+                <WeatherIcon 
+                  condition={hour.condition} 
+                  isDaytime={hourIsDaytime} 
+                  size={32} 
+                />
               </div>
               <div className="font-semibold mb-1">{hour.condition}</div>
               <div className="mb-2">{hour.temperature}°F</div>
               <div className="text-xs text-gray-400 flex items-center justify-center">
-                {getWindIcon(hour.windIntensity) && (
-                  <span className="mr-1">
-                    {getWindIcon(hour.windIntensity)}
-                  </span>
-                )}
+                <span className="mr-1">
+                  <Wind size={12} />
+                </span>
                 <span>{hour.windSpeed} mph</span>
               </div>
 
@@ -58,7 +73,7 @@ const ForecastDisplay = ({ forecast }) => {
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </div>

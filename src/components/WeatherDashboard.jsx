@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - Complete redesigned version with overlay
+// src/components/WeatherDashboard.jsx - Complete redesigned version with integrated features
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
@@ -8,7 +8,11 @@ import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
 import ForecastDisplay from "./weather/ForecastDisplay";
 import CelestialArcDisplay from "./weather/CelestialArcDisplay";
-import "../weatherDashboard.css"; // Make sure to create this CSS file
+import WeatherIcon from "./weather/WeatherIcon";
+import { formatTimeWithMinutes, formatHourOnly } from "../utils/timeUtils";
+import { getPreciseSkyGradient } from "../utils/SkyGradients";
+import { Wind } from "lucide-react";
+import "../weatherDashboard.css";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -68,25 +72,34 @@ const WeatherDashboard = () => {
     if (forecast.length > 0 && activeRegion) {
       const currentWeather = forecast[0];
       try {
+        // Get sunrise/sunset times for more precise gradient
+        const { sunrise, sunset } = celestialInfo;
+        
+        // Set background gradient based on time and weather
+        const backgroundGradient = getPreciseSkyGradient(
+          currentWeather.date,
+          currentWeather.condition,
+          sunrise,
+          sunset
+        );
+        
+        // Get text color that contrasts with background
         const skyColors = skyColorService.calculateSkyColor(
           currentWeather.date,
           currentWeather.condition,
           activeRegion.latitudeBand || "temperate"
         );
 
-        // Log to check if colors are updating correctly
-        console.log("Sky colors updated:", skyColors);
-
         setThemeColors({
           backgroundColor: skyColors.backgroundColor,
           textColor: skyColors.textColor,
-          backgroundImage: skyColors.backgroundImage,
+          backgroundImage: backgroundGradient,
         });
       } catch (error) {
         console.error("Error calculating sky colors:", error);
       }
     }
-  }, [forecast, activeRegion, currentDate]);
+  }, [forecast, activeRegion, currentDate, celestialInfo]);
 
   // Initialize or load weather data
   useEffect(() => {
@@ -436,47 +449,9 @@ const WeatherDashboard = () => {
 
   // Create a dynamic style for the weather display based on theme colors
   const dynamicWeatherStyle = {
-    backgroundColor: themeColors.backgroundColor,
+    backgroundImage: themeColors.backgroundImage,
     color: themeColors.textColor,
-    backgroundImage:
-      themeColors.backgroundImage !== "none"
-        ? themeColors.backgroundImage
-        : "none",
-    transition: "background-color 2s, color 2s, background-image 2s",
-  };
-  
-  // Get weather condition icon as emoji
-  const getWeatherIcon = (condition) => {
-    switch (condition) {
-      case 'Clear Skies':
-        return celestialInfo.isDaytime ? '☀️' : '🌙';
-      case 'Light Clouds':
-        return celestialInfo.isDaytime ? '🌤️' : '☁️';
-      case 'Heavy Clouds':
-        return '☁️';
-      case 'Rain':
-        return '🌧️';
-      case 'Heavy Rain':
-        return '⛈️';
-      case 'Snow':
-        return '❄️';
-      case 'Freezing Cold':
-        return '🥶';
-      case 'Cold Winds':
-        return '🌬️';
-      case 'Scorching Heat':
-        return '🔥';
-      case 'Thunderstorm':
-        return '⚡';
-      case 'Blizzard':
-        return '🌨️';
-      case 'High Humidity Haze':
-        return '🌫️';
-      case 'Cold Snap':
-        return '❄️';
-      default:
-        return '❓';
-    }
+    transition: "background-color 2s, background-image 2s, color 2s",
   };
 
   return (
@@ -504,7 +479,7 @@ const WeatherDashboard = () => {
         
         <div className="time-display">
           <div className="date-display">{formatGameDate(currentDate)}</div>
-          <div className="time-display-large">{formatGameTime(currentDate)}</div>
+          <div className="time-display-large">{formatHourOnly(currentDate)}</div>
           <div className="current-weather-label">
             {forecast.length > 0 ? forecast[0].condition : "Loading..."}
             {season === "auto" && currentSeason ? ` • ${currentSeason}` : ""}
@@ -518,13 +493,18 @@ const WeatherDashboard = () => {
         </div>
       </div>
       
-      {/* Central Section: Celestial Display with Weather Overlay */}
-      <div className="celestial-display-container" style={dynamicWeatherStyle}>
+      {/* Combined Celestial Display with Weather */}
+      <div className="celestial-section" style={dynamicWeatherStyle}>
         {forecast.length > 0 && (
           <>
             <div className="weather-overlay">
               <div className="weather-icon-large">
-                {getWeatherIcon(forecast[0].condition)}
+                <WeatherIcon 
+                  condition={forecast[0].condition} 
+                  isDaytime={celestialInfo.isDaytime} 
+                  size={64} 
+                  color="white"
+                />
               </div>
               <div className="weather-details">
                 <div className="temperature-display-large">
@@ -537,7 +517,11 @@ const WeatherDashboard = () => {
                   </span>
                 </div>
                 <div className="next-event-display">
-                  Next {celestialInfo.isDaytime ? "sunset" : "sunrise"}: {celestialInfo.isDaytime ? celestialInfo.sunsetTime : celestialInfo.sunriseTime}
+                  Next {celestialInfo.isDaytime ? "sunset" : "sunrise"}: {
+                    celestialInfo.isDaytime 
+                      ? formatTimeWithMinutes(celestialInfo.sunset) 
+                      : formatTimeWithMinutes(celestialInfo.sunrise)
+                  }
                 </div>
               </div>
             </div>
@@ -577,10 +561,13 @@ const WeatherDashboard = () => {
         </button>
       </div>
       
-      {/* Expandable sections - now controlled by activeSection */}
+      {/* Expandable sections - controlled by activeSection */}
       {activeSection === 'forecast' && (
         <div className="forecast-section">
-          <ForecastDisplay forecast={forecast} />
+          <ForecastDisplay 
+            forecast={forecast} 
+            latitudeBand={activeRegion.latitudeBand || "temperate"}
+          />
         </div>
       )}
       
@@ -611,6 +598,9 @@ const WeatherDashboard = () => {
                   <option value="summer">Summer</option>
                   <option value="fall">Fall</option>
                 </select>
+              </div>
+              <div>
+                <span className="text-gray-400">Daylight:</span> {celestialInfo.dayLengthFormatted}
               </div>
             </div>
             <button 

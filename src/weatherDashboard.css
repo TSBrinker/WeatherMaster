@@ -7,7 +7,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
-    gap: 1.5rem;
+    gap: 0.5rem; /* Reduced gap between elements */
     min-height: 100vh;
     box-sizing: border-box;
   }
@@ -18,10 +18,33 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md) var(--radius-md) 0 0; /* Only round the top corners */
     background-color: var(--color-surface);
+    margin-bottom: 0; /* Remove bottom margin to connect with celestial section */
   }
   
+  /* Celestial section - combined with weather display */
+  .celestial-section {
+    position: relative;
+    min-height: 350px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md); /* Only round the bottom corners */
+    overflow: hidden;
+    transition: background-color 2s, color 2s, background-image 2s;
+    margin-top: 0; /* Remove top margin to connect with time panel */
+    padding-top: 0; /* Remove top padding */
+  }
+  
+  .celestial-arc-container {
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .celestial-arc-container h2 {
+    display: none; /* Hide the "Celestial Arc" title */
+  }
+
   .time-display {
     text-align: center;
     flex: 2;
@@ -107,9 +130,10 @@
     transition: background-color 2s, color 2s;
   }
   
-  .weather-overlay {
+/* Weather overlay on celestial display */
+.weather-overlay {
     position: absolute;
-    top: 50%;
+    top: 60%; /* Move down from 50% to lower position */
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 1.5rem;
