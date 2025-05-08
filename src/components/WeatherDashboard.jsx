@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - Complete redesigned version with integrated features
+// src/components/WeatherDashboard.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
@@ -6,19 +6,25 @@ import { useWorldSettings } from "../contexts/WorldSettings";
 import weatherManager from "../services/weatherManager";
 import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
-import moonService from "../services/MoonService"; // Make sure this is imported
-import ForecastDisplay from "./weather/ForecastDisplay";
-import CelestialArcDisplay from "./weather/CelestialArcDisplay";
-import WeatherIcon from "./weather/WeatherIcon";
-import { formatTimeWithMinutes, formatHourOnly } from "../utils/timeUtils";
+import moonService from "../services/MoonService";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
-import { Wind } from "lucide-react";
-import '../weatherDashboard.css'
+import { formatTimeWithMinutes } from "../utils/timeUtils";
 
-// Import new components
-import RegionHeader from "./weather/RegionHeader";
+// Import components
+import TimeDisplay from "./weather/TimeDisplay";
+import CustomTimeControls from "./weather/CustomTimeControls";
+import QuickTimeControls from "./weather/QuickTimeControls";
+import CelestialArcDisplay from "./weather/CelestialArcDisplay";
 import CurrentWeatherDisplay from "./weather/CurrentWeatherDisplay";
-import CelestialInfoDisplay from "./weather/CelestialInfoDisplay";
+import CelestialInfo from "./weather/CelestialInfo";
+import RegionHeader from "./weather/RegionHeader";
+import ActionTabs from "./weather/ActionTabs";
+import ForecastDisplay from "./weather/ForecastDisplay";
+import RegionDetails from "./region/RegionDetails";
+import WeatherEffects from "./weather/WeatherEffects";
+
+// Import CSS
+import "../weatherDashboard.css";
 
 const WeatherDashboard = () => {
   const { activeRegion } = useRegion();
@@ -60,31 +66,38 @@ const WeatherDashboard = () => {
 
   // Get current celestial data for displaying sunrise/sunset info
   const getCelestialInfo = useCallback(() => {
-    if (!activeRegion) return { 
-      sunrise: null, sunset: null, isDaytime: false, 
-      sunriseTime: "N/A", sunsetTime: "N/A",
-      moonrise: null, moonset: null,
-      moonriseTime: "N/A", moonsetTime: "N/A"
-    };
+    if (!activeRegion)
+      return {
+        sunrise: null,
+        sunset: null,
+        isDaytime: false,
+        sunriseTime: "N/A",
+        sunsetTime: "N/A",
+        moonrise: null,
+        moonset: null,
+        moonriseTime: "N/A",
+        moonsetTime: "N/A",
+        dayLengthFormatted: "N/A",
+      };
 
     // Get sun data
     const sunData = sunriseSunsetService.getFormattedSunriseSunset(
-      activeRegion.latitudeBand || "temperate", 
+      activeRegion.latitudeBand || "temperate",
       currentDate
     );
-    
+
     // Get moon data
     const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
-    
+
     return {
       ...sunData,
       moonrise,
       moonset,
       moonriseTime: formatTimeWithMinutes(moonrise),
-      moonsetTime: formatTimeWithMinutes(moonset)
+      moonsetTime: formatTimeWithMinutes(moonset),
     };
   }, [activeRegion, currentDate]);
-  
+
   const celestialInfo = getCelestialInfo();
 
   // Update theme colors based on time of day and weather
@@ -94,7 +107,7 @@ const WeatherDashboard = () => {
       try {
         // Get sunrise/sunset times for more precise gradient
         const { sunrise, sunset } = celestialInfo;
-        
+
         // Set background gradient based on time and weather
         const backgroundGradient = getPreciseSkyGradient(
           currentWeather.date,
@@ -102,7 +115,7 @@ const WeatherDashboard = () => {
           sunrise,
           sunset
         );
-        
+
         // Get text color that contrasts with background
         const skyColors = skyColorService.calculateSkyColor(
           currentWeather.date,
@@ -315,7 +328,15 @@ const WeatherDashboard = () => {
 
     setIsLoading(false);
     setInitialized(true);
-  }, [activeRegion, currentDate]);
+  }, [
+    activeRegion,
+    currentDate,
+    season,
+    getRegionWeather,
+    updateRegionWeather,
+    updateRegionTimestamp,
+    initialized,
+  ]);
 
   // Handle time advancement using useCallback to prevent recreations
   const handleAdvanceTime = useCallback(
@@ -478,51 +499,35 @@ const WeatherDashboard = () => {
     <div className="weather-dashboard">
       {/* Top Section: Time and Controls */}
       <div className="time-control-panel">
-        <div className="custom-time-controls">
-          <div className="custom-time-input">
-            <input
-              type="number"
-              min="1"
-              value={customHours}
-              onChange={(e) => setCustomHours(parseInt(e.target.value) || 1)}
-              className="custom-hours-input"
-              aria-label="Custom hours"
-            />
-            <button 
-              onClick={handleCustomTimeAdvance}
-              className="custom-advance-button"
-            >
-              Advance
-            </button>
-          </div>
-        </div>
-        
-        <div className="time-display">
-          <div className="date-display">{formatGameDate(currentDate)}</div>
-          <div className="time-display-large">{formatHourOnly(currentDate)}</div>
-          <div className="current-weather-label">
-            {forecast.length > 0 ? forecast[0].condition : "Loading..."}
-            {season === "auto" && currentSeason ? ` • ${currentSeason}` : ""}
-          </div>
-        </div>
-        
-        <div className="quick-time-controls">
-          <button onClick={() => handleAdvanceTime(1)}>+1h</button>
-          <button onClick={() => handleAdvanceTime(4)}>+4h</button>
-          <button onClick={() => handleAdvanceTime(24)}>+24h</button>
-        </div>
+        <CustomTimeControls
+          customHours={customHours}
+          setCustomHours={setCustomHours}
+          onAdvanceTime={handleCustomTimeAdvance}
+        />
+
+        <TimeDisplay
+          currentDate={currentDate}
+          currentWeather={
+            forecast.length > 0 ? forecast[0].condition : "Loading..."
+          }
+          currentSeason={
+            season === "auto" && currentSeason ? currentSeason : ""
+          }
+        />
+
+        <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
       </div>
-      
-      {/* Combined Celestial Display with Weather */}
+
+      {/* Celestial Section with Weather */}
       <div className="celestial-section" style={dynamicWeatherStyle}>
         {forecast.length > 0 && (
           <>
-            <CurrentWeatherDisplay 
-              currentWeather={forecast[0]} 
+            <CurrentWeatherDisplay
+              currentWeather={forecast[0]}
               celestialInfo={celestialInfo}
-              isDaytime={celestialInfo.isDaytime} 
+              isDaytime={celestialInfo.isDaytime}
             />
-            
+
             <CelestialArcDisplay
               currentDate={currentDate}
               latitudeBand={activeRegion.latitudeBand || "temperate"}
@@ -531,98 +536,43 @@ const WeatherDashboard = () => {
         )}
       </div>
 
-      {/* Region Header (replacing region-name-overlay) */}
+      {/* Celestial Info */}
+      <CelestialInfo celestialInfo={celestialInfo} />
+
+      {/* Region Header */}
       <RegionHeader regionName={activeRegion.name} />
-      
-      {/* Bottom Section: Action Buttons */}
-      <div className="action-buttons">
-        <button 
-          className={`forecast-button ${activeSection === 'forecast' ? 'active' : ''}`}
-          onClick={() => setActiveSection(activeSection === 'forecast' ? null : 'forecast')}
-        >
-          Forecast
-        </button>
-        <button 
-          className={`region-details-button ${activeSection === 'region' ? 'active' : ''}`}
-          onClick={() => setActiveSection(activeSection === 'region' ? null : 'region')}
-        >
-          Region Details
-        </button>
-        <button 
-          className={`weather-effects-button ${activeSection === 'effects' ? 'active' : ''}`}
-          onClick={() => setActiveSection(activeSection === 'effects' ? null : 'effects')}
-        >
-          Weather Effects
-        </button>
-      </div>
-      
-      {/* Expandable sections - controlled by activeSection */}
-      {activeSection === 'forecast' && (
+
+      {/* Action Tabs */}
+      <ActionTabs
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
+
+      {/* Content sections */}
+      {activeSection === "forecast" && (
         <div className="forecast-section">
-          <ForecastDisplay 
-            forecast={forecast} 
+          <ForecastDisplay
+            forecast={forecast}
             latitudeBand={activeRegion.latitudeBand || "temperate"}
           />
         </div>
       )}
-      
-      {activeSection === 'region' && (
-        <div className="region-details-section">
-          <div className="card p-4">
-            <h2 className="text-xl font-semibold mb-4">Region Details</h2>
-            
-            {/* Add Celestial Info Display */}
-            <CelestialInfoDisplay celestialInfo={celestialInfo} />
-            
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <span className="text-gray-400">Climate:</span> {activeRegion.climate.replace("-", " ")}
-              </div>
-              <div>
-                <span className="text-gray-400">Latitude:</span> {activeRegion.latitudeBand || "temperate"}
-              </div>
-              <div>
-                <span className="text-gray-400">Season:</span> {currentSeason}
-              </div>
-              <div>
-                <span className="text-gray-400">Weather Mode:</span> 
-                <select
-                  value={season}
-                  onChange={(e) => setSeason(e.target.value)}
-                  className="ml-2 p-1 bg-surface-light border border-border rounded"
-                >
-                  <option value="auto">Auto (from date)</option>
-                  <option value="winter">Winter</option>
-                  <option value="spring">Spring</option>
-                  <option value="summer">Summer</option>
-                  <option value="fall">Fall</option>
-                </select>
-              </div>
-              <div>
-                <span className="text-gray-400">Daylight:</span> {celestialInfo.dayLengthFormatted}
-              </div>
-            </div>
-            <button 
-              onClick={regenerateWeather} 
-              className="btn btn-primary mt-4"
-            >
-              Regenerate Weather
-            </button>
-          </div>
-        </div>
+
+      {activeSection === "region" && (
+        <RegionDetails
+          region={activeRegion}
+          celestialInfo={celestialInfo}
+          currentSeason={currentSeason}
+          season={season}
+          setSeason={setSeason}
+          onRegenerateWeather={regenerateWeather}
+        />
       )}
-      
-      {activeSection === 'effects' && (
-        <div className="weather-effects-section">
-          <div className="card p-4">
-            <h2 className="text-xl font-semibold mb-4">Weather Effects</h2>
-            <div className="weather-effects-content">
-              {forecast.length > 0 && (
-                <p className="whitespace-pre-line">{forecast[0].effects}</p>
-              )}
-            </div>
-          </div>
-        </div>
+
+      {activeSection === "effects" && (
+        <WeatherEffects
+          weatherEffects={forecast.length > 0 ? forecast[0].effects : ""}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-/* weatherDashboard.css - Updated to fix the layout structure */
+/* weatherDashboard.css - Master consolidated file */
 
 /* Overall container */
 .weather-dashboard {
@@ -11,123 +11,134 @@
     min-height: 100vh;
     box-sizing: border-box;
     background-color: var(--color-background);
-}
+  }
   
-/* Top Section: Time and Controls */
-.time-control-panel {
+  /* =================
+   * Time Panel and Controls 
+   * ================= */
+  .time-control-panel {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
     padding: 0;
-    border-radius: 0;
     margin: 0;
     background-color: transparent;
     position: relative;
-}
-
-/* Custom time control - fixed to top left */
-.custom-time-controls {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 30;
+  }
+  
+  /* Custom time controls - left side */
+  .custom-time-controls {
     display: flex;
     align-items: center;
-}
+    padding: 0.5rem;
+    flex: 1;
+    justify-content: flex-start;
+  }
   
-.custom-hours-input {
-    width: 40px;
-    padding: 0.25rem 0.5rem;
+  .custom-hours-input {
+    width: 50px;
+    padding: 0.5rem;
     border-radius: var(--radius-sm);
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
+    margin-right: 0.5rem;
+    text-align: center;
+  }
   
-.custom-advance-button {
-    padding: 0.25rem 0.5rem;
+  .custom-advance-button {
+    padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-primary);
     color: white;
     border: none;
     cursor: pointer;
-    margin-left: 0.25rem;
-}
+  }
   
-/* Time display section */
-.time-display {
+  /* Time display - center */
+  .time-display {
     text-align: center;
     padding: 1.5rem 1rem;
-    background-color: rgba(20, 30, 40, 0.8);
-}
+    flex: 2;
+  }
   
-.date-display {
+  .date-display {
     font-size: 1rem;
     color: var(--color-text);
     margin-bottom: 0.25rem;
-}
+  }
   
-.time-display-large {
+  .time-display-large {
     font-size: 4rem;
     font-weight: 300;
     margin: 0.5rem 0;
-}
+  }
   
-.current-weather-label {
+  .current-weather-label {
     font-size: 1rem;
     margin-bottom: 0.5rem;
     color: rgba(255, 255, 255, 0.7);
-}
-
-/* Quick time advancement buttons - centered below time display */
-.quick-time-controls {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 1rem 0;
-}
+  }
   
-.quick-time-controls button {
+  /* Quick time controls - right side */
+  .quick-time-controls {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  
+  .quick-time-controls button {
     padding: 0.5rem 1rem;
     border-radius: var(--radius-sm);
     background-color: var(--color-primary);
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 0.875rem;
     min-width: 50px;
-}
+  }
   
-.quick-time-controls button:hover {
+  .quick-time-controls button:hover {
     background-color: var(--color-primary-dark);
-}
+  }
   
-/* Celestial section - combined with weather display */
-.celestial-section {
+  /* =================
+   * Celestial Section 
+   * ================= */
+  .celestial-section {
     position: relative;
     min-height: 350px;
-    border-radius: 0;
     overflow: hidden;
     transition: background-color 2s, color 2s, background-image 2s;
     margin: 0;
     padding: 0;
     border: none;
     background-color: transparent;
-}
+  }
   
-.celestial-arc-container {
+  .celestial-arc-container {
     box-shadow: none;
     background: transparent !important;
     padding: 0 !important;
     margin: 0 !important;
-}
+  }
   
-.celestial-arc-container h2,
-.celestial-section h2 {
+  .celestial-arc-container h2,
+  .celestial-section h2 {
     display: none !important;
-}
-
-/* Weather overlay on celestial display - now transparent */
-.weather-overlay {
+  }
+  
+  /* CelestialArcDisplay SVG */
+  .celestial-arc-container svg {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* =================
+   * Weather Overlay 
+   * ================= */
+  .weather-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -138,55 +149,53 @@
     align-items: center;
     z-index: 20;
     min-width: 250px;
-    background-color: rgba(200, 80, 50, 0.8); /* Semi-transparent orange background */
+    background-color: transparent;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
+    box-shadow: none;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  }
   
-.weather-icon-large {
+  .weather-icon-large {
     font-size: 3.5rem;
     margin-bottom: 0.75rem;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 4rem;
-}
+  }
   
-.weather-details {
+  .weather-details {
     text-align: center;
-}
+  }
   
-.temperature-display-large {
+  .temperature-display-large {
     font-size: 3.5rem;
     font-weight: 400;
     margin-bottom: 0.5rem;
-}
+  }
   
-.wind-display-large {
+  .wind-display-large {
     font-size: 1.1rem;
     margin-bottom: 0.75rem;
-}
+  }
   
-.wind-intensity {
+  .wind-intensity {
     margin-left: 0.5rem;
     font-style: italic;
-}
+  }
   
-.next-event-display {
+  .next-event-display {
     font-size: 0.9rem;
     color: var(--color-text);
     padding: 0.5rem;
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: var(--radius-sm);
-}
+  }
   
-/* Hide old region name overlay */
-.region-name-overlay {
-    display: none;
-}
-  
-/* Celestial info - at the bottom of the arc */
-.arc-celestial-info {
+  /* =================
+   * Celestial Info
+   * ================= */
+  .celestial-info {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -194,34 +203,54 @@
     background-color: rgba(0, 0, 0, 0.5);
     color: var(--color-text);
     font-size: 0.9rem;
-}
-
-.arc-celestial-info-left,
-.arc-celestial-info-right {
+    margin: 0;
+  }
+  
+  .celestial-info-left,
+  .celestial-info-right {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-}
-
-/* Region Header - properly below the celestial arc */
-.region-header {
+    gap: 0.5rem;
+  }
+  
+  .celestial-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .celestial-time .label {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  /* =================
+   * Region Header
+   * ================= */
+  .region-header {
     width: 100%;
     text-align: center;
     padding: 0.75rem 0;
     background-color: rgba(0, 0, 0, 0.5);
     margin: 0;
-    order: 3; /* Ensure it comes after the celestial section */
-}
-
-.region-name {
+  }
+  
+  .region-name {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 500;
     color: var(--color-text);
-}
-
-/* Action Buttons */
-.action-buttons {
+  }
+  
+  /* Hide deprecated region overlay */
+  .region-name-overlay {
+    display: none;
+  }
+  
+  /* =================
+   * Action Tabs
+   * ================= */
+  .action-buttons {
     display: flex;
     gap: 0;
     overflow: hidden;
@@ -229,9 +258,9 @@
     border-radius: 0;
     background-color: var(--color-surface);
     margin-top: 0;
-}
+  }
   
-.action-buttons button {
+  .action-buttons button {
     flex: 1;
     padding: 0.75rem;
     background-color: transparent;
@@ -243,41 +272,126 @@
     font-weight: normal;
     border-bottom: 2px solid transparent;
     transition: border-color 0.2s ease;
-}
+  }
   
-.action-buttons button:hover {
+  .action-buttons button:hover {
     background-color: rgba(255, 255, 255, 0.05);
-}
+  }
   
-.action-buttons button.active {
+  .action-buttons button.active {
     background-color: rgba(255, 255, 255, 0.05);
     border-bottom: 2px solid var(--color-primary);
     font-weight: normal;
     box-shadow: none;
-}
+  }
   
-.forecast-button,
-.region-details-button,
-.weather-effects-button {
+  .forecast-button,
+  .region-details-button,
+  .weather-effects-button {
     color: var(--color-text) !important;
-}
+  }
   
-.forecast-button.active,
-.region-details-button.active,
-.weather-effects-button.active {
+  .forecast-button.active,
+  .region-details-button.active,
+  .weather-effects-button.active {
     font-weight: normal !important;
-}
+  }
   
-/* Expandable sections */
-.forecast-section,
-.region-details-section,
-.weather-effects-section {
+  /* =================
+   * Expandable sections
+   * ================= */
+  .forecast-section,
+  .region-details-section,
+  .weather-effects-section {
     animation: none;
     margin-top: 0;
-}
-
-/* Move the celestial info display to the Region Details section */
-.celestial-info-display {
+  }
+  
+  /* =================
+   * Forecast Display
+   * ================= */
+  .forecast-section {
+    margin-top: 0;
+  }
+  
+  .forecast-section h2 {
+    display: block !important;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+  
+  .forecast-scroll {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    width: 100%;
+  }
+  
+  .forecast-container {
+    display: flex;
+    gap: 0.5rem;
+    width: max-content;
+  }
+  
+  .forecast-item {
+    flex-shrink: 0;
+    width: 6rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    text-align: center;
+    position: relative;
+  }
+  
+  /* 24-Hour Forecast */
+  .hour-forecast {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .hour-forecast-item {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .hour-forecast-time {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .hour-forecast-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .hour-forecast-condition {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  
+  .hour-forecast-temp {
+    margin-bottom: 0.25rem;
+  }
+  
+  .hour-forecast-wind {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  /* =================
+   * Region Details
+   * ================= */
+  .region-details-section {
+    margin-top: 0;
+  }
+  
+  /* Celestial info for the Region Details section */
+  .celestial-info-display {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
@@ -287,150 +401,154 @@
     margin-bottom: 1rem;
     background-color: var(--color-surface);
     border-radius: var(--radius-sm);
-}
-
-.celestial-times {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.celestial-time {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.celestial-time .label {
-    color: var(--color-text-secondary);
-    font-size: 0.9rem;
-}
-
-/* Weather icon improvements */
-.weather-icon-wrapper {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.weather-icon-composite {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
+  }
   
-/* Forecast display improvements */
-.forecast-scroll {
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    width: 100%;
-}
+  /* =================
+   * Weather Effects
+   * ================= */
+  .weather-effects-section {
+    margin-top: 0;
+  }
   
-.forecast-container {
-    display: flex;
-    gap: 0.5rem;
-    width: max-content;
-}
-  
-.forecast-item {
-    flex-shrink: 0;
-    width: 6rem;
-    background-color: var(--color-surface);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem;
-    text-align: center;
-    position: relative;
-}
-  
-/* Style for the 24-hour forecast */
-.hour-forecast {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 0.5rem;
-    width: 100%;
-    overflow-x: auto;
-}
-
-.hour-forecast-item {
-    background-color: var(--color-surface);
-    border-radius: var(--radius-sm);
-    padding: 1rem;
-    text-align: center;
-}
-
-.hour-forecast-time {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.hour-forecast-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.hour-forecast-condition {
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.hour-forecast-temp {
-    margin-bottom: 0.25rem;
-}
-
-.hour-forecast-wind {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-/* Weather effects content */
-.weather-effects-content {
+  .weather-effects-content {
     padding: 1rem;
     background-color: var(--color-surface);
     border-radius: var(--radius-sm);
     max-height: 300px;
     overflow-y: auto;
-}
-
-/* Fix for CelestialArcDisplay */
-.celestial-arc-container svg {
-    max-width: 100%;
-    height: auto;
-}
-
-/* 24-Hour Forecast styling */
-.forecast-section h2 {
-    display: block !important;
+  }
+  
+  /* =================
+   * Weather Icons
+   * ================= */
+  .weather-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .weather-icon-composite {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  /* =================
+   * Empty State
+   * ================= */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 2px dashed var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+  }
+  
+  .empty-state-icon {
+    font-size: 2.5rem;
     margin-bottom: 1rem;
-    font-size: 1.5rem;
-    font-weight: 500;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+    color: var(--color-text-secondary);
+  }
+  
+  .empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .empty-state-desc {
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+  }
+  
+  /* =================
+   * Responsive Styles
+   * ================= */
+  @media (max-width: 768px) {
+    /* Stack time controls on smaller screens */
+    .time-control-panel {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .custom-time-controls,
+    .quick-time-controls {
+      justify-content: center;
+      width: 100%;
+    }
+    
+    .time-display {
+      order: -1;
+    }
+    
+    /* Adjust action buttons for small screens */
     .action-buttons {
-        flex-direction: column;
+      flex-direction: column;
     }
     
+    /* Weather overlay takes more space on small screens */
     .weather-overlay {
-        width: 90%;
+      width: 90%;
     }
-
+    
+    /* Stack celestial info on small screens */
+    .celestial-info {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
     .celestial-info-display {
-        flex-direction: column;
+      flex-direction: column;
     }
     
+    /* Adjust forecast grid for small screens */
     .hour-forecast {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
     
+    /* Reduce time display font size on small screens */
     .time-display-large {
-        font-size: 3rem;
+      font-size: 3rem;
     }
-    
-    .custom-time-controls {
-        position: static;
-        justify-content: center;
-        margin-bottom: 1rem;
-    }
-}
+  }
+  
+  /* =================
+   * Animation for special weather effects
+   * ================= */
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+  
+  .weather-effect-animation {
+    animation: pulse 2s infinite ease-in-out;
+  }
+  
+  /* =================
+   * Utility Classes
+   * ================= */
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+  
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  
+  .mt-1 { margin-top: 0.25rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .mt-4 { margin-top: 1rem; }
+  
+  .mb-1 { margin-bottom: 0.25rem; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .mb-4 { margin-bottom: 1rem; }
+  
+  .p-1 { padding: 0.25rem; }
+  .p-2 { padding: 0.5rem; }
+  .p-4 { padding: 1rem; }

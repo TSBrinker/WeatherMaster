@@ -2,12 +2,17 @@
 import React from "react";
 import { formatTimeWithMinutes } from "../../utils/timeUtils";
 import WeatherIcon from "./WeatherIcon";
+import "../../weatherDashboard.css";
 
-const CurrentWeatherDisplay = ({ currentWeather, celestialInfo, isDaytime }) => {
+const CurrentWeatherDisplay = ({
+  currentWeather,
+  celestialInfo,
+  isDaytime,
+}) => {
   if (!currentWeather) return null;
 
   const nextEvent = isDaytime ? "sunset" : "sunrise";
-  const nextEventTime = isDaytime 
+  const nextEventTime = isDaytime
     ? formatTimeWithMinutes(celestialInfo.sunset)
     : formatTimeWithMinutes(celestialInfo.sunrise);
 
