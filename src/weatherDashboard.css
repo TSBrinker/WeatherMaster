@@ -15,11 +15,42 @@
   
 /* Top Section: Time and Controls */
 .time-control-panel {
-    display: block;
+    display: flex;
+    flex-direction: column;
     padding: 0;
     border-radius: 0;
     margin: 0;
     background-color: transparent;
+    position: relative;
+}
+
+/* Custom time control - fixed to top left */
+.custom-time-controls {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+}
+  
+.custom-hours-input {
+    width: 40px;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+  
+.custom-advance-button {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-left: 0.25rem;
 }
   
 /* Time display section */
@@ -47,41 +78,11 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
-/* Custom time controls */
-.custom-time-controls {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    margin: 0.5rem 0;
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-}
-  
-.custom-hours-input {
-    width: 40px;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-  
-.custom-advance-button {
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-sm);
-    background-color: var(--color-primary);
-    color: white;
-    border: none;
-    cursor: pointer;
-    margin-left: 0.25rem;
-}
-
-/* Quick time advancement buttons */
+/* Quick time advancement buttons - centered below time display */
 .quick-time-controls {
     display: flex;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     margin: 1rem 0;
 }
   
@@ -125,7 +126,7 @@
     display: none !important;
 }
 
-/* Weather overlay on celestial display */
+/* Weather overlay on celestial display - now transparent */
 .weather-overlay {
     position: absolute;
     top: 50%;
@@ -137,7 +138,7 @@
     align-items: center;
     z-index: 20;
     min-width: 250px;
-    background-color: rgba(255, 100, 50, 0.8); /* Semi-transparent orange background */
+    background-color: rgba(200, 80, 50, 0.8); /* Semi-transparent orange background */
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
@@ -184,24 +185,7 @@
     display: none;
 }
   
-/* Region Header - now placed below the celestial arc */
-.region-header {
-    width: 100%;
-    text-align: center;
-    padding: 0.75rem 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    margin: 0;
-    order: 3; /* Ensure it comes after the celestial section */
-}
-
-.region-name {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--color-text);
-}
-
-/* Celestial info - moved to the bottom of the arc */
+/* Celestial info - at the bottom of the arc */
 .arc-celestial-info {
     display: flex;
     justify-content: space-between;
@@ -217,6 +201,23 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+/* Region Header - properly below the celestial arc */
+.region-header {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin: 0;
+    order: 3; /* Ensure it comes after the celestial section */
+}
+
+.region-name {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--color-text);
 }
 
 /* Action Buttons */
