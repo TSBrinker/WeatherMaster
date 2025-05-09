@@ -1,5 +1,11 @@
 // src/components/WeatherDashboard.jsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
 import { useWorldSettings } from "../contexts/WorldSettings";
@@ -41,7 +47,6 @@ const WeatherDashboard = () => {
   const [currentSeason, setCurrentSeason] = useState("");
   const [forecast, setForecast] = useState([]);
   const [activeSection, setActiveSection] = useState(null); // null, 'forecast', 'region', or 'effects'
-  const [customHours, setCustomHours] = useState(1);
 
   const {
     state: worldSettings,
@@ -98,7 +103,10 @@ const WeatherDashboard = () => {
     };
   }, [activeRegion, currentDate]);
 
-  const celestialInfo = getCelestialInfo();
+  const celestialInfo = useMemo(
+    () => getCelestialInfo(),
+    [activeRegion, currentDate]
+  );
 
   // Update theme colors based on time of day and weather
   useEffect(() => {
@@ -132,7 +140,8 @@ const WeatherDashboard = () => {
         console.error("Error calculating sky colors:", error);
       }
     }
-  }, [forecast, activeRegion, currentDate, celestialInfo]);
+    // Carefully review and include only the dependencies that should trigger a recalculation
+  }, [forecast, activeRegion, celestialInfo]);
 
   // Initialize or load weather data
   useEffect(() => {
@@ -455,13 +464,6 @@ const WeatherDashboard = () => {
     updateRegionTimestamp,
   ]);
 
-  // Handle custom time advance
-  const handleCustomTimeAdvance = () => {
-    if (customHours > 0) {
-      handleAdvanceTime(customHours);
-    }
-  };
-
   // Empty state - no region selected
   if (!activeRegion) {
     return (
@@ -499,11 +501,7 @@ const WeatherDashboard = () => {
     <div className="weather-dashboard">
       {/* Top Section: Time and Controls */}
       <div className="time-control-panel">
-        <CustomTimeControls
-          customHours={customHours}
-          setCustomHours={setCustomHours}
-          onAdvanceTime={handleCustomTimeAdvance}
-        />
+        <CustomTimeControls onAdvanceTime={handleAdvanceTime} />
 
         <TimeDisplay
           currentDate={currentDate}
