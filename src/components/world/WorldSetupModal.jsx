@@ -4,19 +4,16 @@ import { useWorldSettings } from "../../contexts/WorldSettings";
 import { useWorld } from "../../contexts/WorldContext"; // Add this import
 
 const WorldSetupModal = ({ onClose }) => {
-  const { state, setWorldName, setGameTime, setIsConfigured } =
-    useWorldSettings();
+  const { state, setWorldName, setGameTime, setIsConfigured } = useWorldSettings();
   const { setCurrentDate } = useWorld(); // Get setCurrentDate from WorldContext
 
   // Get current date from state or use current date as fallback
-  const currentGameDate = state.gameTime
-    ? new Date(state.gameTime)
-    : new Date();
+  const currentGameDate = state.gameTime ? new Date(state.gameTime) : new Date();
 
   // Form state
   const [formData, setFormData] = useState({
     worldName: state.worldName || "My Fantasy World",
-    gameDate: currentGameDate.toISOString().split("T")[0], // yyyy-mm-dd format for date input
+    gameDate: currentGameDate.toISOString().split('T')[0], // yyyy-mm-dd format for date input
     hourOfDay: currentGameDate.getHours(),
   });
 
@@ -33,16 +30,16 @@ const WorldSetupModal = ({ onClose }) => {
 
     try {
       // Create a new date object with the selected date and time
-      const [year, month, day] = formData.gameDate.split("-").map(Number);
+      const [year, month, day] = formData.gameDate.split('-').map(Number);
       const dateTime = new Date(year, month - 1, day);
       dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
-
+      
       // Important: Update both contexts to ensure synchronization
       setWorldName(formData.worldName);
       setGameTime(dateTime);
       setCurrentDate(dateTime); // Also update in the WorldContext
       setIsConfigured(true);
-
+      
       // Force a re-render by setting a small timeout
       setTimeout(() => {
         // Close modal

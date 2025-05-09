@@ -1,6 +1,7 @@
-// src/contexts/WorldContext.js - Complete updated version
+// src/contexts/WorldContext.js
 import React, { createContext, useReducer, useContext, useEffect, useCallback } from 'react';
 import { storageUtils } from '../utils/storageUtils';
+import { useWorldSettings } from './WorldSettings';
 
 // Storage keys
 const WORLD_KEY = 'gm-weather-companion-world';
@@ -25,7 +26,8 @@ export const ACTIONS = {
   UPDATE_REGION_WEATHER: 'update_region_weather',
   UPDATE_REGION_TIMESTAMP: 'update_region_timestamp',
   SET_LOADING: 'set_loading',
-  SET_ERROR: 'set_error'
+  SET_ERROR: 'set_error',
+  SYNC_WITH_SETTINGS: 'sync_with_settings'
 };
 
 // Reducer function
@@ -84,6 +86,22 @@ const worldReducer = (state, action) => {
         error: action.payload,
         isLoading: false
       };
+    
+    case ACTIONS.SYNC_WITH_SETTINGS: {
+      // Only update if the date is different
+      const currentDate = new Date(state.currentDate);
+      const settingsDate = new Date(action.payload);
+      
+      // Check if dates are significantly different (more than 1 second)
+      if (Math.abs(currentDate - settingsDate) > 1000) {
+        console.log("Syncing world time with settings:", settingsDate.toISOString());
+        return {
+          ...state,
+          currentDate: settingsDate.toISOString()
+        };
+      }
+      return state;
+    }
       
     default:
       return state;
@@ -93,6 +111,9 @@ const worldReducer = (state, action) => {
 // Provider component
 export const WorldProvider = ({ children }) => {
   const [state, dispatch] = useReducer(worldReducer, initialState);
+  
+  // Get access to WorldSettings context
+  const { state: worldSettings } = useWorldSettings();
   
   // Load world data on initial render
   useEffect(() => {
@@ -144,6 +165,16 @@ export const WorldProvider = ({ children }) => {
     loadWorldData();
   }, []);
   
+  // Sync with WorldSettings when it changes
+  useEffect(() => {
+    if (worldSettings.gameTime && worldSettings.isConfigured) {
+      dispatch({ 
+        type: ACTIONS.SYNC_WITH_SETTINGS, 
+        payload: worldSettings.gameTime 
+      });
+    }
+  }, [worldSettings.gameTime, worldSettings.isConfigured]);
+  
   // Save world data when it changes
   useEffect(() => {
     // Save world time
@@ -162,8 +193,69 @@ export const WorldProvider = ({ children }) => {
     }
   }, [state.currentDate, state.weatherHistory, state.lastUpdateTimes]);
   
+  // Callbacks for context functions
+  const setCurrentDate = useCallback((date) => {
+    // Accept either Date object or ISO string
+    const dateValue = date instanceof Date ? date.toISOString() : date;
+    console.log("Setting current date:", dateValue);
+    dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: dateValue });
+  }, []);
+
+  const advanceTime = useCallback((hours) => {
+    console.log(`Advancing world time by ${hours} hours`);
+    dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
+  }, []);
+
+  const getRegionWeather = useCallback((regionId) => {
+    return state.weatherHistory[regionId] || null;
+  }, [state.weatherHistory]);
+
+  const updateRegionWeather = useCallback((regionId, weatherData) => {
+    dispatch({
+      type: ACTIONS.UPDATE_REGION_WEATHER,
+      payload: { regionId, weatherData }
+    });
+  }, []);
+
+  const getRegionLastUpdateTime = useCallback((regionId) => {
+    return state.lastUpdateTimes[regionId] || null;
+  }, [state.lastUpdateTimes]);
+
+  const updateRegionTimestamp = useCallback((regionId, timestamp = new Date().toISOString()) => {
+    dispatch({
+      type: ACTIONS.UPDATE_REGION_TIMESTAMP,
+      payload: { regionId, timestamp }
+    });
+  }, []);
+  
   // Create memoized context value
-  const value = React.useMemo(() => ({ state, dispatch }), [state]);
+  const value = React.useMemo(() => {
+    return {
+      currentDate: new Date(state.currentDate), // Convert ISO string to Date object
+      weatherHistory: state.weatherHistory,
+      lastUpdateTimes: state.lastUpdateTimes,
+      isLoading: state.isLoading,
+      error: state.error,
+      setCurrentDate,
+      advanceTime,
+      getRegionWeather,
+      updateRegionWeather,
+      getRegionLastUpdateTime,
+      updateRegionTimestamp
+    };
+  }, [
+    state.currentDate, 
+    state.weatherHistory, 
+    state.lastUpdateTimes, 
+    state.isLoading, 
+    state.error,
+    setCurrentDate,
+    advanceTime,
+    getRegionWeather,
+    updateRegionWeather,
+    getRegionLastUpdateTime,
+    updateRegionTimestamp
+  ]);
   
   return (
     <WorldContext.Provider value={value}>
@@ -178,68 +270,5 @@ export const useWorld = () => {
   if (!context) {
     throw new Error('useWorld must be used within a WorldProvider');
   }
-  
-  const { state, dispatch } = context;
-  
-  // Current date as a Date object
-  const currentDate = new Date(state.currentDate);
-  
-  // Advance time for all regions
-  const advanceTime = (hours) => {
-    console.log(`Advancing world time by ${hours} hours`);
-
-    // First dispatch the time advancement action
-    dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
-    
-    // Calculate the new date
-    const newDate = new Date(currentDate);
-    newDate.setHours(newDate.getHours() + hours);
-    const newDateString = newDate.toISOString();
-    
-    // IMPORTANT: This is needed to mark all regions for updating
-    // Get all regions that have weather data
-    const regionsWithWeather = Object.keys(state.weatherHistory);
-    console.log(`Marking ${regionsWithWeather.length} regions for time sync`);
-    
-    // Instead of updating the lastUpdateTimes here, we'll just ensure each
-    // region knows it needs time sync by NOT updating their timestamps.
-    // This way, when a region is viewed, it will see the time difference
-    // and synchronize automatically.
-  };
-  
-  // Get weather for a specific region
-  const getRegionWeather = useCallback((regionId) => {
-    return state.weatherHistory[regionId] || null;
-  }, [state.weatherHistory]);
-  
-  const updateRegionWeather = useCallback((regionId, weatherData) => {
-    dispatch({
-      type: ACTIONS.UPDATE_REGION_WEATHER,
-      payload: { regionId, weatherData }
-    });
-  }, [dispatch]);
-  
-  const getRegionLastUpdateTime = useCallback((regionId) => {
-    return state.lastUpdateTimes[regionId] || null;
-  }, [state.lastUpdateTimes]);
-  
-  const updateRegionTimestamp = useCallback((regionId, timestamp = new Date().toISOString()) => {
-    dispatch({
-      type: ACTIONS.UPDATE_REGION_TIMESTAMP,
-      payload: { regionId, timestamp }
-    });
-  }, [dispatch]);
-  
-  return {
-    currentDate,
-    weatherHistory: state.weatherHistory,
-    lastUpdateTimes: state.lastUpdateTimes,
-    isLoading: state.isLoading,
-    error: state.error,
-    advanceTime,
-    getRegionWeather,
-    updateRegionWeather,
-    getRegionLastUpdateTime,
-    updateRegionTimestamp
-  };
+  return context;
 };
