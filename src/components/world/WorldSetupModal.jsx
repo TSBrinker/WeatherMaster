@@ -1,21 +1,23 @@
-// src/components/world/WorldSetupModal.jsx - Updated to force hours only
+// src/components/world/WorldSetupModal.jsx
 import React, { useState } from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
-import { useWorld } from "../../contexts/WorldContext";
+import { useWorld } from "../../contexts/WorldContext"; // Add this import
 
 const WorldSetupModal = ({ onClose }) => {
-  const { state, setWorldName, setGameTime, setGameYear, setIsConfigured } =
+  const { state, setWorldName, setGameTime, setIsConfigured } =
     useWorldSettings();
-  const { currentDate } = useWorld();
+  const { setCurrentDate } = useWorld(); // Get setCurrentDate from WorldContext
+
+  // Get current date from state or use current date as fallback
+  const currentGameDate = state.gameTime
+    ? new Date(state.gameTime)
+    : new Date();
 
   // Form state
   const [formData, setFormData] = useState({
     worldName: state.worldName || "My Fantasy World",
-    startDate: new Date(state.gameTime || currentDate)
-      .toISOString()
-      .split("T")[0],
-    hourOfDay: new Date(state.gameTime || currentDate).getHours(),
-    gameYear: state.gameYear || 1492,
+    gameDate: currentGameDate.toISOString().split("T")[0], // yyyy-mm-dd format for date input
+    hourOfDay: currentGameDate.getHours(),
   });
 
   const handleChange = (e) => {
@@ -29,19 +31,27 @@ const WorldSetupModal = ({ onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Create new date with hour only (no minutes)
-    const dateTime = new Date(`${formData.startDate}T00:00:00`);
-    // Set hours only - force minutes to 0
-    dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
+    try {
+      // Create a new date object with the selected date and time
+      const [year, month, day] = formData.gameDate.split("-").map(Number);
+      const dateTime = new Date(year, month - 1, day);
+      dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
 
-    // Update context
-    setWorldName(formData.worldName);
-    setGameTime(dateTime.toISOString());
-    setGameYear(parseInt(formData.gameYear, 10));
-    setIsConfigured(true);
+      // Important: Update both contexts to ensure synchronization
+      setWorldName(formData.worldName);
+      setGameTime(dateTime);
+      setCurrentDate(dateTime); // Also update in the WorldContext
+      setIsConfigured(true);
 
-    // Close modal
-    onClose();
+      // Force a re-render by setting a small timeout
+      setTimeout(() => {
+        // Close modal
+        onClose();
+      }, 50);
+    } catch (error) {
+      console.error("Error setting game date/time:", error);
+      // You could add error handling UI here
+    }
   };
 
   // Handle click outside to close
@@ -89,39 +99,23 @@ const WorldSetupModal = ({ onClose }) => {
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="gameYear" className="block mb-2">
-              Game Year
-            </label>
-            <input
-              type="number"
-              id="gameYear"
-              name="gameYear"
-              value={formData.gameYear}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-surface-light text-white border border-border"
-              min="1"
-              required
-            />
-            <div className="text-sm text-gray-400 mt-1">
-              Year for your game world (e.g. 1492, 3025)
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="startDate" className="block mb-2">
-                Start Date
+              <label htmlFor="gameDate" className="block mb-2">
+                Game Date
               </label>
               <input
                 type="date"
-                id="startDate"
-                name="startDate"
-                value={formData.startDate}
+                id="gameDate"
+                name="gameDate"
+                value={formData.gameDate}
                 onChange={handleChange}
                 className="w-full p-2 rounded bg-surface-light text-white border border-border"
                 required
               />
+              <div className="text-sm text-gray-400 mt-1">
+                The date in your game world
+              </div>
             </div>
             <div>
               <label htmlFor="hourOfDay" className="block mb-2">

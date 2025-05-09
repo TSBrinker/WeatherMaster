@@ -1,9 +1,12 @@
-// src/components/world/WorldConfigButton.jsx - Updated with better display
+// src/components/world/WorldConfigButton.jsx
 import React from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
 
 const WorldConfigButton = ({ onClick }) => {
-  const { state } = useWorldSettings();
+  const { state, formatGameDate } = useWorldSettings();
+
+  // Get formatted date to display (optional)
+  const formattedDate = state.gameTime ? formatGameDate(state.gameTime) : "";
 
   return (
     <button
@@ -15,9 +18,7 @@ const WorldConfigButton = ({ onClick }) => {
       <span className="text-lg">🌍</span>
       <span className="hidden sm:inline font-semibold">
         {state.worldName || "My World"}
-        {state.gameYear && (
-          <span className="text-sm ml-1 text-gray-400">{state.gameYear}</span>
-        )}
+        {/* <span className="text-sm ml-2 text-gray-400">{formattedDate}</span> */}
       </span>
     </button>
   );

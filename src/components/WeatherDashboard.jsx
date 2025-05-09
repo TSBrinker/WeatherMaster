@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx
+// src/components/WeatherDashboard.jsx - updated without ESLint comment
 import React, {
   useState,
   useEffect,
@@ -33,6 +33,10 @@ import WeatherEffects from "./weather/WeatherEffects";
 import "../weatherDashboard.css";
 
 const WeatherDashboard = () => {
+  // Debug render counter
+  const renderCount = useRef(0);
+
+  // Context hooks
   const { activeRegion } = useRegion();
   const {
     currentDate,
@@ -43,11 +47,6 @@ const WeatherDashboard = () => {
     updateRegionTimestamp,
   } = useWorld();
 
-  const [season, setSeason] = useState("auto");
-  const [currentSeason, setCurrentSeason] = useState("");
-  const [forecast, setForecast] = useState([]);
-  const [activeSection, setActiveSection] = useState(null); // null, 'forecast', 'region', or 'effects'
-
   const {
     state: worldSettings,
     formatGameDate,
@@ -55,21 +54,32 @@ const WeatherDashboard = () => {
     advanceGameTime,
   } = useWorldSettings();
 
-  // Add state for dynamic theme colors
+  // Component state
+  const [season, setSeason] = useState("auto");
+  const [currentSeason, setCurrentSeason] = useState("");
+  const [forecast, setForecast] = useState([]);
+  const [activeSection, setActiveSection] = useState(null);
   const [themeColors, setThemeColors] = useState({
-    backgroundColor: "#1f2937", // Default background
-    textColor: "#f9fafb", // Default text
-    backgroundImage: "none", // Default no image
+    backgroundColor: "#1f2937",
+    textColor: "#f9fafb",
+    backgroundImage: "none",
   });
-
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Added to force updates when needed
 
-  // Refs for tracking previous values to prevent effect re-runs
+  // Refs for tracking previous values
   const prevRegionIdRef = useRef(null);
   const prevDateRef = useRef(null);
+  const lastThemeUpdateRef = useRef(null);
 
-  // Get current celestial data for displaying sunrise/sunset info
+  // Logging render count (development only)
+  useEffect(() => {
+    renderCount.current += 1;
+    console.log(`WeatherDashboard render #${renderCount.current}`);
+  });
+
+  // Get current celestial data - MEMOIZED to prevent recalculations
   const getCelestialInfo = useCallback(() => {
     if (!activeRegion)
       return {
@@ -85,73 +95,112 @@ const WeatherDashboard = () => {
         dayLengthFormatted: "N/A",
       };
 
-    // Get sun data
-    const sunData = sunriseSunsetService.getFormattedSunriseSunset(
-      activeRegion.latitudeBand || "temperate",
-      currentDate
-    );
+    try {
+      // Get sun data
+      const sunData = sunriseSunsetService.getFormattedSunriseSunset(
+        activeRegion.latitudeBand || "temperate",
+        currentDate
+      );
 
-    // Get moon data
-    const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
+      // Get moon data
+      const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
 
-    return {
-      ...sunData,
-      moonrise,
-      moonset,
-      moonriseTime: formatTimeWithMinutes(moonrise),
-      moonsetTime: formatTimeWithMinutes(moonset),
-    };
+      return {
+        ...sunData,
+        moonrise,
+        moonset,
+        moonriseTime: formatTimeWithMinutes(moonrise),
+        moonsetTime: formatTimeWithMinutes(moonset),
+      };
+    } catch (error) {
+      console.error("Error calculating celestial info:", error);
+      return {
+        sunrise: null,
+        sunset: null,
+        isDaytime: false,
+        sunriseTime: "N/A",
+        sunsetTime: "N/A",
+        moonrise: null,
+        moonset: null,
+        moonriseTime: "N/A",
+        moonsetTime: "N/A",
+        dayLengthFormatted: "N/A",
+      };
+    }
   }, [activeRegion, currentDate]);
 
-  const celestialInfo = useMemo(
-    () => getCelestialInfo(),
-    [activeRegion, currentDate]
-  );
+  // Memoize celestial info to prevent recalculation on every render
+  const celestialInfo = useMemo(() => getCelestialInfo(), [getCelestialInfo]);
 
-  // Update theme colors based on time of day and weather
+  // Update theme colors - with stable dependency check and throttling
   useEffect(() => {
-    if (forecast.length > 0 && activeRegion) {
-      const currentWeather = forecast[0];
-      try {
-        // Get sunrise/sunset times for more precise gradient
-        const { sunrise, sunset } = celestialInfo;
-
-        // Set background gradient based on time and weather
-        const backgroundGradient = getPreciseSkyGradient(
-          currentWeather.date,
-          currentWeather.condition,
-          sunrise,
-          sunset
-        );
-
-        // Get text color that contrasts with background
-        const skyColors = skyColorService.calculateSkyColor(
-          currentWeather.date,
-          currentWeather.condition,
-          activeRegion.latitudeBand || "temperate"
-        );
-
-        setThemeColors({
-          backgroundColor: skyColors.backgroundColor,
-          textColor: skyColors.textColor,
-          backgroundImage: backgroundGradient,
-        });
-      } catch (error) {
-        console.error("Error calculating sky colors:", error);
-      }
+    // Skip if theme was updated recently (throttle updates)
+    const now = Date.now();
+    if (lastThemeUpdateRef.current && now - lastThemeUpdateRef.current < 500) {
+      return;
     }
-    // Carefully review and include only the dependencies that should trigger a recalculation
-  }, [forecast, activeRegion, celestialInfo]);
 
-  // Initialize or load weather data
-  useEffect(() => {
+    // Skip if no forecast or active region
+    if (!forecast.length || !activeRegion) return;
+
+    const currentWeather = forecast[0];
+    try {
+      // Save which weather + date we're calculating themes for
+      const weatherCondition = currentWeather.condition;
+      const weatherTime = currentWeather.date
+        ? new Date(currentWeather.date)
+        : currentDate;
+
+      // Get sunrise/sunset times
+      const { sunrise, sunset } = celestialInfo;
+
+      // Skip if no sunrise/sunset (calculation failed)
+      if (!sunrise || !sunset) return;
+
+      // Calculate background gradient and colors
+      const backgroundGradient = getPreciseSkyGradient(
+        weatherTime,
+        weatherCondition,
+        sunrise,
+        sunset
+      );
+
+      const skyColors = skyColorService.calculateSkyColor(
+        weatherTime,
+        weatherCondition,
+        activeRegion.latitudeBand || "temperate"
+      );
+
+      // Update theme colors
+      setThemeColors({
+        backgroundColor: skyColors.backgroundColor,
+        textColor: skyColors.textColor,
+        backgroundImage: backgroundGradient,
+      });
+
+      // Update last theme time
+      lastThemeUpdateRef.current = now;
+    } catch (error) {
+      console.error("Error calculating sky colors:", error);
+    }
+  }, [
+    forecast.length > 0 ? forecast[0].condition : null,
+    forecast.length > 0
+      ? forecast[0].date
+        ? forecast[0].date.getTime()
+        : null
+      : null,
+    activeRegion?.id,
+    // No direct dependency on celestialInfo to avoid loops
+  ]);
+
+  // Handle weather initialization - with stable dependency handling
+  const initializeWeather = useCallback(() => {
     // Don't run if no active region
     if (!activeRegion) return;
 
     // Get the region ID
     const regionId = activeRegion.id;
-
-    // Store current date for comparison
     const dateString = currentDate.toISOString();
 
     // Skip if nothing has changed
@@ -167,61 +216,43 @@ const WeatherDashboard = () => {
     prevRegionIdRef.current = regionId;
     prevDateRef.current = dateString;
 
-    console.log(
-      `Weather effect running: region=${regionId}, date=${dateString}`
-    );
+    console.log(`Initializing weather: region=${regionId}, date=${dateString}`);
     setIsLoading(true);
 
-    // Try to get existing weather from world state
+    // Try to get existing weather
     const savedWeather = getRegionWeather(regionId);
     const lastUpdateTime = getRegionLastUpdateTime(regionId);
 
-    // Check if this region needs time synchronization
+    // Check for time sync needs
     if (savedWeather && lastUpdateTime) {
       const lastUpdateDate = new Date(lastUpdateTime);
       const currentWorldDate = new Date(currentDate);
-
-      // Calculate time difference in milliseconds
       const timeDiffMs = currentWorldDate.getTime() - lastUpdateDate.getTime();
 
-      // If there's a time difference greater than 1 minute
       if (Math.abs(timeDiffMs) > 60000) {
         console.log(`Time sync needed for region ${regionId}`);
-        console.log(`Last update: ${lastUpdateDate.toISOString()}`);
-        console.log(`Current world time: ${currentWorldDate.toISOString()}`);
-        console.log(`Time difference: ${timeDiffMs / (1000 * 60 * 60)} hours`);
-
-        // Calculate hours to advance (can be negative if going backward in time)
         const hoursDiff = Math.round(timeDiffMs / (1000 * 60 * 60));
 
         if (hoursDiff !== 0) {
-          console.log(
-            `Syncing region time by ${hoursDiff} hours to match world time`
-          );
+          console.log(`Syncing region time by ${hoursDiff} hours`);
 
-          // For very large time jumps (more than 3 days), reinitialize weather
+          // For large time jumps, reinitialize
           if (Math.abs(hoursDiff) > 72) {
-            console.log(
-              `Time gap exceeds 3 days (${hoursDiff} hours). Reinitializing weather.`
-            );
-
+            console.log(`Large time gap, reinitializing weather`);
             const actualSeason =
               season === "auto"
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
                 : season;
 
-            // Reinitialize weather for this region
             const newForecast = weatherManager.initializeWeather(
               regionId,
               activeRegion.climate,
-              season === "auto" ? actualSeason : season,
+              actualSeason,
               currentWorldDate
             );
 
             setForecast(newForecast);
             setCurrentSeason(actualSeason);
-
-            // Save to world state
             updateRegionWeather(regionId, {
               season,
               currentSeason: actualSeason,
@@ -231,41 +262,34 @@ const WeatherDashboard = () => {
               })),
             });
           } else {
-            // Normal time advancement for reasonable gaps
+            // Normal advancement
             const actualSeason =
               season === "auto"
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
                 : season;
 
-            // Use absolute value for advancing time - weatherManager needs positive hours
             const absHoursDiff = Math.abs(hoursDiff);
-
-            // Advance weather for this region
             let newForecast;
 
             if (hoursDiff > 0) {
-              // Advancing forward in time
               newForecast = weatherManager.advanceTime(
                 regionId,
                 absHoursDiff,
                 activeRegion.climate,
-                season === "auto" ? actualSeason : season,
-                new Date(lastUpdateDate.getTime()) // Start from last update time
+                actualSeason,
+                new Date(lastUpdateDate.getTime())
               );
             } else {
-              // Going backward in time or any other case - reinitialize
               newForecast = weatherManager.initializeWeather(
                 regionId,
                 activeRegion.climate,
-                season === "auto" ? actualSeason : season,
+                actualSeason,
                 currentWorldDate
               );
             }
 
             setForecast(newForecast);
             setCurrentSeason(actualSeason);
-
-            // Save to world state
             updateRegionWeather(regionId, {
               season,
               currentSeason: actualSeason,
@@ -276,9 +300,7 @@ const WeatherDashboard = () => {
             });
           }
 
-          // Update timestamp to current world time
           updateRegionTimestamp(regionId, currentWorldDate.toISOString());
-
           setIsLoading(false);
           setInitialized(true);
           return;
@@ -288,50 +310,40 @@ const WeatherDashboard = () => {
 
     // Normal loading logic
     if (savedWeather && savedWeather.forecast) {
-      console.log("Loading saved weather for region");
-      // Load saved weather
+      console.log("Loading saved weather");
       setSeason(savedWeather.season);
       setCurrentSeason(savedWeather.currentSeason);
       setForecast(
         savedWeather.forecast.map((hour) => ({
           ...hour,
-          date: new Date(hour.date), // Convert date strings to Date objects
+          date: new Date(hour.date),
         }))
       );
-
-      // Update timestamp
       updateRegionTimestamp(regionId, currentDate.toISOString());
     } else {
-      console.log("Generating new weather for region");
-      // Generate new weather
+      console.log("Generating new weather");
       const actualSeason =
         season === "auto"
           ? weatherManager.getSeasonFromDate(currentDate)
           : season;
 
       setCurrentSeason(actualSeason);
-
-      // Initialize weather for this region
       const newForecast = weatherManager.initializeWeather(
         regionId,
         activeRegion.climate,
-        season === "auto" ? actualSeason : season,
+        actualSeason,
         currentDate
       );
 
       setForecast(newForecast);
-
-      // Save to world state
       updateRegionWeather(regionId, {
         season,
         currentSeason: actualSeason,
         forecast: newForecast.map((hour) => ({
           ...hour,
-          date: hour.date.toISOString(), // Convert Date objects to strings for storage
+          date: hour.date.toISOString(),
         })),
       });
-
-      // Update timestamp
       updateRegionTimestamp(regionId, currentDate.toISOString());
     }
 
@@ -347,7 +359,12 @@ const WeatherDashboard = () => {
     initialized,
   ]);
 
-  // Handle time advancement using useCallback to prevent recreations
+  // Initialize weather effect - with stable dependencies
+  useEffect(() => {
+    initializeWeather();
+  }, [initializeWeather]);
+
+  // Handle time advancement
   const handleAdvanceTime = useCallback(
     (hours) => {
       if (!activeRegion) return;
@@ -355,45 +372,29 @@ const WeatherDashboard = () => {
       setIsLoading(true);
       console.log(`Advancing time by ${hours} hours`);
 
-      // Get the current date before advancing time (for logging)
       const beforeDate = new Date(currentDate);
-
-      // Advance global time
       advanceTime(hours);
-
-      // Also advance game time in WorldSettings to handle year progression
       advanceGameTime(hours);
 
-      // Use updated date from the context (add hours manually since the context update might not be instant)
       const afterDate = new Date(beforeDate);
       afterDate.setHours(afterDate.getHours() + hours);
 
-      console.log(
-        `Time advanced from ${beforeDate.toISOString()} to ${afterDate.toISOString()}`
-      );
-
-      // Now we need to explicitly update the weather for this region
       const actualSeason =
         season === "auto"
           ? weatherManager.getSeasonFromDate(afterDate)
           : season;
 
-      console.log(`Using season: ${actualSeason} for weather advancement`);
-
-      // Use the weatherManager to advance time for this specific region
+      // Handle weather advancement
       const newForecast = weatherManager.advanceTime(
         activeRegion.id,
         hours,
         activeRegion.climate,
-        season === "auto" ? actualSeason : season,
+        actualSeason,
         afterDate
       );
 
-      console.log(`Generated new forecast with ${newForecast.length} hours`);
       setForecast(newForecast);
       setCurrentSeason(actualSeason);
-
-      // Save to world state
       updateRegionWeather(activeRegion.id, {
         season,
         currentSeason: actualSeason,
@@ -402,11 +403,11 @@ const WeatherDashboard = () => {
           date: hour.date.toISOString(),
         })),
       });
-
-      // Update timestamp
       updateRegionTimestamp(activeRegion.id, afterDate.toISOString());
 
       setIsLoading(false);
+      // Force update celestial calculations after time change
+      setForceUpdate((prev) => prev + 1);
     },
     [
       activeRegion,
@@ -424,25 +425,20 @@ const WeatherDashboard = () => {
     if (!activeRegion) return;
 
     setIsLoading(true);
-
     const actualSeason =
       season === "auto"
         ? weatherManager.getSeasonFromDate(currentDate)
         : season;
 
     setCurrentSeason(actualSeason);
-
-    // Reinitialize weather
     const newForecast = weatherManager.initializeWeather(
       activeRegion.id,
       activeRegion.climate,
-      season === "auto" ? actualSeason : season,
+      actualSeason,
       currentDate
     );
 
     setForecast(newForecast);
-
-    // Save to world state
     updateRegionWeather(activeRegion.id, {
       season,
       currentSeason: actualSeason,
@@ -451,11 +447,10 @@ const WeatherDashboard = () => {
         date: hour.date.toISOString(),
       })),
     });
-
-    // Update timestamp
     updateRegionTimestamp(activeRegion.id, currentDate.toISOString());
 
     setIsLoading(false);
+    setForceUpdate((prev) => prev + 1);
   }, [
     activeRegion,
     season,
@@ -490,12 +485,15 @@ const WeatherDashboard = () => {
     );
   }
 
-  // Create a dynamic style for the weather display based on theme colors
+  // Create a dynamic style for the weather display
   const dynamicWeatherStyle = {
     backgroundImage: themeColors.backgroundImage,
     color: themeColors.textColor,
     transition: "background-color 2s, background-image 2s, color 2s",
   };
+
+  // Current weather from forecast
+  const currentWeather = forecast.length > 0 ? forecast[0] : null;
 
   return (
     <div className="weather-dashboard">
@@ -505,9 +503,7 @@ const WeatherDashboard = () => {
 
         <TimeDisplay
           currentDate={currentDate}
-          currentWeather={
-            forecast.length > 0 ? forecast[0].condition : "Loading..."
-          }
+          currentWeather={currentWeather?.condition || "Loading..."}
           currentSeason={
             season === "auto" && currentSeason ? currentSeason : ""
           }
@@ -518,10 +514,10 @@ const WeatherDashboard = () => {
 
       {/* Celestial Section with Weather */}
       <div className="celestial-section" style={dynamicWeatherStyle}>
-        {forecast.length > 0 && (
+        {currentWeather && (
           <>
             <CurrentWeatherDisplay
-              currentWeather={forecast[0]}
+              currentWeather={currentWeather}
               celestialInfo={celestialInfo}
               isDaytime={celestialInfo.isDaytime}
             />
@@ -568,9 +564,7 @@ const WeatherDashboard = () => {
       )}
 
       {activeSection === "effects" && (
-        <WeatherEffects
-          weatherEffects={forecast.length > 0 ? forecast[0].effects : ""}
-        />
+        <WeatherEffects weatherEffects={currentWeather?.effects || ""} />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 // src/contexts/WorldContext.js - Complete updated version
-import React, { createContext, useReducer, useContext, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, useEffect, useCallback } from 'react';
 import { storageUtils } from '../utils/storageUtils';
 
 // Storage keys
@@ -208,30 +208,27 @@ export const useWorld = () => {
   };
   
   // Get weather for a specific region
-  const getRegionWeather = (regionId) => {
+  const getRegionWeather = useCallback((regionId) => {
     return state.weatherHistory[regionId] || null;
-  };
+  }, [state.weatherHistory]);
   
-  // Update weather for a specific region
-  const updateRegionWeather = (regionId, weatherData) => {
+  const updateRegionWeather = useCallback((regionId, weatherData) => {
     dispatch({
       type: ACTIONS.UPDATE_REGION_WEATHER,
       payload: { regionId, weatherData }
     });
-  };
+  }, [dispatch]);
   
-  // Get last update time for a region
-  const getRegionLastUpdateTime = (regionId) => {
+  const getRegionLastUpdateTime = useCallback((regionId) => {
     return state.lastUpdateTimes[regionId] || null;
-  };
-
-  // Update last update time for a region
-  const updateRegionTimestamp = (regionId, timestamp = new Date().toISOString()) => {
+  }, [state.lastUpdateTimes]);
+  
+  const updateRegionTimestamp = useCallback((regionId, timestamp = new Date().toISOString()) => {
     dispatch({
       type: ACTIONS.UPDATE_REGION_TIMESTAMP,
       payload: { regionId, timestamp }
     });
-  };
+  }, [dispatch]);
   
   return {
     currentDate,

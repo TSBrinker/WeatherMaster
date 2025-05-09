@@ -1,4 +1,4 @@
-// src/App.jsx - Updated with a single improved dropdown
+// src/App.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { WorldProvider } from "./contexts/WorldContext";
 import { useRegion, RegionProvider } from "./contexts/RegionContext";
@@ -18,7 +18,7 @@ const AppContent = () => {
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionList, setShowRegionList] = useState(false);
   const [editingRegion, setEditingRegion] = useState(null);
-  const { state: worldSettings } = useWorldSettings();
+  const { state: worldSettings, setIsConfigured } = useWorldSettings();
   const { regions, activeRegion, setActiveRegion, deleteRegion } = useRegion();
   const dropdownRef = useRef(null);
 
@@ -36,13 +36,36 @@ const AppContent = () => {
 
   // Show world setup modal if not configured
   useEffect(() => {
-    if (
-      !worldSettings.isConfigured &&
-      !localStorage.getItem("gm-weather-companion-world-settings")
-    ) {
-      setShowWorldSetup(true);
+    // Check if settings exist and are valid
+    if (!worldSettings.isConfigured) {
+      // Try to load from storage first
+      const savedSettings = localStorage.getItem(
+        "gm-weather-companion-world-settings"
+      );
+      if (!savedSettings) {
+        // No saved settings, show setup modal
+        setShowWorldSetup(true);
+      } else {
+        try {
+          // Settings exist but check if they have valid gameTime
+          const parsedSettings = JSON.parse(savedSettings);
+          if (parsedSettings.gameTime) {
+            // Try to create a date from gameTime to verify it's valid
+            new Date(parsedSettings.gameTime);
+            // If no error, mark as configured
+            setIsConfigured(true);
+          } else {
+            // Invalid gameTime, show setup modal
+            setShowWorldSetup(true);
+          }
+        } catch (e) {
+          // Error parsing or invalid date, show setup modal
+          console.error("Error loading world settings:", e);
+          setShowWorldSetup(true);
+        }
+      }
     }
-  }, [worldSettings.isConfigured]);
+  }, [worldSettings.isConfigured, setIsConfigured]);
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -185,7 +208,14 @@ const AppContent = () => {
       )}
 
       {showWorldSetup && (
-        <WorldSetupModal onClose={() => setShowWorldSetup(false)} />
+        <WorldSetupModal
+          onClose={() => {
+            // Only close if configured or allow user to dismiss by clicking Cancel in the modal
+            if (worldSettings.isConfigured) {
+              setShowWorldSetup(false);
+            }
+          }}
+        />
       )}
     </div>
   );

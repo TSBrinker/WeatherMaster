@@ -1,28 +1,14 @@
 // src/components/weather/TimeDisplay.jsx
 import React from "react";
+import { useWorldSettings } from "../../contexts/WorldSettings";
 
 const TimeDisplay = ({ currentDate, currentWeather, currentSeason }) => {
-  // Format date for display
-  const formatDate = (date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  // Format time for display
-  const formatTime = (date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      hour12: true,
-    });
-  };
+  const { formatGameDate, formatGameTime } = useWorldSettings();
 
   return (
     <div className="time-display">
-      <div className="date-display">{formatDate(currentDate)}</div>
-      <div className="time-display-large">{formatTime(currentDate)}</div>
+      <div className="date-display">{formatGameDate(currentDate)}</div>
+      <div className="time-display-large">{formatGameTime(currentDate)}</div>
       <div className="current-weather-label">
         {currentWeather} {currentSeason ? `• ${currentSeason}` : ""}
       </div>

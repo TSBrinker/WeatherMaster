@@ -1,16 +1,16 @@
-// src/contexts/WorldSettings.js - Complete updated version
+// src/contexts/WorldSettings.js
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { storageUtils } from '../utils/storageUtils';
 
 // Storage key
 const WORLD_SETTINGS_KEY = 'gm-weather-companion-world-settings';
 
-// Initial state
+// Initial state with unified date handling
 const initialState = {
   worldName: 'My Fantasy World',
-  gameTime: new Date().toISOString(),
+  gameTime: new Date().toISOString(), // This stores full date including year
   calendar: {
-    type: 'gregorian', // gregorian, fantasy
+    type: 'gregorian',
     yearLength: 365,
     monthNames: [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -20,8 +20,6 @@ const initialState = {
     weekLength: 7,
     dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   },
-  gameYear: 1492,
-  gameSeason: 'auto',
   isConfigured: false
 };
 
@@ -32,25 +30,11 @@ export const WorldSettingsContext = createContext();
 export const ACTIONS = {
   SET_WORLD_NAME: 'set_world_name',
   SET_GAME_TIME: 'set_game_time',
-  SET_GAME_YEAR: 'set_game_year',
-  SET_GAME_SEASON: 'set_game_season',
   SET_CALENDAR: 'set_calendar',
   SET_IS_CONFIGURED: 'set_is_configured',
   RESET_SETTINGS: 'reset_settings',
   LOAD_SETTINGS: 'load_settings',
   ADVANCE_GAME_TIME: 'advance_game_time'
-};
-
-// Helper function to check if a date crosses a year boundary
-const checkYearCrossed = (oldDate, newDate) => {
-  const oldDt = new Date(oldDate);
-  const newDt = new Date(newDate);
-  
-  // Check if we crossed from December to January
-  return (
-    oldDt.getMonth() === 11 && newDt.getMonth() === 0 && 
-    newDt.getTime() > oldDt.getTime()
-  );
 };
 
 // Reducer function
@@ -66,18 +50,6 @@ const worldSettingsReducer = (state, action) => {
       return {
         ...state,
         gameTime: action.payload
-      };
-    
-    case ACTIONS.SET_GAME_YEAR:
-      return {
-        ...state,
-        gameYear: action.payload
-      };
-    
-    case ACTIONS.SET_GAME_SEASON:
-      return {
-        ...state,
-        gameSeason: action.payload
       };
     
     case ACTIONS.SET_CALENDAR:
@@ -99,25 +71,14 @@ const worldSettingsReducer = (state, action) => {
       };
     
     case ACTIONS.ADVANCE_GAME_TIME: {
-      const oldDate = state.gameTime;
-      const newDate = action.payload;
+      const currentDate = new Date(state.gameTime);
+      const newDate = new Date(currentDate);
+      newDate.setHours(newDate.getHours() + action.payload);
       
-      // Check if year boundary crossed
-      const yearCrossed = checkYearCrossed(oldDate, newDate);
-      
-      // If year boundary crossed, increment game year
-      if (yearCrossed) {
-        return {
-          ...state,
-          gameTime: newDate,
-          gameYear: state.gameYear + 1
-        };
-      } else {
-        return {
-          ...state,
-          gameTime: newDate
-        };
-      }
+      return {
+        ...state,
+        gameTime: newDate.toISOString()
+      };
     }
     
     case ACTIONS.RESET_SETTINGS:
@@ -182,18 +143,18 @@ export const WorldSettingsProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, [state]);
   
-  // Format a date using the game calendar and game year (NOT system year)
+  // Format a date using the game calendar
   const formatGameDate = (date) => {
     if (!date) return '';
     
     const d = new Date(date);
     
-    // Format using the current calendar settings but with game year
+    // Format using the current calendar settings
     const month = state.calendar.monthNames[d.getMonth()];
     const day = d.getDate();
+    const year = d.getFullYear(); // Use the year from the date object
     
-    // Use game year instead of system year - no weekday to match screenshot
-    return `${month} ${day}, ${state.gameYear}`;
+    return `${month} ${day}, ${year}`;
   };
   
   // Format time only - HOURS ONLY, NO MINUTES
@@ -207,15 +168,11 @@ export const WorldSettingsProvider = ({ children }) => {
     });
   };
   
-  // Helper to advance game time (with option to increment game year)
+  // Helper to advance game time
   const advanceGameTime = (hours) => {
-    const currentDate = new Date(state.gameTime);
-    const newDate = new Date(currentDate);
-    newDate.setHours(newDate.getHours() + hours);
-    
     dispatch({
       type: ACTIONS.ADVANCE_GAME_TIME,
-      payload: newDate.toISOString()
+      payload: hours
     });
   };
   
@@ -230,15 +187,9 @@ export const WorldSettingsProvider = ({ children }) => {
     },
     
     setGameTime: (time) => {
-      dispatch({ type: ACTIONS.SET_GAME_TIME, payload: time });
-    },
-    
-    setGameYear: (year) => {
-      dispatch({ type: ACTIONS.SET_GAME_YEAR, payload: parseInt(year, 10) });
-    },
-    
-    setGameSeason: (season) => {
-      dispatch({ type: ACTIONS.SET_GAME_SEASON, payload: season });
+      // Accept either Date object or ISO string
+      const timeValue = time instanceof Date ? time.toISOString() : time;
+      dispatch({ type: ACTIONS.SET_GAME_TIME, payload: timeValue });
     },
     
     setCalendar: (calendar) => {
