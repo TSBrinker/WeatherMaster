@@ -46,8 +46,6 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
   const moonriseTime = formatTimeWithMinutes(moonrise);
   const moonsetTime = formatTimeWithMinutes(moonset);
 
-  
-
   // Convert a Date to decimal hours (0-24)
   const getDecimalHours = (date) => {
     if (!(date instanceof Date)) return null;
@@ -436,7 +434,7 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
         </svg>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm">
+      {/* <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <span className="text-gray-400">Sunrise:</span> {sunriseTime}
         </div>
@@ -450,7 +448,7 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
         <div>
           <span className="text-gray-400">Moonset:</span> {moonsetTime || "N/A"}
         </div>
-      </div>
+      </div> */}
 
       {/* Debug panel - comment this out in production */}
       {/* <div className="mt-2 p-2 bg-surface-light text-xs rounded overflow-auto" style={{maxHeight: "100px"}}>

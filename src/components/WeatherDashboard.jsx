@@ -536,11 +536,11 @@ const WeatherDashboard = () => {
         )}
       </div>
 
-      {/* Celestial Info */}
-      <CelestialInfo celestialInfo={celestialInfo} />
-
       {/* Region Header */}
       <RegionHeader regionName={activeRegion.name} />
+
+      {/* Celestial Info */}
+      <CelestialInfo celestialInfo={celestialInfo} />
 
       {/* Action Tabs */}
       <ActionTabs
