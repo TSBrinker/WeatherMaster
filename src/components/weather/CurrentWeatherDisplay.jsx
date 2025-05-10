@@ -27,6 +27,7 @@ const CurrentWeatherDisplay = ({
         />
       </div>
       <div className="weather-details">
+        <div className="weather-condition">{currentWeather.condition}</div>
         <div className="temperature-display-large">
           {currentWeather.temperature}°F
         </div>

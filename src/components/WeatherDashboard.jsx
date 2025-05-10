@@ -501,13 +501,7 @@ const WeatherDashboard = () => {
       <div className="time-control-panel">
         <CustomTimeControls onAdvanceTime={handleAdvanceTime} />
 
-        <TimeDisplay
-          currentDate={currentDate}
-          currentWeather={currentWeather?.condition || "Loading..."}
-          currentSeason={
-            season === "auto" && currentSeason ? currentSeason : ""
-          }
-        />
+        <TimeDisplay currentDate={currentDate} currentSeason={currentSeason} />
 
         <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
       </div>

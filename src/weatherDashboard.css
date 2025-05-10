@@ -552,3 +552,56 @@
   .p-1 { padding: 0.25rem; }
   .p-2 { padding: 0.5rem; }
   .p-4 { padding: 1rem; }
+
+  /* Add these to src/weatherDashboard.css */
+
+/* Season display */
+.season-display {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+    font-style: italic;
+  }
+  
+  /* Weather condition text */
+  .weather-condition {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  
+  /* Time display adjustments */
+  .time-display-large {
+    font-size: 4rem;
+    font-weight: 300;
+    margin: 0; /* Remove margin to tighten spacing */
+    line-height: 1.1; /* Reduce line height to tighten spacing */
+  }
+  
+  .date-display {
+    font-size: 1.1rem;
+    color: var(--color-text);
+    margin-top: 0.5rem; /* Add top margin since this now appears after the time */
+    margin-bottom: 0.25rem;
+  }
+  
+  .season-display {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.25rem; /* Reduce bottom margin */
+    font-style: italic;
+  }
+  
+  /* Weather details adjustments */
+  .weather-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  /* Weather icon spacing */
+  .weather-icon-large {
+    margin-bottom: 0.25rem;
+  }
