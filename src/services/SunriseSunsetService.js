@@ -109,11 +109,23 @@ const LATITUDE_BANDS = {
       // Calculate sunrise and sunset around noon
       const halfDayLength = dayLength / 2;
       
-      const sunrise = new Date(noon);
-      sunrise.setHours(12 - halfDayLength, 0, 0, 0);
+      // Calculate hours and minutes for sunrise
+      const sunriseHours = 12 - halfDayLength;
+      const sunriseWholeHours = Math.floor(sunriseHours);
+      const sunriseMinutes = Math.round((sunriseHours - sunriseWholeHours) * 60);
       
+      // Calculate hours and minutes for sunset
+      const sunsetHours = 12 + halfDayLength;
+      const sunsetWholeHours = Math.floor(sunsetHours);
+      const sunsetMinutes = Math.round((sunsetHours - sunsetWholeHours) * 60);
+      
+      // Set sunrise time with proper hours and minutes
+      const sunrise = new Date(noon);
+      sunrise.setHours(sunriseWholeHours, sunriseMinutes, 0, 0);
+      
+      // Set sunset time with proper hours and minutes
       const sunset = new Date(noon);
-      sunset.setHours(12 + halfDayLength, 0, 0, 0);
+      sunset.setHours(sunsetWholeHours, sunsetMinutes, 0, 0);
       
       return {
         sunrise,
@@ -123,13 +135,16 @@ const LATITUDE_BANDS = {
     }
   
     /**
-     * Format a time for display (hour only, AM/PM)
+     * Format a time for display with hours and minutes
      * @param {Date} date - The date with time
      * @returns {string} - Formatted time
      */
     formatTime(date) {
+      if (!date || isNaN(date.getTime())) return "N/A";
+      
       return date.toLocaleTimeString('en-US', {
         hour: 'numeric',
+        minute: '2-digit',
         hour12: true
       });
     }

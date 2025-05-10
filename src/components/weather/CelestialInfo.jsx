@@ -1,53 +1,39 @@
-// src/components/weather/CelestialInfo.jsx
+// src/components/weather/CelestialInfo.jsx - Simplified version
 import React from "react";
-import { formatTimeWithMinutes } from "../../utils/timeUtils";
 
 const CelestialInfo = ({ celestialInfo }) => {
   if (!celestialInfo) return null;
 
+  // Direct use of the values from celestialInfo
   const {
-    sunrise,
-    sunset,
-    moonrise,
-    moonset,
-    sunriseTime,
-    sunsetTime,
-    moonriseTime,
-    moonsetTime,
+    sunriseTime = "N/A",
+    sunsetTime = "N/A",
+    moonriseTime = "N/A",
+    moonsetTime = "N/A",
   } = celestialInfo;
 
-  // Format times with minutes if they exist but aren't formatted yet
-  const formattedSunriseTime =
-    sunrise && !sunriseTime
-      ? formatTimeWithMinutes(sunrise)
-      : sunriseTime || "N/A";
-  const formattedSunsetTime =
-    sunset && !sunsetTime ? formatTimeWithMinutes(sunset) : sunsetTime || "N/A";
-  const formattedMoonriseTime =
-    moonrise && !moonriseTime
-      ? formatTimeWithMinutes(moonrise)
-      : moonriseTime || "N/A";
-  const formattedMoonsetTime =
-    moonset && !moonsetTime
-      ? formatTimeWithMinutes(moonset)
-      : moonsetTime || "N/A";
+  // Add some console logging to see what we're working with
+  console.log("CelestialInfo received:", celestialInfo);
 
   return (
     <div className="celestial-info">
+      {/* Left column - Sun info */}
       <div className="celestial-info-left">
         <div className="celestial-time">
-          <span className="label">Sunrise:</span> {formattedSunriseTime}
+          <span className="label">Sunrise:</span> {sunriseTime}
         </div>
         <div className="celestial-time">
-          <span className="label">Moonrise:</span> {formattedMoonriseTime}
+          <span className="label">Sunset:</span> {sunsetTime}
         </div>
       </div>
+
+      {/* Right column - Moon info */}
       <div className="celestial-info-right">
         <div className="celestial-time">
-          <span className="label">Sunset:</span> {formattedSunsetTime}
+          <span className="label">Moonrise:</span> {moonriseTime}
         </div>
         <div className="celestial-time">
-          <span className="label">Moonset:</span> {formattedMoonsetTime}
+          <span className="label">Moonset:</span> {moonsetTime}
         </div>
       </div>
     </div>

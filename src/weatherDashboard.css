@@ -605,3 +605,39 @@
   .weather-icon-large {
     margin-bottom: 0.25rem;
   }
+
+  .celestial-info {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    margin: 0;
+    max-width: 100%; /* Ensure it doesn't exceed container width */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent content from extending past boundaries */
+  }
+  
+  .celestial-info-left,
+  .celestial-info-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 48%; /* Give each column a specific width */
+  }
+  
+  .celestial-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+  
+  .celestial-time .label {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    width: 5rem; /* Fixed width for labels */
+    text-align: right;
+  }

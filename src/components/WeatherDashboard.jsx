@@ -80,6 +80,7 @@ const WeatherDashboard = () => {
   });
 
   // Get current celestial data - MEMOIZED to prevent recalculations
+  // In WeatherDashboard.jsx - updated getCelestialInfo function
   const getCelestialInfo = useCallback(() => {
     if (!activeRegion)
       return {
@@ -105,12 +106,35 @@ const WeatherDashboard = () => {
       // Get moon data
       const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
 
+      // Add debugging to see what we're getting from the services
+      console.log("Sun data from service:", sunData);
+      console.log("Moon times:", { moonrise, moonset });
+
+      // Format time strings consistently with hours:minutes
+      const formatTimeString = (date) => {
+        if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
+
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const hour12 = hours % 12 || 12;
+
+        // Ensure minutes are zero-padded
+        const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+
+        return `${hour12}:${minutesStr} ${ampm}`;
+      };
+
+      // Create a unified object with all the celestial info
       return {
         ...sunData,
         moonrise,
         moonset,
-        moonriseTime: formatTimeWithMinutes(moonrise),
-        moonsetTime: formatTimeWithMinutes(moonset),
+        // Ensure all time strings are directly created here
+        sunriseTime: formatTimeString(sunData.sunrise),
+        sunsetTime: formatTimeString(sunData.sunset),
+        moonriseTime: formatTimeString(moonrise),
+        moonsetTime: formatTimeString(moonset),
       };
     } catch (error) {
       console.error("Error calculating celestial info:", error);

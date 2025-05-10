@@ -3,15 +3,18 @@
  * Format time with minutes for celestial events
  * @param {Date} date - Date to format
  * @returns {string} - Formatted time string with minutes (e.g., "7:30 AM")
- */
+ * Format time with minutes for celestial events
+* @param {Date} date - Date to format
+* @returns {string} - Formatted time string with minutes (e.g., "7:30 AM")
+*/
 export const formatTimeWithMinutes = (date) => {
-    if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+ if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
+ return date.toLocaleTimeString('en-US', {
+   hour: 'numeric',
+   minute: '2-digit',
+   hour12: true
+ });
+};
   
   /**
    * Format just the hour for the main display
