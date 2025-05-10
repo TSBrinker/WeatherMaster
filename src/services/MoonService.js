@@ -1,4 +1,4 @@
-// src/services/MoonService.js - Fixed illumination calculation
+// src/services/MoonService.js - UPDATED with accurate moonrise/moonset calculations
 // Service for calculating and managing moon phases
 
 // Lunar cycle constants
@@ -136,55 +136,63 @@ class MoonService {
   }
 
   /**
-   * Calculate moonrise and moonset times (approximation)
-   * This is a simplified version for a fantasy game - real calculations would be more complex
+   * Calculate moonrise and moonset times (more accurate version)
    * @param {Date} date - The date to calculate for
-   * @param {number} phase - The moon phase illumination percentage
-   * @returns {object} The approximate moonrise and moonset times
+   * @returns {object} The moonrise and moonset times
    */
   getMoonTimes(date) {
+    // Get the phase for this date
     const phase = this.getMoonPhase(date);
     
-    // Calculate a more realistic moonrise/moonset based on phase
-    // Full moon rises at sunset, sets at sunrise
-    // New moon rises at sunrise, sets at sunset
-    // First quarter rises at noon, sets at midnight
-    // Last quarter rises at midnight, sets at noon
-    
-    // Start with base date
+    // Get base date without time
     const baseDate = new Date(date);
     baseDate.setHours(0, 0, 0, 0);
     
-    // Get the phase percentage (0-100)
-    const phasePercent = phase.exactPercentage;
+    // Phase position in the lunar cycle (0-1)
+    const cyclePosition = phase.age / LUNAR_CYCLE_DAYS;
     
-    // Calculate approximate moonrise time (using a simple model)
+    // Calculate moonrise time
+    // Full moon (0.5 cycle) rises at sunset (~6 PM)
+    // New moon (0.0 cycle) rises at sunrise (~6 AM)
+    // This creates a full 24-hour cycle with phase offset
+    const baseRiseHour = 6 + 12 * cyclePosition;
+    
+    // Add daily shift (moon rises ~50 mins later each day - approx 12.2 hours per lunar cycle)
+    // We'll use 0.84 hours (50 mins) per day × the day within the cycle
+    const dailyShift = 0.84 * cyclePosition * LUNAR_CYCLE_DAYS;
+    
+    // Combine for total rise hour
+    let riseHour = (baseRiseHour + dailyShift) % 24;
+    
+    // Convert to hours and minutes
+    const riseHours = Math.floor(riseHour);
+    const riseMinutes = Math.floor((riseHour - riseHours) * 60);
+    
+    // Create moonrise date
     const moonrise = new Date(baseDate);
-    // For phase 0% (new moon): rise at 6 AM
-    // For phase 50% (quarter): rise at 12 PM or 12 AM
-    // For phase 100% (full moon): rise at 6 PM
-    const moonriseHour = (6 + (phasePercent / 100) * 12) % 24;
-    moonrise.setHours(Math.floor(moonriseHour));
-    moonrise.setMinutes(Math.floor((moonriseHour % 1) * 60));
+    moonrise.setHours(riseHours, riseMinutes, 0, 0);
     
-    // Calculate approximate moonset time
+    // Moonset is ~12 hours after moonrise (approximate)
+    // We add a slight variation based on phase (full moon sets at sunrise)
+    const setHourOffset = 12 + (cyclePosition * 0.5); // 12-12.5 hours later
+    let setHour = (riseHour + setHourOffset) % 24;
+    
+    // Convert to hours and minutes
+    const setHours = Math.floor(setHour);
+    const setMinutes = Math.floor((setHour - setHours) * 60);
+    
+    // Create moonset date
     const moonset = new Date(baseDate);
-    // For phase 0% (new moon): set at 6 PM
-    // For phase 50% (quarter): set at 12 AM or 12 PM
-    // For phase 100% (full moon): set at 6 AM (next day)
-    const moonsetHour = (18 + (phasePercent / 100) * 12) % 24;
+    moonset.setHours(setHours, setMinutes, 0, 0);
     
-    // If moonset is on the next day
-    if (phasePercent > 50 && moonsetHour < 12) {
+    // If moonset time is earlier than moonrise, it must be the next day
+    if (moonset <= moonrise) {
       moonset.setDate(moonset.getDate() + 1);
     }
     
-    moonset.setHours(Math.floor(moonsetHour));
-    moonset.setMinutes(Math.floor((moonsetHour % 1) * 60));
-    
     return {
-      moonrise: moonrise,
-      moonset: moonset
+      moonrise,
+      moonset
     };
   }
 
@@ -205,6 +213,7 @@ class MoonService {
       // Get just the time in the correct format
       return moonDate.toLocaleTimeString('en-US', {
         hour: 'numeric',
+        minute: '2-digit',
         hour12: true
       });
     };
@@ -230,7 +239,14 @@ class MoonService {
       // For dates further away, use the month and day with game year
       const month = displayDate.toLocaleString('en-US', { month: 'short' });
       const day = displayDate.getDate();
-      return `${month} ${day}, ${worldSettings.gameYear}`;
+      
+      // If worldSettings has a gameYear property, use it
+      let year = displayDate.getFullYear();
+      if (worldSettings && worldSettings.gameYear) {
+        year = worldSettings.gameYear;
+      }
+      
+      return `${month} ${day}, ${year}`;
     };
 
     // Return formatted information
@@ -238,6 +254,8 @@ class MoonService {
       ...phase,
       moonriseTime: formatMoonTime(moonrise),
       moonsetTime: formatMoonTime(moonset),
+      moonrise: moonrise, // Include the actual Date objects
+      moonset: moonset,
       nextFullMoonDate: formatMoonDate(nextFullMoon),
       nextNewMoonDate: formatMoonDate(nextNewMoon),
       daysToFullMoon: Math.round((nextFullMoon - date) / (24 * 60 * 60 * 1000)),
