@@ -28,4 +28,4 @@ const WeatherDashboardHeader = ({
   );
 };
 
-export default WeatherDashboardHeader;
+// export default WeatherDashboardHeader;
