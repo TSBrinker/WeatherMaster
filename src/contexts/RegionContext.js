@@ -1,215 +1,149 @@
-// src/contexts/RegionContext.js
-import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { storageUtils } from '../utils/storageUtils';
-
-// Storage keys for localStorage
-const STORAGE_KEY = 'gm-weather-companion-regions';
-const ACTIVE_REGION_KEY = 'gm-weather-companion-active-region';
-
-// Initial state
-const initialState = {
-  regions: [],
-  activeRegionId: null,
-  isLoading: false,
-  error: null
-};
+// src/contexts/RegionContext.jsx
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { getLocalStorage, setLocalStorage } from "../utils/storageUtils";
+import weatherManager from "../services/WeatherManager";
 
 // Create the context
-export const RegionContext = createContext();
+const RegionContext = createContext();
 
-// Action types
-export const ACTIONS = {
-  SET_REGIONS: 'set_regions',
-  ADD_REGION: 'add_region',
-  UPDATE_REGION: 'update_region',
-  DELETE_REGION: 'delete_region',
-  SET_ACTIVE_REGION: 'set_active_region',
-  SET_LOADING: 'set_loading',
-  SET_ERROR: 'set_error'
-};
-
-// Reducer function
-const regionReducer = (state, action) => {
-  switch (action.type) {
-    case ACTIONS.SET_REGIONS:
-      return {
-        ...state,
-        regions: action.payload,
-        isLoading: false
-      };
-    case ACTIONS.ADD_REGION:
-      return {
-        ...state,
-        regions: [...state.regions, action.payload],
-        activeRegionId: action.payload.id, // Set as active when created
-        isLoading: false
-      };
-    case ACTIONS.UPDATE_REGION:
-      return {
-        ...state,
-        regions: state.regions.map(region => 
-          region.id === action.payload.id ? action.payload : region
-        ),
-        isLoading: false
-      };
-    case ACTIONS.DELETE_REGION: {
-      const updatedRegions = state.regions.filter(region => region.id !== action.payload);
-      const newActiveId = state.activeRegionId === action.payload 
-        ? (updatedRegions.length > 0 ? updatedRegions[0].id : null) 
-        : state.activeRegionId;
-      
-      return {
-        ...state,
-        regions: updatedRegions,
-        activeRegionId: newActiveId,
-        isLoading: false
-      };
-    }
-    case ACTIONS.SET_ACTIVE_REGION:
-      return {
-        ...state,
-        activeRegionId: action.payload
-      };
-    case ACTIONS.SET_LOADING:
-      return {
-        ...state,
-        isLoading: action.payload
-      };
-    case ACTIONS.SET_ERROR:
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false
-      };
-    default:
-      return state;
-  }
-};
+// Custom hook for using the context
+export const useRegion = () => useContext(RegionContext);
 
 // Provider component
 export const RegionProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(regionReducer, initialState);
+  const [regions, setRegions] = useState([]);
+  const [activeRegionId, setActiveRegionId] = useState(null);
 
-  // Load regions on initial render
+  // Load regions from localStorage on mount
   useEffect(() => {
-    const loadRegions = () => {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-      
-      // Debug - list all localStorage keys
-      storageUtils.listKeys();
-      
-      // Load regions
-      const regions = storageUtils.loadData(STORAGE_KEY, []);
-      if (regions && regions.length > 0) {
-        console.log(`Loaded ${regions.length} regions from storage`);
-        dispatch({ type: ACTIONS.SET_REGIONS, payload: regions });
+    const storedRegions = getLocalStorage("regions") || [];
+    if (storedRegions.length > 0) {
+      setRegions(storedRegions);
+      // Set first region as active if none is active
+      if (!activeRegionId && storedRegions.length > 0) {
+        setActiveRegionId(storedRegions[0].id);
       }
-      
-      // Load active region ID
-      const activeId = storageUtils.loadData(ACTIVE_REGION_KEY, null);
-      if (activeId) {
-        console.log(`Loaded active region ID: ${activeId}`);
-        dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
-      }
-      
-      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
-    };
-    
-    loadRegions();
+    }
   }, []);
 
-  // Save regions when they change
+  // Save regions to localStorage whenever they change
   useEffect(() => {
-    // Don't save if we're still loading or if regions array is empty from initialization
-    if (state.isLoading) return;
-    
-    // Even if empty, save it (could be after deletion)
-    console.log(`Saving ${state.regions.length} regions to storage`);
-    storageUtils.saveData(STORAGE_KEY, state.regions);
-  }, [state.regions, state.isLoading]);
-
-  // Save active region ID when it changes
-  useEffect(() => {
-    // If there's an active region ID, save it
-    if (state.activeRegionId) {
-      console.log(`Saving active region ID: ${state.activeRegionId}`);
-      storageUtils.saveData(ACTIVE_REGION_KEY, state.activeRegionId);
-    } else {
-      // If there's no active region ID, remove it from storage
-      storageUtils.removeData(ACTIVE_REGION_KEY);
+    if (regions.length > 0) {
+      setLocalStorage("regions", regions);
     }
-  }, [state.activeRegionId]);
+  }, [regions]);
 
-  // Memoize value to avoid unnecessary re-renders
-  const value = React.useMemo(() => ({
-    state,
-    dispatch
-  }), [state]);
+  // Get the active region object
+  const getActiveRegion = () => {
+    return regions.find((region) => region.id === activeRegionId) || null;
+  };
 
-  return (
-    <RegionContext.Provider value={value}>
-      {children}
-    </RegionContext.Provider>
-  );
-};
-
-// Custom hook for consuming the context
-export const useRegion = () => {
-  const context = useContext(RegionContext);
-  if (!context) {
-    throw new Error('useRegion must be used within a RegionProvider');
-  }
-
-  const { state, dispatch } = context;
-
-  // Memoized derived state
-  const activeRegion = React.useMemo(() => {
-    return state.regions.find(region => region.id === state.activeRegionId) || null;
-  }, [state.regions, state.activeRegionId]);
-
-  // Check if any regions exist
-  const hasRegions = state.regions.length > 0;
-
-  // Action creators
-  const createRegion = (regionData) => {
+  // Create a new region
+  const createRegion = (data) => {
     const newRegion = {
       id: uuidv4(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...regionData
+      name: data.name,
+      climate: data.climate,
+      latitudeBand: data.latitudeBand || "temperate", 
+      weatherType: data.weatherType || "diceTable", // Add weather type field
+      parameters: data.parameters || null, // Add parameters field for meteorological system
+      templateId: data.templateId || null, // Add template ID field
+      weatherData: null, // Initialize with no weather data
+      timestamp: new Date().toISOString(), // Current time
     };
-    dispatch({ type: ACTIONS.ADD_REGION, payload: newRegion });
+
+    const updatedRegions = [...regions, newRegion];
+    setRegions(updatedRegions);
+    setActiveRegionId(newRegion.id);
+
     return newRegion;
   };
 
-  const updateRegion = (id, regionData) => {
+  // Update an existing region
+  const updateRegion = (id, data) => {
+    // If weather type changed, reset the weather data
+    const existingRegion = regions.find(r => r.id === id);
+    const weatherTypeChanged = existingRegion && existingRegion.weatherType !== data.weatherType;
+    
+    // Create updated region with new data
     const updatedRegion = {
-      ...state.regions.find(region => region.id === id),
-      ...regionData,
-      updatedAt: new Date().toISOString()
+      ...existingRegion,
+      name: data.name,
+      climate: data.climate,
+      latitudeBand: data.latitudeBand || existingRegion.latitudeBand,
+      weatherType: data.weatherType || existingRegion.weatherType,
+      parameters: data.parameters || existingRegion.parameters,
+      templateId: data.templateId || existingRegion.templateId,
+      
+      // Reset weather data if weather type changed
+      weatherData: weatherTypeChanged ? null : existingRegion.weatherData
     };
-    dispatch({ type: ACTIONS.UPDATE_REGION, payload: updatedRegion });
+
+    // Update the regions array
+    const updatedRegions = regions.map((region) =>
+      region.id === id ? updatedRegion : region
+    );
+
+    setRegions(updatedRegions);
+    
+    // If weather type changed, clear the weather service
+    if (weatherTypeChanged) {
+      weatherManager.clearWeatherService(id);
+    }
+
     return updatedRegion;
   };
 
+  // Delete a region
   const deleteRegion = (id) => {
-    dispatch({ type: ACTIONS.DELETE_REGION, payload: id });
+    const updatedRegions = regions.filter((region) => region.id !== id);
+    setRegions(updatedRegions);
+
+    // If deleting the active region, set a new active region
+    if (id === activeRegionId) {
+      if (updatedRegions.length > 0) {
+        setActiveRegionId(updatedRegions[0].id);
+      } else {
+        setActiveRegionId(null);
+      }
+    }
+    
+    // Clear the weather service for this region
+    weatherManager.clearWeatherService(id);
   };
 
-  const setActiveRegion = (id) => {
-    dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: id });
+  // Update weather data for a region
+  const updateRegionWeather = (id, weatherData) => {
+    const updatedRegions = regions.map((region) =>
+      region.id === id ? { ...region, weatherData } : region
+    );
+    setRegions(updatedRegions);
   };
 
-  return {
-    regions: state.regions,
-    activeRegion,
-    hasRegions,
-    isLoading: state.isLoading,
-    error: state.error,
-    createRegion,
-    updateRegion,
-    deleteRegion,
-    setActiveRegion
+  // Update timestamp for a region
+  const updateRegionTimestamp = (id, timestamp) => {
+    const updatedRegions = regions.map((region) =>
+      region.id === id ? { ...region, timestamp } : region
+    );
+    setRegions(updatedRegions);
   };
+
+  return (
+    <RegionContext.Provider
+      value={{
+        regions,
+        activeRegionId,
+        setActiveRegionId,
+        getActiveRegion,
+        createRegion,
+        updateRegion,
+        deleteRegion,
+        updateRegionWeather,
+        updateRegionTimestamp,
+      }}
+    >
+      {children}
+    </RegionContext.Provider>
+  );
 };
