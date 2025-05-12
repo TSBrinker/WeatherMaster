@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx - updated without ESLint comment
+// src/components/WeatherDashboard.jsx
 import React, {
   useState,
   useEffect,
@@ -9,7 +9,7 @@ import React, {
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
 import { useWorldSettings } from "../contexts/WorldSettings";
-import weatherManager from "../services/weatherManager";
+import weatherManager from "../services/WeatherManager";
 import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
 import moonService from "../services/MoonService";
@@ -80,7 +80,6 @@ const WeatherDashboard = () => {
   });
 
   // Get current celestial data - MEMOIZED to prevent recalculations
-  // In WeatherDashboard.jsx - updated getCelestialInfo function
   const getCelestialInfo = useCallback(() => {
     if (!activeRegion)
       return {
@@ -215,7 +214,8 @@ const WeatherDashboard = () => {
         : null
       : null,
     activeRegion?.id,
-    // No direct dependency on celestialInfo to avoid loops
+    celestialInfo.sunrise,
+    celestialInfo.sunset,
   ]);
 
   // Handle weather initialization - with stable dependency handling
@@ -268,11 +268,15 @@ const WeatherDashboard = () => {
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
                 : season;
 
+            // Use the weatherType from region settings (default to 'diceTable')
+            const weatherType = activeRegion.weatherType || "diceTable";
+
             const newForecast = weatherManager.initializeWeather(
               regionId,
               activeRegion.climate,
               actualSeason,
-              currentWorldDate
+              currentWorldDate,
+              weatherType
             );
 
             setForecast(newForecast);
@@ -280,6 +284,7 @@ const WeatherDashboard = () => {
             updateRegionWeather(regionId, {
               season,
               currentSeason: actualSeason,
+              weatherType, // Store the weather type with the region
               forecast: newForecast.map((hour) => ({
                 ...hour,
                 date: hour.date.toISOString(),
@@ -293,6 +298,7 @@ const WeatherDashboard = () => {
                 : season;
 
             const absHoursDiff = Math.abs(hoursDiff);
+            const weatherType = activeRegion.weatherType || "diceTable";
             let newForecast;
 
             if (hoursDiff > 0) {
@@ -308,7 +314,8 @@ const WeatherDashboard = () => {
                 regionId,
                 activeRegion.climate,
                 actualSeason,
-                currentWorldDate
+                currentWorldDate,
+                weatherType
               );
             }
 
@@ -317,6 +324,7 @@ const WeatherDashboard = () => {
             updateRegionWeather(regionId, {
               season,
               currentSeason: actualSeason,
+              weatherType,
               forecast: newForecast.map((hour) => ({
                 ...hour,
                 date: hour.date.toISOString(),
@@ -337,6 +345,10 @@ const WeatherDashboard = () => {
       console.log("Loading saved weather");
       setSeason(savedWeather.season);
       setCurrentSeason(savedWeather.currentSeason);
+
+      // If region has a stored weather type, use it
+      const weatherType = savedWeather.weatherType || "diceTable";
+
       setForecast(
         savedWeather.forecast.map((hour) => ({
           ...hour,
@@ -351,18 +363,23 @@ const WeatherDashboard = () => {
           ? weatherManager.getSeasonFromDate(currentDate)
           : season;
 
+      // Default to dice table if not specified
+      const weatherType = activeRegion.weatherType || "diceTable";
+
       setCurrentSeason(actualSeason);
       const newForecast = weatherManager.initializeWeather(
         regionId,
         activeRegion.climate,
         actualSeason,
-        currentDate
+        currentDate,
+        weatherType
       );
 
       setForecast(newForecast);
       updateRegionWeather(regionId, {
         season,
         currentSeason: actualSeason,
+        weatherType,
         forecast: newForecast.map((hour) => ({
           ...hour,
           date: hour.date.toISOString(),
@@ -408,6 +425,9 @@ const WeatherDashboard = () => {
           ? weatherManager.getSeasonFromDate(afterDate)
           : season;
 
+      // Get weather type (default to dice table if not specified)
+      const weatherType = activeRegion.weatherType || "diceTable";
+
       // Handle weather advancement
       const newForecast = weatherManager.advanceTime(
         activeRegion.id,
@@ -422,6 +442,7 @@ const WeatherDashboard = () => {
       updateRegionWeather(activeRegion.id, {
         season,
         currentSeason: actualSeason,
+        weatherType,
         forecast: newForecast.map((hour) => ({
           ...hour,
           date: hour.date.toISOString(),
@@ -454,18 +475,23 @@ const WeatherDashboard = () => {
         ? weatherManager.getSeasonFromDate(currentDate)
         : season;
 
+    // Get weather type from region settings
+    const weatherType = activeRegion.weatherType || "diceTable";
+
     setCurrentSeason(actualSeason);
     const newForecast = weatherManager.initializeWeather(
       activeRegion.id,
       activeRegion.climate,
       actualSeason,
-      currentDate
+      currentDate,
+      weatherType
     );
 
     setForecast(newForecast);
     updateRegionWeather(activeRegion.id, {
       season,
       currentSeason: actualSeason,
+      weatherType,
       forecast: newForecast.map((hour) => ({
         ...hour,
         date: hour.date.toISOString(),
@@ -482,6 +508,62 @@ const WeatherDashboard = () => {
     updateRegionWeather,
     updateRegionTimestamp,
   ]);
+
+  // Change weather generation system
+  const changeWeatherSystem = useCallback(
+    (newType) => {
+      if (!activeRegion || !activeRegion.id) return;
+
+      setIsLoading(true);
+      console.log(`Changing weather system to: ${newType}`);
+
+      // Update region with new weather type
+      const updatedRegion = {
+        ...activeRegion,
+        weatherType: newType,
+      };
+
+      // Need to access the updateRegion function from context
+      // Assuming it's available in RegionContext and accessible here
+
+      // Generate new weather with the new system
+      const actualSeason =
+        season === "auto"
+          ? weatherManager.getSeasonFromDate(currentDate)
+          : season;
+
+      // Initialize weather with new type
+      const newForecast = weatherManager.initializeWeather(
+        activeRegion.id,
+        activeRegion.climate,
+        actualSeason,
+        currentDate,
+        newType
+      );
+
+      setForecast(newForecast);
+      setCurrentSeason(actualSeason);
+      updateRegionWeather(activeRegion.id, {
+        season,
+        currentSeason: actualSeason,
+        weatherType: newType,
+        forecast: newForecast.map((hour) => ({
+          ...hour,
+          date: hour.date.toISOString(),
+        })),
+      });
+      updateRegionTimestamp(activeRegion.id, currentDate.toISOString());
+
+      setIsLoading(false);
+    },
+    [
+      activeRegion,
+      season,
+      currentDate,
+      updateRegionWeather,
+      updateRegionTimestamp,
+    ]
+  );
 
   // Empty state - no region selected
   if (!activeRegion) {
@@ -519,6 +601,9 @@ const WeatherDashboard = () => {
   // Current weather from forecast
   const currentWeather = forecast.length > 0 ? forecast[0] : null;
 
+  // Current weather system type
+  const weatherSystemType = activeRegion.weatherType || "diceTable";
+
   return (
     <div className="weather-dashboard">
       {/* Top Section: Time and Controls */}
@@ -548,8 +633,19 @@ const WeatherDashboard = () => {
         )}
       </div>
 
-      {/* Region Header */}
-      <RegionHeader regionName={activeRegion.name} />
+      {/* Region Header with Weather System Type */}
+      <div className="region-header">
+        <h2 className="region-name">{activeRegion.name}</h2>
+        <div className="weather-system-badge">
+          {weatherSystemType === "diceTable" ? (
+            <span className="badge badge-basic">Basic Weather System</span>
+          ) : (
+            <span className="badge badge-advanced">
+              Meteorological Weather System
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Celestial Info */}
       <CelestialInfo celestialInfo={celestialInfo} />
@@ -578,15 +674,13 @@ const WeatherDashboard = () => {
           season={season}
           setSeason={setSeason}
           onRegenerateWeather={regenerateWeather}
+          weatherSystemType={weatherSystemType}
+          onChangeWeatherSystem={changeWeatherSystem}
         />
       )}
 
       {activeSection === "effects" && (
-        <WeatherEffects
-          weatherEffects={currentWeather?.effects || ""}
-          currentDate={currentDate}
-          latitudeBand={activeRegion.latitudeBand || "temperate"}
-        />
+        <WeatherEffects weatherEffects={currentWeather?.effects || ""} />
       )}
     </div>
   );

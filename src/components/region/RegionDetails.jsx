@@ -9,8 +9,17 @@ const RegionDetails = ({
   season,
   setSeason,
   onRegenerateWeather,
+  weatherSystemType = "diceTable",
+  onChangeWeatherSystem,
 }) => {
   if (!region) return null;
+
+  const handleWeatherSystemChange = (e) => {
+    const newType = e.target.value;
+    if (onChangeWeatherSystem) {
+      onChangeWeatherSystem(newType);
+    }
+  };
 
   return (
     <div className="region-details-section">
@@ -38,6 +47,29 @@ const RegionDetails = ({
             {celestialInfo.dayLengthFormatted || "N/A"}
           </div>
         </div>
+
+        {/* Weather System Selection */}
+        <div className="mt-4 p-3 bg-surface-light rounded">
+          <h3 className="font-semibold mb-2">Weather Generation System</h3>
+          <div className="mb-3">
+            <select
+              value={weatherSystemType}
+              onChange={handleWeatherSystemChange}
+              className="w-full p-2 rounded bg-surface text-white border border-border"
+            >
+              <option value="diceTable">Basic (Dice Tables)</option>
+              <option value="meteorological" disabled>
+                Advanced (Meteorological) - Coming Soon
+              </option>
+            </select>
+            <div className="text-sm text-gray-400 mt-1">
+              {weatherSystemType === "diceTable"
+                ? "Using simplified dice-based weather generation"
+                : "Using physically-based meteorological modeling"}
+            </div>
+          </div>
+        </div>
+
         <button onClick={onRegenerateWeather} className="btn btn-primary mt-4">
           Regenerate Weather
         </button>

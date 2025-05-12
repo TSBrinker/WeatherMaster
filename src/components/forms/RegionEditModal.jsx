@@ -1,4 +1,5 @@
-// src/components/forms/RegionEditModal.jsx
+// Modified RegionEditModal.jsx with weather system selection
+
 import React, { useState } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 
@@ -8,6 +9,7 @@ const RegionEditModal = ({ region, onClose }) => {
     name: region.name,
     climate: region.climate,
     latitudeBand: region.latitudeBand || "temperate",
+    weatherType: region.weatherType || "diceTable", // Default to dice table if not set
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -112,6 +114,29 @@ const RegionEditModal = ({ region, onClose }) => {
             </select>
             <div className="text-sm text-gray-400 mt-1">
               Affects day/night cycle and seasonal daylight hours
+            </div>
+          </div>
+
+          {/* New Weather System selection */}
+          <div className="mb-4">
+            <label htmlFor="weatherType" className="block mb-2">
+              Weather System
+            </label>
+            <select
+              id="weatherType"
+              name="weatherType"
+              value={formData.weatherType}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-surface-light text-white border border-border"
+            >
+              <option value="diceTable">Basic (Dice Tables)</option>
+              <option value="meteorological" disabled>
+                Advanced (Meteorological) - Coming Soon
+              </option>
+            </select>
+            <div className="text-sm text-gray-400 mt-1">
+              Choose between simple dice-based generation or more realistic
+              meteorological modeling
             </div>
           </div>
 
