@@ -1,12 +1,173 @@
-// utils/weatherUtils.js
+// src/services/meteorological/WeatherUtils.js
+// Utility functions for meteorological calculations
 
-/**
- * Gets the appropriate weather icon based on condition and time
- * @param {string} condition - The weather condition
- * @param {number} hour - The hour (0-23)
- * @returns {string} - The emoji icon
- */
-export const getWeatherIcon = (condition, hour = 12) => {
+class WeatherUtils {
+  /**
+   * Calculate day of year (0-365)
+   * @param {Date} date - Date object
+   * @returns {number} - Day of year
+   */
+  static getDayOfYear(date) {
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+  }
+
+  /**
+   * Calculate season from date
+   * @param {Date} date - Date to calculate season for
+   * @param {number} latitude - Latitude (-90 to 90)
+   * @returns {string} - Season name
+   */
+  static getSeasonFromDate(date, latitude = 40) {
+    // For southern hemisphere, invert the seasons
+    if (latitude < 0) {
+      const month = date.getMonth();
+      if (month >= 2 && month <= 4) return "fall";
+      if (month >= 5 && month <= 7) return "winter";
+      if (month >= 8 && month <= 10) return "spring";
+      return "summer";
+    }
+
+    // Northern hemisphere
+    const month = date.getMonth();
+    if (month >= 2 && month <= 4) return "spring";
+    if (month >= 5 && month <= 7) return "summer";
+    if (month >= 8 && month <= 10) return "fall";
+    return "winter";
+  }
+
+  /**
+   * Get sunrise/sunset hours based on latitude and day of year
+   * @param {number} latitude - Latitude in degrees
+   * @param {number} dayOfYear - Day of year (0-365)
+   * @returns {object} - Sunrise and sunset hours
+   */
+  static getDaylightHours(latitude, dayOfYear) {
+    // Simplified model for day length calculation
+    // Based on latitude and day of year
+    const declination = 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * (Math.PI / 180));
+    const latRad = latitude * (Math.PI / 180);
+    
+    // Calculate day length in hours
+    const cosHourAngle = -Math.tan(latRad) * Math.tan(declination * (Math.PI / 180));
+    
+    // Handle special cases (polar day/night)
+    if (cosHourAngle < -1) {
+      return { sunrise: 0, sunset: 24 }; // Polar day
+    } else if (cosHourAngle > 1) {
+      return { sunrise: 12, sunset: 12 }; // Polar night
+    }
+    
+    const hourAngle = Math.acos(cosHourAngle) * (180 / Math.PI);
+    const dayLength = (2 * hourAngle) / 15;
+    
+    // Calculate sunrise and sunset
+    const sunrise = 12 - dayLength / 2;
+    const sunset = 12 + dayLength / 2;
+    
+    return { sunrise, sunset };
+  }
+
+  /**
+   * Get moon phase for a date
+   * @param {Date} date - Date to check
+   * @returns {object} - Moon phase information
+   */
+  static getMoonPhase(date) {
+    // JDN stands for Julian Day Number
+    // Algorithm from "Astronomical Algorithms" by Jean Meeus
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    let jdn = day - 32075 + Math.floor(1461 * (year + 4800 + Math.floor((month - 14) / 12)) / 4) +
+             Math.floor(367 * (month - 2 - 12 * Math.floor((month - 14) / 12)) / 12) -
+             Math.floor(3 * Math.floor((year + 4900 + Math.floor((month - 14) / 12)) / 100) / 4);
+    
+    // Calculate current phase
+    const phase = (jdn - 2451550.1) % 29.530588853;
+    const normalizedPhase = phase / 29.530588853;
+    
+    // Determine the phase name and percentage illumination
+    let phaseName;
+    let illumination;
+    
+    if (normalizedPhase < 0.025 || normalizedPhase >= 0.975) {
+      phaseName = "New Moon";
+      illumination = 0;
+    } else if (normalizedPhase < 0.25) {
+      phaseName = "Waxing Crescent";
+      illumination = normalizedPhase * 4 * 100;
+    } else if (normalizedPhase < 0.275) {
+      phaseName = "First Quarter";
+      illumination = 50;
+    } else if (normalizedPhase < 0.475) {
+      phaseName = "Waxing Gibbous";
+      illumination = 50 + (normalizedPhase - 0.25) * 2 * 100;
+    } else if (normalizedPhase < 0.525) {
+      phaseName = "Full Moon";
+      illumination = 100;
+    } else if (normalizedPhase < 0.725) {
+      phaseName = "Waning Gibbous";
+      illumination = 100 - (normalizedPhase - 0.5) * 2 * 100;
+    } else if (normalizedPhase < 0.775) {
+      phaseName = "Last Quarter";
+      illumination = 50;
+    } else {
+      phaseName = "Waning Crescent";
+      illumination = 50 - (normalizedPhase - 0.75) * 2 * 100;
+    }
+    
+    return {
+      phase: normalizedPhase,
+      phaseName,
+      illumination: Math.round(illumination)
+    };
+  }
+  
+  /**
+   * Convert between temperature units
+   * @param {number} temp - Temperature value
+   * @param {string} from - Source unit ('F', 'C', or 'K')
+   * @param {string} to - Target unit ('F', 'C', or 'K')
+   * @returns {number} - Converted temperature
+   */
+  static convertTemperature(temp, from, to) {
+    // First convert to Celsius
+    let celsius;
+    switch (from.toUpperCase()) {
+      case 'F':
+        celsius = (temp - 32) * 5/9;
+        break;
+      case 'K':
+        celsius = temp - 273.15;
+        break;
+      case 'C':
+      default:
+        celsius = temp;
+    }
+    
+    // Then convert to target unit
+    switch (to.toUpperCase()) {
+      case 'F':
+        return celsius * 9/5 + 32;
+      case 'K':
+        return celsius + 273.15;
+      case 'C':
+      default:
+        return celsius;
+    }
+  }
+
+  /**
+   * Gets the appropriate weather icon based on condition and time
+   * @param {string} condition - The weather condition
+   * @param {number} hour - The hour (0-23)
+   * @returns {string} - The emoji icon
+   */
+  static getWeatherIcon(condition, hour = 12) {
     // Determine if it's day or night (simplified)
     const isNight = hour < 6 || hour >= 18;
     
@@ -37,17 +198,21 @@ export const getWeatherIcon = (condition, hour = 12) => {
         return '🌫️';
       case 'Cold Snap':
         return '❄️';
+      case 'Fog':
+        return '🌫️';
+      case 'Heavy Fog':
+        return '🌫️';
       default:
         return '❓';
     }
-  };
+  }
   
   /**
    * Gets the appropriate wind icon based on intensity
    * @param {string} intensity - The wind intensity
    * @returns {string|null} - The emoji icon or null for calm winds
    */
-  export const getWindIcon = (intensity) => {
+  static getWindIcon(intensity) {
     switch (intensity) {
       case 'Calm':
         return null; // No icon for calm winds
@@ -64,7 +229,7 @@ export const getWeatherIcon = (condition, hour = 12) => {
       default:
         return null;
     }
-  };
+  }
   
   /**
    * Gets the background color for a weather condition
@@ -72,7 +237,7 @@ export const getWeatherIcon = (condition, hour = 12) => {
    * @param {boolean} isDarkMode - Whether dark mode is enabled
    * @returns {string} - CSS color value
    */
-  export const getWeatherBackground = (condition, isDarkMode = true) => {
+  static getWeatherBackground(condition, isDarkMode = true) {
     // Base colors that work with dark mode
     if (isDarkMode) {
       switch (condition) {
@@ -126,14 +291,14 @@ export const getWeatherIcon = (condition, hour = 12) => {
       default:
         return '#e9f5db';
     }
-  };
+  }
   
   /**
    * Gets the style class based on wind intensity
    * @param {string} intensity - The wind intensity
    * @returns {string} - CSS class name
    */
-  export const getWindIntensityClass = (intensity) => {
+  static getWindIntensityClass(intensity) {
     switch (intensity) {
       case 'Calm':
         return 'text-gray-400';
@@ -150,14 +315,14 @@ export const getWeatherIcon = (condition, hour = 12) => {
       default:
         return '';
     }
-  };
+  }
   
   /**
    * Gets formatted temperature with appropriate color based on value
    * @param {number} temperature - Temperature in Fahrenheit
    * @returns {Object} - Contains formatted value and CSS color class
    */
-  export const getFormattedTemperature = (temperature) => {
+  static getFormattedTemperature(temperature) {
     let colorClass = '';
     
     if (temperature <= 32) {
@@ -178,14 +343,14 @@ export const getWeatherIcon = (condition, hour = 12) => {
       value: `${temperature}°F`,
       colorClass
     };
-  };
+  }
   
   /**
    * Maps biome name to climate table key
    * @param {string} biome - UI biome name
    * @returns {string} - Climate table key
    */
-  export const mapBiomeToClimate = (biome) => {
+  static mapBiomeToClimate(biome) {
     const biomeMap = {
       "temperate": "temperate-deciduous",
       "desert": "desert",
@@ -197,8 +362,9 @@ export const getWeatherIcon = (condition, hour = 12) => {
       "swamp": "tropical-seasonal"
     };
     
-    // return biome ? biomeMap[biome] || "temperate-deciduous" : biomeMap;
-
     console.log(`Mapping biome "${biome}" to climate table key:`, biomeMap[biome] || biome);
     return biome ? biomeMap[biome] || biome : "temperate-deciduous";
-  };
+  }
+}
+
+export default WeatherUtils;
