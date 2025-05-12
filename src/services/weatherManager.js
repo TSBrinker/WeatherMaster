@@ -1,119 +1,109 @@
 // src/services/WeatherManager.js
 // Singleton manager for weather services across regions
 
-// Import the WeatherFactory class directly, not the instance
-import { WeatherFactory } from './WeatherFactory';
+import WeatherFactory from './WeatherFactory';
 
-/**
- * Singleton manager that coordinates weather services across multiple regions.
- * This allows different regions to use different weather generation systems
- * while providing a consistent API for the UI components.
- */
 class WeatherManager {
   constructor() {
-    // Map of region IDs to weather services
-    this.weatherServices = new Map();
+    this.weatherServices = {}; // Will store a WeatherService instance per region
+    this.weatherServiceTypes = {}; // Tracks which type of service each region uses
+    this.forecasts = {}; // Will store forecast data per region
   }
-
-  /**
-   * Initialize weather for a region
-   * @param {string} regionId - Region ID
-   * @param {string} biome - Biome/climate type
-   * @param {string} season - Current season
-   * @param {Date} currentDate - Current date
-   * @param {string} weatherType - Weather generation type (diceTable or meteorological)
-   * @returns {object} - The generated weather
-   */
-  initializeWeather(regionId, biome, season, currentDate, weatherType = 'diceTable') {
-    console.log(`Initializing ${weatherType} weather for region ${regionId}`);
-    
-    // Create appropriate weather service using the static method
-    const weatherService = WeatherFactory.createWeatherService(weatherType);
-    
-    // Store the service
-    this.weatherServices.set(regionId, weatherService);
+  
+  // Initialize weather for a region
+  initializeWeather(regionId, climate, season, date, type = 'diceTable') {
+    // Create a new WeatherService instance if needed
+    if (!this.weatherServices[regionId] || this.weatherServiceTypes[regionId] !== type) {
+      this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+      this.weatherServiceTypes[regionId] = type;
+    }
     
     // Initialize weather
-    return weatherService.initializeWeather(biome, season, currentDate);
-  }
-
-  /**
-   * Advance time for a region
-   * @param {string} regionId - Region ID
-   * @param {number} hours - Hours to advance
-   * @param {string} biome - Biome/climate type
-   * @param {string} season - Current season
-   * @param {Date} currentDate - Current date
-   * @returns {object} - Updated weather
-   */
-  advanceTime(regionId, hours, biome, season, currentDate) {
-    // Get weather service for the region
-    const weatherService = this.weatherServices.get(regionId);
+    this.weatherServices[regionId].initializeWeather(climate, season, date);
     
-    if (!weatherService) {
-      console.error(`No weather service found for region ${regionId}`);
-      return null;
+    // Store forecast
+    this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
+    
+    return this.forecasts[regionId];
+  }
+  
+  // Get forecast for a region
+  getForecast(regionId) {
+    return this.forecasts[regionId] || null;
+  }
+  
+  // Advance time for a region
+  advanceTime(regionId, hours, climate, season, currentDate) {
+    // Ensure a WeatherService instance exists
+    if (!this.weatherServices[regionId]) {
+      const type = this.weatherServiceTypes[regionId] || 'diceTable';
+      this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+      this.initializeWeather(regionId, climate, season, currentDate, type);
     }
     
     // Advance time
-    return weatherService.advanceTime(hours, biome, season, currentDate);
-  }
-
-  /**
-   * Get the weather service for a region
-   * @param {string} regionId - Region ID
-   * @returns {object} - Weather service instance
-   */
-  getWeatherService(regionId) {
-    return this.weatherServices.get(regionId);
-  }
-
-  /**
-   * Change weather system type for a region
-   * @param {string} regionId - Region ID
-   * @param {string} newType - New weather type (diceTable or meteorological)
-   * @param {string} biome - Biome/climate type
-   * @param {string} season - Current season
-   * @param {Date} currentDate - Current date
-   * @returns {object} - New weather data
-   */
-  changeWeatherSystem(regionId, newType, biome, season, currentDate) {
-    console.log(`Changing weather system for region ${regionId} to ${newType}`);
+    this.weatherServices[regionId].advanceTime(hours, climate, season, currentDate);
     
-    // Create new weather service of the requested type
-    const weatherService = WeatherFactory.createWeatherService(newType);
+    // Update forecast
+    this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     
-    // Store the service
-    this.weatherServices.set(regionId, weatherService);
-    
-    // Initialize weather with the new service
-    return weatherService.initializeWeather(biome, season, currentDate);
-  }
-
-  /**
-   * Get season from date
-   * @param {Date} date - Date object
-   * @returns {string} - Season name
-   */
-  getSeasonFromDate(date) {
-    const month = date.getMonth();
-    
-    // Northern hemisphere seasons
-    if (month >= 2 && month <= 4) return 'spring';
-    if (month >= 5 && month <= 7) return 'summer';
-    if (month >= 8 && month <= 10) return 'fall';
-    return 'winter';
+    return this.forecasts[regionId];
   }
   
-  /**
-   * Clear weather service for a region (for cleanup)
-   * @param {string} regionId - Region ID
-   */
-  clearWeatherService(regionId) {
-    this.weatherServices.delete(regionId);
+  // Get season from date
+  getSeasonFromDate(date) {
+    // Use any WeatherService instance (they all share the same method)
+    const serviceId = Object.keys(this.weatherServices)[0];
+    if (serviceId) {
+      return this.weatherServices[serviceId].getSeasonFromDate(date);
+    }
+    
+    // If no service exists yet, create a temporary one to get the season
+    const tempService = WeatherFactory.createWeatherService();
+    return tempService.getSeasonFromDate(date);
+  }
+  
+  // Change weather service type for a region
+  changeServiceType(regionId, newType) {
+    if (this.weatherServiceTypes[regionId] === newType) {
+      return; // Already using this type
+    }
+    
+    // Get the current state if possible
+    const currentForecast = this.forecasts[regionId];
+    let currentDate = new Date();
+    let climate = 'temperate-deciduous';
+    let season = 'auto';
+    
+    if (currentForecast && currentForecast.length > 0) {
+      currentDate = currentForecast[0].date;
+      // Note: we'd need to store climate and season somewhere to fully preserve state
+    }
+    
+    // Create a new service and initialize it
+    this.weatherServiceTypes[regionId] = newType;
+    this.weatherServices[regionId] = WeatherFactory.createWeatherService(newType);
+    this.initializeWeather(regionId, climate, season, currentDate, newType);
+  }
+  
+  // Import/export weather state (for persistence)
+  exportState() {
+    return {
+      forecasts: this.forecasts,
+      serviceTypes: this.weatherServiceTypes
+    };
+  }
+  
+  importState(state) {
+    if (state && state.forecasts) {
+      this.forecasts = state.forecasts;
+    }
+    if (state && state.serviceTypes) {
+      this.weatherServiceTypes = state.serviceTypes;
+    }
   }
 }
 
-// Export singleton instance
-const weatherManagerInstance = new WeatherManager();
-export default weatherManagerInstance;
+// Singleton instance
+const weatherManager = new WeatherManager();
+export default weatherManager;
