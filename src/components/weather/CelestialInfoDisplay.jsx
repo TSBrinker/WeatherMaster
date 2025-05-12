@@ -38,4 +38,4 @@ const CelestialInfoDisplay = ({ celestialInfo }) => {
   );
 };
 
-export default CelestialInfoDisplay;
+// export default CelestialInfoDisplay;

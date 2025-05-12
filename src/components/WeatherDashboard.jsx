@@ -9,12 +9,11 @@ import React, {
 import { useRegion } from "../contexts/RegionContext";
 import { useWorld } from "../contexts/WorldContext";
 import { useWorldSettings } from "../contexts/WorldSettings";
-import weatherManager from "../services/WeatherManager";
+import weatherManager from "../services/weatherManager";
 import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
 import moonService from "../services/MoonService";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
-import { formatTimeWithMinutes } from "../utils/timeUtils";
 
 // Import components
 import TimeDisplay from "./weather/TimeDisplay";
@@ -23,7 +22,6 @@ import QuickTimeControls from "./weather/QuickTimeControls";
 import CelestialArcDisplay from "./celestial/CelestialArcDisplay";
 import CurrentWeatherDisplay from "./weather/CurrentWeatherDisplay";
 import CelestialInfo from "./weather/CelestialInfo";
-import RegionHeader from "./weather/RegionHeader";
 import ActionTabs from "./weather/ActionTabs";
 import ForecastDisplay from "./weather/ForecastDisplay";
 import RegionDetails from "./region/RegionDetails";
