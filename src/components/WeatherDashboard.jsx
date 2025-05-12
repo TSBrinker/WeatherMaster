@@ -20,7 +20,7 @@ import { formatTimeWithMinutes } from "../utils/timeUtils";
 import TimeDisplay from "./weather/TimeDisplay";
 import CustomTimeControls from "./weather/CustomTimeControls";
 import QuickTimeControls from "./weather/QuickTimeControls";
-import CelestialArcDisplay from "./weather/CelestialArcDisplay";
+import CelestialArcDisplay from "./celestial/CelestialArcDisplay";
 import CurrentWeatherDisplay from "./weather/CurrentWeatherDisplay";
 import CelestialInfo from "./weather/CelestialInfo";
 import RegionHeader from "./weather/RegionHeader";
@@ -582,7 +582,11 @@ const WeatherDashboard = () => {
       )}
 
       {activeSection === "effects" && (
-        <WeatherEffects weatherEffects={currentWeather?.effects || ""} />
+        <WeatherEffects
+          weatherEffects={currentWeather?.effects || ""}
+          currentDate={currentDate}
+          latitudeBand={activeRegion.latitudeBand || "temperate"}
+        />
       )}
     </div>
   );

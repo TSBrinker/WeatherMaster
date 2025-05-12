@@ -1,4 +1,4 @@
-// src/services/MoonService.js - UPDATED with accurate moonrise/moonset calculations
+// src/services/MoonService.js - UPDATED with improved phase calculation and emoji selection
 // Service for calculating and managing moon phases
 
 // Lunar cycle constants
@@ -19,6 +19,18 @@ const MOON_PHASES = [
   { name: "Last Quarter", min: 22.13, max: 25.90, icon: "🌗", illumination: 50 },
   { name: "Waning Crescent", min: 25.90, max: 29.53, icon: "🌘", illumination: 25 }
 ];
+
+// D&D 5E light levels per moon phase
+const MOON_LIGHT_LEVELS = {
+  "New Moon": "Darkness",
+  "Waxing Crescent": "Darkness",
+  "First Quarter": "Darkness",
+  "Waxing Gibbous": "Dim Light in open areas",
+  "Full Moon": "Dim Light in open areas",
+  "Waning Gibbous": "Dim Light in open areas",
+  "Last Quarter": "Darkness",
+  "Waning Crescent": "Darkness"
+};
 
 /**
  * Moon service that provides moon phase calculations and information
@@ -57,6 +69,29 @@ class MoonService {
   }
 
   /**
+   * Determine if the moon is waxing or waning
+   * @param {number} moonAge - The age of the moon in days
+   * @returns {boolean} True if waxing (growing), false if waning (shrinking)
+   */
+  isWaxing(moonAge) {
+    return moonAge < LUNAR_CYCLE_DAYS / 2;
+  }
+
+  /**
+   * Get the moon phase icon based on illumination percentage and waxing/waning status
+   * @param {number} illumination - Percentage of moon illuminated (0-100)
+   * @param {boolean} isWaxing - Whether the moon is waxing (growing) or waning (shrinking)
+   * @returns {string} Moon phase emoji
+   */
+  getMoonPhaseIcon(illumination, isWaxing) {
+    if (illumination < 5) return "🌑"; // New moon
+    if (illumination < 35) return isWaxing ? "🌒" : "🌘"; // Crescent
+    if (illumination < 65) return isWaxing ? "🌓" : "🌗"; // Quarter
+    if (illumination < 95) return isWaxing ? "🌔" : "🌖"; // Gibbous
+    return "🌕"; // Full moon
+  }
+
+  /**
    * Get the current moon phase for a given date
    * @param {Date} date - The date to get the moon phase for
    * @returns {object} Moon phase information including name, icon, illumination percentage
@@ -64,6 +99,7 @@ class MoonService {
   getMoonPhase(date) {
     const moonAge = this.calculateMoonAge(date);
     const exactIllumination = this.calculateIllumination(moonAge);
+    const isWaxing = this.isWaxing(moonAge);
     
     // Find the matching phase based on moon age
     for (const phase of MOON_PHASES) {
@@ -76,7 +112,9 @@ class MoonService {
           age: moonAge,
           ageInDays: Math.floor(moonAge),
           ageHours: Math.floor((moonAge % 1) * 24),
-          exactPercentage: exactIllumination
+          exactPercentage: exactIllumination,
+          lightLevel: MOON_LIGHT_LEVELS[phase.name] || "Darkness",
+          isWaxing
         };
       }
     }
@@ -89,7 +127,52 @@ class MoonService {
       age: 0,
       ageInDays: 0,
       ageHours: 0,
-      exactPercentage: 0
+      exactPercentage: 0,
+      lightLevel: MOON_LIGHT_LEVELS["New Moon"],
+      isWaxing: true
+    };
+  }
+
+  /**
+   * Get the moon phase specifically for visualization
+   * @param {Date} date - The date to check
+   * @param {boolean} isDaytime - Whether the sun is currently in the sky
+   * @param {boolean} isMoonVisible - Whether the moon is currently visible
+   * @returns {object} Adjusted moon phase for visualization
+   */
+  getVisualMoonPhase(date, isDaytime, isMoonVisible) {
+    // Get the actual phase first
+    const basePhase = this.getMoonPhase(date);
+    
+    // If the moon is not visible, just return the regular phase
+    if (!isMoonVisible) {
+      return basePhase;
+    }
+    
+    // If it's daytime and the moon is visible, adjust the illumination
+    // to show a more realistic daytime moon appearance
+    if (isDaytime) {
+      // For daytime, typically only crescent and quarter moons are easily visible
+      // Reduce the apparent illumination to reflect this
+      const daytimeIllumination = Math.min(basePhase.exactPercentage, 50);
+      
+      // Get appropriate icon based on adjusted illumination
+      const icon = this.getMoonPhaseIcon(
+        daytimeIllumination, 
+        basePhase.isWaxing
+      );
+      
+      return {
+        ...basePhase,
+        exactPercentage: daytimeIllumination,
+        icon
+      };
+    }
+    
+    // At night, return the regular phase with the correct icon
+    return {
+      ...basePhase,
+      icon: this.getMoonPhaseIcon(basePhase.exactPercentage, basePhase.isWaxing)
     };
   }
 
