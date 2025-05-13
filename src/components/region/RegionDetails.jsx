@@ -1,6 +1,6 @@
 // src/components/region/RegionDetails.jsx
 import React from "react";
-import CelestialInfoDisplay from "../weather/CelestialInfoDisplay";
+// import CelestialInfoDisplay from "../weather/CelestialInfoDisplay";
 
 const RegionDetails = ({
   region,
