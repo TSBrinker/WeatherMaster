@@ -625,7 +625,7 @@ const WeatherDashboard = () => {
 
             <CelestialArcDisplay
               currentDate={currentDate}
-              latitudeBand={activeRegion.latitudeBand || "temperate"}
+              latitudeBand={activeRegion?.latitudeBand || "temperate"}
             />
           </>
         )}
@@ -678,7 +678,11 @@ const WeatherDashboard = () => {
       )}
 
       {activeSection === "effects" && (
-        <WeatherEffects weatherEffects={currentWeather?.effects || ""} />
+        <WeatherEffects
+          weatherEffects={currentWeather?.effects || ""}
+          currentDate={currentDate}
+          latitudeBand={activeRegion?.latitudeBand || "temperate"}
+        />
       )}
     </div>
   );

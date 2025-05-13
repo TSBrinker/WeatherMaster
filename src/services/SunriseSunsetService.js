@@ -1,222 +1,187 @@
 // src/services/SunriseSunsetService.js
-// Service for calculating sunrise and sunset times based on latitude and date
-
-// Latitude band approximations (degrees latitude)
-const LATITUDE_BANDS = {
-    "equatorial": 5,    // 0-10 degrees
-    "tropical": 20,     // 10-30 degrees
-    "temperate": 45,    // 30-60 degrees
-    "subarctic": 65,    // 60-75 degrees
-    "polar": 80         // 75-90 degrees
-  };
-  
-  // Day length variations by latitude and solstice/equinox (hours)
-  const DAY_LENGTH_BY_LATITUDE = {
-    "equatorial": {
-      summerSolstice: 12.25, // Near-constant daylight hours near equator
-      winterSolstice: 11.75,
-      equinox: 12
-    },
-    "tropical": {
-      summerSolstice: 13.5,
-      winterSolstice: 10.5,
-      equinox: 12
-    },
-    "temperate": {
-      summerSolstice: 16,     // Long summer days
-      winterSolstice: 8,      // Short winter days
-      equinox: 12
-    },
-    "subarctic": {
-      summerSolstice: 20,     // Very long summer days
-      winterSolstice: 4,      // Very short winter days
-      equinox: 12
-    },
-    "polar": {
-      summerSolstice: 24,     // Midnight sun
-      winterSolstice: 0,      // Polar night
-      equinox: 12
+class SunriseSunsetService {
+    // Calculate day length based on latitude and day of year
+    calculateDayLength(latitudeBand, date) {
+      // Get day of year (0-365)
+      const dayOfYear = this.getDayOfYear(date);
+      
+      // Get base daylight hours for this latitude band
+      return this.getDaylightHours(latitudeBand, dayOfYear);
     }
-  };
-  
-  class SunriseSunsetService {
-    /**
-     * Calculate day of year (0-365)
-     * @param {Date} date - The date
-     * @returns {number} - Day of year
-     */
+    
+    // Get day of year (0-365)
     getDayOfYear(date) {
       const start = new Date(date.getFullYear(), 0, 0);
       const diff = date - start;
       const oneDay = 1000 * 60 * 60 * 24;
       return Math.floor(diff / oneDay);
     }
-  
-    /**
-     * Calculate approximate day length based on latitude and day of year
-     * @param {string} latitudeBand - Latitude band name
-     * @param {Date} date - The date
-     * @returns {number} - Day length in hours
-     */
-    calculateDayLength(latitudeBand, date) {
-      // Default to temperate if band not found
-      const band = latitudeBand in LATITUDE_BANDS ? latitudeBand : "temperate";
+    
+    // Get daylight hours based on latitude and day of year
+    getDaylightHours(latitudeBand, dayOfYear) {
+      // Default values for temperate latitude
+      let baseHours = 12; // Base hours at equinox
+      let annualVariation = 4; // Hours variation from solstice to solstice
       
-      // Day of year where 0 = January 1
-      const dayOfYear = this.getDayOfYear(date);
+      // Adjust based on latitude band
+      switch (latitudeBand) {
+        case "arctic":
+          baseHours = 12;
+          annualVariation = 12; // Extreme variation including midnight sun/polar night
+          break;
+        case "subarctic":
+          baseHours = 12;
+          annualVariation = 8; // Very large variation
+          break;
+        case "temperate":
+          baseHours = 12;
+          annualVariation = 4; // Moderate variation
+          break;
+        case "subtropical":
+          baseHours = 12;
+          annualVariation = 2.5; // Small variation
+          break;
+        case "tropical":
+          baseHours = 12;
+          annualVariation = 1; // Minimal variation
+          break;
+        default:
+          baseHours = 12;
+          annualVariation = 4;
+      }
       
-      // Calculate day length using a sinusoidal approximation
+      // Calculate seasonal adjustment
       // Day 0 = January 1 (winter in Northern Hemisphere)
       // Day 182 = July 1 (summer in Northern Hemisphere)
+      const seasonalOffset = Math.sin(((dayOfYear - 80) / 365) * 2 * Math.PI);
       
-      // Band day length extremes
-      const { summerSolstice, winterSolstice, equinox } = DAY_LENGTH_BY_LATITUDE[band];
-      
-      // Amplitude of variation from equinox
-      const amplitude = (summerSolstice - winterSolstice) / 2;
-      
-      // Average day length
-      const averageLength = (summerSolstice + winterSolstice) / 2;
-      
-      // Position in yearly cycle (0 to 2π)
-      // Shifted by 0.5π to align winter solstice with start of year
-      const position = 2 * Math.PI * (dayOfYear / 365) - 0.5 * Math.PI;
-      
-      // Calculate day length
-      const dayLength = averageLength + amplitude * Math.sin(position);
-      
-      return dayLength;
+      // Return adjusted daylight hours
+      return baseHours + (seasonalOffset * annualVariation);
     }
-  
-    /**
-     * Calculate sunrise and sunset times
-     * @param {string} latitudeBand - Latitude band
-     * @param {Date} date - The date
-     * @returns {object} - Sunrise and sunset times as Date objects
-     */
+    
+    // Get sunrise and sunset times
     getSunriseSunset(latitudeBand, date) {
-      // Get day length in hours
-      const dayLength = this.calculateDayLength(latitudeBand, date);
+      // Calculate day length
+      const dayLengthHours = this.calculateDayLength(latitudeBand, date);
       
-      // Set a base date with just the date part (no time)
-      const baseDate = new Date(date);
-      baseDate.setHours(0, 0, 0, 0);
+      // Create base date at noon
+      const noonDate = new Date(date);
+      noonDate.setHours(12, 0, 0, 0);
       
-      // Calculate midday (noon)
-      const noon = new Date(baseDate);
-      noon.setHours(12, 0, 0, 0);
+      // Calculate half of daylight hours
+      const halfDayHours = dayLengthHours / 2;
       
-      // Calculate sunrise and sunset around noon
-      const halfDayLength = dayLength / 2;
+      // Calculate sunrise and sunset times
+      const sunriseDate = new Date(noonDate);
+      sunriseDate.setHours(12 - halfDayHours, 
+                          Math.floor((12 - halfDayHours) % 1 * 60), 0, 0);
       
-      // Calculate hours and minutes for sunrise
-      const sunriseHours = 12 - halfDayLength;
-      const sunriseWholeHours = Math.floor(sunriseHours);
-      const sunriseMinutes = Math.round((sunriseHours - sunriseWholeHours) * 60);
-      
-      // Calculate hours and minutes for sunset
-      const sunsetHours = 12 + halfDayLength;
-      const sunsetWholeHours = Math.floor(sunsetHours);
-      const sunsetMinutes = Math.round((sunsetHours - sunsetWholeHours) * 60);
-      
-      // Set sunrise time with proper hours and minutes
-      const sunrise = new Date(noon);
-      sunrise.setHours(sunriseWholeHours, sunriseMinutes, 0, 0);
-      
-      // Set sunset time with proper hours and minutes
-      const sunset = new Date(noon);
-      sunset.setHours(sunsetWholeHours, sunsetMinutes, 0, 0);
+      const sunsetDate = new Date(noonDate);
+      sunsetDate.setHours(12 + halfDayHours, 
+                         Math.floor((12 + halfDayHours) % 1 * 60), 0, 0);
       
       return {
-        sunrise,
-        sunset,
-        dayLengthHours: dayLength
+        sunrise: sunriseDate,
+        sunset: sunsetDate,
+        dayLengthHours
       };
     }
-  
-    /**
-     * Format a time for display with hours and minutes
-     * @param {Date} date - The date with time
-     * @returns {string} - Formatted time
-     */
-    formatTime(date) {
-      if (!date || isNaN(date.getTime())) return "N/A";
-      
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    }
-  
-    /**
-     * Get formatted sunrise, sunset info with daylight hours
-     * @param {string} latitudeBand - Latitude band
-     * @param {Date} date - The date
-     * @returns {object} - Formatted sunrise/sunset info
-     */
+    
+    // Format sunrise and sunset times
     getFormattedSunriseSunset(latitudeBand, date) {
+      // Handle invalid input
+      if (!date || !(date instanceof Date)) {
+        console.error("Invalid date in getFormattedSunriseSunset:", date);
+        return {
+          sunriseTime: "Unknown",
+          sunsetTime: "Unknown",
+          dayLengthFormatted: "Unknown",
+          isDaytime: false
+        };
+      }
+      
+      // Get base sunrise/sunset data
       const { sunrise, sunset, dayLengthHours } = this.getSunriseSunset(latitudeBand, date);
       
-      const dayLengthHoursRounded = Math.round(dayLengthHours * 10) / 10; // Round to 1 decimal
-      const dayLengthMinutes = Math.round((dayLengthHours % 1) * 60);
+      // Format times
+      const formatTime = (date) => {
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12;
+        const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+        return `${formattedHours}:${formattedMinutes} ${ampm}`;
+      };
+      
+      // Format day length
+      const dayLengthFormatted = (() => {
+        const hours = Math.floor(dayLengthHours);
+        const minutes = Math.floor((dayLengthHours - hours) * 60);
+        return `${hours} hr ${minutes} min`;
+      })();
+      
+      // Determine if it's currently daytime
+      const isDaytime = (() => {
+        const currentTime = date.getTime();
+        return currentTime >= sunrise.getTime() && currentTime <= sunset.getTime();
+      })();
       
       return {
         sunrise,
         sunset,
-        sunriseTime: this.formatTime(sunrise),
-        sunsetTime: this.formatTime(sunset),
-        dayLengthHours: dayLengthHoursRounded,
-        dayLengthFormatted: `${Math.floor(dayLengthHours)} hr ${dayLengthMinutes} min`,
-        isDaytime: this.isDaytime(date, sunrise, sunset)
+        sunriseTime: formatTime(sunrise),
+        sunsetTime: formatTime(sunset),
+        dayLengthHours,
+        dayLengthFormatted,
+        isDaytime
       };
     }
-  
-    /**
-     * Check if it's currently daytime
-     * @param {Date} currentTime - Current time
-     * @param {Date} sunrise - Sunrise time
-     * @param {Date} sunset - Sunset time
-     * @returns {boolean} - True if it's daytime
-     */
-    isDaytime(currentTime, sunrise, sunset) {
-      const current = currentTime.getTime();
-      return current >= sunrise.getTime() && current <= sunset.getTime();
-    }
-  
-    /**
-     * Get the current solar position as a value between 0 and 1
-     * 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset, 1 = midnight
-     * @param {Date} currentTime - Current time
-     * @param {Date} sunrise - Sunrise time
-     * @param {Date} sunset - Sunset time
-     * @returns {number} - Solar position (0-1)
-     */
+    
+    // Calculate the sun's position in the sky (0-1, where 0.5 is noon)
     getSolarPosition(currentTime, sunrise, sunset) {
-      // Start from midnight
-      const midnight = new Date(currentTime);
-      midnight.setHours(0, 0, 0, 0);
+      if (!(currentTime instanceof Date) || 
+          !(sunrise instanceof Date) || 
+          !(sunset instanceof Date)) {
+        return 0.5; // Default to noon if invalid inputs
+      }
       
-      // Calculate next midnight
-      const nextMidnight = new Date(midnight);
-      nextMidnight.setDate(nextMidnight.getDate() + 1);
+      const current = currentTime.getTime();
+      const riseTime = sunrise.getTime();
+      const setTime = sunset.getTime();
       
-      // Calculate time positions in milliseconds
-      const midnightMs = midnight.getTime();
-      const nextMidnightMs = nextMidnight.getTime();
-      const dayLengthMs = nextMidnightMs - midnightMs;
-      
-      const currentMs = currentTime.getTime();
-      const sunriseMs = sunrise.getTime();
-      const sunsetMs = sunset.getTime();
-      
-      // Calculate position in day cycle (0-1)
-      const position = (currentMs - midnightMs) / dayLengthMs;
-      
-      return position;
+      // Night before sunrise
+      if (current < riseTime) {
+        // Calculate position between previous sunset and sunrise
+        // Assuming previous sunset was ~12 hours before
+        const prevSunset = new Date(riseTime);
+        prevSunset.setHours(prevSunset.getHours() - 12);
+        
+        const nightLength = riseTime - prevSunset.getTime();
+        const timeFromPrevSunset = current - prevSunset.getTime();
+        
+        return (timeFromPrevSunset / nightLength) * 0.25; // 0-0.25 range for night before sunrise
+      }
+      // Daytime
+      else if (current >= riseTime && current <= setTime) {
+        const dayLength = setTime - riseTime;
+        const timeFromSunrise = current - riseTime;
+        
+        return 0.25 + (timeFromSunrise / dayLength) * 0.5; // 0.25-0.75 range for daytime
+      }
+      // Night after sunset
+      else {
+        // Calculate position between sunset and next sunrise
+        // Assuming next sunrise is ~12 hours after
+        const nextSunrise = new Date(setTime);
+        nextSunrise.setHours(nextSunrise.getHours() + 12);
+        
+        const nightLength = nextSunrise.getTime() - setTime;
+        const timeFromSunset = current - setTime;
+        
+        return 0.75 + (timeFromSunset / nightLength) * 0.25; // 0.75-1 range for night after sunset
+      }
     }
   }
   
-  // Export singleton instance
   const sunriseSunsetService = new SunriseSunsetService();
   export default sunriseSunsetService;

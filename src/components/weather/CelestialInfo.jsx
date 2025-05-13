@@ -1,4 +1,4 @@
-// src/components/weather/CelestialInfo.jsx - Simplified version
+// src/components/weather/CelestialInfo.jsx
 import React from "react";
 
 const CelestialInfo = ({ celestialInfo }) => {
@@ -11,9 +11,6 @@ const CelestialInfo = ({ celestialInfo }) => {
     moonriseTime = "N/A",
     moonsetTime = "N/A",
   } = celestialInfo;
-
-  // Add some console logging to see what we're working with
-  console.log("CelestialInfo received:", celestialInfo);
 
   return (
     <div className="celestial-info">
