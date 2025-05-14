@@ -1,4 +1,4 @@
-// src/hooks/useCelestialCalculations.js
+// src/hooks/useCelestialCalculations.js - Simplified for debugging
 import { useState, useEffect } from "react";
 import sunriseSunsetService from "../services/SunriseSunsetService";
 import moonService from "../services/MoonService";
@@ -26,21 +26,20 @@ export function useCelestialCalculations(currentDate, latitudeBand = "temperate"
       // Helper function to convert Date to decimal hours
       const dateToHour = (date) => date.getHours() + date.getMinutes() / 60;
       
-      // Get current time as decimal hours
+      // Current time as decimal
       const currentHour = dateToHour(currentDate);
       
-      // Get sun data - FIXED: using getFormattedSunriseSunset to match original code
+      // Get sun information
       const sunInfo = sunriseSunsetService.getFormattedSunriseSunset(
-        latitudeBand, 
+        latitudeBand,
         currentDate
       );
       
-      // Extract sunrise/sunset times and daytime status
       const sunriseHour = dateToHour(sunInfo.sunrise);
       const sunsetHour = dateToHour(sunInfo.sunset);
       const isDaytime = sunInfo.isDaytime;
       
-      // Calculate sun progress - ONLY WHEN VISIBLE
+      // Calculate sun progress - WHEN VISIBLE
       let sunProgress = null;
       if (isDaytime) {
         const dayLength = sunsetHour - sunriseHour;
@@ -53,55 +52,59 @@ export function useCelestialCalculations(currentDate, latitudeBand = "temperate"
       const moonriseHour = dateToHour(moonrise);
       const moonsetHour = dateToHour(moonset);
       
-      // Get moon phase information
+      // Get moon phase
       const moonPhase = moonService.getMoonPhase(currentDate);
       
-      // ULTRA SIMPLE: Calculate moon progress
+      // EXTREME SIMPLIFICATION OF MOON PROGRESS
+      // Treat the moon exactly like the sun for debugging
       let moonProgress = null;
+      const isMoonVisible = moonService.isMoonVisible(currentDate, latitudeBand);
       
-      // Check if moon is visible
-      const isMoonUp = moonService.isMoonVisible(currentDate, latitudeBand);
-      
-      if (isMoonUp) {
-        // Calculate a simple normalized position using the arc length
-        let arcStart = moonriseHour;
-        let arcEnd = moonsetHour;
-        
-        // Handle midnight crossing
-        if (arcEnd < arcStart) {
-          arcEnd += 24;
+      if (isMoonVisible) {
+        // Handle case where moon crosses midnight
+        if (moonsetHour < moonriseHour) {
+          // Need to adjust calculations for midnight crossing
+          if (currentHour >= moonriseHour) {
+            // After moonrise, before midnight
+            const arcLength = (24 - moonriseHour) + moonsetHour;
+            moonProgress = (currentHour - moonriseHour) / arcLength;
+          } else {
+            // After midnight, before moonset
+            const arcLength = (24 - moonriseHour) + moonsetHour;
+            moonProgress = ((currentHour + 24) - moonriseHour) / arcLength;
+          }
+        } else {
+          // Simple case - same as sun calculation
+          const arcLength = moonsetHour - moonriseHour;
+          moonProgress = (currentHour - moonriseHour) / arcLength;
         }
         
-        // Adjust current hour if needed
-        let adjustedHour = currentHour;
-        if (currentHour < arcStart && currentHour < arcEnd) {
-          adjustedHour += 24;
-        }
-        
-        // Calculate simple linear progress (0-1)
-        const arcLength = arcEnd - arcStart;
-        moonProgress = (adjustedHour - arcStart) / arcLength;
+        // Ensure progress is between 0-1
         moonProgress = Math.max(0, Math.min(1, moonProgress));
       }
       
-      // Add visibility calculation based on illumination and daytime
-      // Calculate a visibility factor between 0.3 and 1.0
-      // Lower illumination = less visible, especially during day
-      const illuminationFactor = moonPhase.exactPercentage / 100; // 0.0 to 1.0
+      // Basic visibility adjustment
+      const baseVisibility = isDaytime ? 0.6 : 1.0;
       
-      // During day: lower visibility (0.3-0.7 range)
-      // At night: higher visibility (0.7-1.0 range)
-      const visibilityFactor = isDaytime
-        ? 0.3 + (illuminationFactor * 0.4) // Day: 0.3 to 0.7
-        : 0.7 + (illuminationFactor * 0.3); // Night: 0.7 to 1.0
-      
-      // Create visual moon phase with adjusted visibility
+      // Create simplified moon phase info
       const visualMoonPhase = {
-        ...moonPhase,
-        visibilityFactor
+        icon: moonPhase.icon,
+        name: moonPhase.name,
+        visibilityFactor: baseVisibility
       };
       
-      // Update state
+      // Log the key values
+      console.log("Celestial debug:", {
+        currentHour,
+        sunriseHour,
+        sunsetHour,
+        moonriseHour,
+        moonsetHour,
+        isMoonVisible,
+        moonProgress
+      });
+      
+      // Update the calculations state
       setCalculations({
         sunriseHour,
         sunsetHour,
@@ -112,19 +115,6 @@ export function useCelestialCalculations(currentDate, latitudeBand = "temperate"
         moonProgress,
         visualMoonPhase,
         isDaytime,
-      });
-      
-      console.log("Celestial calculations:", {
-        currentHour,
-        sunriseHour,
-        sunsetHour,
-        moonriseHour,
-        moonsetHour,
-        sunProgress,
-        moonProgress,
-        isMoonUp,
-        visibilityFactor,
-        isDaytime
       });
     } catch (error) {
       console.error("Error in celestial calculations:", error);

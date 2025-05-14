@@ -1,13 +1,9 @@
 // src/components/weather/CelestialArcDisplay.jsx
 import React, { useState, useEffect } from "react";
-import sunriseSunsetService from "../../services/SunriseSunsetService";
-import moonService from "../../services/MoonService";
-import { formatTimeWithMinutes } from "../../utils/timeUtils";
+import { useCelestialCalculations } from "../../hooks/useCelestialCalculations";
 import SkyBackground from "./SkyBackground";
 import TimelineMarkers from "./TimelineMarkers";
-import SunPosition from "./SunPosition";
-import MoonPosition from "./MoonPosition";
-import { useCelestialCalculations } from "../../hooks/useCelestialCalculations";
+import CelestialBody from "../celestial/CelestialBody";
 
 const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
   const [dimensions, setDimensions] = useState({ width: 500, height: 250 });
@@ -64,23 +60,31 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
             currentHour={currentHour}
           />
 
-          {/* Sun position with rise/set markers */}
-          <SunPosition
+          {/* Moon using the unified component */}
+          <CelestialBody
             width={width}
             height={height}
-            sunriseHour={sunriseHour}
-            sunsetHour={sunsetHour}
-            sunProgress={sunProgress}
+            riseHour={moonriseHour}
+            setHour={moonsetHour}
+            progress={moonProgress}
+            bodyType="moon"
+            customProps={
+              visualMoonPhase
+                ? {
+                    illumination: visualMoonPhase.exactPercentage,
+                    visibilityFactor: visualMoonPhase.visibilityFactor || 1,
+                  }
+                : {}
+            }
           />
-
-          {/* Moon position with rise/set markers */}
-          <MoonPosition
+          {/* Sun using the unified component */}
+          <CelestialBody
             width={width}
             height={height}
-            moonriseHour={moonriseHour}
-            moonsetHour={moonsetHour}
-            moonProgress={moonProgress}
-            moonPhase={visualMoonPhase}
+            riseHour={sunriseHour}
+            setHour={sunsetHour}
+            progress={sunProgress}
+            bodyType="sun"
           />
         </svg>
       </div>
