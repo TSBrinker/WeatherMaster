@@ -1,4 +1,4 @@
-// src/components/celestial/CelestialBody.jsx - With simple animations
+// src/components/celestial/CelestialBody.jsx - Minimalist fix
 import React, { useEffect, useState, useRef } from "react";
 
 const CelestialBody = ({
@@ -20,6 +20,9 @@ const CelestialBody = ({
   // Refs for animation
   const prevProgressRef = useRef(progress);
   const animationRef = useRef(null);
+
+  // CRITICAL MIDNIGHT OVERRIDE: Keep track of visibility that should override progress
+  const forceMoonVisibleRef = useRef(false);
 
   // Function to map hour of day (0-24) to position on the horizon (0-width)
   const hourToHorizonPosition = (hour) => {
@@ -112,15 +115,86 @@ const CelestialBody = ({
       if (progress < 1) {
         requestAnimationFrame(fade);
       } else {
-        setIsVisible(toVisible);
+        setIsVisible(toVisible || forceMoonVisibleRef.current);
       }
     };
 
     requestAnimationFrame(fade);
   };
 
+  // CRITICAL MIDNIGHT FIX: Check if moon should be visible based on rise/set times
+  useEffect(() => {
+    if (bodyType === "moon" && customProps.currentHour !== undefined) {
+      const isMidnightCrossing =
+        riseHour !== null && setHour !== null && riseHour > setHour;
+
+      if (isMidnightCrossing) {
+        const currentHour = customProps.currentHour;
+        // Check if it should be visible based on rise/set times
+        const shouldBeVisible =
+          currentHour >= riseHour || currentHour < setHour;
+
+        console.log(
+          `Moon midnight check: hour=${currentHour}, rise=${riseHour}, set=${setHour}, visible=${shouldBeVisible}`
+        );
+
+        // Force visibility if it should be visible by hours
+        if (shouldBeVisible) {
+          forceMoonVisibleRef.current = true;
+
+          // If progress is null but should be visible, force visibility
+          if (progress === null && !isVisible) {
+            console.log("FORCED MOON VISIBILITY");
+            setIsVisible(true);
+
+            // Manually calculate a position
+            if (currentHour >= riseHour) {
+              // After rise, before midnight
+              const elapsedHours = currentHour - riseHour;
+              const totalVisibleHours = 24 - riseHour + setHour;
+              const calculatedProgress = elapsedHours / totalVisibleHours;
+
+              const newPosition = getPositionFromProgress(
+                calculatedProgress,
+                width,
+                height
+              );
+              setPosition(newPosition);
+              setOpacity(customProps.visibilityFactor || 1);
+            } else {
+              // After midnight, before set
+              const elapsedHours = 24 - riseHour + currentHour;
+              const totalVisibleHours = 24 - riseHour + setHour;
+              const calculatedProgress = elapsedHours / totalVisibleHours;
+
+              const newPosition = getPositionFromProgress(
+                calculatedProgress,
+                width,
+                height
+              );
+              setPosition(newPosition);
+              setOpacity(customProps.visibilityFactor || 1);
+            }
+          }
+        } else {
+          forceMoonVisibleRef.current = false;
+        }
+      }
+    }
+  }, [customProps.currentHour, riseHour, setHour, progress, bodyType]);
+
   // Update position when progress changes
   useEffect(() => {
+    // For moon that should be forced visible, skip this update if progress is null
+    if (
+      bodyType === "moon" &&
+      forceMoonVisibleRef.current &&
+      progress === null
+    ) {
+      console.log("Skipping null progress update for forced visible moon");
+      return;
+    }
+
     console.log(`${bodyType} progress changed:`, {
       prev: prevProgressRef.current,
       current: progress,
@@ -128,8 +202,13 @@ const CelestialBody = ({
 
     // Handle visibility changes
     if (progress === null && prevProgressRef.current !== null) {
-      // Becoming invisible
-      animateVisibility(false);
+      // Skip becoming invisible if force visible
+      if (bodyType === "moon" && forceMoonVisibleRef.current) {
+        console.log("Skipping fade out for forced visible moon");
+      } else {
+        // Becoming invisible
+        animateVisibility(false);
+      }
     } else if (progress !== null && prevProgressRef.current === null) {
       // Becoming visible
       setIsVisible(true);
@@ -220,6 +299,19 @@ const CelestialBody = ({
             ↓
           </text>
         </g>
+      )}
+
+      {/* Debug text for midnight crossing cases */}
+      {bodyType === "moon" && forceMoonVisibleRef.current && (
+        <text
+          x={width / 2}
+          y={20}
+          textAnchor="middle"
+          fontSize="10"
+          fill="#ff0000"
+        >
+          Midnight Moon Visible
+        </text>
       )}
 
       {/* Render the celestial body */}

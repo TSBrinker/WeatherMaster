@@ -42,6 +42,18 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
   // SVG dimensions
   const { width, height } = dimensions;
 
+  useEffect(() => {
+    // Update moon position every minute to keep it moving smoothly
+    const intervalId = setInterval(() => {
+      if (currentDate) {
+        // Force a small update to keep animation smooth
+        setCurrentDate(new Date(currentDate.getTime() + 1000)); // Add 1 second to trigger update
+      }
+    }, 60000); // Every minute
+
+    return () => clearInterval(intervalId);
+  }, [currentDate]);
+
   return (
     <div className="card p-4 celestial-arc-container">
       <div className="flex justify-center mb-4">
@@ -71,8 +83,10 @@ const CelestialArcDisplay = ({ currentDate, latitudeBand = "temperate" }) => {
             customProps={
               visualMoonPhase
                 ? {
-                    illumination: visualMoonPhase.exactPercentage,
-                    visibilityFactor: visualMoonPhase.visibilityFactor || 1,
+                    icon: visualMoonPhase.icon,
+                    visibilityFactor: visualMoonPhase.illumination / 100, // Changed from illumination to visibilityFactor
+                    currentHour:
+                      currentDate.getHours() + currentDate.getMinutes() / 60,
                   }
                 : {}
             }
