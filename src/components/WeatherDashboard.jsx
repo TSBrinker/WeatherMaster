@@ -19,7 +19,6 @@ import { getPreciseSkyGradient } from "../utils/SkyGradients";
 import TimeDisplay from "./weather/TimeDisplay";
 import CustomTimeControls from "./weather/CustomTimeControls";
 import QuickTimeControls from "./weather/QuickTimeControls";
-import CelestialArcDisplay from "./celestial/CelestialArcDisplay";
 import CurrentWeatherDisplay from "./weather/CurrentWeatherDisplay";
 import CelestialInfo from "./weather/CelestialInfo";
 import ActionTabs from "./weather/ActionTabs";
@@ -613,21 +612,14 @@ const WeatherDashboard = () => {
         <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
       </div>
 
-      {/* Celestial Section with Weather */}
+      {/* Weather Section */}
       <div className="celestial-section" style={dynamicWeatherStyle}>
         {currentWeather && (
-          <>
-            <CurrentWeatherDisplay
-              currentWeather={currentWeather}
-              celestialInfo={celestialInfo}
-              isDaytime={celestialInfo.isDaytime}
-            />
-
-            <CelestialArcDisplay
-              currentDate={currentDate}
-              latitudeBand={activeRegion?.latitudeBand || "temperate"}
-            />
-          </>
+          <CurrentWeatherDisplay
+            currentWeather={currentWeather}
+            celestialInfo={celestialInfo}
+            isDaytime={celestialInfo.isDaytime}
+          />
         )}
       </div>
 
