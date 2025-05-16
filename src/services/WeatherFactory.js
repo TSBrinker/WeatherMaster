@@ -2,18 +2,15 @@
 // Factory for creating appropriate weather service instances
 
 import DiceTableWeatherService from './DiceTableWeatherService';
-
-// In the future, this will also import and handle the MeteorologicalWeatherService
+import MeteorologicalWeatherService from './MeteorologicalWeatherService';
 
 export default class WeatherFactory {
   static createWeatherService(type = 'diceTable') {
-    // For now, we only have the dice table service
-    // Later we'll add the meteorological service option
+    // Now with both services implemented, return the appropriate one
     switch (type) {
       case 'meteorological':
-        // TODO: Return new MeteorologicalWeatherService() when implemented
-        console.log('Meteorological service not yet implemented, using dice table service');
-        return new DiceTableWeatherService();
+        console.log('Creating new meteorological weather service');
+        return new MeteorologicalWeatherService();
       case 'diceTable':
       default:
         return new DiceTableWeatherService();

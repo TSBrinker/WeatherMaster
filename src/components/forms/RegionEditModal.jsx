@@ -130,9 +130,7 @@ const RegionEditModal = ({ region, onClose }) => {
               className="w-full p-2 rounded bg-surface-light text-white border border-border"
             >
               <option value="diceTable">Basic (Dice Tables)</option>
-              <option value="meteorological" disabled>
-                Advanced (Meteorological) - Coming Soon
-              </option>
+              <option value="meteorological">Advanced (Meteorological)</option>
             </select>
             <div className="text-sm text-gray-400 mt-1">
               Choose between simple dice-based generation or more realistic
