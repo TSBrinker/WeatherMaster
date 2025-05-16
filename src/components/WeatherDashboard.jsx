@@ -13,6 +13,7 @@ import weatherManager from "../services/weatherManager";
 import skyColorService from "../services/SkyColorService";
 import sunriseSunsetService from "../services/SunriseSunsetService";
 import moonService from "../services/MoonService";
+import weatherDescriptionService from "../services/WeatherDescriptionService";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
 
 // Import components
@@ -64,6 +65,8 @@ const WeatherDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0); // Added to force updates when needed
+  // Add weather description state to persist between renders
+  const [weatherDescription, setWeatherDescription] = useState("");
 
   // Refs for tracking previous values
   const prevRegionIdRef = useRef(null);
@@ -215,6 +218,29 @@ const WeatherDashboard = () => {
     celestialInfo.sunset,
   ]);
 
+  // Helper function to store weather description in localStorage
+  const storeWeatherDescription = useCallback((regionId, description) => {
+    if (!regionId || !description) return;
+
+    try {
+      localStorage.setItem(`weather_description_${regionId}`, description);
+    } catch (error) {
+      console.error("Error storing weather description:", error);
+    }
+  }, []);
+
+  // Helper function to get weather description from localStorage
+  const getStoredWeatherDescription = useCallback((regionId) => {
+    if (!regionId) return null;
+
+    try {
+      return localStorage.getItem(`weather_description_${regionId}`);
+    } catch (error) {
+      console.error("Error retrieving weather description:", error);
+      return null;
+    }
+  }, []);
+
   // Handle weather initialization - with stable dependency handling
   const initializeWeather = useCallback(() => {
     // Don't run if no active region
@@ -243,6 +269,8 @@ const WeatherDashboard = () => {
     // Try to get existing weather
     const savedWeather = getRegionWeather(regionId);
     const lastUpdateTime = getRegionLastUpdateTime(regionId);
+    // Try to get saved description
+    const savedDescription = getStoredWeatherDescription(regionId);
 
     // Check for time sync needs
     if (savedWeather && lastUpdateTime) {
@@ -275,6 +303,18 @@ const WeatherDashboard = () => {
               currentWorldDate,
               weatherType
             );
+
+            // Generate new description for the current weather
+            const newDescription =
+              weatherDescriptionService.generateDescription(
+                newForecast[0],
+                activeRegion.climate,
+                currentWorldDate,
+                regionId
+              );
+
+            setWeatherDescription(newDescription);
+            storeWeatherDescription(regionId, newDescription);
 
             setForecast(newForecast);
             setCurrentSeason(actualSeason);
@@ -316,6 +356,18 @@ const WeatherDashboard = () => {
               );
             }
 
+            // Generate new description for the current weather
+            const newDescription =
+              weatherDescriptionService.generateDescription(
+                newForecast[0],
+                activeRegion.climate,
+                currentWorldDate,
+                regionId
+              );
+
+            setWeatherDescription(newDescription);
+            storeWeatherDescription(regionId, newDescription);
+
             setForecast(newForecast);
             setCurrentSeason(actualSeason);
             updateRegionWeather(regionId, {
@@ -346,12 +398,28 @@ const WeatherDashboard = () => {
       // If region has a stored weather type, use it
       const weatherType = savedWeather.weatherType || "diceTable";
 
-      setForecast(
-        savedWeather.forecast.map((hour) => ({
-          ...hour,
-          date: new Date(hour.date),
-        }))
-      );
+      // Load the forecast
+      const loadedForecast = savedWeather.forecast.map((hour) => ({
+        ...hour,
+        date: new Date(hour.date),
+      }));
+
+      setForecast(loadedForecast);
+
+      // If we have a saved description, use it, otherwise generate a new one
+      if (savedDescription) {
+        setWeatherDescription(savedDescription);
+      } else {
+        const newDescription = weatherDescriptionService.generateDescription(
+          loadedForecast[0],
+          activeRegion.climate,
+          currentDate,
+          regionId
+        );
+        setWeatherDescription(newDescription);
+        storeWeatherDescription(regionId, newDescription);
+      }
+
       updateRegionTimestamp(regionId, currentDate.toISOString());
     } else {
       console.log("Generating new weather");
@@ -371,6 +439,17 @@ const WeatherDashboard = () => {
         currentDate,
         weatherType
       );
+
+      // Generate a new description for the current weather
+      const newDescription = weatherDescriptionService.generateDescription(
+        newForecast[0],
+        activeRegion.climate,
+        currentDate,
+        regionId
+      );
+
+      setWeatherDescription(newDescription);
+      storeWeatherDescription(regionId, newDescription);
 
       setForecast(newForecast);
       updateRegionWeather(regionId, {
@@ -395,6 +474,8 @@ const WeatherDashboard = () => {
     updateRegionWeather,
     updateRegionTimestamp,
     initialized,
+    storeWeatherDescription,
+    getStoredWeatherDescription,
   ]);
 
   // Initialize weather effect - with stable dependencies
@@ -434,6 +515,17 @@ const WeatherDashboard = () => {
         afterDate
       );
 
+      // Generate a new description for the current weather
+      const newDescription = weatherDescriptionService.generateDescription(
+        newForecast[0],
+        activeRegion.climate,
+        afterDate,
+        activeRegion.id
+      );
+
+      setWeatherDescription(newDescription);
+      storeWeatherDescription(activeRegion.id, newDescription);
+
       setForecast(newForecast);
       setCurrentSeason(actualSeason);
       updateRegionWeather(activeRegion.id, {
@@ -459,6 +551,7 @@ const WeatherDashboard = () => {
       advanceGameTime,
       updateRegionWeather,
       updateRegionTimestamp,
+      storeWeatherDescription,
     ]
   );
 
@@ -484,6 +577,20 @@ const WeatherDashboard = () => {
       weatherType
     );
 
+    // Generate a new description for the current weather
+    const newDescription = weatherDescriptionService.generateDescription(
+      newForecast[0],
+      activeRegion.climate,
+      currentDate,
+      activeRegion.id
+    );
+
+    setWeatherDescription(newDescription);
+    storeWeatherDescription(activeRegion.id, newDescription);
+
+    // Clear weather description cache when regenerating
+    weatherDescriptionService.clearCache(activeRegion.id);
+
     setForecast(newForecast);
     updateRegionWeather(activeRegion.id, {
       season,
@@ -504,6 +611,7 @@ const WeatherDashboard = () => {
     currentDate,
     updateRegionWeather,
     updateRegionTimestamp,
+    storeWeatherDescription,
   ]);
 
   // Change weather generation system
@@ -538,6 +646,20 @@ const WeatherDashboard = () => {
         newType
       );
 
+      // Generate a new description for the current weather
+      const newDescription = weatherDescriptionService.generateDescription(
+        newForecast[0],
+        activeRegion.climate,
+        currentDate,
+        activeRegion.id
+      );
+
+      setWeatherDescription(newDescription);
+      storeWeatherDescription(activeRegion.id, newDescription);
+
+      // Clear the cache for this region when changing systems
+      weatherDescriptionService.clearCache(activeRegion.id);
+
       setForecast(newForecast);
       setCurrentSeason(actualSeason);
       updateRegionWeather(activeRegion.id, {
@@ -559,6 +681,7 @@ const WeatherDashboard = () => {
       currentDate,
       updateRegionWeather,
       updateRegionTimestamp,
+      storeWeatherDescription,
     ]
   );
 
@@ -672,8 +795,12 @@ const WeatherDashboard = () => {
       {activeSection === "effects" && (
         <WeatherEffects
           weatherEffects={currentWeather?.effects || ""}
+          currentWeather={currentWeather}
           currentDate={currentDate}
           latitudeBand={activeRegion?.latitudeBand || "temperate"}
+          biome={activeRegion?.climate || "temperate-deciduous"}
+          regionId={activeRegion.id}
+          cachedDescription={weatherDescription}
         />
       )}
     </div>
