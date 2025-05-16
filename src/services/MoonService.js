@@ -30,6 +30,12 @@ class MoonService {
       "Last Quarter": "Darkness",
       "Waning Crescent": "Darkness"
     };
+    
+    // Enhanced caching system
+    this.moonTimesCache = {};
+    this.lastRecalculatedDate = null; // Track the day we last calculated
+    this.nextMoonsetTime = null; // Track the next expected moonset
+    this.recalculationLock = false; // Prevent multiple recalculations in same time window
   }
   
   /**
@@ -186,6 +192,7 @@ class MoonService {
 
   /**
    * Calculate moonrise and moonset times based on moon phase and sun's schedule
+   * With improved caching to prevent recalculation until after moonset
    * @param {Date} date - The date to calculate for
    * @param {string} latitudeBand - The latitude band for calculations
    * @returns {object} The moonrise and moonset times
@@ -203,6 +210,60 @@ class MoonService {
     }
     
     try {
+      // Create date-only string for the current date (YYYY-MM-DD)
+      const currentDateString = inputDate.toISOString().split('T')[0];
+      const cacheKey = `${currentDateString}_${latitudeBand}`;
+      
+      // Get the current time
+      const currentTime = inputDate.getTime();
+      
+      // Define precise conditions for recalculation
+      let shouldRecalculate = false;
+      
+      // Only log in debug mode to avoid console spam
+      const debugMode = false;
+      if (debugMode && this.nextMoonsetTime) {
+        console.log(`Current time: ${new Date(currentTime).toLocaleTimeString()}`);
+        console.log(`Next moonset: ${new Date(this.nextMoonsetTime).toLocaleTimeString()}`);
+        console.log(`Time to moonset: ${(this.nextMoonsetTime - currentTime) / (1000 * 60)} minutes`);
+      }
+      
+      // Check if we should recalculate based on precise conditions
+      if (
+        // No cached data for this date
+        !this.moonTimesCache[cacheKey] || 
+        // Date has changed since last calculation
+        this.lastRecalculatedDate !== currentDateString ||
+        // We've passed the next expected moonset (DEFINITE recalculation trigger)
+        // Add 10 minute buffer to prevent recalculation before actual moonset
+        (this.nextMoonsetTime && currentTime > (this.nextMoonsetTime + 10 * 60 * 1000))
+      ) {
+        // Only if we're not already in a recalculation to prevent cascade
+        if (!this.recalculationLock) {
+          shouldRecalculate = true;
+          this.recalculationLock = true;
+          
+          if (debugMode) {
+            if (this.moonTimesCache[cacheKey]) {
+              if (this.lastRecalculatedDate !== currentDateString) {
+                console.log(`Recalculating moon times: New date detected`);
+              } else if (this.nextMoonsetTime && currentTime > this.nextMoonsetTime) {
+                console.log(`Recalculating moon times: Passed moonset by ${(currentTime - this.nextMoonsetTime) / (1000 * 60)} minutes`);
+              }
+            } else {
+              console.log(`Calculating moon times for the first time today`);
+            }
+          }
+        }
+      }
+      
+      // If we don't need to recalculate, return cached values
+      if (!shouldRecalculate && this.moonTimesCache[cacheKey]) {
+        return this.moonTimesCache[cacheKey];
+      }
+      
+      // ----- CALCULATION LOGIC -----
+      
       // Get the phase for this date
       const moonPhase = this.getMoonPhase(inputDate);
       
@@ -221,7 +282,6 @@ class MoonService {
       const cyclePosition = moonPhase.age / this.LUNAR_CYCLE_DAYS;
       
       // Calculate moonrise and moonset times based on astronomical principles
-      // and the moon's phase in relation to the sun
       let moonriseHour, moonsetHour;
       
       if (cyclePosition <= 0.5) {
@@ -257,12 +317,7 @@ class MoonService {
         moonsetHour = interpolatedSet >= 24 ? interpolatedSet - 24 : interpolatedSet;
       }
       
-      // Add slight random variation (±15 minutes)
-      const riseVariation = (Math.random() - 0.5) / 2; // ±0.25 hours
-      const setVariation = (Math.random() - 0.5) / 2; // ±0.25 hours
-      
-      moonriseHour = (moonriseHour + riseVariation + 24) % 24;
-      moonsetHour = (moonsetHour + setVariation + 24) % 24;
+      // NO RANDOM VARIATIONS - keeping calculations consistent
       
       // Convert to hours and minutes
       const riseHours = Math.floor(moonriseHour);
@@ -285,12 +340,35 @@ class MoonService {
         moonset.setDate(moonset.getDate() + 1);
       }
       
+      // ----- CACHE MANAGEMENT -----
+      
+      // Update cache with new values
+      this.moonTimesCache[cacheKey] = {
+        moonrise,
+        moonset
+      };
+      
+      // Update tracking variables for next recalculation check
+      this.lastRecalculatedDate = currentDateString;
+      this.nextMoonsetTime = moonset.getTime();
+      
+      // Release the lock after calculation is complete
+      setTimeout(() => {
+        this.recalculationLock = false;
+      }, 500); // Short delay to prevent cascade recalculations
+      
+      if (debugMode) {
+        console.log(`Moon times calculated: Moonrise ${moonrise.toLocaleTimeString()}, Moonset ${moonset.toLocaleTimeString()}`);
+      }
+      
       return {
         moonrise,
         moonset
       };
     } catch (error) {
       console.error("Error calculating moon times:", error);
+      this.recalculationLock = false; // Release lock on error
+      
       // Return default values on error
       return {
         moonrise: new Date(inputDate),
@@ -420,6 +498,50 @@ class MoonService {
       }
     } catch (error) {
       console.error("Error checking moon visibility:", error);
+      return false;
+    }
+  }
+  
+  /**
+   * Clear the moon times cache - useful when changing game settings
+   */
+  clearMoonCache() {
+    this.moonTimesCache = {};
+    this.lastRecalculatedDate = null;
+    this.nextMoonsetTime = null;
+    this.recalculationLock = false;
+    console.log("Moon cache cleared");
+  }
+  
+  /**
+   * Set a custom reference moon date - useful for worldbuilding in fantasy settings
+   * @param {Date|string} newReferenceDate - The date of a known new moon
+   * @param {number} customCycleDays - Optional custom lunar cycle length
+   */
+  setCustomLunarReference(newReferenceDate, customCycleDays = null) {
+    try {
+      // Update reference new moon date
+      if (newReferenceDate) {
+        this.REFERENCE_NEW_MOON = newReferenceDate instanceof Date 
+          ? newReferenceDate 
+          : new Date(newReferenceDate);
+          
+        if (isNaN(this.REFERENCE_NEW_MOON.getTime())) {
+          throw new Error("Invalid reference date");
+        }
+      }
+      
+      // Update lunar cycle length if provided
+      if (customCycleDays !== null && !isNaN(customCycleDays) && customCycleDays > 0) {
+        this.LUNAR_CYCLE_DAYS = customCycleDays;
+      }
+      
+      // Clear cache after changing reference values
+      this.clearMoonCache();
+      
+      return true;
+    } catch (error) {
+      console.error("Error setting custom lunar reference:", error);
       return false;
     }
   }

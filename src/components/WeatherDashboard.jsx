@@ -79,78 +79,77 @@ const WeatherDashboard = () => {
     console.log(`WeatherDashboard render #${renderCount.current}`);
   });
 
-  // Get current celestial data - MEMOIZED to prevent recalculations
-  const getCelestialInfo = useCallback(() => {
-    if (!activeRegion)
-      return {
-        sunrise: null,
-        sunset: null,
-        isDaytime: false,
-        sunriseTime: "N/A",
-        sunsetTime: "N/A",
-        moonrise: null,
-        moonset: null,
-        moonriseTime: "N/A",
-        moonsetTime: "N/A",
-        dayLengthFormatted: "N/A",
-      };
+// Get current celestial data - MEMOIZED to prevent recalculations
+const getCelestialInfo = useCallback(() => {
+  if (!activeRegion)
+    return {
+      sunrise: null,
+      sunset: null,
+      isDaytime: false,
+      sunriseTime: "N/A",
+      sunsetTime: "N/A",
+      moonrise: null,
+      moonset: null,
+      moonriseTime: "N/A",
+      moonsetTime: "N/A",
+      dayLengthFormatted: "N/A",
+    };
 
-    try {
-      // Get sun data
-      const sunData = sunriseSunsetService.getFormattedSunriseSunset(
-        activeRegion.latitudeBand || "temperate",
-        currentDate
-      );
+  try {
+    // Get sun data
+    const sunData = sunriseSunsetService.getFormattedSunriseSunset(
+      activeRegion.latitudeBand || "temperate",
+      currentDate
+    );
 
-      // Get moon data
-      const { moonrise, moonset } = moonService.getMoonTimes(currentDate);
+    // Get moon data - now uses the cached implementation
+    const { moonrise, moonset } = moonService.getMoonTimes(
+      currentDate,
+      activeRegion.latitudeBand || "temperate"
+    );
 
-      // Add debugging to see what we're getting from the services
-      console.log("Sun data from service:", sunData);
-      console.log("Moon times:", { moonrise, moonset });
+    // Format time strings consistently with hours:minutes
+    const formatTimeString = (date) => {
+      if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
 
-      // Format time strings consistently with hours:minutes
-      const formatTimeString = (date) => {
-        if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const hour12 = hours % 12 || 12;
 
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
-        const ampm = hours >= 12 ? "PM" : "AM";
-        const hour12 = hours % 12 || 12;
+      // Ensure minutes are zero-padded
+      const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
 
-        // Ensure minutes are zero-padded
-        const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+      return `${hour12}:${minutesStr} ${ampm}`;
+    };
 
-        return `${hour12}:${minutesStr} ${ampm}`;
-      };
-
-      // Create a unified object with all the celestial info
-      return {
-        ...sunData,
-        moonrise,
-        moonset,
-        // Ensure all time strings are directly created here
-        sunriseTime: formatTimeString(sunData.sunrise),
-        sunsetTime: formatTimeString(sunData.sunset),
-        moonriseTime: formatTimeString(moonrise),
-        moonsetTime: formatTimeString(moonset),
-      };
-    } catch (error) {
-      console.error("Error calculating celestial info:", error);
-      return {
-        sunrise: null,
-        sunset: null,
-        isDaytime: false,
-        sunriseTime: "N/A",
-        sunsetTime: "N/A",
-        moonrise: null,
-        moonset: null,
-        moonriseTime: "N/A",
-        moonsetTime: "N/A",
-        dayLengthFormatted: "N/A",
-      };
-    }
-  }, [activeRegion, currentDate]);
+    // Create a unified object with all the celestial info
+    return {
+      ...sunData,
+      moonrise,
+      moonset,
+      // Ensure all time strings are directly created here
+      sunriseTime: formatTimeString(sunData.sunrise),
+      sunsetTime: formatTimeString(sunData.sunset),
+      moonriseTime: formatTimeString(moonrise),
+      moonsetTime: formatTimeString(moonset),
+    };
+  } catch (error) {
+    console.error("Error calculating celestial info:", error);
+    return {
+      sunrise: null,
+      sunset: null,
+      isDaytime: false,
+      sunriseTime: "N/A",
+      sunsetTime: "N/A",
+      moonrise: null,
+      moonset: null,
+      moonriseTime: "N/A",
+      moonsetTime: "N/A",
+      dayLengthFormatted: "N/A",
+    };
+  }
+}, [activeRegion, currentDate]);
 
   // Memoize celestial info to prevent recalculation on every render
   const celestialInfo = useMemo(() => getCelestialInfo(), [getCelestialInfo]);
