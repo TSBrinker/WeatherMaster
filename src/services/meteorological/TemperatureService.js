@@ -25,6 +25,15 @@ class TemperatureService {
       "boreal-forest": { min: -10, max: 75, amplitude: 35 },
       "tundra": { min: -30, max: 60, amplitude: 40 }
     };
+    
+    // Temperature adjustments based on latitude bands
+    this.latitudeBandAdjustments = {
+      "equatorial": { minMod: +15, maxMod: +10, amplitude: 0.6 },
+      "tropical": { minMod: +10, maxMod: +8, amplitude: 0.8 },
+      "temperate": { minMod: 0, maxMod: 0, amplitude: 1.0 },
+      "subarctic": { minMod: -10, maxMod: -5, amplitude: 1.2 },
+      "polar": { minMod: -20, maxMod: -12, amplitude: 1.5 }
+    };
   }
 
   /**
@@ -43,12 +52,19 @@ class TemperatureService {
     const biomeRange = this.biomeTemperatureRanges[profile.biome] || 
                       this.biomeTemperatureRanges["temperate-deciduous"];
     
+    // Apply latitude band adjustments to biome range
+    const adjustedRange = this.adjustBiomeRangeForLatitude(
+      biomeRange,
+      profile.latitude, 
+      profile.latitudeBand || "temperate"
+    );
+    
     // Calculate baseline temperature from solar angle and day of year
     const baseTemp = this.calculateSolarBasedTemperature(
       profile.latitude, 
       dayOfYear, 
       hour,
-      biomeRange,
+      adjustedRange,  // Use adjusted range here
       date,
       profile.latitudeBand || "temperate"
     );
@@ -58,6 +74,29 @@ class TemperatureService {
                          (seasonalBaseline.temperature.variance * 0.2);
     
     return baseTemp + randomFactor;
+  }
+  
+  /**
+   * Adjust biome temperature range based on latitude
+   * @param {object} biomeRange - Base temperature range for biome
+   * @param {number} latitude - Latitude in degrees
+   * @param {string} latitudeBand - Latitude band
+   * @returns {object} - Adjusted temperature range
+   */
+  adjustBiomeRangeForLatitude(biomeRange, latitude, latitudeBand) {
+    // Create a copy of the original range
+    const adjustedRange = {...biomeRange};
+    
+    // Get latitude band adjustments
+    const bandAdjustments = this.latitudeBandAdjustments[latitudeBand] || 
+                            this.latitudeBandAdjustments["temperate"];
+    
+    // Apply the adjustments
+    adjustedRange.min += bandAdjustments.minMod;
+    adjustedRange.max += bandAdjustments.maxMod;
+    adjustedRange.amplitude *= bandAdjustments.amplitude;
+    
+    return adjustedRange;
   }
 
   /**
@@ -86,11 +125,17 @@ class TemperatureService {
   ) {
     // Get the day of year for solar calculations
     const dayOfYear = getDayOfYear ? getDayOfYear(date) : this.getDayOfYear(date);
-    console.log("I'm in the CalculateTemperature function and the date is " + date)
     
     // Get biome temperature range
     const biomeRange = this.biomeTemperatureRanges[profile.biome] || 
                       this.biomeTemperatureRanges["temperate-deciduous"];
+    
+    // Apply latitude band adjustments to biome range
+    const adjustedRange = this.adjustBiomeRangeForLatitude(
+      biomeRange,
+      profile.latitude, 
+      profile.latitudeBand || "temperate"
+    );
     
     // Get sunrise/sunset info
     const latitudeBand = profile.latitudeBand || "temperate";
@@ -105,7 +150,7 @@ class TemperatureService {
       profile.latitude, 
       dayOfYear, 
       hour,
-      biomeRange,
+      adjustedRange,  // Use adjusted range here
       date,
       latitudeBand
     );
@@ -368,9 +413,6 @@ class TemperatureService {
    * @returns {number} - "Feels like" temperature in °F
    */
   calculateFeelsLikeTemperature(temperature, humidity, windSpeed) {
-    // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    // console.log('FEELS LIKE CALCULATION HAPPENING!');
-    // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     // Ensure parameters are valid numbers
     temperature = Number(temperature) || 0;
     humidity = Number(humidity) || 0;

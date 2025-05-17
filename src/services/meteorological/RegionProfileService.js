@@ -5,15 +5,24 @@ class RegionProfileService {
     constructor() {
       // Cache for processed profiles to avoid repetitive calculations
       this.profileCache = new Map();
+      
+      // Map latitude bands to specific latitude values
+      this.latitudeBandMap = {
+        "equatorial": 5,    // 0-10 degrees
+        "tropical": 20,     // 10-30 degrees
+        "temperate": 45,    // 30-60 degrees
+        "subarctic": 65,    // 60-75 degrees
+        "polar": 80         // 75-90 degrees
+      };
     }
-  
+
     /**
      * Clear the profile cache
      */
     clearCache() {
       this.profileCache.clear();
     }
-  
+
     /**
      * Get detailed region profile from biome and parameters
      * @param {string} biome - Biome type
@@ -26,40 +35,53 @@ class RegionProfileService {
       if (this.profileCache.has(cacheKey)) {
         return this.profileCache.get(cacheKey);
       }
-  
-      // Get baseline values based on the biome
-      const latitude = parameters.latitude || this.getBiomeLatitude(biome);
+
+      // Determine latitude based on latitude band first, fallback to biome-based latitude
+      let latitude;
+      if (parameters.latitudeBand && this.latitudeBandMap[parameters.latitudeBand]) {
+        latitude = this.latitudeBandMap[parameters.latitudeBand];
+      } else {
+        latitude = parameters.latitude || this.getBiomeLatitude(biome);
+      }
+      
       const elevation = parameters.elevation || this.getBiomeElevation(biome);
       const maritimeInfluence = parameters.maritimeInfluence || this.getBiomeMaritimeInfluence(biome);
-      const temperatureProfile = this.getBiomeTemperatureProfile(biome, parameters);
+      
+      // Get temperature profile with latitude adjustments
+      const temperatureProfile = this.getBiomeTemperatureProfile(biome, {
+        ...parameters,
+        latitude  // Pass the determined latitude
+      });
+      
       const humidityProfile = this.getBiomeHumidityProfile(biome, parameters);
       const terrainRoughness = parameters.terrainRoughness || this.getBiomeTerrainRoughness(biome);
-  
+
       // Optional special factors (region-specific)
       const specialFactors = {
         ...this.getBiomeSpecialFactors(biome),
         ...parameters.specialFactors
       };
-  
+
       // Create the complete profile
       const profile = {
         name: parameters.name || biome,
         biome,
-        latitude,
+        latitude,  // Use the determined latitude value
         elevation,
         maritimeInfluence,
         temperatureProfile,
         humidityProfile,
         terrainRoughness,
         specialFactors,
+        latitudeBand: parameters.latitudeBand  // Store the original latitude band
       };
-  
+
       // Cache the result
       this.profileCache.set(cacheKey, profile);
-  
+
       return profile;
     }
-  
+
     /**
      * Get seasonal baseline values based on profile and season
      * @param {object} profile - The region profile
@@ -70,12 +92,12 @@ class RegionProfileService {
       // Get base temperature and humidity for the season
       const tempProfile = profile.temperatureProfile[season];
       const humidityProfile = profile.humidityProfile[season];
-  
+
       // Calculate pressure baseline slightly higher in winter, lower in summer
       let pressureOffset = 0;
-      if (season === "winter") pressureOffset = 5;
-      else if (season === "summer") pressureOffset = -5;
-  
+      if (season === "winter") pressureOffset = 5; // Winter
+      else if (season === "summer") pressureOffset = -5; // Summer
+
       // Return seasonal baseline values
       return {
         temperature: tempProfile,
@@ -83,7 +105,7 @@ class RegionProfileService {
         pressureOffset,
       };
     }
-  
+
     /**
      * Map biome to typical latitude
      * @param {string} biome - Biome type
@@ -93,17 +115,17 @@ class RegionProfileService {
       const latitudeMap = {
         "tropical-rainforest": 5, // Near equator
         "tropical-seasonal": 15, // Tropical
-        desert: 25, // Desert regions
+        "desert": 25, // Desert regions
         "temperate-grassland": 40, // Temperate prairie regions
         "temperate-deciduous": 45, // Temperate forest
         "temperate-rainforest": 45, // Pacific Northwest type
         "boreal-forest": 55, // Taiga
-        tundra: 70, // Arctic regions
+        "tundra": 70, // Arctic regions
       };
-  
+
       return latitudeMap[biome] || 45; // Default to temperate
     }
-  
+
     /**
      * Map biome to typical elevation
      * @param {string} biome - Biome type
@@ -113,17 +135,17 @@ class RegionProfileService {
       const elevationMap = {
         "tropical-rainforest": 500, // Typically lower elevation
         "tropical-seasonal": 800, // Often on plateaus
-        desert: 2000, // Many deserts are higher elevation
+        "desert": 2000, // Many deserts are higher elevation
         "temperate-grassland": 1500, // Often on plains/prairies
         "temperate-deciduous": 800, // Lower to mid elevation
         "temperate-rainforest": 500, // Often coastal/lower
         "boreal-forest": 1200, // Variable
-        tundra: 1500, // Often higher plateaus
+        "tundra": 1500, // Often higher plateaus
       };
-  
+
       return elevationMap[biome] || 1000; // Default elevation
     }
-  
+
     /**
      * Map biome to maritime influence factor
      * @param {string} biome - Biome type
@@ -133,17 +155,17 @@ class RegionProfileService {
       const maritimeMap = {
         "tropical-rainforest": 0.8, // Often coastal or influenced
         "tropical-seasonal": 0.4, // Moderate influence
-        desert: 0.1, // Low maritime influence
+        "desert": 0.1, // Low maritime influence
         "temperate-grassland": 0.2, // Continental climate
         "temperate-deciduous": 0.5, // Moderate influence
         "temperate-rainforest": 0.9, // Strong maritime influence
         "boreal-forest": 0.3, // Moderate to low
-        tundra: 0.5, // Variable
+        "tundra": 0.5, // Variable
       };
-  
+
       return maritimeMap[biome] || 0.5; // Default influence
     }
-  
+
     /**
      * Map biome to terrain roughness factor
      * @param {string} biome - Biome type
@@ -153,17 +175,17 @@ class RegionProfileService {
       const roughnessMap = {
         "tropical-rainforest": 0.6, // Hills and mountains
         "tropical-seasonal": 0.4, // Often on plateaus
-        desert: 0.7, // Sandy dunes and rocky outcrops
+        "desert": 0.7, // Sandy dunes and rocky outcrops
         "temperate-grassland": 0.3, // Relatively flat
         "temperate-deciduous": 0.5, // Rolling hills
         "temperate-rainforest": 0.7, // Often mountainous coastal areas
         "boreal-forest": 0.6, // Variable terrain
-        tundra: 0.4, // Often flat with some hills
+        "tundra": 0.4, // Often flat with some hills
       };
-  
+
       return roughnessMap[biome] || 0.5; // Default roughness
     }
-  
+
     /**
      * Map biome to special factors
      * @param {string} biome - Biome type
@@ -182,7 +204,7 @@ class RegionProfileService {
           hasDrySeason: true,
           forestDensity: 0.7
         },
-        desert: {
+        "desert": {
           hasDrySeason: true,
           highDiurnalVariation: true,
           forestDensity: 0.1,
@@ -208,24 +230,25 @@ class RegionProfileService {
           coldWinters: true,
           forestDensity: 0.8
         },
-        tundra: {
+        "tundra": {
           hasPermafrost: true,
           polarDay: true,
           polarNight: true,
           forestDensity: 0.1
         },
       };
-  
+
       return specialFactorsMap[biome] || {}; // Default empty factors
     }
-  
+
     /**
      * Get seasonal temperature profile for a biome
      * @param {string} biome - Biome type
-     * @param {object} parameters - Custom parameters
+     * @param {object} parameters - Custom parameters including latitude
      * @returns {object} - Temperature profiles by season
      */
     getBiomeTemperatureProfile(biome, parameters = {}) {
+      // Base profiles by biome
       const profileMap = {
         "tropical-rainforest": {
           annual: { mean: 82, variance: 10 },
@@ -241,7 +264,7 @@ class RegionProfileService {
           summer: { mean: 88, variance: 10 },
           fall: { mean: 80, variance: 12 },
         },
-        desert: {
+        "desert": {
           annual: { mean: 75, variance: 35 },
           winter: { mean: 55, variance: 20 },
           spring: { mean: 75, variance: 20 },
@@ -276,7 +299,7 @@ class RegionProfileService {
           summer: { mean: 65, variance: 15 },
           fall: { mean: 40, variance: 15 },
         },
-        tundra: {
+        "tundra": {
           annual: { mean: 20, variance: 40 },
           winter: { mean: -10, variance: 15 },
           spring: { mean: 20, variance: 15 },
@@ -284,7 +307,7 @@ class RegionProfileService {
           fall: { mean: 25, variance: 15 },
         },
       };
-  
+
       // Get base profile for the biome
       const baseProfile = profileMap[biome] || {
         annual: { mean: 55, variance: 30 },
@@ -293,29 +316,93 @@ class RegionProfileService {
         summer: { mean: 75, variance: 15 },
         fall: { mean: 55, variance: 15 },
       };
-  
-      // If no custom parameters, return the base profile
-      if (!parameters.temperatureProfile) {
-        return baseProfile;
+
+      // Adjust for latitude if provided
+      let latitudeAdjustedProfile = JSON.parse(JSON.stringify(baseProfile)); // Deep clone
+      
+      // Apply latitude adjustments - more extreme at lower latitudes
+      if (parameters.latitude !== undefined) {
+        const latitudeEffect = this.calculateLatitudeEffect(parameters.latitude, biome);
+        
+        // Apply to each season
+        for (const season in latitudeAdjustedProfile) {
+          if (season === 'annual') continue; // Skip annual, we'll recalculate it
+          
+          latitudeAdjustedProfile[season].mean += latitudeEffect[season] || 0;
+          
+          // Make sure variance makes sense for the latitude
+          if (parameters.latitude < 30) {
+            // Lower variance near equator
+            latitudeAdjustedProfile[season].variance = 
+              Math.max(5, latitudeAdjustedProfile[season].variance * 0.7);
+          } else if (parameters.latitude > 60) {
+            // Higher variance near poles
+            latitudeAdjustedProfile[season].variance = 
+              Math.min(50, latitudeAdjustedProfile[season].variance * 1.3);
+          }
+        }
+        
+        // Recalculate annual mean
+        const seasonalMeans = [
+          latitudeAdjustedProfile.winter.mean,
+          latitudeAdjustedProfile.spring.mean,
+          latitudeAdjustedProfile.summer.mean,
+          latitudeAdjustedProfile.fall.mean
+        ];
+        latitudeAdjustedProfile.annual.mean = 
+          seasonalMeans.reduce((sum, val) => sum + val, 0) / seasonalMeans.length;
       }
-  
+
+      // If no custom parameters, return the latitude-adjusted profile
+      if (!parameters.temperatureProfile) {
+        return latitudeAdjustedProfile;
+      }
+
       // Apply custom parameters if provided
       const customProfile = parameters.temperatureProfile;
       const mergedProfile = {};
-  
-      // Merge base profile with custom values
-      for (const season in baseProfile) {
+
+      // Merge adjusted profile with custom values
+      for (const season in latitudeAdjustedProfile) {
         mergedProfile[season] = {
           mean: customProfile[season]?.mean !== undefined ? 
-                customProfile[season].mean : baseProfile[season].mean,
+                customProfile[season].mean : latitudeAdjustedProfile[season].mean,
           variance: customProfile[season]?.variance !== undefined ? 
-                   customProfile[season].variance : baseProfile[season].variance
+                   customProfile[season].variance : latitudeAdjustedProfile[season].variance
         };
       }
-  
+
       return mergedProfile;
     }
-  
+    
+    /**
+     * Calculate latitude-based temperature adjustments
+     * @param {number} latitude - Latitude in degrees
+     * @param {string} biome - Biome type
+     * @returns {object} - Temperature adjustments by season
+     */
+    calculateLatitudeEffect(latitude, biome) {
+      // Get the default latitude for this biome
+      const defaultLatitude = this.getBiomeLatitude(biome);
+      
+      // Calculate difference from biome's default latitude
+      const latitudeDiff = defaultLatitude - latitude;
+      
+      // Temperature effect per degree latitude (more pronounced in winter)
+      // In reality, this varies by location, but roughly 1°F per degree latitude in winter
+      // and 0.5°F per degree latitude in summer
+      const winterEffect = latitudeDiff * 1.0;
+      const summerEffect = latitudeDiff * 0.5;
+      const shoulderEffect = latitudeDiff * 0.7; // Spring/Fall
+      
+      return {
+        winter: winterEffect,
+        spring: shoulderEffect,
+        summer: summerEffect,
+        fall: shoulderEffect
+      };
+    }
+
     /**
      * Get humidity profile for a biome
      * @param {string} biome - Biome type
@@ -338,7 +425,7 @@ class RegionProfileService {
           summer: { mean: 80, variance: 15 },
           fall: { mean: 70, variance: 20 },
         },
-        desert: {
+        "desert": {
           annual: { mean: 25, variance: 15, peakDay: 172 }, // Slight summer peak
           winter: { mean: 30, variance: 10 },
           spring: { mean: 20, variance: 10 },
@@ -373,7 +460,7 @@ class RegionProfileService {
           summer: { mean: 65, variance: 20 },
           fall: { mean: 70, variance: 15 },
         },
-        tundra: {
+        "tundra": {
           annual: { mean: 75, variance: 15, peakDay: 172 }, // Summer peak
           winter: { mean: 80, variance: 10 },
           spring: { mean: 75, variance: 10 },
@@ -381,7 +468,7 @@ class RegionProfileService {
           fall: { mean: 75, variance: 10 },
         },
       };
-  
+
       // Get base profile for the biome
       const baseProfile = profileMap[biome] || {
         annual: { mean: 65, variance: 15, peakDay: 172 },
@@ -390,16 +477,16 @@ class RegionProfileService {
         summer: { mean: 50, variance: 25 },
         fall: { mean: 70, variance: 15 },
       };
-  
+
       // If no custom parameters, return the base profile
       if (!parameters.humidityProfile) {
         return baseProfile;
       }
-  
+
       // Apply custom parameters if provided
       const customProfile = parameters.humidityProfile;
       const mergedProfile = {};
-  
+
       // Merge base profile with custom values
       for (const season in baseProfile) {
         mergedProfile[season] = {
@@ -409,7 +496,7 @@ class RegionProfileService {
                    customProfile[season].variance : baseProfile[season].variance
         };
       }
-  
+
       // Add annual data if it exists in base profile
       if (baseProfile.annual) {
         mergedProfile.annual = {
@@ -421,10 +508,10 @@ class RegionProfileService {
                   customProfile.annual.peakDay : baseProfile.annual.peakDay
         };
       }
-  
+
       return mergedProfile;
     }
-  
+
     /**
      * Generate a natural language description of the region
      * @param {object} profile - Region profile
@@ -566,18 +653,65 @@ class RegionProfileService {
             maritimeInfluence: { min: 0, max: 1.0 }
           },
           location: "Northern Alaska or Greenland"
+        },
+        {
+          conditions: {
+            latitude: { min: 10, max: 30 },
+            elevation: { min: 0, max: 1500 },
+            maritimeInfluence: { min: 0.4, max: 1.0 }
+          },
+          location: "Southern Florida or Northern Thailand"
+        },
+        {
+          conditions: {
+            latitude: { min: 10, max: 30 },
+            biome: "tropical-seasonal",
+            maritimeInfluence: { min: 0, max: 0.4 }
+          },
+          location: "Central India or Northern Australia"
+        },
+        {
+          conditions: {
+            latitude: { min: 10, max: 30 },
+            biome: "temperate-deciduous",
+            maritimeInfluence: { min: 0.4, max: 1.0 }
+          },
+          location: "Central and Southern Mexico"
         }
       ];
       
       // Find matching analogs
       const matches = analogs.filter(analog => {
         const conditions = analog.conditions;
-        return profile.latitude >= conditions.latitude.min &&
-               profile.latitude <= conditions.latitude.max &&
-               profile.elevation >= conditions.elevation.min &&
-               profile.elevation <= conditions.elevation.max &&
-               profile.maritimeInfluence >= conditions.maritimeInfluence.min &&
-               profile.maritimeInfluence <= conditions.maritimeInfluence.max;
+        let matches = true;
+        
+        // Check latitude
+        if (conditions.latitude) {
+          matches = matches && 
+                 profile.latitude >= conditions.latitude.min &&
+                 profile.latitude <= conditions.latitude.max;
+        }
+        
+        // Check elevation
+        if (conditions.elevation && matches) {
+          matches = matches &&
+                 profile.elevation >= conditions.elevation.min &&
+                 profile.elevation <= conditions.elevation.max;
+        }
+        
+        // Check maritime influence
+        if (conditions.maritimeInfluence && matches) {
+          matches = matches &&
+                 profile.maritimeInfluence >= conditions.maritimeInfluence.min &&
+                 profile.maritimeInfluence <= conditions.maritimeInfluence.max;
+        }
+        
+        // Check biome if specified
+        if (conditions.biome && matches) {
+          matches = matches && profile.biome === conditions.biome;
+        }
+        
+        return matches;
       });
       
       if (matches.length > 0) {
