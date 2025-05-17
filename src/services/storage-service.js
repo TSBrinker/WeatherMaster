@@ -39,6 +39,23 @@ class StorageService {
     // Save all data to storage
     saveData(data) {
       try {
+        // Ensure weatherType is preserved for each region
+        if (data.worlds) {
+          data.worlds.forEach(world => {
+            if (world.regions) {
+              world.regions.forEach(region => {
+                // Make sure weatherType is set and preserved
+                if (!region.weatherType) {
+                  console.log(`Setting default weatherType for region ${region.name || region.id}`);
+                  region.weatherType = region.weatherType || 'diceTable';
+                } else {
+                  console.log(`Preserving weatherType "${region.weatherType}" for region ${region.name || region.id}`);
+                }
+              });
+            }
+          });
+        }
+        
         localStorage.setItem(this.storageKey, JSON.stringify(data));
         return true;
       } catch (error) {
@@ -130,6 +147,10 @@ class StorageService {
         
         if (existingIndex >= 0) {
           // Update existing region
+          // ENSURE weatherType is preserved
+          if (!region.weatherType && data.worlds[worldIndex].regions[existingIndex].weatherType) {
+            region.weatherType = data.worlds[worldIndex].regions[existingIndex].weatherType;
+          }
           data.worlds[worldIndex].regions[existingIndex] = region;
         } else {
           // Add new region

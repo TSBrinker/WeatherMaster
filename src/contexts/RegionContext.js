@@ -102,14 +102,14 @@ export const RegionProvider = ({ children }) => {
       // Load regions
       const regions = storageUtils.loadData(STORAGE_KEY, []);
       if (regions && regions.length > 0) {
-        console.log(`Loaded ${regions.length} regions from storage`);
+        // console.log(`Loaded ${regions.length} regions from storage`);
         dispatch({ type: ACTIONS.SET_REGIONS, payload: regions });
       }
       
       // Load active region ID
       const activeId = storageUtils.loadData(ACTIVE_REGION_KEY, null);
       if (activeId) {
-        console.log(`Loaded active region ID: ${activeId}`);
+        // console.log(`Loaded active region ID: ${activeId}`);
         dispatch({ type: ACTIONS.SET_ACTIVE_REGION, payload: activeId });
       }
       
@@ -125,7 +125,7 @@ export const RegionProvider = ({ children }) => {
     if (state.isLoading) return;
     
     // Even if empty, save it (could be after deletion)
-    console.log(`Saving ${state.regions.length} regions to storage`);
+    // console.log(`Saving ${state.regions.length} regions to storage`);
     storageUtils.saveData(STORAGE_KEY, state.regions);
   }, [state.regions, state.isLoading]);
 
@@ -133,7 +133,7 @@ export const RegionProvider = ({ children }) => {
   useEffect(() => {
     // If there's an active region ID, save it
     if (state.activeRegionId) {
-      console.log(`Saving active region ID: ${state.activeRegionId}`);
+      // console.log(`Saving active region ID: ${state.activeRegionId}`);
       storageUtils.saveData(ACTIVE_REGION_KEY, state.activeRegionId);
     } else {
       // If there's no active region ID, remove it from storage

@@ -223,9 +223,9 @@ class MoonService {
       // Only log in debug mode to avoid console spam
       const debugMode = false;
       if (debugMode && this.nextMoonsetTime) {
-        console.log(`Current time: ${new Date(currentTime).toLocaleTimeString()}`);
-        console.log(`Next moonset: ${new Date(this.nextMoonsetTime).toLocaleTimeString()}`);
-        console.log(`Time to moonset: ${(this.nextMoonsetTime - currentTime) / (1000 * 60)} minutes`);
+        // // console.log(`Current time: ${new Date(currentTime).toLocaleTimeString()}`);
+        // // console.log(`Next moonset: ${new Date(this.nextMoonsetTime).toLocaleTimeString()}`);
+        // console.log(`Time to moonset: ${(this.nextMoonsetTime - currentTime) / (1000 * 60)} minutes`);
       }
       
       // Check if we should recalculate based on precise conditions
@@ -246,12 +246,12 @@ class MoonService {
           if (debugMode) {
             if (this.moonTimesCache[cacheKey]) {
               if (this.lastRecalculatedDate !== currentDateString) {
-                console.log(`Recalculating moon times: New date detected`);
+                // console.log(`Recalculating moon times: New date detected`);
               } else if (this.nextMoonsetTime && currentTime > this.nextMoonsetTime) {
-                console.log(`Recalculating moon times: Passed moonset by ${(currentTime - this.nextMoonsetTime) / (1000 * 60)} minutes`);
+                // console.log(`Recalculating moon times: Passed moonset by ${(currentTime - this.nextMoonsetTime) / (1000 * 60)} minutes`);
               }
             } else {
-              console.log(`Calculating moon times for the first time today`);
+              // console.log(`Calculating moon times for the first time today`);
             }
           }
         }
@@ -358,7 +358,7 @@ class MoonService {
       }, 500); // Short delay to prevent cascade recalculations
       
       if (debugMode) {
-        console.log(`Moon times calculated: Moonrise ${moonrise.toLocaleTimeString()}, Moonset ${moonset.toLocaleTimeString()}`);
+        // console.log(`Moon times calculated: Moonrise ${moonrise.toLocaleTimeString()}, Moonset ${moonset.toLocaleTimeString()}`);
       }
       
       return {
@@ -510,7 +510,7 @@ class MoonService {
     this.lastRecalculatedDate = null;
     this.nextMoonsetTime = null;
     this.recalculationLock = false;
-    console.log("Moon cache cleared");
+    // console.log("Moon cache cleared");
   }
   
   /**

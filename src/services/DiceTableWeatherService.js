@@ -128,10 +128,10 @@ export default class DiceTableWeatherService extends WeatherServiceBase {
     // Generate first batch of weather conditions
     this.generateWeatherForecast(biome, season, currentDate);
 
-    console.log(`Initializing weather for biome: ${biome}, season: ${season}`);
-    console.log(`Using climate table: ${biomeMap[biome] || biome}`);
+    // console.log(`Initializing weather for biome: ${biome}, season: ${season}`);
+    // console.log(`Using climate table: ${biomeMap[biome] || biome}`);
     const table = this.getClimateTable(biome, season);
-    console.log(`Climate table for ${season}:`, table);
+    // console.log(`Climate table for ${season}:`, table);
 
     return this.getCurrentWeather();
   }
@@ -154,7 +154,7 @@ export default class DiceTableWeatherService extends WeatherServiceBase {
     // Map UI biome name to climate table key
     const climateKey = biomeMap[biome] || biome;
     
-    console.log(`Looking up climate table for "${climateKey}" in season "${season}"`);
+    // console.log(`Looking up climate table for "${climateKey}" in season "${season}"`);
     
     if (!climateTables[climateKey]) {
       console.error(`Climate key "${climateKey}" not found in climate tables`);
@@ -173,17 +173,17 @@ export default class DiceTableWeatherService extends WeatherServiceBase {
   getRandomWeatherCondition(biome, season) {
     const roll = this.useWeightedDistribution ? this.weightedD100() : this.rollD100();
     const table = this.getClimateTable(biome, season);
-    console.log(`Weather roll: ${roll} (using ${this.useWeightedDistribution ? 'weighted' : 'normal'} distribution)`);
+    // console.log(`Weather roll: ${roll} (using ${this.useWeightedDistribution ? 'weighted' : 'normal'} distribution)`);
     
     for (const entry of table) {
       if (roll >= entry.min && roll <= entry.max) {
-        console.log(`Selected condition: ${entry.condition} (range: ${entry.min}-${entry.max})`);
+        // console.log(`Selected condition: ${entry.condition} (range: ${entry.min}-${entry.max})`);
         return entry.condition;
       }
     }
     
     // Default fallback
-    console.log(`No condition matched roll ${roll}, using default: Clear Skies`);
+    // console.log(`No condition matched roll ${roll}, using default: Clear Skies`);
     return "Clear Skies";
   }
 
@@ -318,12 +318,12 @@ export default class DiceTableWeatherService extends WeatherServiceBase {
     const { min, max } = constraints;
     
     if (min !== undefined && temperature < min) {
-      console.log(`Adjusting temperature for ${condition}: ${temperature}°F -> ${min}°F (minimum)`);
+      // console.log(`Adjusting temperature for ${condition}: ${temperature}°F -> ${min}°F (minimum)`);
       return min;
     }
     
     if (max !== undefined && temperature > max) {
-      console.log(`Adjusting temperature for ${condition}: ${temperature}°F -> ${max}°F (maximum)`);
+      // console.log(`Adjusting temperature for ${condition}: ${temperature}°F -> ${max}°F (maximum)`);
       return max;
     }
     

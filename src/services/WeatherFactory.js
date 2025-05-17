@@ -6,13 +6,18 @@ import MeteorologicalWeatherService from './MeteorologicalWeatherService';
 
 export default class WeatherFactory {
   static createWeatherService(type = 'diceTable') {
-    // Now with both services implemented, return the appropriate one
-    console.log(`WeatherFactory creating service of type: ${type}`);
+    // Force to lowercase and trim for consistency
+    const normalizedType = (typeof type === 'string') ? type.toLowerCase().trim() : 'diceTable';
     
-    switch (type) {
+    console.log(`WeatherFactory creating service of type: "${normalizedType}" (original: "${type}")`);
+    
+    switch (normalizedType) {
       case 'meteorological':
         console.error('Creating new meteorological weather service - VERSION FIX 1.0');
         return new MeteorologicalWeatherService();
+      case 'dicetable':
+      case 'dice-table':
+      case 'dice_table':
       case 'diceTable':
       default:
         console.log('Creating dice table weather service');

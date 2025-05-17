@@ -70,6 +70,20 @@ const WeatherDashboard = () => {
   const [showDebug, setShowDebug] = useState(false);
   const [isForecastExpanded, setIsForecastExpanded] = useState(false);
 
+  // Add this debug tracking code
+  useEffect(() => {
+    if (activeRegion) {
+      console.log(
+        `[WEATHER TYPE] Region ${activeRegion.id}: "${
+          activeRegion.weatherType || "diceTable"
+        }" ` +
+          `(from localStorage: "${
+            getRegionWeather(activeRegion.id)?.weatherType || "N/A"
+          }")`
+      );
+    }
+  }, [activeRegion, getRegionWeather]);
+
   // Refs for tracking previous values
   const prevRegionIdRef = useRef(null);
   const prevDateRef = useRef(null);
@@ -78,7 +92,7 @@ const WeatherDashboard = () => {
   // Logging render count (development only)
   useEffect(() => {
     renderCount.current += 1;
-    console.log(`WeatherDashboard render #${renderCount.current}`);
+    // console.log(`WeatherDashboard render #${renderCount.current}`);
   });
 
   // Get current celestial data - MEMOIZED to prevent recalculations
@@ -265,7 +279,7 @@ const WeatherDashboard = () => {
     prevRegionIdRef.current = regionId;
     prevDateRef.current = dateString;
 
-    console.log(`Initializing weather: region=${regionId}, date=${dateString}`);
+    // console.log(`Initializing weather: region=${regionId}, date=${dateString}`);
     setIsLoading(true);
 
     // Try to get existing weather
@@ -281,15 +295,15 @@ const WeatherDashboard = () => {
       const timeDiffMs = currentWorldDate.getTime() - lastUpdateDate.getTime();
 
       if (Math.abs(timeDiffMs) > 60000) {
-        console.log(`Time sync needed for region ${regionId}`);
+        // console.log(`Time sync needed for region ${regionId}`);
         const hoursDiff = Math.round(timeDiffMs / (1000 * 60 * 60));
 
         if (hoursDiff !== 0) {
-          console.log(`Syncing region time by ${hoursDiff} hours`);
+          // console.log(`Syncing region time by ${hoursDiff} hours`);
 
           // For large time jumps, reinitialize
           if (Math.abs(hoursDiff) > 72) {
-            console.log(`Large time gap, reinitializing weather`);
+            // console.log(`Large time gap, reinitializing weather`);
             const actualSeason =
               season === "auto"
                 ? weatherManager.getSeasonFromDate(currentWorldDate)
@@ -393,7 +407,7 @@ const WeatherDashboard = () => {
 
     // Normal loading logic
     if (savedWeather && savedWeather.forecast) {
-      console.log("Loading saved weather");
+      // console.log("Loading saved weather");
       setSeason(savedWeather.season);
       setCurrentSeason(savedWeather.currentSeason);
 
@@ -622,7 +636,7 @@ const WeatherDashboard = () => {
       if (!activeRegion || !activeRegion.id) return;
 
       setIsLoading(true);
-      console.log(`Changing weather system to: ${newType}`);
+      // console.log(`Changing weather system to: ${newType}`);
 
       // Update region with new weather type
       const updatedRegion = {

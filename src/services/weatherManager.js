@@ -16,11 +16,15 @@ class WeatherManager {
   initializeWeather(regionId, climate, season, date, type = 'diceTable') {
     console.log(`WeatherManager initializing weather for region ${regionId} with type ${type}`);
     
-    // Force recreation of service to ensure latest code is used
-    // This will ensure our fixes are applied even to existing regions
-    console.log(`Forcing recreation of weather service for region ${regionId}`);
-    this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+    // Normalize weather type and enforce consistency
+    type = this._normalizeWeatherType(type);
+    
+    // Store the service type consistently
     this.weatherServiceTypes[regionId] = type;
+    
+    // Force recreation of service to ensure latest code is used
+    console.log(`Creating new weather service for region ${regionId}: ${type}`);
+    this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
     
     // Initialize weather
     this.weatherServices[regionId].initializeWeather(climate, season, date);
@@ -29,6 +33,7 @@ class WeatherManager {
     this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     
     console.log(`Weather initialized for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
+    console.log(`Weather type for region ${regionId} is now: ${this.weatherServiceTypes[regionId]}`);
     
     return this.forecasts[regionId];
   }
@@ -44,14 +49,15 @@ class WeatherManager {
     
     // Ensure a WeatherService instance exists
     if (!this.weatherServices[regionId]) {
-      const type = this.weatherServiceTypes[regionId] || 'diceTable';
+      const type = this._normalizeWeatherType(this.weatherServiceTypes[regionId] || 'diceTable');
       console.warn(`No weather service found for region ${regionId}, creating new ${type} service`);
       this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+      this.weatherServiceTypes[regionId] = type;
       this.initializeWeather(regionId, climate, season, currentDate, type);
     }
     
     // Check service type - if it's meteorological, make a debugging check
-    if (this.weatherServiceTypes[regionId] === 'meteorological') {
+    if (this.weatherServiceTypes[regionId].toLowerCase() === 'meteorological') {
       const service = this.weatherServices[regionId];
       
       // Check if there are weather systems
@@ -90,6 +96,9 @@ class WeatherManager {
   changeServiceType(regionId, newType) {
     console.log(`WeatherManager changing service type for region ${regionId} to ${newType}`);
     
+    // Normalize weather type
+    newType = this._normalizeWeatherType(newType);
+    
     if (this.weatherServiceTypes[regionId] === newType) {
       console.log(`Region ${regionId} already using ${newType}`);
       return; // Already using this type
@@ -125,8 +134,30 @@ class WeatherManager {
       this.forecasts = state.forecasts;
     }
     if (state && state.serviceTypes) {
-      this.weatherServiceTypes = state.serviceTypes;
+      // Normalize all service types on import
+      const normalizedTypes = {};
+      for (const regionId in state.serviceTypes) {
+        normalizedTypes[regionId] = this._normalizeWeatherType(state.serviceTypes[regionId]);
+      }
+      this.weatherServiceTypes = normalizedTypes;
     }
+  }
+  
+  // Internal helper to normalize weather type strings
+  _normalizeWeatherType(type) {
+    // Default to diceTable if invalid
+    if (!type || typeof type !== 'string') {
+      return 'diceTable';
+    }
+    
+    // Normalize to known values
+    const lowerType = type.toLowerCase().trim();
+    if (lowerType === 'meteorological') {
+      return 'meteorological';
+    }
+    
+    // All other values default to diceTable
+    return 'diceTable';
   }
 }
 

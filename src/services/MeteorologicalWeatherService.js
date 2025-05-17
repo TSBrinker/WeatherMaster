@@ -1,4 +1,4 @@
-// src/services/MeteorologicalWeatherService.js
+// src/services/MeteorologicalWeatherService.js - UPDATED
 // Main coordinator service for meteorological weather generation
 
 import WeatherServiceBase from "./WeatherServiceBase";
@@ -19,7 +19,7 @@ import ExtremeWeatherService from "./meteorological/ExtremeWeatherService";
 export default class MeteorologicalWeatherService extends WeatherServiceBase {
   constructor() {
     super();
-    console.error("METEO SERVICE CREATED - VERSION FIX 1.0"); // Check this appears in console
+    console.error("METEO SERVICE CREATED - VERSION FIX 2.0"); // Check this appears in console
 
     // Initialize specialized services
     this.temperatureService = new TemperatureService();
@@ -107,11 +107,12 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Get seasonal baseline values
     const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
 
-    // Initialize core state with realistic starting values
+    // Initialize core state with realistic starting values using physics-based approach
+    console.log("Initializing temperature with physics-based model");
     this.temperature = this.temperatureService.calculateBaseTemperature(
       profile,
       seasonalBaseline,
-      date,
+      date, // Pass full date object
       hour
     );
     
@@ -198,8 +199,8 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    * @returns {object} - Weather data for this hour
    */
   generateHourlyWeather(hour, date, profile, season) {
-
-    console.log("DEBUGGING: generateHourlyWeather started for hour", hour);
+    console.log("PHYSICS-BASED WEATHER GENERATION RUNNING");
+    
     // Get seasonal baseline
     const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
 
@@ -210,10 +211,11 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     const pressureTrend = this.atmosphericService.calculatePressureTrend(this.pressure);
 
     // Update weather parameters based on time, weather systems, and profile
+    // KEY CHANGE - USING THE PHYSICS-BASED TEMPERATURE CALCULATION
     const hourTemp = this.temperatureService.calculateTemperature(
       profile,
       seasonalBaseline,
-      date,
+      date, // Pass full date object
       hour,
       this.temperature,
       this.cloudCover,
@@ -226,7 +228,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     const hourHumidity = this.atmosphericService.calculateHumidity(
       profile,
       seasonalBaseline,
-      date,
+      date, // Pass full date object
       hour,
       this.humidity,
       hourTemp,
@@ -238,7 +240,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Update pressure
     const hourPressure = this.atmosphericService.calculatePressure(
       profile,
-      date,
+      date, // Pass full date object
       hour,
       this.pressure,
       weatherSystems
@@ -248,7 +250,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     const hourCloudCover = this.atmosphericService.calculateCloudCover(
       profile,
       seasonalBaseline,
-      date,
+      date, // Pass full date object
       hour,
       this.cloudCover,
       hourHumidity,
@@ -466,5 +468,5 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 }
 
 // At the very end of the MeteorologicalWeatherService.js file, after the class closing bracket
-console.log("METEO SERVICE FILE LOADED COMPLETELY");
+console.log("METEO SERVICE FILE LOADED COMPLETELY - VERSION 2.0");
 console.log("Methods available:", Object.getOwnPropertyNames(MeteorologicalWeatherService.prototype));

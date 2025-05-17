@@ -94,7 +94,7 @@ const worldReducer = (state, action) => {
       
       // Check if dates are significantly different (more than 1 second)
       if (Math.abs(currentDate - settingsDate) > 1000) {
-        console.log("Syncing world time with settings:", settingsDate.toISOString());
+        // console.log("Syncing world time with settings:", settingsDate.toISOString());
         return {
           ...state,
           currentDate: settingsDate.toISOString()
@@ -128,10 +128,10 @@ export const WorldProvider = ({ children }) => {
       let worldTime;
       if (worldSettings && worldSettings.gameTime) {
         worldTime = worldSettings.gameTime;
-        console.log('Using time from world settings:', worldTime);
+        // console.log('Using time from world settings:', worldTime);
       } else {
         worldTime = storageUtils.loadData(WORLD_TIME_KEY, new Date().toISOString());
-        console.log('Using time from world time storage:', worldTime);
+        // console.log('Using time from world time storage:', worldTime);
       }
       
       dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: worldTime });
@@ -139,7 +139,7 @@ export const WorldProvider = ({ children }) => {
       // Load world data
       const worldData = storageUtils.loadData(WORLD_KEY, { weatherHistory: {}, lastUpdateTimes: {} });
       
-      console.log("Loaded world data:", worldData);
+      // console.log("Loaded world data:", worldData);
       
       // Restore weather history
       if (worldData.weatherHistory) {
@@ -188,7 +188,7 @@ export const WorldProvider = ({ children }) => {
     
     const regionIds = Object.keys(state.weatherHistory);
     if (regionIds.length > 0) {
-      console.log(`Saving weather data for ${regionIds.length} regions`);
+      // console.log(`Saving weather data for ${regionIds.length} regions`);
       storageUtils.saveData(WORLD_KEY, worldData);
     }
   }, [state.currentDate, state.weatherHistory, state.lastUpdateTimes]);
@@ -197,12 +197,12 @@ export const WorldProvider = ({ children }) => {
   const setCurrentDate = useCallback((date) => {
     // Accept either Date object or ISO string
     const dateValue = date instanceof Date ? date.toISOString() : date;
-    console.log("Setting current date:", dateValue);
+    // console.log("Setting current date:", dateValue);
     dispatch({ type: ACTIONS.SET_CURRENT_DATE, payload: dateValue });
   }, []);
 
   const advanceTime = useCallback((hours) => {
-    console.log(`Advancing world time by ${hours} hours`);
+    // console.log(`Advancing world time by ${hours} hours`);
     dispatch({ type: ACTIONS.ADVANCE_TIME, payload: hours });
   }, []);
 

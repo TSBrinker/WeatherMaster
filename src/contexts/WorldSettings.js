@@ -101,7 +101,7 @@ export const WorldSettingsProvider = ({ children }) => {
       const savedSettings = storageUtils.loadData(WORLD_SETTINGS_KEY, null);
       
       if (savedSettings) {
-        console.log('Loading world settings from storage:', savedSettings);
+        // console.log('Loading world settings from storage:', savedSettings);
         
         // Make sure gameTime is a valid ISO string
         try {
@@ -136,7 +136,7 @@ export const WorldSettingsProvider = ({ children }) => {
   useEffect(() => {
     // Wait until after initial load
     const timer = setTimeout(() => {
-      console.log('Saving world settings to storage:', state);
+      // console.log('Saving world settings to storage:', state);
       storageUtils.saveData(WORLD_SETTINGS_KEY, state);
     }, 100);
     
