@@ -189,7 +189,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     return this.get24HourForecast();
   }
 
-  /**
+/**
    * Generate weather for a specific hour
    * @param {number} hour - Hour of the day (0-23)
    * @param {Date} date - Date object for this hour
@@ -197,177 +197,34 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    * @param {string} season - Current season
    * @returns {object} - Weather data for this hour
    */
-  generateHourlyWeather(hour, date, profile, season) {
-    console.log(`Generating weather for hour ${hour}`);
+generateHourlyWeather(hour, date, profile, season) {
+  console.log(`Starting weather generation for hour ${hour}`); // Simple log to verify function execution
+  
+  // Get seasonal baseline
+  const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
+
+  // ... [all your existing code until validatedTemp is calculated] ...
+
+  // Validate temperature for the condition
+  const validatedTemp = this.temperatureService.validateTemperatureForCondition(hourTemp, condition);
+
+  // Calculate "feels like" temperature
+  const feelsLikeTemp = this.temperatureService.calculateFeelsLikeTemperature(
     
-    // Get seasonal baseline
-    const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
+    validatedTemp,
+    hourHumidity,
+    this.currentWind.speed
+  );
+  console.log('//////////////////calculateFeelsLikeTemperature called with:', temperature, humidity, windSpeed);
 
-    // Get active weather systems - Important: Check if empty and fix
-    let weatherSystems = this.weatherSystemService.getWeatherSystems();
-    
-    // Critical check - make sure weather systems exist
-    if (!weatherSystems || !Array.isArray(weatherSystems) || weatherSystems.length === 0) {
-      console.error("No weather systems found, initializing systems");
-      this.weatherSystemService.initializeWeatherSystems(profile, season, date);
-      weatherSystems = this.weatherSystemService.getWeatherSystems();
-    }
-    
-    console.log(`Found ${weatherSystems.length} active weather systems`);
 
-    // Calculate physical parameters for this hour
-    const hourTemp = this.temperatureService.calculateTemperature(
-      profile,
-      seasonalBaseline,
-      date,
-      hour,
-      this.temperature,
-      this.cloudCover,
-      weatherSystems,
-      () => this.precipitationService.getRecentPrecipitation(),
-      (date) => {
-        const start = new Date(date.getFullYear(), 0, 0);
-        const diff = date - start;
-        const oneDay = 1000 * 60 * 60 * 24;
-        return Math.floor(diff / oneDay);
-      }
-    );
-
-    const hourHumidity = this.atmosphericService.calculateHumidity(
-      profile,
-      seasonalBaseline,
-      date,
-      hour,
-      this.humidity,
-      this.temperature,
-      weatherSystems,
-      () => this.precipitationService.getRecentPrecipitation(),
-      (date) => this.getDayOfYear(date)
-    );
-
-    const hourPressure = this.atmosphericService.calculatePressure(
-      profile,
-      date,
-      hour,
-      this.pressure,
-      weatherSystems
-    );
-
-    // Calculate pressure trend
-    const pressureTrend = this.atmosphericService.calculatePressureTrend(hourPressure);
-
-    const hourCloudCover = this.atmosphericService.calculateCloudCover(
-      profile,
-      seasonalBaseline,
-      date,
-      hour,
-      this.cloudCover,
-      hourHumidity,
-      weatherSystems
-    );
-
-    // Calculate atmospheric instability
-    const instability = this.weatherConditionService.calculateAtmosphericInstability(
-      hourTemp,
-      hourPressure,
-      pressureTrend,
-      this.precipitationService.getRecentPrecipitation()
-    );
-
-    // Calculate precipitation potential based on physical factors
-    const precipitationPotential = this.atmosphericService.calculatePrecipitationPotential(
-      hourHumidity,
-      hourTemp,
-      hourPressure,
-      hourCloudCover,
-      instability,
-      weatherSystems,
-      () => this.precipitationService.getRecentPrecipitation()
-    );
-
-    // Determine weather condition from physical factors
-    const condition = this.weatherConditionService.determineWeatherCondition(
-      hourTemp,
-      hourHumidity,
-      hourPressure,
-      hourCloudCover,
-      precipitationPotential,
-      this.currentWind ? this.currentWind.speed : 5,
-      instability
-    );
-
-    // Update our base values for the next hour
-    this.temperature = hourTemp;
-    this.humidity = hourHumidity;
-    this.pressure = hourPressure;
-    this.cloudCover = hourCloudCover;
-
-    // Update precipitation history if it's precipitating
-    const isPrecipitating = this.weatherConditionService.isPrecipitating(condition);
-    const precipAmount = isPrecipitating
-      ? this.atmosphericService.calculatePrecipitationAmount(condition, precipitationPotential)
-      : 0;
-
-    this.precipitationService.updatePrecipitation(
-      precipAmount,
-      condition === "Snow" || condition === "Blizzard" ? "snow" : "rain"
-    );
-
-    // Update weather systems with the new condition - pass the condition to track thunderstorms
-    this.weatherSystemService.updateWeatherSystems(1, condition);
-
-    // Update wind based on pressure and other factors
-    // CRITICAL: Pass the condition to updateWindFactors
-    this.currentWind = this.windService.updateWindFactors(
-      this.currentWind,
-      hour,
-      hourTemp,
-      this.temperature,
-      pressureTrend,
-      weatherSystems,
-      condition // Pass condition to control wind speed limits
-    );
-
-    // Validate temperature for the condition
-    const validatedTemp = this.temperatureService.validateTemperatureForCondition(hourTemp, condition);
-
-    // Calculate weather effects text
-    const effects = this.weatherConditionService.getWeatherEffects(condition);
-
-    // Generate celestial events
-    const celestialEvents = this.weatherConditionService.generateCelestialEvents();
-
-    // Get wind intensity information
-    const windIntensity = this.windService.getWindIntensity(this.currentWind.speed);
-
-    // Log the final result for debugging
-    console.log(`Generated weather: ${condition}, ${Math.round(validatedTemp)}°F, ${Math.round(this.currentWind.speed)} mph ${this.currentWind.direction}`);
-
-    // Create the weather entry in the same format as dice table service for compatibility
-    return {
-      condition,
-      temperature: Math.round(validatedTemp), // Round temperature to whole degrees
-      hour: hour,
-      date: date,
-      windDirection: this.currentWind.direction,
-      windSpeed: Math.round(this.currentWind.speed),
-      windIntensity: windIntensity.level,
-      effects: effects,
-      hasShootingStar: celestialEvents.shootingStar,
-      hasMeteorImpact: celestialEvents.meteorImpact,
-
-      // Additional meteorological data (for internal use only)
-      _meteoData: {
-        humidity: hourHumidity,
-        pressure: hourPressure,
-        cloudCover: hourCloudCover,
-        precipitationPotential,
-        precipAmount,
-        instability,
-        pressureTrend,
-        weatherSystems: this.weatherSystemService.getWeatherSystems() // Include updated weather systems in the data
-      },
-    };
+  // Debug log AFTER the calculations are done
+  console.log(`LOOK HERE: Temperature calculations:
+    Actual: ${validatedTemp}°F
+    Feels like: ${feelsLikeTemp}°F
+    Difference: ${feelsLikeTemp - validatedTemp}°F
+    Humidity: ${hourHumidity}%
+    Wind: ${this.currentWind.speed} mph`);
   }
 
 /**

@@ -16,6 +16,23 @@ const CurrentWeatherDisplay = ({
     ? formatTimeWithMinutes(celestialInfo.sunset)
     : formatTimeWithMinutes(celestialInfo.sunrise);
 
+  // Handle case where feelsLikeTemperature might not be available
+  const hasFeelsLike = currentWeather.feelsLikeTemperature !== undefined;
+  const feelsLikeTemp = hasFeelsLike
+    ? currentWeather.feelsLikeTemperature
+    : currentWeather.temperature;
+  const tempDiff = feelsLikeTemp - currentWeather.temperature;
+
+  // Show "feels like" if any noticeable difference exists (reduced threshold)
+  const showFeelsLike = hasFeelsLike && Math.abs(tempDiff) >= 1;
+
+  // Debugging
+  if (hasFeelsLike) {
+    console.log(
+      `Weather display: Actual ${currentWeather.temperature}°F, Feels like ${feelsLikeTemp}°F, Diff: ${tempDiff}°F`
+    );
+  }
+
   return (
     <div className="weather-overlay">
       <div className="weather-icon-large">
@@ -30,6 +47,15 @@ const CurrentWeatherDisplay = ({
         <div className="weather-condition">{currentWeather.condition}</div>
         <div className="temperature-display-large">
           {currentWeather.temperature}°F
+          {showFeelsLike && (
+            <span
+              className={`feels-like-temp ${
+                tempDiff < 0 ? "feels-colder" : "feels-warmer"
+              }`}
+            >
+              Feels like {feelsLikeTemp}°F
+            </span>
+          )}
         </div>
         <div className="wind-display-large">
           {currentWeather.windSpeed} mph {currentWeather.windDirection}

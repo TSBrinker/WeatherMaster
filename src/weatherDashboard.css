@@ -641,3 +641,18 @@
     width: 5rem; /* Fixed width for labels */
     text-align: right;
   }
+
+  .feels-like-temp {
+    font-size: 0.5em;
+    margin-left: 10px;
+    opacity: 0.9;
+    font-weight: normal;
+  }
+  
+  @media (max-width: 768px) {
+    .feels-like-temp {
+      display: block;
+      margin-left: 0;
+      font-size: 0.7em;
+    }
+  }
