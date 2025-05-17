@@ -1,4 +1,4 @@
-// src/services/meteorological/WeatherSystemService.js - FIXED VERSION
+// src/services/meteorological/WeatherSystemService.js
 // Service for managing weather systems - pressure systems and fronts
 
 class WeatherSystemService {
@@ -44,8 +44,9 @@ class WeatherSystemService {
       return this.weatherSystems;
     }
 
-    // Random number of starting systems (0-2)
-    const numSystems = Math.floor(Math.random() * 3);
+    // Random number of starting systems (1-3)
+    const numSystems = Math.max(1, Math.floor(Math.random() * 3));
+    console.log(`Creating ${numSystems} initial weather systems`);
 
     // Create initial systems
     for (let i = 0; i < numSystems; i++) {
@@ -70,7 +71,7 @@ class WeatherSystemService {
       this.weatherSystems.push({
         type: isHighPressure ? "high-pressure" : "low-pressure",
         intensity,
-        age: Math.floor(Math.random() * 48), // 0-48 hours old
+        age: Math.floor(Math.random() * 24), // 0-24 hours old
         position: Math.random(), // 0-1 relative position across region
         movementSpeed: Math.random() * 0.1 + 0.05, // Movement per hour
         movementDirection: Math.random() > 0.5 ? 1 : -1, // Moving in or out
@@ -86,6 +87,7 @@ class WeatherSystemService {
     // Check if any fronts should form from the initial systems
     this.checkForFrontGeneration();
 
+    console.log(`Initialized ${this.weatherSystems.length} weather systems`);
     return this.weatherSystems;
   }
   
@@ -94,6 +96,7 @@ class WeatherSystemService {
    * This prevents empty weather system states
    */
   addDefaultSystems() {
+    console.log("Adding default weather systems");
     // Create one high and one low pressure system as defaults
     this.weatherSystems.push({
       type: "high-pressure",
@@ -154,6 +157,8 @@ class WeatherSystemService {
       this.addDefaultSystems();
       return this.weatherSystems;
     }
+    
+    console.log(`Updating ${this.weatherSystems.length} weather systems for ${hours} hours`);
     
     // Process each hour individually for more realistic evolution
     for (let hour = 0; hour < hours; hour++) {
@@ -482,6 +487,34 @@ class WeatherSystemService {
         0.5 + Math.random() * 0.3 // Moderate to strong intensity
       ));
     }
+  }
+
+  /**
+   * Get the count of weather systems
+   * @returns {number} - The number of active weather systems
+   */
+  getWeatherSystemsCount() {
+    return this.weatherSystems ? this.weatherSystems.length : 0;
+  }
+
+  /**
+   * Get system types for debugging
+   * @returns {string} - Description of current systems
+   */
+  getSystemTypesDescription() {
+    if (!this.weatherSystems || this.weatherSystems.length === 0) {
+      return "No active weather systems";
+    }
+    
+    const counts = {};
+    this.weatherSystems.forEach(system => {
+      if (!system || !system.type) return;
+      counts[system.type] = (counts[system.type] || 0) + 1;
+    });
+    
+    return Object.entries(counts)
+      .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+      .join(', ');
   }
 }
 

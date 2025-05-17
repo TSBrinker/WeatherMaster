@@ -64,6 +64,22 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 
     // Initialize weather systems
     this.weatherSystemService.initializeWeatherSystems(profile, season, currentDate);
+    
+    // Force at least one weather system if none exist
+    if (this.weatherSystemService.getWeatherSystems().length === 0) {
+      console.log("No weather systems created during initialization, adding default system");
+      
+      // Add a default low pressure system
+      this.weatherSystemService.addWeatherSystem({
+        type: "low-pressure",
+        intensity: 0.6 + (Math.random() * 0.2), // 0.6-0.8 intensity
+        age: Math.floor(Math.random() * 12), // 0-12 hours old
+        position: 0.5, // Center of region
+        movementSpeed: 0.05 + (Math.random() * 0.05), // 0.05-0.1 speed
+        movementDirection: Math.random() > 0.5 ? 1 : -1, // Random direction
+        maxAge: 72 + Math.floor(Math.random() * 24), // 72-96 hour lifespan
+      });
+    }
 
     // Initialize precipitation tracking
     this.precipitationService.initializePrecipitation();
@@ -312,7 +328,9 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
         cloudCover: hourCloudCover,
         precipitationPotential,
         precipAmount,
-        instability
+        instability,
+        pressureTrend,
+        weatherSystems: this.weatherSystemService.getWeatherSystems() // Include weather systems in the data
       },
     };
   }

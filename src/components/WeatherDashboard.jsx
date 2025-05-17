@@ -15,6 +15,7 @@ import sunriseSunsetService from "../services/SunriseSunsetService";
 import moonService from "../services/MoonService";
 import weatherDescriptionService from "../services/WeatherDescriptionService";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
+import MeteorologicalDebugPanel from "./debug/MeteorologicalDebugPanel";
 
 // Import components
 import TimeDisplay from "./weather/TimeDisplay";
@@ -79,80 +80,82 @@ const WeatherDashboard = () => {
     console.log(`WeatherDashboard render #${renderCount.current}`);
   });
 
-// Get current celestial data - MEMOIZED to prevent recalculations
-const getCelestialInfo = useCallback(() => {
-  if (!activeRegion)
-    return {
-      sunrise: null,
-      sunset: null,
-      isDaytime: false,
-      sunriseTime: "N/A",
-      sunsetTime: "N/A",
-      moonrise: null,
-      moonset: null,
-      moonriseTime: "N/A",
-      moonsetTime: "N/A",
-      dayLengthFormatted: "N/A",
-    };
+  // Get current celestial data - MEMOIZED to prevent recalculations
+  const getCelestialInfo = useCallback(() => {
+    if (!activeRegion)
+      return {
+        sunrise: null,
+        sunset: null,
+        isDaytime: false,
+        sunriseTime: "N/A",
+        sunsetTime: "N/A",
+        moonrise: null,
+        moonset: null,
+        moonriseTime: "N/A",
+        moonsetTime: "N/A",
+        dayLengthFormatted: "N/A",
+      };
 
-  try {
-    // Get sun data
-    const sunData = sunriseSunsetService.getFormattedSunriseSunset(
-      activeRegion.latitudeBand || "temperate",
-      currentDate
-    );
+    try {
+      // Get sun data
+      const sunData = sunriseSunsetService.getFormattedSunriseSunset(
+        activeRegion.latitudeBand || "temperate",
+        currentDate
+      );
 
-    // Get moon data - now uses the cached implementation
-    const { moonrise, moonset } = moonService.getMoonTimes(
-      currentDate,
-      activeRegion.latitudeBand || "temperate"
-    );
+      // Get moon data - now uses the cached implementation
+      const { moonrise, moonset } = moonService.getMoonTimes(
+        currentDate,
+        activeRegion.latitudeBand || "temperate"
+      );
 
-    // Format time strings consistently with hours:minutes
-    const formatTimeString = (date) => {
-      if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
+      // Format time strings consistently with hours:minutes
+      const formatTimeString = (date) => {
+        if (!(date instanceof Date) || isNaN(date.getTime())) return "N/A";
 
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const ampm = hours >= 12 ? "PM" : "AM";
-      const hour12 = hours % 12 || 12;
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const hour12 = hours % 12 || 12;
 
-      // Ensure minutes are zero-padded
-      const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
+        // Ensure minutes are zero-padded
+        const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
 
-      return `${hour12}:${minutesStr} ${ampm}`;
-    };
+        return `${hour12}:${minutesStr} ${ampm}`;
+      };
 
-    // Create a unified object with all the celestial info
-    return {
-      ...sunData,
-      moonrise,
-      moonset,
-      // Ensure all time strings are directly created here
-      sunriseTime: formatTimeString(sunData.sunrise),
-      sunsetTime: formatTimeString(sunData.sunset),
-      moonriseTime: formatTimeString(moonrise),
-      moonsetTime: formatTimeString(moonset),
-    };
-  } catch (error) {
-    console.error("Error calculating celestial info:", error);
-    return {
-      sunrise: null,
-      sunset: null,
-      isDaytime: false,
-      sunriseTime: "N/A",
-      sunsetTime: "N/A",
-      moonrise: null,
-      moonset: null,
-      moonriseTime: "N/A",
-      moonsetTime: "N/A",
-      dayLengthFormatted: "N/A",
-    };
-  }
-}, [activeRegion, currentDate]);
+      // Create a unified object with all the celestial info
+      return {
+        ...sunData,
+        moonrise,
+        moonset,
+        // Ensure all time strings are directly created here
+        sunriseTime: formatTimeString(sunData.sunrise),
+        sunsetTime: formatTimeString(sunData.sunset),
+        moonriseTime: formatTimeString(moonrise),
+        moonsetTime: formatTimeString(moonset),
+      };
+    } catch (error) {
+      console.error("Error calculating celestial info:", error);
+      return {
+        sunrise: null,
+        sunset: null,
+        isDaytime: false,
+        sunriseTime: "N/A",
+        sunsetTime: "N/A",
+        moonrise: null,
+        moonset: null,
+        moonriseTime: "N/A",
+        moonsetTime: "N/A",
+        dayLengthFormatted: "N/A",
+      };
+    }
+  }, [activeRegion, currentDate]);
 
   // Memoize celestial info to prevent recalculation on every render
   const celestialInfo = useMemo(() => getCelestialInfo(), [getCelestialInfo]);
+
+  const [showDebug, setShowDebug] = useState(false);
 
   // Update theme colors - with stable dependency check and throttling
   useEffect(() => {
@@ -759,8 +762,28 @@ const getCelestialInfo = useCallback(() => {
         </div>
       </div>
 
+      {/* Debug Toggle Button */}
+      <div className="flex justify-end mb-2 px-4">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="text-xs px-2 py-1 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded"
+        >
+          {showDebug ? "Hide Debug" : "Show Debug"}
+        </button>
+      </div>
+
       {/* Celestial Info */}
       <CelestialInfo celestialInfo={celestialInfo} />
+
+      {/* Debug Panel - appears here when enabled */}
+      {showDebug && currentWeather && (
+        <div className="px-4 py-2">
+          <MeteorologicalDebugPanel
+            weatherData={currentWeather}
+            region={activeRegion}
+          />
+        </div>
+      )}
 
       {/* Action Tabs */}
       <ActionTabs
