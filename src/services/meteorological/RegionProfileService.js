@@ -720,6 +720,169 @@ class RegionProfileService {
       
       return "This region has a unique combination of characteristics without a simple real-world analog.";
     }
+
+    /**
+ * Create a region profile from a template
+ * @param {string} latitudeBand - Latitude band (equatorial, tropical, temperate, subarctic, polar, special)
+ * @param {string} templateId - Template identifier within the latitude band
+ * @param {string} regionName - Name for the region
+ * @param {object} customOverrides - Optional parameter overrides (optional)
+ * @returns {object} - Complete region profile
+ */
+createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides = {}) {
+  // Import template parameters from the region-templates module
+  const { regionTemplates, getTemplateParameters } = require('../../data-tables/region-templates');
+  
+  // Get base template
+  const template = latitudeBand === "special"
+    ? regionTemplates.special[templateId]
+    : regionTemplates[latitudeBand]?.[templateId];
+  
+  if (!template || !template.parameters) {
+    console.error(`Template not found: ${latitudeBand}/${templateId}`);
+    // Fall back to a default biome based on latitude band
+    const fallbackBiome = this.getFallbackBiome(latitudeBand);
+    return this.getRegionProfile(fallbackBiome, { name: regionName });
+  }
+  
+  const templateParams = template.parameters;
+  const biome = template.defaultBiome || this.getBiomeFromParameters(templateParams);
+  
+  // Create base profile parameters from template
+  const baseParams = {
+    name: regionName || template.name,
+    biome,
+    latitude: templateParams.latitude,
+    elevation: templateParams.elevation,
+    maritimeInfluence: templateParams.maritimeInfluence,
+    terrainRoughness: templateParams.terrainRoughness,
+    specialFactors: templateParams.specialFactors,
+    temperatureProfile: templateParams.temperatureProfile,
+    humidityProfile: templateParams.humidityProfile,
+    latitudeBand,
+    templateId,
+    // Store template information for reference
+    template: {
+      name: template.name,
+      description: template.description,
+      gameplayImpact: template.gameplayImpact
+    }
+  };
+  
+  // Merge with any custom overrides
+  const mergedParams = { ...baseParams, ...customOverrides };
+  
+  // Special handling for nested property overrides
+  if (customOverrides.specialFactors) {
+    mergedParams.specialFactors = { 
+      ...baseParams.specialFactors, 
+      ...customOverrides.specialFactors 
+    };
+  }
+  if (customOverrides.temperatureProfile) {
+    mergedParams.temperatureProfile = this.mergeTemperatureProfiles(
+      baseParams.temperatureProfile, 
+      customOverrides.temperatureProfile
+    );
+  }
+  if (customOverrides.humidityProfile) {
+    mergedParams.humidityProfile = this.mergeHumidityProfiles(
+      baseParams.humidityProfile, 
+      customOverrides.humidityProfile
+    );
+  }
+  
+  // Use the existing getRegionProfile method to ensure all calculated properties are set
+  return this.getRegionProfile(mergedParams.biome, mergedParams);
+}
+
+/**
+ * Helper method to merge temperature profiles
+ * @private
+ */
+mergeTemperatureProfiles(baseProfile, overrideProfile) {
+  const mergedProfile = { ...baseProfile };
+  
+  for (const season in overrideProfile) {
+    if (baseProfile[season]) {
+      mergedProfile[season] = { 
+        ...baseProfile[season],
+        ...overrideProfile[season]
+      };
+    } else {
+      mergedProfile[season] = overrideProfile[season];
+    }
+  }
+  
+  return mergedProfile;
+}
+
+/**
+ * Helper method to merge humidity profiles
+ * @private
+ */
+mergeHumidityProfiles(baseProfile, overrideProfile) {
+  const mergedProfile = { ...baseProfile };
+  
+  for (const season in overrideProfile) {
+    if (baseProfile[season]) {
+      mergedProfile[season] = { 
+        ...baseProfile[season],
+        ...overrideProfile[season]
+      };
+    } else {
+      mergedProfile[season] = overrideProfile[season];
+    }
+  }
+  
+  return mergedProfile;
+}
+
+/**
+ * Get a fallback biome based on latitude band
+ * @private
+ */
+getFallbackBiome(latitudeBand) {
+  const fallbacks = {
+    "equatorial": "tropical-rainforest",
+    "tropical": "tropical-seasonal",
+    "temperate": "temperate-deciduous",
+    "subarctic": "boreal-forest",
+    "polar": "tundra",
+    "special": "temperate-deciduous"
+  };
+  
+  return fallbacks[latitudeBand] || "temperate-deciduous";
+}
+
+/**
+ * Determine appropriate biome from template parameters
+ * @private
+ */
+getBiomeFromParameters(params) {
+  // Simple algorithm to guess biome from parameters
+  const { latitude, elevation, maritimeInfluence, specialFactors = {} } = params;
+  
+  if (latitude <= 10) {
+    return specialFactors.highRainfall ? "tropical-rainforest" : "tropical-seasonal";
+  } else if (latitude <= 30) {
+    if (specialFactors.hasDrySeason && maritimeInfluence < 0.3) {
+      return "desert";
+    }
+    return "tropical-seasonal";
+  } else if (latitude <= 60) {
+    if (specialFactors.highRainfall && maritimeInfluence > 0.7) {
+      return "temperate-rainforest";
+    } else if (specialFactors.grasslandDensity > 0.5) {
+      return "temperate-grassland";
+    }
+    return "temperate-deciduous";
+  } else if (latitude <= 75) {
+    return "boreal-forest";
+  } else {
+    return "tundra";
+  }
+}
   }
   
   export default RegionProfileService;

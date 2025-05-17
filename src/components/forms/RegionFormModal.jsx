@@ -1,6 +1,7 @@
-// src/components/forms/RegionFormModal.jsx - Fixed with solid background
-import React, { useState } from "react";
+// src/components/forms/RegionFormModal.jsx - Updated with template integration
+import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
+import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
 
 const RegionFormModal = ({ onClose }) => {
   const { createRegion } = useRegion();
@@ -8,12 +9,55 @@ const RegionFormModal = ({ onClose }) => {
     name: "",
     climate: "temperate-deciduous",
     latitudeBand: "temperate",
+    useTemplate: false,
+    templateId: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState({});
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+  // Update available templates when latitude band changes
+  useEffect(() => {
+    if (formData.latitudeBand) {
+      const templates = getTemplatesForLatitudeBand(formData.latitudeBand);
+      setAvailableTemplates(templates);
+
+      // Clear selected template if it's not available in new latitude band
+      if (formData.templateId && !templates[formData.templateId]) {
+        setFormData((prev) => ({ ...prev, templateId: null }));
+        setSelectedTemplate(null);
+      }
+    }
+  }, [formData.latitudeBand]);
+
+  // Update selected template when templateId changes
+  useEffect(() => {
+    if (formData.templateId && availableTemplates[formData.templateId]) {
+      setSelectedTemplate(availableTemplates[formData.templateId]);
+
+      // Update climate to match template's default biome
+      if (availableTemplates[formData.templateId].defaultBiome) {
+        setFormData((prev) => ({
+          ...prev,
+          climate: availableTemplates[formData.templateId].defaultBiome,
+        }));
+      }
+    } else {
+      setSelectedTemplate(null);
+    }
+  }, [formData.templateId, availableTemplates]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleTemplateChange = (e) => {
+    const templateId = e.target.value;
+    setFormData((prev) => ({ ...prev, templateId }));
   };
 
   const handleSubmit = (e) => {
@@ -21,7 +65,23 @@ const RegionFormModal = ({ onClose }) => {
     setIsSubmitting(true);
 
     try {
-      createRegion(formData);
+      if (formData.useTemplate && formData.templateId) {
+        // Create region from template
+        createRegion({
+          name: formData.name,
+          latitudeBand: formData.latitudeBand,
+          templateId: formData.templateId,
+          // Still pass climate in case it's needed for fallback
+          climate: formData.climate,
+        });
+      } else {
+        // Create region with basic parameters
+        createRegion({
+          name: formData.name,
+          climate: formData.climate,
+          latitudeBand: formData.latitudeBand,
+        });
+      }
       onClose();
     } catch (error) {
       console.error("Error creating region:", error);
@@ -65,36 +125,8 @@ const RegionFormModal = ({ onClose }) => {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="climate" className="block mb-2">
-              Climate Type
-            </label>
-            <select
-              id="climate"
-              name="climate"
-              value={formData.climate}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-surface-light text-white border border-border"
-              required
-            >
-              <option value="tropical-rainforest">Tropical Rainforest</option>
-              <option value="tropical-seasonal">Tropical Seasonal</option>
-              <option value="desert">Desert</option>
-              <option value="temperate-grassland">Temperate Grassland</option>
-              <option value="temperate-deciduous">
-                Temperate Deciduous Forest
-              </option>
-              <option value="temperate-rainforest">Temperate Rainforest</option>
-              <option value="boreal-forest">Boreal Forest</option>
-              <option value="tundra">Tundra</option>
-            </select>
-            <div className="text-sm text-gray-400 mt-1">
-              Determines weather patterns and temperature ranges
-            </div>
-          </div>
-
-          <div className="mb-4">
             <label htmlFor="latitudeBand" className="block mb-2">
-              Latitude Band
+              Climate Zone
             </label>
             <select
               id="latitudeBand"
@@ -111,7 +143,123 @@ const RegionFormModal = ({ onClose }) => {
               <option value="polar">Polar (75° - 90°)</option>
             </select>
             <div className="text-sm text-gray-400 mt-1">
-              Affects day/night cycle and seasonal daylight hours
+              Affects day/night cycle, seasonal daylight hours, and available
+              templates
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                id="useTemplate"
+                name="useTemplate"
+                checked={formData.useTemplate}
+                onChange={handleChange}
+                className="mr-2"
+              />
+              <label htmlFor="useTemplate">Use Region Template</label>
+            </div>
+            <div className="text-sm text-gray-400 mb-3">
+              Templates provide pre-configured climate settings with rich
+              descriptions and gameplay impacts
+            </div>
+
+            {formData.useTemplate && (
+              <div className="mb-4 pl-2 border-l-2 border-primary">
+                <label htmlFor="templateId" className="block mb-2">
+                  Select Template
+                </label>
+                <select
+                  id="templateId"
+                  name="templateId"
+                  value={formData.templateId || ""}
+                  onChange={handleTemplateChange}
+                  className="w-full p-2 rounded bg-surface-light text-white border border-border"
+                  required={formData.useTemplate}
+                  disabled={Object.keys(availableTemplates).length === 0}
+                >
+                  <option value="">-- Select a template --</option>
+                  {Object.entries(availableTemplates).map(([id, template]) => (
+                    <option key={id} value={id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Template details */}
+                {selectedTemplate && (
+                  <div className="mt-3 p-3 bg-surface-dark rounded border border-border">
+                    <h3 className="font-semibold mb-1">
+                      {selectedTemplate.name}
+                    </h3>
+                    <p className="text-sm mb-2">
+                      {selectedTemplate.description}
+                    </p>
+                    <div className="mt-3">
+                      <div className="text-sm font-semibold text-accent mb-1">
+                        Gameplay Impact:
+                      </div>
+                      <p className="text-xs text-gray-300">
+                        {selectedTemplate.gameplayImpact}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {!formData.useTemplate && (
+            <div className="mb-4">
+              <label htmlFor="climate" className="block mb-2">
+                Biome Type
+              </label>
+              <select
+                id="climate"
+                name="climate"
+                value={formData.climate}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-surface-light text-white border border-border"
+                required={!formData.useTemplate}
+              >
+                <option value="tropical-rainforest">Tropical Rainforest</option>
+                <option value="tropical-seasonal">Tropical Seasonal</option>
+                <option value="desert">Desert</option>
+                <option value="temperate-grassland">Temperate Grassland</option>
+                <option value="temperate-deciduous">
+                  Temperate Deciduous Forest
+                </option>
+                <option value="temperate-rainforest">
+                  Temperate Rainforest
+                </option>
+                <option value="boreal-forest">Boreal Forest</option>
+                <option value="tundra">Tundra</option>
+              </select>
+              <div className="text-sm text-gray-400 mt-1">
+                Determines basic weather patterns and temperature ranges
+              </div>
+            </div>
+          )}
+
+          {/* New Weather System selection */}
+          <div className="mb-4">
+            <label htmlFor="weatherType" className="block mb-2">
+              Weather System
+            </label>
+            <select
+              id="weatherType"
+              name="weatherType"
+              value={formData.weatherType}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-surface-light text-white border border-border"
+            >
+              <option value="diceTable">Basic (Dice Tables)</option>
+              <option value="meteorological">Advanced (Meteorological)</option>
+            </select>
+            <div className="text-sm text-gray-400 mt-1">
+              Choose between simple dice-based generation or more realistic
+              meteorological modeling
             </div>
           </div>
 

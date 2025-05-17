@@ -1,6 +1,7 @@
 // src/components/region/RegionDetails.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MeteorologicalDebugPanel from "../debug/MeteorologicalDebugPanel";
+import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
 
 const RegionDetails = ({
   region,
@@ -18,12 +19,107 @@ const RegionDetails = ({
   if (!region) return null;
 
   const [showCelestialInfo, setShowCelestialInfo] = useState(false);
+  const [showTemplateInfo, setShowTemplateInfo] = useState(true);
+  const [templateData, setTemplateData] = useState(null);
+
+  // Fetch template data when component mounts or region changes
+  useEffect(() => {
+    const fetchTemplateData = () => {
+      // Skip if no region or template info
+      if (!region) return;
+
+      // Determine if region has template info and get template ID
+      let templateId = null;
+      let latitudeBand = null;
+
+      // Check for template in profile.template
+      if (region.profile && region.profile.template) {
+        return setTemplateData(region.profile.template);
+      }
+
+      // Check for template in templateInfo
+      if (region.templateInfo && region.templateInfo.templateId) {
+        templateId = region.templateInfo.templateId;
+        latitudeBand = region.templateInfo.latitudeBand;
+      }
+      // Check for template ID directly (added in new version)
+      else if (region.templateId) {
+        templateId = region.templateId;
+        latitudeBand = getLatitudeBand();
+      }
+
+      // If we found a template ID and latitude band, fetch the template data
+      if (templateId && latitudeBand) {
+        const templatesForBand = getTemplatesForLatitudeBand(latitudeBand);
+        if (templatesForBand && templatesForBand[templateId]) {
+          setTemplateData(templatesForBand[templateId]);
+        }
+      } else {
+        setTemplateData(null);
+      }
+    };
+
+    fetchTemplateData();
+  }, [region]);
 
   const handleWeatherSystemChange = (e) => {
     const newType = e.target.value;
     if (onChangeWeatherSystem) {
       onChangeWeatherSystem(newType);
     }
+  };
+
+  // Handle the updated region structure
+  const getBiome = () => {
+    // Check if we have profile.biome first (new structure)
+    if (region.profile && region.profile.biome) {
+      return region.profile.biome.replace("-", " ");
+    }
+    // Fall back to climate (old structure)
+    if (region.climate) {
+      return region.climate.replace("-", " ");
+    }
+    // Fallback if neither exists
+    return "unknown";
+  };
+
+  const getLatitudeBand = () => {
+    // Check if we have profile.latitudeBand first (new structure)
+    if (region.profile && region.profile.latitudeBand) {
+      return region.profile.latitudeBand;
+    }
+    // Fall back to direct latitudeBand (old structure)
+    return region.latitudeBand || "temperate";
+  };
+
+  // Check if the region has template info
+  const hasTemplateInfo = () => {
+    return (
+      // Check for template object from useEffect
+      templateData !== null ||
+      // Check for template in templateInfo property
+      (region.templateInfo && region.templateInfo.templateId) ||
+      // Check for direct templateId
+      region.templateId ||
+      // Check for template in profile (direct path)
+      (region.profile &&
+        region.profile.template &&
+        region.profile.template.name)
+    );
+  };
+
+  // Get template ID for display
+  const getTemplateId = () => {
+    if (region.templateInfo && region.templateInfo.templateId) {
+      return region.templateInfo.templateId;
+    }
+    if (region.templateId) {
+      return region.templateId;
+    }
+    if (region.profile && region.profile.templateId) {
+      return region.profile.templateId;
+    }
+    return null;
   };
 
   return (
@@ -33,21 +129,67 @@ const RegionDetails = ({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <span className="text-gray-400">Climate:</span>{" "}
-            {region.climate.replace("-", " ")}
+            <span className="text-gray-400">Biome:</span> {getBiome()}
           </div>
           <div>
             <span className="text-gray-400">Season:</span> {currentSeason}
           </div>
           <div className="col-span-2">
             <span className="text-gray-400">Latitude Band:</span>{" "}
-            {region.latitudeBand || "temperate"}
+            {getLatitudeBand()}
           </div>
           <div className="col-span-2">
             <span className="text-gray-400">Daylight:</span>{" "}
             {celestialInfo.dayLengthFormatted || "N/A"}
           </div>
         </div>
+
+        {/* Template Info Section (if available) */}
+        {hasTemplateInfo() && (
+          <div className="mt-4">
+            <button
+              className="text-left w-full flex justify-between items-center py-2 px-4 bg-accent bg-opacity-20 rounded"
+              onClick={() => setShowTemplateInfo(!showTemplateInfo)}
+            >
+              <span className="font-semibold">
+                Template: {templateData ? templateData.name : getTemplateId()}
+              </span>
+              <span>{showTemplateInfo ? "▲" : "▼"}</span>
+            </button>
+
+            {showTemplateInfo && (
+              <div className="mt-2 p-3 bg-surface rounded border border-accent border-opacity-50">
+                {templateData ? (
+                  <>
+                    {templateData.description && (
+                      <div className="mb-3">
+                        <p className="text-sm">{templateData.description}</p>
+                      </div>
+                    )}
+
+                    {templateData.gameplayImpact && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-accent mb-1">
+                          Gameplay Impact:
+                        </h4>
+                        <p className="text-sm text-gray-300">
+                          {templateData.gameplayImpact}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-400">
+                      Template information for "{getTemplateId()}" could not be
+                      loaded from the templates database.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Collapsible Celestial Info */}
         <div className="mt-4">

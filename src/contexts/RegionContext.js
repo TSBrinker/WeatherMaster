@@ -2,10 +2,14 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { storageUtils } from '../utils/storageUtils';
+import RegionProfileService from '../services/meteorological/RegionProfileService';
 
 // Storage keys for localStorage
 const STORAGE_KEY = 'gm-weather-companion-regions';
 const ACTIVE_REGION_KEY = 'gm-weather-companion-active-region';
+
+// Initialize the region profile service
+const regionProfileService = new RegionProfileService();
 
 // Initial state
 const initialState = {
@@ -171,24 +175,83 @@ export const useRegion = () => {
   // Check if any regions exist
   const hasRegions = state.regions.length > 0;
 
+  // Helper function to create a region profile from a template
+  const createRegionProfileFromTemplate = (name, latitudeBand, templateId) => {
+    return regionProfileService.createProfileFromTemplate(
+      latitudeBand,
+      templateId,
+      name
+    );
+  };
+
   // Action creators
   const createRegion = (regionData) => {
+    // Check if we're creating with a template
+    let profile = null;
+    
+    if (regionData.templateId) {
+      // Create region profile from template
+      profile = createRegionProfileFromTemplate(
+        regionData.name,
+        regionData.latitudeBand,
+        regionData.templateId
+      );
+    } else {
+      // Create basic region profile from climate type
+      profile = regionProfileService.getRegionProfile(regionData.climate, {
+        name: regionData.name,
+        latitudeBand: regionData.latitudeBand
+      });
+    }
+    
+    // Create the new region with the profile
     const newRegion = {
       id: uuidv4(),
+      name: regionData.name,
+      profile: profile,
+      templateInfo: regionData.templateId ? {
+        latitudeBand: regionData.latitudeBand,
+        templateId: regionData.templateId
+      } : null,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...regionData
+      updatedAt: new Date().toISOString()
     };
+    
     dispatch({ type: ACTIONS.ADD_REGION, payload: newRegion });
     return newRegion;
   };
 
   const updateRegion = (id, regionData) => {
+    const existingRegion = state.regions.find(region => region.id === id);
+    
+    // If updating with template-related data, regenerate the profile
+    let profile = existingRegion.profile;
+    
+    if (regionData.templateId) {
+      profile = createRegionProfileFromTemplate(
+        regionData.name || existingRegion.name,
+        regionData.latitudeBand || existingRegion.profile.latitudeBand,
+        regionData.templateId
+      );
+    } else if (regionData.climate) {
+      // Update with a new climate type
+      profile = regionProfileService.getRegionProfile(regionData.climate, {
+        name: regionData.name || existingRegion.name,
+        latitudeBand: regionData.latitudeBand || existingRegion.profile.latitudeBand
+      });
+    }
+    
     const updatedRegion = {
-      ...state.regions.find(region => region.id === id),
+      ...existingRegion,
       ...regionData,
+      profile: profile,
+      templateInfo: regionData.templateId ? {
+        latitudeBand: regionData.latitudeBand || existingRegion.profile.latitudeBand,
+        templateId: regionData.templateId
+      } : existingRegion.templateInfo,
       updatedAt: new Date().toISOString()
     };
+    
     dispatch({ type: ACTIONS.UPDATE_REGION, payload: updatedRegion });
     return updatedRegion;
   };
