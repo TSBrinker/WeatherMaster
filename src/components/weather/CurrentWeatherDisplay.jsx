@@ -23,15 +23,8 @@ const CurrentWeatherDisplay = ({
     : currentWeather.temperature;
   const tempDiff = feelsLikeTemp - currentWeather.temperature;
 
-  // Show "feels like" if any noticeable difference exists (reduced threshold)
+  // Show "feels like" if any noticeable difference exists (threshold of 1 degree)
   const showFeelsLike = hasFeelsLike && Math.abs(tempDiff) >= 1;
-
-  // Debugging
-  if (hasFeelsLike) {
-    console.log(
-      `Weather display: Actual ${currentWeather.temperature}°F, Feels like ${feelsLikeTemp}°F, Diff: ${tempDiff}°F`
-    );
-  }
 
   return (
     <div className="weather-overlay">
@@ -47,16 +40,16 @@ const CurrentWeatherDisplay = ({
         <div className="weather-condition">{currentWeather.condition}</div>
         <div className="temperature-display-large">
           {currentWeather.temperature}°F
-          {showFeelsLike && (
-            <span
-              className={`feels-like-temp ${
-                tempDiff < 0 ? "feels-colder" : "feels-warmer"
-              }`}
-            >
-              Feels like {feelsLikeTemp}°F
-            </span>
-          )}
         </div>
+        {showFeelsLike && (
+          <div
+            className={`feels-like-display ${
+              tempDiff < 0 ? "feels-colder" : "feels-warmer"
+            }`}
+          >
+            Feels like {feelsLikeTemp}°F
+          </div>
+        )}
         <div className="wind-display-large">
           {currentWeather.windSpeed} mph {currentWeather.windDirection}
           <span className="wind-intensity">

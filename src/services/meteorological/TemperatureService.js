@@ -249,7 +249,49 @@ class TemperatureService {
     return temperature;
   }
 
-
+  /**
+   * Calculate "feels like" temperature based on wind chill and heat index
+   * @param {number} temperature - Actual temperature in °F
+   * @param {number} humidity - Humidity percentage (0-100)
+   * @param {number} windSpeed - Wind speed in mph
+   * @returns {number} - "Feels like" temperature in °F
+   */
+  calculateFeelsLikeTemperature(temperature, humidity, windSpeed) {
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    console.log('FEELS LIKE CALCULATION HAPPENING!');
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    // Ensure parameters are valid numbers
+    temperature = Number(temperature) || 0;
+    humidity = Number(humidity) || 0;
+    windSpeed = Number(windSpeed) || 0;
+    
+    // Wind chill for cold temperatures (<=50°F with wind)
+    if (temperature <= 50 && windSpeed > 3) {
+      // Wind chill formula (US National Weather Service)
+      const windChill = 35.74 + (0.6215 * temperature) - 
+                       (35.75 * Math.pow(windSpeed, 0.16)) + 
+                       (0.4275 * temperature * Math.pow(windSpeed, 0.16));
+      return Math.round(windChill);
+    }
+    
+    // Heat index for warm temperatures (>=80°F with humidity)
+    if (temperature >= 80 && humidity >= 40) {
+      // Heat index formula (simplified version of Rothfusz regression)
+      const heatIndex = -42.379 + 
+                       (2.04901523 * temperature) + 
+                       (10.14333127 * humidity) - 
+                       (0.22475541 * temperature * humidity) - 
+                       (0.00683783 * temperature * temperature) - 
+                       (0.05481717 * humidity * humidity) + 
+                       (0.00122874 * temperature * temperature * humidity) + 
+                       (0.00085282 * temperature * humidity * humidity) - 
+                       (0.00000199 * temperature * temperature * humidity * humidity);
+      return Math.round(heatIndex);
+    }
+    
+    // For temperatures between 50-80°F or with low wind/humidity, just use actual temp
+    return Math.round(temperature);
+  }
 }
 
 export default TemperatureService;

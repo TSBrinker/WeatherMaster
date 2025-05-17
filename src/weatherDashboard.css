@@ -642,17 +642,26 @@
     text-align: right;
   }
 
-  .feels-like-temp {
-    font-size: 0.5em;
-    margin-left: 10px;
-    opacity: 0.9;
-    font-weight: normal;
+  .feels-like-display {
+    font-size: 0.9rem;
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+    color: rgba(255, 255, 255, 0.9);
   }
   
-  @media (max-width: 768px) {
-    .feels-like-temp {
-      display: block;
-      margin-left: 0;
-      font-size: 0.7em;
-    }
+  .feels-warmer {
+    color: rgba(255, 180, 180, 0.9);
+  }
+  
+  .feels-colder {
+    color: rgba(180, 200, 255, 0.9);
+  }
+  
+  /* You might also want to ensure the temperature display is properly formatted */
+  .temperature-display-large {
+    font-size: 2.5rem;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+    line-height: 1.1;
   }
