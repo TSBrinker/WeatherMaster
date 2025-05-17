@@ -103,9 +103,7 @@ const AppContent = () => {
   return (
     <div className="app-container">
       <header className="flex justify-between items-center mb-6 p-4 bg-surface rounded-lg">
-        <div className="header-content">
-          <h1 className="text-2xl font-bold">GM Weather Companion</h1>
-        </div>
+        {/* <div className="header-content">IT'S RAINING SIDEWAYS </div> */}
 
         <div className="flex items-center gap-3">
           <WorldConfigButton onClick={() => setShowWorldSetup(true)} />

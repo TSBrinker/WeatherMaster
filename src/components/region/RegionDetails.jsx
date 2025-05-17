@@ -1,6 +1,6 @@
 // src/components/region/RegionDetails.jsx
-import React from "react";
-// import CelestialInfoDisplay from "../weather/CelestialInfoDisplay";
+import React, { useState } from "react";
+import MeteorologicalDebugPanel from "../debug/MeteorologicalDebugPanel";
 
 const RegionDetails = ({
   region,
@@ -11,8 +11,13 @@ const RegionDetails = ({
   onRegenerateWeather,
   weatherSystemType = "diceTable",
   onChangeWeatherSystem,
+  showDebug,
+  setShowDebug,
+  currentWeather,
 }) => {
   if (!region) return null;
+
+  const [showCelestialInfo, setShowCelestialInfo] = useState(false);
 
   const handleWeatherSystemChange = (e) => {
     const newType = e.target.value;
@@ -28,14 +33,6 @@ const RegionDetails = ({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <span className="text-gray-400">Sunrise:</span>{" "}
-            {celestialInfo.sunriseTime || "N/A"}
-          </div>
-          <div>
-            <span className="text-gray-400">Sunset:</span>{" "}
-            {celestialInfo.sunsetTime || "N/A"}
-          </div>
-          <div>
             <span className="text-gray-400">Climate:</span>{" "}
             {region.climate.replace("-", " ")}
           </div>
@@ -43,9 +40,47 @@ const RegionDetails = ({
             <span className="text-gray-400">Season:</span> {currentSeason}
           </div>
           <div className="col-span-2">
+            <span className="text-gray-400">Latitude Band:</span>{" "}
+            {region.latitudeBand || "temperate"}
+          </div>
+          <div className="col-span-2">
             <span className="text-gray-400">Daylight:</span>{" "}
             {celestialInfo.dayLengthFormatted || "N/A"}
           </div>
+        </div>
+
+        {/* Collapsible Celestial Info */}
+        <div className="mt-4">
+          <button
+            className="text-left w-full flex justify-between items-center py-2 px-4 bg-surface-light rounded"
+            onClick={() => setShowCelestialInfo(!showCelestialInfo)}
+          >
+            <span>Celestial Information</span>
+            <span>{showCelestialInfo ? "▲" : "▼"}</span>
+          </button>
+
+          {showCelestialInfo && (
+            <div className="mt-2 p-3 bg-surface rounded">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-gray-400">Sunrise:</span>{" "}
+                  {celestialInfo.sunriseTime || "N/A"}
+                </div>
+                <div>
+                  <span className="text-gray-400">Sunset:</span>{" "}
+                  {celestialInfo.sunsetTime || "N/A"}
+                </div>
+                <div>
+                  <span className="text-gray-400">Moonrise:</span>{" "}
+                  {celestialInfo.moonriseTime || "N/A"}
+                </div>
+                <div>
+                  <span className="text-gray-400">Moonset:</span>{" "}
+                  {celestialInfo.moonsetTime || "N/A"}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Weather System Selection */}
@@ -68,7 +103,30 @@ const RegionDetails = ({
           </div>
         </div>
 
-        <button onClick={onRegenerateWeather} className="btn btn-primary mt-4">
+        {/* Debug Toggle */}
+        <div className="mt-4">
+          <button
+            className="text-left w-full flex justify-between items-center py-2 px-4 bg-surface-light rounded"
+            onClick={() => setShowDebug(!showDebug)}
+          >
+            <span>Debug Information</span>
+            <span>{showDebug ? "▲" : "▼"}</span>
+          </button>
+
+          {showDebug && currentWeather && (
+            <div className="mt-2">
+              <MeteorologicalDebugPanel
+                weatherData={currentWeather}
+                region={region}
+              />
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onRegenerateWeather}
+          className="btn btn-primary mt-4 w-full"
+        >
           Regenerate Weather
         </button>
       </div>

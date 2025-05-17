@@ -66,8 +66,9 @@ const WeatherDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0); // Added to force updates when needed
-  // Add weather description state to persist between renders
   const [weatherDescription, setWeatherDescription] = useState("");
+  const [showDebug, setShowDebug] = useState(false);
+  const [isForecastExpanded, setIsForecastExpanded] = useState(false);
 
   // Refs for tracking previous values
   const prevRegionIdRef = useRef(null);
@@ -155,8 +156,6 @@ const WeatherDashboard = () => {
   // Memoize celestial info to prevent recalculation on every render
   const celestialInfo = useMemo(() => getCelestialInfo(), [getCelestialInfo]);
 
-  const [showDebug, setShowDebug] = useState(false);
-
   // Update theme colors - with stable dependency check and throttling
   useEffect(() => {
     // Skip if theme was updated recently (throttle updates)
@@ -218,6 +217,7 @@ const WeatherDashboard = () => {
     activeRegion?.id,
     celestialInfo.sunrise,
     celestialInfo.sunset,
+    currentDate,
   ]);
 
   // Helper function to store weather description in localStorage
@@ -687,6 +687,11 @@ const WeatherDashboard = () => {
     ]
   );
 
+  // Toggle forecast expansion
+  const toggleForecast = () => {
+    setIsForecastExpanded(!isForecastExpanded);
+  };
+
   // Empty state - no region selected
   if (!activeRegion) {
     return (
@@ -728,103 +733,103 @@ const WeatherDashboard = () => {
 
   return (
     <div className="weather-dashboard">
-      {/* Top Section: Time and Controls */}
-      <div className="time-control-panel">
-        <CustomTimeControls onAdvanceTime={handleAdvanceTime} />
-
-        <TimeDisplay currentDate={currentDate} currentSeason={currentSeason} />
-
-        <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
+      {/* Single World/Region selector - top right */}
+      <div className="region-selector">
+        <div className="region-selector-world">
+          {worldSettings?.worldName || "Worldlandia"}
+        </div>
+        <div className="region-selector-region">
+          {activeRegion.name}
+          <span className="dropdown-arrow">▼</span>
+        </div>
       </div>
 
-      {/* Weather Section */}
+      {/* Time display - large and centered at top */}
+      <div className="time-display-container">
+        <TimeDisplay currentDate={currentDate} currentSeason={currentSeason} />
+      </div>
+
+      {/* Weather display */}
       <div className="celestial-section" style={dynamicWeatherStyle}>
         {currentWeather && (
           <CurrentWeatherDisplay
-            currentWeather={currentWeather}
+            currentWeather={{
+              ...currentWeather,
+              regionName: activeRegion.name,
+            }}
             celestialInfo={celestialInfo}
             isDaytime={celestialInfo.isDaytime}
           />
         )}
       </div>
 
-      {/* Region Header with Weather System Type */}
-      <div className="region-header">
-        <h2 className="region-name">{activeRegion.name}</h2>
-        <div className="weather-system-badge">
-          {weatherSystemType === "diceTable" ? (
-            <span className="badge badge-basic">Basic Weather System</span>
-          ) : (
-            <span className="badge badge-advanced">
-              Meteorological Weather System
-            </span>
-          )}
-        </div>
+      {/* Time Controls - below weather display */}
+      <div className="time-control-panel">
+        <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
+        <CustomTimeControls onAdvanceTime={handleAdvanceTime} />
       </div>
 
-      {/* Debug Toggle Button */}
-      <div className="flex justify-end mb-2 px-4">
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="text-xs px-2 py-1 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded"
-        >
-          {showDebug ? "Hide Debug" : "Show Debug"}
-        </button>
-      </div>
-
-      {/* Celestial Info */}
-      <CelestialInfo celestialInfo={celestialInfo} />
-
-      {/* Debug Panel - appears here when enabled */}
-      {showDebug && currentWeather && (
-        <div className="px-4 py-2">
-          <MeteorologicalDebugPanel
-            weatherData={currentWeather}
-            region={activeRegion}
-          />
+      {/* Forecast Section - expandable */}
+      <div className="forecast-section">
+        <div className="forecast-header" onClick={toggleForecast}>
+          <h3 className="forecast-title">
+            {isForecastExpanded ? "24-Hour Forecast" : "Upcoming Hours"}
+          </h3>
+          <span className="expand-icon">
+            {isForecastExpanded ? "See Less" : "See More"}
+          </span>
         </div>
-      )}
 
-      {/* Action Tabs */}
-      <ActionTabs
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
-
-      {/* Content sections */}
-      {activeSection === "forecast" && (
-        <div className="forecast-section">
-          <ForecastDisplay
-            forecast={forecast}
-            latitudeBand={activeRegion.latitudeBand || "temperate"}
-          />
-        </div>
-      )}
-
-      {activeSection === "region" && (
-        <RegionDetails
-          region={activeRegion}
+        {/* No extra wrapper divs! ForecastDisplay directly here */}
+        <ForecastDisplay
+          forecast={isForecastExpanded ? forecast : forecast.slice(0, 6)}
+          latitudeBand={activeRegion.latitudeBand || "temperate"}
           celestialInfo={celestialInfo}
-          currentSeason={currentSeason}
-          season={season}
-          setSeason={setSeason}
-          onRegenerateWeather={regenerateWeather}
-          weatherSystemType={weatherSystemType}
-          onChangeWeatherSystem={changeWeatherSystem}
+          isExpanded={isForecastExpanded}
         />
-      )}
+      </div>
 
-      {activeSection === "effects" && (
-        <WeatherEffects
-          weatherEffects={currentWeather?.effects || ""}
-          currentWeather={currentWeather}
-          currentDate={currentDate}
-          latitudeBand={activeRegion?.latitudeBand || "temperate"}
-          biome={activeRegion?.climate || "temperate-deciduous"}
-          regionId={activeRegion.id}
-          cachedDescription={weatherDescription}
+      {/* Action Tabs - WITHOUT the forecast option since it's now a separate section */}
+      <div className="tabs-container">
+        <ActionTabs
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          excludeForecast={true} // New prop to exclude forecast tab
         />
-      )}
+
+        {/* Tab Content */}
+        {activeSection === "effects" && (
+          <div className="tab-content">
+            <WeatherEffects
+              weatherEffects={currentWeather?.effects || ""}
+              currentWeather={currentWeather}
+              currentDate={currentDate}
+              latitudeBand={activeRegion?.latitudeBand || "temperate"}
+              biome={activeRegion?.climate || "temperate-deciduous"}
+              regionId={activeRegion.id}
+              cachedDescription={weatherDescription}
+            />
+          </div>
+        )}
+
+        {activeSection === "region" && (
+          <div className="tab-content">
+            <RegionDetails
+              region={activeRegion}
+              celestialInfo={celestialInfo}
+              currentSeason={currentSeason}
+              season={season}
+              setSeason={setSeason}
+              onRegenerateWeather={regenerateWeather}
+              weatherSystemType={weatherSystemType}
+              onChangeWeatherSystem={changeWeatherSystem}
+              showDebug={showDebug}
+              setShowDebug={setShowDebug}
+              currentWeather={currentWeather}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

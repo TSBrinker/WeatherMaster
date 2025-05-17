@@ -1,10 +1,16 @@
 // src/components/weather/ForecastDisplay.jsx
 import React from "react";
+import { useEffect } from "react";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import WeatherIcon from "./WeatherIcon";
 import { Wind } from "lucide-react";
 
-const ForecastDisplay = ({ forecast, latitudeBand = "temperate" }) => {
+const ForecastDisplay = ({
+  forecast,
+  latitudeBand = "temperate",
+  celestialInfo,
+  isExpanded = false,
+}) => {
   // Format hour with minutes
   const formatHour = (date) => {
     return date.toLocaleString("en-US", {
@@ -13,69 +19,119 @@ const ForecastDisplay = ({ forecast, latitudeBand = "temperate" }) => {
       hour12: true,
     });
   };
-  
+
   // Check if it's daytime for a given hour
   const isDaytime = (date) => {
-    const { sunrise, sunset } = sunriseSunsetService.getFormattedSunriseSunset(
-      latitudeBand,
-      date
-    );
-    return date >= sunrise && date <= sunset;
+    if (!celestialInfo) {
+      const { sunrise, sunset } =
+        sunriseSunsetService.getFormattedSunriseSunset(latitudeBand, date);
+      return date >= sunrise && date <= sunset;
+    }
+
+    // Use provided celestial info when available
+    const sunriseTime = celestialInfo.sunrise?.getTime();
+    const sunsetTime = celestialInfo.sunset?.getTime();
+    const dateTime = date.getTime();
+
+    return sunriseTime && sunsetTime
+      ? dateTime >= sunriseTime && dateTime <= sunsetTime
+      : true; // Default to daytime if no info available
   };
 
-  return (
-    <div className="card p-4">
-      <h2 className="card-title mb-4">24-Hour Forecast</h2>
+  // Check if hour contains sunrise or sunset
+  const isSunrise = (date) => {
+    if (!celestialInfo || !celestialInfo.sunrise) return false;
+    const hourStart = new Date(date);
+    hourStart.setMinutes(0, 0, 0);
+    const hourEnd = new Date(hourStart);
+    hourEnd.setHours(hourEnd.getHours() + 1);
 
-      <div className="forecast-scroll">
-        <div className="flex gap-2 pb-2">
-          {forecast.map((hour, index) => {
-            const hourIsDaytime = isDaytime(hour.date);
-            
-            return (
+    return (
+      celestialInfo.sunrise >= hourStart && celestialInfo.sunrise < hourEnd
+    );
+  };
+
+  const isSunset = (date) => {
+    if (!celestialInfo || !celestialInfo.sunset) return false;
+    const hourStart = new Date(date);
+    hourStart.setMinutes(0, 0, 0);
+    const hourEnd = new Date(hourStart);
+    hourEnd.setHours(hourEnd.getHours() + 1);
+
+    return celestialInfo.sunset >= hourStart && celestialInfo.sunset < hourEnd;
+  };
+
+  useEffect(() => {
+    // Get the scroll container
+    const scrollContainer = document.querySelector(".forecast-scroll");
+    if (scrollContainer) {
+      // Check if scrolling is possible
+      const isScrollable =
+        scrollContainer.scrollWidth > scrollContainer.clientWidth;
+
+      // Add or remove the scrollable class
+      if (isScrollable) {
+        scrollContainer.classList.add("scrollable");
+      } else {
+        scrollContainer.classList.remove("scrollable");
+      }
+    }
+  }, [forecast, isExpanded]); // Re-run when forecast data or expanded state changes
+
+  return (
+    <div className="forecast-scroll">
+      <div className={`forecast-hours ${isExpanded ? "expanded" : ""}`}>
+        {forecast.map((hour, index) => {
+          const hourIsDaytime = isDaytime(hour.date);
+          const hourHasSunrise = isSunrise(hour.date);
+          const hourHasSunset = isSunset(hour.date);
+
+          // Special classes for sunrise/sunset hours
+          const specialClasses = hourHasSunrise
+            ? "sunrise-hour"
+            : hourHasSunset
+            ? "sunset-hour"
+            : "";
+
+          // Background based on daytime/nighttime
+          const timeClass = hourIsDaytime
+            ? "day-background"
+            : "night-background";
+
+          return (
             <div
               key={index}
-              className={`forecast-item relative ${
-                hour.hasShootingStar && !hour.hasMeteorImpact
-                  ? "bg-amber-800 bg-opacity-20"
-                  : hour.hasMeteorImpact
-                  ? "bg-red-800 bg-opacity-20"
-                  : "bg-surface-light"
-              }`}
+              className={`forecast-item ${timeClass} ${specialClasses}`}
             >
-              <div className="text-sm text-gray-400 mb-1">
+              <div className="forecast-time">
                 {formatHour(hour.date)}
-              </div>
-              <div className="text-2xl mb-1">
-                <WeatherIcon 
-                  condition={hour.condition} 
-                  isDaytime={hourIsDaytime} 
-                  size={32} 
-                />
-              </div>
-              <div className="font-semibold mb-1">{hour.condition}</div>
-              <div className="mb-2">{hour.temperature}°F</div>
-              <div className="text-xs text-gray-400 flex items-center justify-center">
-                <span className="mr-1">
-                  <Wind size={12} />
-                </span>
-                <span>{hour.windSpeed} mph</span>
+                {hourHasSunrise && (
+                  <div className="celestial-marker sunrise-marker">↑</div>
+                )}
+                {hourHasSunset && (
+                  <div className="celestial-marker sunset-marker">↓</div>
+                )}
               </div>
 
-              {/* Special event indicators */}
-              {hour.hasMeteorImpact && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-sm">
-                  💥
-                </div>
-              )}
-              {hour.hasShootingStar && !hour.hasMeteorImpact && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-sm">
-                  ☄️
-                </div>
-              )}
+              <div className="forecast-icon">
+                <WeatherIcon
+                  condition={hour.condition}
+                  isDaytime={hourIsDaytime}
+                  size={32}
+                />
+              </div>
+
+              <div className="forecast-condition">{hour.condition}</div>
+              <div className="forecast-temp">{hour.temperature}°</div>
+
+              {/* Show wind in both compact and expanded view */}
+              <div className="forecast-wind">
+                <Wind size={12} />
+                <span>{hour.windSpeed} mph</span>
+              </div>
             </div>
-          )})}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
