@@ -19,6 +19,7 @@ import ExtremeWeatherService from "./meteorological/ExtremeWeatherService";
 export default class MeteorologicalWeatherService extends WeatherServiceBase {
   constructor() {
     super();
+    console.error("METEO SERVICE CREATED - VERSION FIX 1.0"); // Check this appears in console
 
     // Initialize specialized services
     this.temperatureService = new TemperatureService();
@@ -38,6 +39,13 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 
     // Track weather forecasts
     this.forecast = []; // Hourly forecast
+    
+    // Force immediate system creation in constructor
+    this.weatherSystemService.weatherSystems = []; // Clear any existing systems
+    // Add default systems immediately in constructor
+    this.weatherSystemService.addDefaultSystems();
+    console.error("Added default systems in constructor:", 
+                 this.weatherSystemService.weatherSystems.length);
   }
 
   /**
@@ -48,6 +56,8 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    * @returns {object} - The current weather
    */
   initializeWeather(biome, season, currentDate = new Date()) {
+    console.log(`MeteorologicalWeatherService initializing weather: ${biome}, ${season}`);
+    
     // Clear any existing forecast
     this.forecast = [];
 
@@ -62,24 +72,18 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Initialize base meteorological parameters
     this.initializeBaseParameters(profile, season, currentDate);
 
-    // Initialize weather systems
+    // Initialize weather systems - CRITICAL STEP
+    console.log("About to initialize weather systems");
     this.weatherSystemService.initializeWeatherSystems(profile, season, currentDate);
     
-    // Force at least one weather system if none exist
-    if (this.weatherSystemService.getWeatherSystems().length === 0) {
-      console.log("No weather systems created during initialization, adding default system");
-      
-      // Add a default low pressure system
-      this.weatherSystemService.addWeatherSystem({
-        type: "low-pressure",
-        intensity: 0.6 + (Math.random() * 0.2), // 0.6-0.8 intensity
-        age: Math.floor(Math.random() * 12), // 0-12 hours old
-        position: 0.5, // Center of region
-        movementSpeed: 0.05 + (Math.random() * 0.05), // 0.05-0.1 speed
-        movementDirection: Math.random() > 0.5 ? 1 : -1, // Random direction
-        maxAge: 72 + Math.floor(Math.random() * 24), // 72-96 hour lifespan
-      });
+    // EMERGENCY CHECK - Make sure systems were created
+    if (!this.weatherSystemService.weatherSystems || 
+        this.weatherSystemService.weatherSystems.length === 0) {
+      console.error("EMERGENCY: No weather systems created during initialization, adding defaults");
+      this.weatherSystemService.addDefaultSystems();
     }
+    
+    console.log(`After initialization: ${this.weatherSystemService.weatherSystems.length} weather systems`);
 
     // Initialize precipitation tracking
     this.precipitationService.initializePrecipitation();
@@ -133,7 +137,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Initialize wind
     this.currentWind = this.windService.initializeWind();
 
-    console.log(`Initialized meteorological parameters for ${profile.name}`);
+    console.log(`Initialized meteorological parameters for ${profile.name || "unnamed region"}`);
     console.log(
       `Base temperature: ${this.temperature}°F, Humidity: ${this.humidity}%, Pressure: ${this.pressure} hPa`
     );
@@ -161,6 +165,13 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       hourDate.setHours(hourDate.getHours() + i);
 
       // Before generating each hour, update weather systems
+      // EMERGENCY CHECK - Force systems to exist
+      if (!this.weatherSystemService.weatherSystems || 
+          this.weatherSystemService.weatherSystems.length === 0) {
+        console.error(`EMERGENCY: No weather systems before hour ${i}, adding defaults`);
+        this.weatherSystemService.addDefaultSystems();
+      }
+      
       this.weatherSystemService.updateWeatherSystems(1); // Update for 1 hour
 
       // Generate weather for this specific hour
@@ -187,11 +198,22 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    * @returns {object} - Weather data for this hour
    */
   generateHourlyWeather(hour, date, profile, season) {
+    console.log(`Generating weather for hour ${hour}`);
+    
     // Get seasonal baseline
     const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
 
-    // Get active weather systems
-    const weatherSystems = this.weatherSystemService.getWeatherSystems();
+    // Get active weather systems - Important: Check if empty and fix
+    let weatherSystems = this.weatherSystemService.getWeatherSystems();
+    
+    // Critical check - make sure weather systems exist
+    if (!weatherSystems || !Array.isArray(weatherSystems) || weatherSystems.length === 0) {
+      console.error("No weather systems found, initializing systems");
+      this.weatherSystemService.initializeWeatherSystems(profile, season, date);
+      weatherSystems = this.weatherSystemService.getWeatherSystems();
+    }
+    
+    console.log(`Found ${weatherSystems.length} active weather systems`);
 
     // Calculate physical parameters for this hour
     const hourTemp = this.temperatureService.calculateTemperature(
@@ -203,7 +225,12 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       this.cloudCover,
       weatherSystems,
       () => this.precipitationService.getRecentPrecipitation(),
-      (date) => this.getDayOfYear(date)
+      (date) => {
+        const start = new Date(date.getFullYear(), 0, 0);
+        const diff = date - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        return Math.floor(diff / oneDay);
+      }
     );
 
     const hourHumidity = this.atmosphericService.calculateHumidity(
@@ -239,16 +266,6 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       weatherSystems
     );
 
-    // Update wind based on pressure and other factors
-    this.currentWind = this.windService.updateWindFactors(
-      this.currentWind,
-      hour,
-      hourTemp,
-      this.temperature,
-      pressureTrend,
-      weatherSystems
-    );
-
     // Calculate atmospheric instability
     const instability = this.weatherConditionService.calculateAtmosphericInstability(
       hourTemp,
@@ -268,12 +285,6 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       () => this.precipitationService.getRecentPrecipitation()
     );
 
-    // Update our base values for the next hour
-    this.temperature = hourTemp;
-    this.humidity = hourHumidity;
-    this.pressure = hourPressure;
-    this.cloudCover = hourCloudCover;
-
     // Determine weather condition from physical factors
     const condition = this.weatherConditionService.determineWeatherCondition(
       hourTemp,
@@ -281,9 +292,15 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       hourPressure,
       hourCloudCover,
       precipitationPotential,
-      this.currentWind.speed,
+      this.currentWind ? this.currentWind.speed : 5,
       instability
     );
+
+    // Update our base values for the next hour
+    this.temperature = hourTemp;
+    this.humidity = hourHumidity;
+    this.pressure = hourPressure;
+    this.cloudCover = hourCloudCover;
 
     // Update precipitation history if it's precipitating
     const isPrecipitating = this.weatherConditionService.isPrecipitating(condition);
@@ -294,6 +311,21 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     this.precipitationService.updatePrecipitation(
       precipAmount,
       condition === "Snow" || condition === "Blizzard" ? "snow" : "rain"
+    );
+
+    // Update weather systems with the new condition - pass the condition to track thunderstorms
+    this.weatherSystemService.updateWeatherSystems(1, condition);
+
+    // Update wind based on pressure and other factors
+    // CRITICAL: Pass the condition to updateWindFactors
+    this.currentWind = this.windService.updateWindFactors(
+      this.currentWind,
+      hour,
+      hourTemp,
+      this.temperature,
+      pressureTrend,
+      weatherSystems,
+      condition // Pass condition to control wind speed limits
     );
 
     // Validate temperature for the condition
@@ -307,6 +339,9 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 
     // Get wind intensity information
     const windIntensity = this.windService.getWindIntensity(this.currentWind.speed);
+
+    // Log the final result for debugging
+    console.log(`Generated weather: ${condition}, ${Math.round(validatedTemp)}°F, ${Math.round(this.currentWind.speed)} mph ${this.currentWind.direction}`);
 
     // Create the weather entry in the same format as dice table service for compatibility
     return {
@@ -330,10 +365,28 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
         precipAmount,
         instability,
         pressureTrend,
-        weatherSystems: this.weatherSystemService.getWeatherSystems() // Include weather systems in the data
+        weatherSystems: this.weatherSystemService.getWeatherSystems() // Include updated weather systems in the data
       },
     };
   }
+
+/**
+ * Calculate the day of year (0-365)
+ * @param {Date} date - Date to calculate for
+ * @returns {number} - Day of year
+ */
+getDayOfYear(date) {
+  // Check for valid date
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    console.error("Invalid date in getDayOfYear:", date);
+    return 0;
+  }
+  
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date - start;
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay);
+}
 
   /**
    * Advance time and update the forecast
@@ -344,6 +397,8 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    * @returns {object} - Updated current weather
    */
   advanceTime(hours, biome, season, currentDate) {
+    console.log(`MeteoWeatherService advancing time: ${hours} hours`);
+    
     // If season is 'auto', determine from the date
     if (season === "auto") {
       const newDate = new Date(currentDate.getTime() + hours * 3600000);
@@ -359,6 +414,13 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Calculate new date for continued forecast
     const newStartDate = new Date(currentDate.getTime() + hours * 3600000);
 
+    // EMERGENCY CHECK - Ensure weather systems exist
+    if (!this.weatherSystemService.weatherSystems || 
+        this.weatherSystemService.weatherSystems.length === 0) {
+      console.error("EMERGENCY: No weather systems before advanceTime, adding defaults");
+      this.weatherSystemService.addDefaultSystems();
+    }
+    
     // Update weather systems for elapsed time
     this.weatherSystemService.updateWeatherSystems(hours);
 
@@ -406,174 +468,5 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    */
   get24HourForecast() {
     return this.forecast.slice(0, 24);
-  }
-
-  /**
-   * Calculate season from date
-   * @param {Date} date - Date to calculate season for
-   * @returns {string} - Season name
-   */
-  getSeasonFromDate(date) {
-    // Inherits from base class but we can override if needed
-    return super.getSeasonFromDate(date);
-  }
-
-  /**
-   * Calculate day of year (0-365)
-   * @param {Date} date - Date object
-   * @returns {number} - Day of year
-   */
-  getDayOfYear(date) {
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    const oneDay = 1000 * 60 * 60 * 24;
-    return Math.floor(diff / oneDay);
-  }
-
-  /**
-   * Reset all meteorological state
-   */
-  resetState() {
-    this.temperature = null;
-    this.humidity = null;
-    this.pressure = 1013.25;
-    this.cloudCover = null;
-    this.forecast = [];
-    this.currentWind = this.windService.initializeWind();
-    this.atmosphericService.resetPressureHistory(this.pressure);
-    this.precipitationService.initializePrecipitation();
-    this.weatherSystemService.clearWeatherSystems();
-  }
-
-  /**
-   * Check for extreme weather events
-   * @param {string} biome - The biome type
-   * @param {Date} date - Current date
-   * @returns {object} - Extreme weather event details if one occurs
-   */
-  checkExtremeWeatherEvents(biome, date) {
-    const profile = this.regionProfileService.getRegionProfile(biome);
-    
-    return this.extremeWeatherService.checkExtremeWeatherEvents(
-      profile,
-      date,
-      this.temperature,
-      this.humidity,
-      this.pressure,
-      this.weatherSystemService.getWeatherSystems(),
-      this.forecast,
-      this.weatherConditionService.calculateAtmosphericInstability(
-        this.temperature,
-        this.pressure,
-        this.atmosphericService.getPressureTrend(),
-        this.precipitationService.getRecentPrecipitation()
-      )
-    );
-  }
-
-  /**
-   * Create an extreme weather event (for manual triggering)
-   * @param {string} eventType - Type of event
-   * @param {number} intensity - Intensity level
-   * @param {string} biome - The biome type
-   * @returns {object} - Weather event object
-   */
-  createExtremeWeatherEvent(eventType, intensity, biome) {
-    const profile = this.regionProfileService.getRegionProfile(biome);
-    let duration = 0;
-    
-    // Set appropriate duration based on event type
-    switch (eventType) {
-      case "tornado":
-        duration = 1 + Math.floor(Math.random() * 3); // 1-3 hours
-        break;
-      case "hurricane":
-        duration = 24 + Math.floor(Math.random() * 48); // 24-72 hours
-        break;
-      case "flood":
-        duration = 12 + Math.floor(Math.random() * 36); // 12-48 hours
-        break;
-      case "wildfire":
-        duration = 48 + Math.floor(Math.random() * 72); // 2-5 days
-        break;
-      case "earthquake":
-        duration = 1; // 1 hour (aftershocks would be separate)
-        break;
-      case "volcanic_eruption":
-        duration = 24 + Math.floor(Math.random() * 120); // 1-6 days
-        break;
-      default:
-        duration = 6; // Default 6 hours
-    }
-    
-    return {
-      type: eventType,
-      intensity: intensity || 3, // Default to medium intensity
-      duration: duration,
-    };
-  }
-
-  /**
-   * Generate a natural language summary of the current weather
-   * @returns {string} - Weather summary
-   */
-  generateWeatherSummary() {
-    const current = this.getCurrentWeather();
-    if (!current) return "No weather data available.";
-    
-    const tempDesc = this.getTemperatureDescription(current.temperature);
-    const windDesc = this.getWindDescription(current.windSpeed, current.windDirection);
-    const conditionDesc = current.condition;
-    
-    let summary = `${tempDesc} with ${conditionDesc.toLowerCase()}. ${windDesc}.`;
-    
-    // Add special events if present
-    if (current.hasShootingStar) {
-      summary += " The night sky is graced with shooting stars.";
-    }
-    
-    if (current.hasMeteorImpact) {
-      summary += " A meteor was seen impacting in the distance!";
-    }
-    
-    return summary;
-  }
-  
-  /**
-   * Get temperature description 
-   * @param {number} temperature - Temperature in °F
-   * @returns {string} - Temperature description
-   */
-  getTemperatureDescription(temperature) {
-    if (temperature < 0) return "Bitterly cold";
-    if (temperature < 20) return "Frigid";
-    if (temperature < 32) return "Freezing";
-    if (temperature < 45) return "Cold";
-    if (temperature < 55) return "Chilly";
-    if (temperature < 65) return "Cool";
-    if (temperature < 75) return "Mild";
-    if (temperature < 85) return "Warm";
-    if (temperature < 95) return "Hot";
-    return "Scorching hot";
-  }
-  
-  /**
-   * Get wind description
-   * @param {number} speed - Wind speed in mph
-   * @param {string} direction - Wind direction
-   * @returns {string} - Wind description
-   */
-  getWindDescription(speed, direction) {
-    let speedDesc;
-    
-    if (speed < 5) speedDesc = "Calm conditions";
-    else if (speed < 10) speedDesc = "Light breeze";
-    else if (speed < 15) speedDesc = "Gentle breeze";
-    else if (speed < 25) speedDesc = "Moderate wind";
-    else if (speed < 35) speedDesc = "Strong wind";
-    else if (speed < 45) speedDesc = "Very strong wind";
-    else speedDesc = "Gale force winds";
-    
-    return speed < 5 ? speedDesc : `${speedDesc} from the ${direction}`;
   }
 }

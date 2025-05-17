@@ -1,7 +1,28 @@
-// src/components/debug/MeteorologicalDebugPanel.jsx - updated with diagnostics
-import React from "react";
+// src/components/debug/MeteorologicalDebugPanel.jsx
+import React, { useState } from "react";
+import meteoUtils from "../../utils/meteoUtils";
 
-const MeteorologicalDebugPanel = ({ weatherData, region }) => {
+const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
+  const [debugMessage, setDebugMessage] = useState("");
+
+  // Helper to fix weather systems
+  const fixWeatherSystems = () => {
+    if (!weatherService || !weatherService.weatherSystemService) {
+      setDebugMessage("No weather service available to fix");
+      return;
+    }
+
+    try {
+      // Force reset everything
+      meteoUtils.forceReset(weatherService);
+      setDebugMessage(
+        "Forced reset of weather systems. Refresh or advance time to see changes."
+      );
+    } catch (error) {
+      setDebugMessage(`Error: ${error.message}`);
+    }
+  };
+
   // Detailed diagnostic check
   let diagnosticMessage = "";
 
@@ -53,6 +74,19 @@ const MeteorologicalDebugPanel = ({ weatherData, region }) => {
       <h3 className="text-lg font-semibold mb-3 text-blue-400">
         Meteorological Debug Panel
       </h3>
+
+      {/* Fix button */}
+      <div className="mb-4">
+        <button
+          onClick={fixWeatherSystems}
+          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+        >
+          Force Fix Weather Systems
+        </button>
+        {debugMessage && (
+          <div className="mt-2 text-sm text-yellow-300">{debugMessage}</div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="col-span-2 bg-gray-800 p-3 rounded">
@@ -131,7 +165,15 @@ const MeteorologicalDebugPanel = ({ weatherData, region }) => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-400">No active weather systems</p>
+          <div>
+            <p className="text-red-400 font-bold">No active weather systems</p>
+            <button
+              onClick={fixWeatherSystems}
+              className="mt-2 px-2 py-1 bg-red-700 text-white rounded text-xs"
+            >
+              Add Default Systems
+            </button>
+          </div>
         )}
       </div>
 

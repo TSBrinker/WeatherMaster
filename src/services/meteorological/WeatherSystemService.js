@@ -8,6 +8,7 @@ class WeatherSystemService {
     this.lastCondition = null; // Track last weather condition
     this.thunderstormActive = false; // Flag for tracking active thunderstorms
     this.thunderstormIntensity = 0; // Track thunderstorm intensity
+    this.lastSystemCheckTime = Date.now(); // Track when we last checked systems
   }
 
   /**
@@ -19,7 +20,15 @@ class WeatherSystemService {
     if (!Array.isArray(this.weatherSystems)) {
       console.error("WeatherSystems is not an array, resetting");
       this.weatherSystems = [];
+      this.addDefaultSystems();
     }
+    
+    // If weather systems array is empty, add defaults
+    if (this.weatherSystems.length === 0) {
+      console.log("Weather systems array is empty, adding default systems");
+      this.addDefaultSystems();
+    }
+    
     return this.weatherSystems;
   }
 
@@ -35,6 +44,7 @@ class WeatherSystemService {
     this.weatherSystems = [];
     this.thunderstormActive = false;
     this.thunderstormIntensity = 0;
+    this.lastSystemCheckTime = Date.now();
 
     // Safety check for profile
     if (!profile) {
@@ -44,44 +54,54 @@ class WeatherSystemService {
       return this.weatherSystems;
     }
 
-    // Random number of starting systems (1-3)
-    const numSystems = Math.max(1, Math.floor(Math.random() * 3));
-    console.log(`Creating ${numSystems} initial weather systems`);
+    console.log("Initializing weather systems for", profile.name || "unknown region");
 
-    // Create initial systems
-    for (let i = 0; i < numSystems; i++) {
-      // Random high or low pressure system
+    // ALWAYS create at least two pressure systems for proper weather patterns
+    
+    // Create low pressure system
+    this.weatherSystems.push({
+      type: "low-pressure",
+      intensity: 0.4 + Math.random() * 0.3, // 0.4-0.7 intensity
+      age: Math.floor(Math.random() * 12), // 0-12 hours old
+      position: 0.5, // Center of region
+      movementSpeed: 0.05 + (Math.random() * 0.03), // 0.05-0.08 speed
+      movementDirection: Math.random() > 0.5 ? 1 : -1, // Random direction
+      maxAge: 72 + Math.floor(Math.random() * 24), // 72-96 hour lifespan
+    });
+    
+    // Create high pressure system
+    this.weatherSystems.push({
+      type: "high-pressure",
+      intensity: 0.4 + Math.random() * 0.3, // 0.4-0.7 intensity
+      age: Math.floor(Math.random() * 24), // 0-24 hours old
+      position: Math.random() > 0.5 ? 0.2 : 0.8, // Either left or right side
+      movementSpeed: 0.04 + (Math.random() * 0.03), // 0.04-0.07 speed
+      movementDirection: Math.random() > 0.5 ? 1 : -1, // Random direction
+      maxAge: 72 + Math.floor(Math.random() * 36), // 72-108 hour lifespan
+    });
+
+    // Random additional systems based on season
+    let additionalSystemChance = 0.4; // Base 40% chance
+    
+    // Adjust for season - more systems in winter and fall
+    if (season === "winter") additionalSystemChance += 0.2;
+    else if (season === "summer") additionalSystemChance -= 0.1;
+    else if (season === "fall") additionalSystemChance += 0.1;
+    
+    // Try to create additional system
+    if (Math.random() < additionalSystemChance) {
       const isHighPressure = Math.random() > 0.5;
-
-      // More intense systems in winter and fall, less in summer
-      let intensityMod = 0;
-      if (season === "winter") intensityMod = 0.2;
-      else if (season === "summer") intensityMod = -0.1;
-      else if (season === "fall") intensityMod = 0.1;
-
-      // Intensity also affected by profile's pressure variability
-      const pressureVariability = profile.specialFactors?.pressureVariability || 0.5;
-      const baseIntensity = 0.4 + Math.random() * 0.4;
-      const intensity = Math.min(
-        1,
-        Math.max(0.2, baseIntensity + intensityMod + (pressureVariability - 0.5) * 0.2)
-      );
-
+      
       // Create the system
       this.weatherSystems.push({
         type: isHighPressure ? "high-pressure" : "low-pressure",
-        intensity,
+        intensity: 0.3 + Math.random() * 0.4, // 0.3-0.7 intensity
         age: Math.floor(Math.random() * 24), // 0-24 hours old
         position: Math.random(), // 0-1 relative position across region
-        movementSpeed: Math.random() * 0.1 + 0.05, // Movement per hour
+        movementSpeed: Math.random() * 0.08 + 0.04, // 0.04-0.12 Movement per hour
         movementDirection: Math.random() > 0.5 ? 1 : -1, // Moving in or out
-        maxAge: 72 + Math.floor(Math.random() * 48), // When system dissipates
+        maxAge: 60 + Math.floor(Math.random() * 48), // 60-108 hour lifespan
       });
-    }
-
-    // If we ended up with no systems, create at least one
-    if (this.weatherSystems.length === 0) {
-      this.addDefaultSystems();
     }
 
     // Check if any fronts should form from the initial systems
@@ -97,13 +117,14 @@ class WeatherSystemService {
    */
   addDefaultSystems() {
     console.log("Adding default weather systems");
+    
     // Create one high and one low pressure system as defaults
     this.weatherSystems.push({
       type: "high-pressure",
       intensity: 0.6,
       age: 24,
       position: 0.2,
-      movementSpeed: 0.07,
+      movementSpeed: 0.06,
       movementDirection: 1,
       maxAge: 96
     });
@@ -113,7 +134,7 @@ class WeatherSystemService {
       intensity: 0.5,
       age: 12,
       position: 0.8,
-      movementSpeed: 0.08,
+      movementSpeed: 0.07,
       movementDirection: -1,
       maxAge: 72
     });
@@ -128,6 +149,14 @@ class WeatherSystemService {
   updateWeatherSystems(hours, currentCondition = null) {
     // Safety check for hours argument
     hours = Number(hours) || 1;
+    
+    // Safety check - throttle updates to prevent duplicate processing
+    // Don't update more than once per second
+    const now = Date.now();
+    if (now - this.lastSystemCheckTime < 1000) {
+      return this.weatherSystems;
+    }
+    this.lastSystemCheckTime = now;
     
     // Track if thunderstorm is active
     if (currentCondition) {
@@ -231,13 +260,33 @@ class WeatherSystemService {
 
       // Check for front generation
       this.checkForFrontGeneration();
+    }
+    
+    // If we lost all systems, add back some defaults
+    if (this.weatherSystems.length === 0) {
+      console.log("Lost all weather systems, adding defaults");
+      this.addDefaultSystems();
+    }
+    
+    // Always ensure we have at least one system
+    if (this.weatherSystems.length < 1) {
+      console.log("Only one weather system remains, adding another");
+      // Add opposite type from the existing system
+      const existingType = this.weatherSystems[0]?.type;
+      const newType = (existingType === "high-pressure") ? "low-pressure" : "high-pressure";
       
-      // If we lost all systems, add back some defaults
-      if (this.weatherSystems.length === 0) {
-        this.addDefaultSystems();
-      }
+      this.weatherSystems.push({
+        type: newType,
+        intensity: 0.4 + Math.random() * 0.3,
+        age: Math.floor(Math.random() * 12),
+        position: (existingType === "high-pressure") ? 0.8 : 0.2, // Opposite side
+        movementSpeed: 0.05 + (Math.random() * 0.03),
+        movementDirection: Math.random() > 0.5 ? 1 : -1,
+        maxAge: 72 + Math.floor(Math.random() * 24)
+      });
     }
 
+    console.log(`After update: ${this.weatherSystems.length} weather systems`);
     return this.weatherSystems;
   }
 
@@ -318,6 +367,8 @@ class WeatherSystemService {
                 maxAge: maxAge,
                 parentSystems: [highPressureIndex, lowPressureIndex], // Reference to parent systems
               });
+              
+              console.log(`Created new ${isColdFront ? "cold" : "warm"} front`);
             }
           }
         }
@@ -441,54 +492,6 @@ class WeatherSystemService {
     };
   }
   
-  /**
-   * Update weather systems after a thunderstorm event
-   * This is called when a major weather event like a thunderstorm ends
-   * to clean up the system state and create realistic aftermath conditions
-   */
-  handlePostThunderstorm() {
-    // If we don't have an active thunderstorm, do nothing
-    if (!this.thunderstormActive || this.lastCondition !== "Thunderstorm") {
-      return;
-    }
-    
-    // Safety check for weather systems
-    if (!Array.isArray(this.weatherSystems)) {
-      console.error("WeatherSystems is not an array in handlePostThunderstorm");
-      this.weatherSystems = [];
-      this.addDefaultSystems();
-      return;
-    }
-    
-    // Iterate through all systems and update them
-    this.weatherSystems = this.weatherSystems.filter(system => {
-      if (!system) return false;
-      
-      if (system.type === "low-pressure") {
-        // Low pressure systems that caused the storm often dissipate
-        system.intensity *= 0.7; // Reduce intensity
-        system.age += Math.floor(system.maxAge * 0.2); // Age the system
-      }
-      else if (system.type.endsWith("-front")) {
-        // Fronts often break down after thunderstorms
-        system.age += Math.floor(system.maxAge * 0.25); // Age the front
-        system.intensity *= 0.6; // Reduce intensity significantly
-      }
-      
-      // Keep the system if it's still valid
-      return true;
-    });
-    
-    // Chance to create a high pressure system after a storm
-    if (Math.random() < 0.7) {
-      // 70% chance to form high pressure after a storm
-      this.addWeatherSystem(this.createHighPressure(
-        Math.random(), // Random position
-        0.5 + Math.random() * 0.3 // Moderate to strong intensity
-      ));
-    }
-  }
-
   /**
    * Get the count of weather systems
    * @returns {number} - The number of active weather systems
