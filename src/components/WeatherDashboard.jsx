@@ -27,6 +27,7 @@ import ActionTabs from "./weather/ActionTabs";
 import ForecastDisplay from "./weather/ForecastDisplay";
 import RegionDetails from "./region/RegionDetails";
 import WeatherEffects from "./weather/WeatherEffects";
+import { usePreferences } from "../contexts/PreferencesContext";
 
 // Import CSS
 import "../weatherDashboard.css";
@@ -34,6 +35,8 @@ import "../weatherDashboard.css";
 const WeatherDashboard = () => {
   // Debug render counter
   const renderCount = useRef(0);
+
+  const { state: preferences } = usePreferences();
 
   // Context hooks
   const { activeRegion } = useRegion();
@@ -310,7 +313,13 @@ const WeatherDashboard = () => {
                 : season;
 
             // Use the weatherType from region settings (default to 'diceTable')
-            const weatherType = activeRegion.weatherType || "diceTable";
+            const weatherType =
+              activeRegion.weatherType ||
+              preferences.weatherSystem ||
+              "diceTable";
+            console.log(
+              "Regenerating weather with system: ${weatherType} (preference: ${preferences.weatherSystem}, region: ${activeRegion.weatherType})"
+            );
 
             const newForecast = weatherManager.initializeWeather(
               regionId,
@@ -625,6 +634,7 @@ const WeatherDashboard = () => {
     activeRegion,
     season,
     currentDate,
+    preferences.weatherSystem,
     updateRegionWeather,
     updateRegionTimestamp,
     storeWeatherDescription,

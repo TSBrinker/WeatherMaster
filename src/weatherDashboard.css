@@ -700,7 +700,10 @@
 }
 
 .region-info {
-  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* This left-aligns the text */
+  text-align: left;
 }
 
 .region-name {
@@ -717,7 +720,7 @@
 
 .region-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .region-edit-button,

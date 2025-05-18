@@ -1,9 +1,11 @@
 // src/components/debug/MeteorologicalDebugPanel.jsx
 import React, { useState } from "react";
 import meteoUtils from "../../utils/meteoUtils";
+import { usePreferences } from "../../contexts/PreferencesContext";
 
 const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
   const [debugMessage, setDebugMessage] = useState("");
+  const { state: preferences } = usePreferences();
 
   // Helper to fix weather systems
   const fixWeatherSystems = () => {
@@ -23,15 +25,17 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
     }
   };
 
+  // Get the effective weather system type (region setting or global preference)
+  const effectiveWeatherType =
+    region?.weatherType || preferences?.weatherSystem || "diceTable";
+
   // Detailed diagnostic check
   let diagnosticMessage = "";
 
   if (!region) {
     diagnosticMessage = "No region data available";
-  } else if (region.weatherType !== "meteorological") {
-    diagnosticMessage = `Region using '${
-      region.weatherType || "undefined"
-    }' weather system instead of 'meteorological'`;
+  } else if (effectiveWeatherType !== "meteorological") {
+    diagnosticMessage = `Region using '${effectiveWeatherType}' weather system instead of 'meteorological'. Global preference is: ${preferences.weatherSystem}`;
   } else if (!weatherData) {
     diagnosticMessage = "No weather data available";
   } else if (!weatherData._meteoData) {
@@ -60,6 +64,11 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
           <strong className="mt-2 block">Weather data:</strong>
           <pre className="mt-1 overflow-auto max-h-24">
             {JSON.stringify(weatherData, null, 2)}
+          </pre>
+
+          <strong className="mt-2 block">Global Preferences:</strong>
+          <pre className="mt-1 overflow-auto max-h-24">
+            {JSON.stringify(preferences, null, 2)}
           </pre>
         </div>
       </div>
@@ -213,7 +222,8 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
             {`${weatherData.condition} determined with:
 Instability: ${meteoData.instability?.toFixed(1) || 0}/10
 Precip Potential: ${meteoData.precipitationPotential?.toFixed(1) || 0}%
-Cloud Cover: ${meteoData.cloudCover?.toFixed(1) || 0}%`}
+Cloud Cover: ${meteoData.cloudCover?.toFixed(1) || 0}%
+Weather System Type: ${effectiveWeatherType}`}
           </div>
         </div>
       </div>

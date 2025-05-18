@@ -16,31 +16,37 @@ class WeatherManager {
 initializeWeather(regionId, climate, season, date, type = null) {
   console.log(`WeatherManager initializing weather for region ${regionId}`);
   
-  // Use preferences from localStorage if no type specified
-  if (!type) {
-    try {
-      const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
-      if (savedPrefs) {
-        const prefs = JSON.parse(savedPrefs);
-        type = prefs.weatherSystem || 'diceTable';
-      }
-    } catch (e) {
-      console.error("Error reading preferences:", e);
+  // ALWAYS check global preferences first - with detailed logging
+  let globalPref = null;
+  try {
+    const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
+    if (savedPrefs) {
+      const prefs = JSON.parse(savedPrefs);
+      globalPref = prefs.weatherSystem;
+      console.log(`Found global weather system preference: ${globalPref}`);
     }
+  } catch (e) {
+    console.error("Error reading preferences:", e);
   }
   
-  // Normalize weather type and enforce consistency
-  type = this._normalizeWeatherType(type);
+  // CRITICAL FIX: Global preference takes priority over passed type
+  const effectiveType = globalPref || type || 'diceTable';
+  
+  console.log(`EFFECTIVE WEATHER TYPE: ${effectiveType} (passed: ${type}, global: ${globalPref})`);
   
   // Store the service type consistently
-  this.weatherServiceTypes[regionId] = type;
+  this.weatherServiceTypes[regionId] = effectiveType;
   
-  // Force recreation of service to ensure latest code is used
-  console.log(`Creating new weather service for region ${regionId}: ${type}`);
-  this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+  // Force recreation of service
+  console.log(`Creating new weather service for region ${regionId}: ${effectiveType}`);
+  this.weatherServices[regionId] = WeatherFactory.createWeatherService(effectiveType);
+  
+  // Ensure climate is valid
+  const safeClimate = climate || "temperate-deciduous";
+  console.log(`Using climate: ${safeClimate}`);
   
   // Initialize weather
-  this.weatherServices[regionId].initializeWeather(climate, season, date);
+  this.weatherServices[regionId].initializeWeather(safeClimate, season, date);
   
   // Store forecast
   this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
