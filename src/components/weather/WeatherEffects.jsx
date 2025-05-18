@@ -3,6 +3,16 @@ import React, { useState, useEffect } from "react";
 import moonService from "../../services/MoonService";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import weatherDescriptionService from "../../services/WeatherDescriptionService";
+import {
+  AlertTriangle,
+  Wind,
+  Droplet,
+  Eye,
+  Map,
+  Footprints,
+  Shield,
+  Moon,
+} from "lucide-react";
 
 const WeatherEffects = ({
   weatherEffects,
@@ -17,7 +27,7 @@ const WeatherEffects = ({
   const [isNighttime, setIsNighttime] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [weatherDescription, setWeatherDescription] = useState("");
-  const [gameEffects, setGameEffects] = useState("");
+  const [structuredEffects, setStructuredEffects] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -65,10 +75,18 @@ const WeatherEffects = ({
         setWeatherDescription(description);
       }
 
-      // Format game effects
-      const formattedEffects =
-        weatherDescriptionService.formatGameEffects(weatherEffects);
-      setGameEffects(formattedEffects);
+      // Parse structured effects if available (using imported object directly)
+      if (typeof weatherEffects === "object" && weatherEffects !== null) {
+        // Already have structured effects
+        setStructuredEffects(weatherEffects);
+      } else if (currentWeather && currentWeather.condition) {
+        // Try to find the structured effects for this condition
+        // Import directly from the module
+        import("../../data-tables/weather-effects").then((module) => {
+          const effects = module.weatherEffects[currentWeather.condition];
+          setStructuredEffects(effects || null);
+        });
+      }
     } catch (error) {
       console.error("Error generating weather description:", error);
       setError("Failed to generate weather description");
@@ -128,6 +146,135 @@ const WeatherEffects = ({
   // Render a loading state if weather effects are not available
   if (!weatherEffects && !currentWeather) return null;
 
+  // Get condition name for display
+  const conditionName = currentWeather?.condition || "Unknown";
+
+  // Helper to render structured effects
+  const renderStructuredEffects = () => {
+    if (!structuredEffects) {
+      return (
+        <div className="text-center p-4 text-gray-400">
+          No specific game effects for {conditionName}.
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-4">
+        {/* Visibility Section */}
+        {structuredEffects.visibility && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <Eye size={18} className="mr-2" />
+              <h4 className="font-medium">Visibility</h4>
+            </div>
+            <div className="effect-content">{structuredEffects.visibility}</div>
+          </div>
+        )}
+
+        {/* Movement Section */}
+        {structuredEffects.movement && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <Footprints size={18} className="mr-2" />
+              <h4 className="font-medium">Movement</h4>
+            </div>
+            <div className="effect-content">{structuredEffects.movement}</div>
+          </div>
+        )}
+
+        {/* Rest Section */}
+        {structuredEffects.rest && structuredEffects.rest !== "Normal" && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <Moon size={18} className="mr-2" />
+              <h4 className="font-medium">Rest</h4>
+            </div>
+            <div className="effect-content">{structuredEffects.rest}</div>
+          </div>
+        )}
+
+        {/* Damage Modifiers */}
+        {structuredEffects.damage && structuredEffects.damage.length > 0 && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <Shield size={18} className="mr-2" />
+              <h4 className="font-medium">Damage Modifiers</h4>
+            </div>
+            <div className="effect-content">
+              <ul className="list-disc pl-6 space-y-1">
+                {structuredEffects.damage.map((effect, idx) => (
+                  <li key={idx}>{effect}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Check Modifiers */}
+        {structuredEffects.checks && structuredEffects.checks.length > 0 && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <AlertTriangle size={18} className="mr-2" />
+              <h4 className="font-medium">Check Modifiers</h4>
+            </div>
+            <div className="effect-content">
+              <ul className="list-disc pl-6 space-y-1">
+                {structuredEffects.checks.map((effect, idx) => (
+                  <li key={idx}>{effect}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Other Effects */}
+        {structuredEffects.other && structuredEffects.other.length > 0 && (
+          <div className="effect-section">
+            <div className="effect-header">
+              <Map size={18} className="mr-2" />
+              <h4 className="font-medium">Other Effects</h4>
+            </div>
+            <div className="effect-content">
+              <ul className="list-disc pl-6 space-y-1">
+                {structuredEffects.other.map((effect, idx) => (
+                  <li key={idx}>{effect}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Wind Effects if applicable */}
+        {currentWeather && currentWeather.windSpeed > 15 && (
+          <div className="effect-section mt-2 p-3 bg-surface-light rounded">
+            <div className="effect-header">
+              <Wind size={18} className="mr-2" />
+              <h4 className="font-medium">Wind Effects</h4>
+            </div>
+            <div className="effect-content">
+              {currentWeather.windIntensity}: {currentWeather.windSpeed} mph{" "}
+              {currentWeather.windDirection}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Fallback to render classic text-based effects if structured effects aren't available
+  const renderClassicEffects = () => {
+    if (typeof weatherEffects === "string") {
+      return <div className="whitespace-pre-line">{weatherEffects}</div>;
+    }
+
+    return (
+      <div className="text-center p-4 text-gray-400">
+        No game effects available for this weather condition.
+      </div>
+    );
+  };
+
   return (
     <div className="weather-effects-section">
       <div className="card p-4">
@@ -152,8 +299,10 @@ const WeatherEffects = ({
             {/* Weather effects */}
             <div className="weather-effects-content mb-4">
               <h3 className="text-lg font-semibold mb-2">Game Effects</h3>
-              <div className="whitespace-pre-line">
-                {gameEffects || weatherEffects}
+              <div className="p-3 rounded bg-surface-light">
+                {structuredEffects
+                  ? renderStructuredEffects()
+                  : renderClassicEffects()}
               </div>
             </div>
 

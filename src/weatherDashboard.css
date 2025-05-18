@@ -804,3 +804,31 @@
   font-weight: 600;
   opacity: 0.9;
 }
+
+.effect-section {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.effect-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.effect-content {
+  padding-left: 0.5rem;
+  color: #e5e7eb;
+}
+
+.effect-content ul li {
+  margin-bottom: 0.25rem;
+}
+
+.weather-effects-content h3 {
+  margin-bottom: 0.75rem;
+}
