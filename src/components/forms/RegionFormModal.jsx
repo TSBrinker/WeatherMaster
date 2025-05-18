@@ -1,10 +1,13 @@
-// src/components/forms/RegionFormModal.jsx - Updated with template integration
+// Modified portion of src/components/forms/RegionFormModal.jsx
 import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
+import { usePreferences } from "../../contexts/PreferencesContext";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
 
 const RegionFormModal = ({ onClose }) => {
   const { createRegion } = useRegion();
+  const { state: preferences } = usePreferences();
+
   const [formData, setFormData] = useState({
     name: "",
     climate: "temperate-deciduous",
@@ -12,6 +15,7 @@ const RegionFormModal = ({ onClose }) => {
     useTemplate: false,
     templateId: null,
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTemplates, setAvailableTemplates] = useState({});
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -65,8 +69,9 @@ const RegionFormModal = ({ onClose }) => {
     setIsSubmitting(true);
 
     try {
+      // Create region based on template or basic parameters
+      // The weather system type is no longer needed here as it's set globally
       if (formData.useTemplate && formData.templateId) {
-        // Create region from template
         createRegion({
           name: formData.name,
           latitudeBand: formData.latitudeBand,
@@ -75,7 +80,6 @@ const RegionFormModal = ({ onClose }) => {
           climate: formData.climate,
         });
       } else {
-        // Create region with basic parameters
         createRegion({
           name: formData.name,
           climate: formData.climate,
@@ -242,24 +246,18 @@ const RegionFormModal = ({ onClose }) => {
             </div>
           )}
 
-          {/* New Weather System selection */}
-          <div className="mb-4">
-            <label htmlFor="weatherType" className="block mb-2">
-              Weather System
-            </label>
-            <select
-              id="weatherType"
-              name="weatherType"
-              value={formData.weatherType}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-surface-light text-white border border-border"
-            >
-              <option value="diceTable">Basic (Dice Tables)</option>
-              <option value="meteorological">Advanced (Meteorological)</option>
-            </select>
-            <div className="text-sm text-gray-400 mt-1">
-              Choose between simple dice-based generation or more realistic
-              meteorological modeling
+          {/* Weather system info (removed selection, showing current global setting) */}
+          <div className="mb-4 p-3 bg-surface-light rounded">
+            <h3 className="font-semibold mb-1">Weather Generation System</h3>
+            <div className="text-sm text-gray-300">
+              Using{" "}
+              {preferences.weatherSystem === "meteorological"
+                ? "Advanced (Meteorological)"
+                : "Basic (Dice Tables)"}{" "}
+              system for all regions
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              This setting can be changed in App Preferences
             </div>
           </div>
 

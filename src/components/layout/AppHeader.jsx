@@ -1,19 +1,79 @@
-// src/components/layout/AppHeader.jsx
-import React from "react";
+// src/components/layout/AppHeader.jsx - Updated
+import React, { useState } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
+import WorldRegionsMenu from "../world/WorldRegionsMenu";
+import RegionFormModal from "../forms/RegionFormModal";
+import RegionEditModal from "../forms/RegionEditModal";
+import { useRegion } from "../../contexts/RegionContext";
 
 const AppHeader = () => {
   const { togglePreferencesMenu } = usePreferences();
+  const { activeRegion } = useRegion();
+  const [showRegionsMenu, setShowRegionsMenu] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingRegion, setEditingRegion] = useState(null);
+
+  const handleOpenRegionsMenu = () => {
+    // Make sure other modals are closed
+    setShowCreateForm(false);
+    setEditingRegion(null);
+    setShowRegionsMenu(true);
+  };
+
+  const handleCloseRegionsMenu = () => {
+    setShowRegionsMenu(false);
+  };
+
+  const handleRequestCreateRegion = () => {
+    setShowCreateForm(true);
+  };
+
+  const handleCloseCreateForm = () => {
+    setShowCreateForm(false);
+  };
+
+  const handleRequestEditRegion = (region) => {
+    setEditingRegion(region);
+  };
+
+  const handleCloseEditForm = () => {
+    setEditingRegion(null);
+  };
 
   return (
     <header className="app-header">
       <div className="app-brand">
-        <h1>Skymaster: The GM's Weather Oracle</h1>
+        <h1>WeatherMaster.io</h1>
       </div>
 
       <div className="app-controls">
+        {/* Hamburger menu button */}
         <button
-          className="settings-button"
+          className="icon-button"
+          onClick={handleOpenRegionsMenu}
+          title="Regions & Worlds"
+        >
+          {/* Hamburger icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        {/* Settings button */}
+        <button
+          className="icon-button"
           onClick={togglePreferencesMenu}
           title="App Preferences"
         >
@@ -34,6 +94,20 @@ const AppHeader = () => {
           </svg>
         </button>
       </div>
+
+      {/* Modals */}
+      <WorldRegionsMenu
+        isOpen={showRegionsMenu}
+        onClose={handleCloseRegionsMenu}
+        onRequestCreateRegion={handleRequestCreateRegion}
+        onRequestEditRegion={handleRequestEditRegion}
+      />
+
+      {showCreateForm && <RegionFormModal onClose={handleCloseCreateForm} />}
+
+      {editingRegion && (
+        <RegionEditModal region={editingRegion} onClose={handleCloseEditForm} />
+      )}
     </header>
   );
 };
