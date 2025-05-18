@@ -13,30 +13,43 @@ class WeatherManager {
   }
   
   // Initialize weather for a region
-  initializeWeather(regionId, climate, season, date, type = 'diceTable') {
-    console.log(`WeatherManager initializing weather for region ${regionId} with type ${type}`);
-    
-    // Normalize weather type and enforce consistency
-    type = this._normalizeWeatherType(type);
-    
-    // Store the service type consistently
-    this.weatherServiceTypes[regionId] = type;
-    
-    // Force recreation of service to ensure latest code is used
-    console.log(`Creating new weather service for region ${regionId}: ${type}`);
-    this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
-    
-    // Initialize weather
-    this.weatherServices[regionId].initializeWeather(climate, season, date);
-    
-    // Store forecast
-    this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
-    
-    console.log(`Weather initialized for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
-    console.log(`Weather type for region ${regionId} is now: ${this.weatherServiceTypes[regionId]}`);
-    
-    return this.forecasts[regionId];
+initializeWeather(regionId, climate, season, date, type = null) {
+  console.log(`WeatherManager initializing weather for region ${regionId}`);
+  
+  // Use preferences from localStorage if no type specified
+  if (!type) {
+    try {
+      const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
+      if (savedPrefs) {
+        const prefs = JSON.parse(savedPrefs);
+        type = prefs.weatherSystem || 'diceTable';
+      }
+    } catch (e) {
+      console.error("Error reading preferences:", e);
+    }
   }
+  
+  // Normalize weather type and enforce consistency
+  type = this._normalizeWeatherType(type);
+  
+  // Store the service type consistently
+  this.weatherServiceTypes[regionId] = type;
+  
+  // Force recreation of service to ensure latest code is used
+  console.log(`Creating new weather service for region ${regionId}: ${type}`);
+  this.weatherServices[regionId] = WeatherFactory.createWeatherService(type);
+  
+  // Initialize weather
+  this.weatherServices[regionId].initializeWeather(climate, season, date);
+  
+  // Store forecast
+  this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
+  
+  console.log(`Weather initialized for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
+  console.log(`Weather type for region ${regionId} is now: ${this.weatherServiceTypes[regionId]}`);
+  
+  return this.forecasts[regionId];
+}
   
   // Get forecast for a region
   getForecast(regionId) {

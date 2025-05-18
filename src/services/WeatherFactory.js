@@ -1,11 +1,25 @@
-// src/services/WeatherFactory.js
-// Factory for creating appropriate weather service instances
-
+// src/services/WeatherFactory.js - Updated
 import DiceTableWeatherService from './DiceTableWeatherService';
 import MeteorologicalWeatherService from './MeteorologicalWeatherService';
 
 export default class WeatherFactory {
-  static createWeatherService(type = 'diceTable') {
+  static createWeatherService(type = null) {
+    // If no type is specified, we'll use the storageUtils directly
+    // (can't use React hooks in a static class method)
+    if (!type) {
+      try {
+        const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
+        if (savedPrefs) {
+          const prefs = JSON.parse(savedPrefs);
+          type = prefs.weatherSystem || 'diceTable';
+        } else {
+          type = 'diceTable'; // Default if no preferences found
+        }
+      } catch (e) {
+        type = 'diceTable'; // Fallback on error
+      }
+    }
+    
     // Force to lowercase and trim for consistency
     const normalizedType = (typeof type === 'string') ? type.toLowerCase().trim() : 'diceTable';
     

@@ -1,5 +1,6 @@
 // src/components/region/RegionDetails.jsx
 import React, { useState, useEffect } from "react";
+import { usePreferences } from "../../contexts/PreferencesContext";
 import MeteorologicalDebugPanel from "../debug/MeteorologicalDebugPanel";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
 
@@ -10,12 +11,10 @@ const RegionDetails = ({
   season,
   setSeason,
   onRegenerateWeather,
-  weatherSystemType = "diceTable",
-  onChangeWeatherSystem,
-  showDebug,
-  setShowDebug,
   currentWeather,
 }) => {
+  const { state: preferences } = usePreferences();
+
   if (!region) return null;
 
   const [showCelestialInfo, setShowCelestialInfo] = useState(false);
@@ -62,11 +61,23 @@ const RegionDetails = ({
     fetchTemplateData();
   }, [region]);
 
-  const handleWeatherSystemChange = (e) => {
-    const newType = e.target.value;
-    if (onChangeWeatherSystem) {
-      onChangeWeatherSystem(newType);
-    }
+  // Display weather system info from global preferences
+  const renderWeatherSystemInfo = () => {
+    return (
+      <div className="mt-4 p-3 bg-surface-light rounded">
+        <h3 className="font-semibold mb-2">Weather Generation System</h3>
+        <div className="text-gray-300">
+          Using{" "}
+          {preferences.weatherSystem === "meteorological"
+            ? "Advanced (Meteorological)"
+            : "Basic (Dice Tables)"}{" "}
+          system for all regions
+        </div>
+        <div className="text-sm text-gray-400 mt-1">
+          Change the weather system in App Preferences (gear icon)
+        </div>
+      </div>
+    );
   };
 
   // Handle the updated region structure
@@ -225,45 +236,18 @@ const RegionDetails = ({
           )}
         </div>
 
-        {/* Weather System Selection */}
-        <div className="mt-4 p-3 bg-surface-light rounded">
-          <h3 className="font-semibold mb-2">Weather Generation System</h3>
-          <div className="mb-3">
-            <select
-              value={weatherSystemType}
-              onChange={handleWeatherSystemChange}
-              className="w-full p-2 rounded bg-surface text-white border border-border"
-            >
-              <option value="diceTable">Basic (Dice Tables)</option>
-              <option value="meteorological">Advanced (Meteorological)</option>
-            </select>
-            <div className="text-sm text-gray-400 mt-1">
-              {weatherSystemType === "diceTable"
-                ? "Using simplified dice-based weather generation"
-                : "Using physically-based meteorological modeling"}
-            </div>
+        {/* Weather System Info (from global preferences) */}
+        {renderWeatherSystemInfo()}
+
+        {/* Debug Panel - Only shown if debug mode is enabled */}
+        {preferences.debugMode && currentWeather && (
+          <div className="mt-4">
+            <MeteorologicalDebugPanel
+              weatherData={currentWeather}
+              region={region}
+            />
           </div>
-        </div>
-
-        {/* Debug Toggle */}
-        <div className="mt-4">
-          <button
-            className="text-left w-full flex justify-between items-center py-2 px-4 bg-surface-light rounded"
-            onClick={() => setShowDebug(!showDebug)}
-          >
-            <span>Debug Information</span>
-            <span>{showDebug ? "▲" : "▼"}</span>
-          </button>
-
-          {showDebug && currentWeather && (
-            <div className="mt-2">
-              <MeteorologicalDebugPanel
-                weatherData={currentWeather}
-                region={region}
-              />
-            </div>
-          )}
-        </div>
+        )}
 
         <button
           onClick={onRegenerateWeather}

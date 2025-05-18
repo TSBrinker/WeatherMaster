@@ -6,6 +6,9 @@ import {
   WorldSettingsProvider,
   useWorldSettings,
 } from "./contexts/WorldSettings";
+import { PreferencesProvider } from "./contexts/PreferencesContext";
+import AppHeader from "./components/layout/AppHeader";
+import PreferencesMenu from "./components/preferences/PreferencesMenu";
 import WeatherDashboard from "./components/WeatherDashboard";
 import RegionFormModal from "./components/forms/RegionFormModal";
 import RegionEditModal from "./components/forms/RegionEditModal";
@@ -222,15 +225,22 @@ const AppContent = () => {
 // Main App component with providers
 function App() {
   return (
-    <div className="container mx-auto p-4">
+    <PreferencesProvider>
+      {/* Wrap everything else in PreferencesProvider */}
       <WorldSettingsProvider>
         <WorldProvider>
           <RegionProvider>
-            <AppContent />
+            <div className="app-container">
+              <AppHeader />
+              <main className="app-main">
+                <WeatherDashboard />
+              </main>
+              <PreferencesMenu />
+            </div>
           </RegionProvider>
         </WorldProvider>
       </WorldSettingsProvider>
-    </div>
+    </PreferencesProvider>
   );
 }
 
