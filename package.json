@@ -1,6 +1,6 @@
 {
   "name": "weathermaster",
-  "homepage": "https://tsbrinker.github.io/weathermaster",
+  "homepage": "https://tsbrinker.github.io/WeatherMaster",
   "version": "1.0.0",
   "description": "A weather generation tool for tabletop RPGs",
   "main": "index.js",
