@@ -5,6 +5,7 @@ import WorldRegionsMenu from "../world/WorldRegionsMenu";
 import RegionFormModal from "../forms/RegionFormModal";
 import RegionEditModal from "../forms/RegionEditModal";
 import { useRegion } from "../../contexts/RegionContext";
+import WorldSetupModal from "../world/WorldSetupModal";
 
 const AppHeader = () => {
   const { togglePreferencesMenu } = usePreferences();
@@ -12,6 +13,7 @@ const AppHeader = () => {
   const [showRegionsMenu, setShowRegionsMenu] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingRegion, setEditingRegion] = useState(null);
+  const [showWorldSetup, setShowWorldSetup] = useState(false);
 
   const handleOpenRegionsMenu = () => {
     // Make sure other modals are closed
@@ -43,7 +45,7 @@ const AppHeader = () => {
   return (
     <header className="app-header">
       <div className="app-brand">
-        <h1>WeatherMaster.io</h1>
+        <h1>WeatherMaster</h1>
       </div>
 
       <div className="app-controls">
@@ -101,12 +103,17 @@ const AppHeader = () => {
         onClose={handleCloseRegionsMenu}
         onRequestCreateRegion={handleRequestCreateRegion}
         onRequestEditRegion={handleRequestEditRegion}
+        onOpenWorldSettings={() => setShowWorldSetup(true)}
       />
 
       {showCreateForm && <RegionFormModal onClose={handleCloseCreateForm} />}
 
       {editingRegion && (
         <RegionEditModal region={editingRegion} onClose={handleCloseEditForm} />
+      )}
+
+      {showWorldSetup && (
+        <WorldSetupModal onClose={() => setShowWorldSetup(false)} />
       )}
     </header>
   );

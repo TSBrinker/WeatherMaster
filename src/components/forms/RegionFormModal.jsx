@@ -1,4 +1,6 @@
-// Modified portion of src/components/forms/RegionFormModal.jsx
+// src/components/forms/RegionFormModal.jsx
+// Here's a simplified version
+
 import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
@@ -12,7 +14,6 @@ const RegionFormModal = ({ onClose }) => {
     name: "",
     climate: "temperate-deciduous",
     latitudeBand: "temperate",
-    useTemplate: false,
     templateId: null,
   });
 
@@ -52,11 +53,8 @@ const RegionFormModal = ({ onClose }) => {
   }, [formData.templateId, availableTemplates]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleTemplateChange = (e) => {
@@ -70,8 +68,7 @@ const RegionFormModal = ({ onClose }) => {
 
     try {
       // Create region based on template or basic parameters
-      // The weather system type is no longer needed here as it's set globally
-      if (formData.useTemplate && formData.templateId) {
+      if (formData.templateId) {
         createRegion({
           name: formData.name,
           latitudeBand: formData.latitudeBand,
@@ -153,101 +150,78 @@ const RegionFormModal = ({ onClose }) => {
           </div>
 
           <div className="mb-4">
-            <div className="flex items-center mb-2">
-              <input
-                type="checkbox"
-                id="useTemplate"
-                name="useTemplate"
-                checked={formData.useTemplate}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              <label htmlFor="useTemplate">Use Region Template</label>
-            </div>
-            <div className="text-sm text-gray-400 mb-3">
+            <label htmlFor="templateId" className="block mb-2">
+              Region Template
+            </label>
+            <select
+              id="templateId"
+              name="templateId"
+              value={formData.templateId || ""}
+              onChange={handleTemplateChange}
+              className="w-full p-2 rounded bg-surface-light text-white border border-border"
+              disabled={Object.keys(availableTemplates).length === 0}
+            >
+              <option value="">-- Select a template --</option>
+              {Object.entries(availableTemplates).map(([id, template]) => (
+                <option key={id} value={id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+            <div className="text-sm text-gray-400 mt-1">
               Templates provide pre-configured climate settings with rich
               descriptions and gameplay impacts
             </div>
-
-            {formData.useTemplate && (
-              <div className="mb-4 pl-2 border-l-2 border-primary">
-                <label htmlFor="templateId" className="block mb-2">
-                  Select Template
-                </label>
-                <select
-                  id="templateId"
-                  name="templateId"
-                  value={formData.templateId || ""}
-                  onChange={handleTemplateChange}
-                  className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                  required={formData.useTemplate}
-                  disabled={Object.keys(availableTemplates).length === 0}
-                >
-                  <option value="">-- Select a template --</option>
-                  {Object.entries(availableTemplates).map(([id, template]) => (
-                    <option key={id} value={id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Template details */}
-                {selectedTemplate && (
-                  <div className="mt-3 p-3 bg-surface-dark rounded border border-border">
-                    <h3 className="font-semibold mb-1">
-                      {selectedTemplate.name}
-                    </h3>
-                    <p className="text-sm mb-2">
-                      {selectedTemplate.description}
-                    </p>
-                    <div className="mt-3">
-                      <div className="text-sm font-semibold text-accent mb-1">
-                        Gameplay Impact:
-                      </div>
-                      <p className="text-xs text-gray-300">
-                        {selectedTemplate.gameplayImpact}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
-          {!formData.useTemplate && (
-            <div className="mb-4">
-              <label htmlFor="climate" className="block mb-2">
-                Biome Type
-              </label>
-              <select
-                id="climate"
-                name="climate"
-                value={formData.climate}
-                onChange={handleChange}
-                className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                required={!formData.useTemplate}
-              >
-                <option value="tropical-rainforest">Tropical Rainforest</option>
-                <option value="tropical-seasonal">Tropical Seasonal</option>
-                <option value="desert">Desert</option>
-                <option value="temperate-grassland">Temperate Grassland</option>
-                <option value="temperate-deciduous">
-                  Temperate Deciduous Forest
-                </option>
-                <option value="temperate-rainforest">
-                  Temperate Rainforest
-                </option>
-                <option value="boreal-forest">Boreal Forest</option>
-                <option value="tundra">Tundra</option>
-              </select>
-              <div className="text-sm text-gray-400 mt-1">
-                Determines basic weather patterns and temperature ranges
-              </div>
+          {/* Template details */}
+          {selectedTemplate && (
+            <div className="mb-4 p-3 bg-surface-dark rounded border border-border">
+              <h3 className="font-semibold mb-1">{selectedTemplate.name}</h3>
+              <p className="text-sm mb-2">{selectedTemplate.description}</p>
+              {selectedTemplate.gameplayImpact && (
+                <div className="mt-3">
+                  <div className="text-sm font-semibold text-accent mb-1">
+                    Gameplay Impact:
+                  </div>
+                  <p className="text-xs text-gray-300">
+                    {selectedTemplate.gameplayImpact}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Weather system info (removed selection, showing current global setting) */}
-          <div className="mb-4 p-3 bg-surface-light rounded">
+          {/* <div className="mb-4">
+            <label htmlFor="climate" className="block mb-2">
+              Biome Type
+            </label>
+            <select
+              id="climate"
+              name="climate"
+              value={formData.climate}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-surface-light text-white border border-border"
+              required
+            >
+              <option value="tropical-rainforest">Tropical Rainforest</option>
+              <option value="tropical-seasonal">Tropical Seasonal</option>
+              <option value="desert">Desert</option>
+              <option value="temperate-grassland">Temperate Grassland</option>
+              <option value="temperate-deciduous">
+                Temperate Deciduous Forest
+              </option>
+              <option value="temperate-rainforest">Temperate Rainforest</option>
+              <option value="boreal-forest">Boreal Forest</option>
+              <option value="tundra">Tundra</option>
+            </select>
+            <div className="text-sm text-gray-400 mt-1">
+              Determines weather patterns and temperature ranges
+            </div>
+          </div> */}
+
+          {/* Weather system info (now just showing the global setting) */}
+          {/* <div className="mb-4 p-3 bg-surface-light rounded">
             <h3 className="font-semibold mb-1">Weather Generation System</h3>
             <div className="text-sm text-gray-300">
               Using{" "}
@@ -259,7 +233,7 @@ const RegionFormModal = ({ onClose }) => {
             <div className="text-xs text-gray-400 mt-1">
               This setting can be changed in App Preferences
             </div>
-          </div>
+          </div> */}
 
           <div className="flex justify-end gap-3 pt-3 border-t border-border mt-6">
             <button type="button" onClick={onClose} className="btn">
