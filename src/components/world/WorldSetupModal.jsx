@@ -1,30 +1,83 @@
-// src/components/world/WorldSetupModal.jsx
-import React, { useState } from "react";
+// src/components/world/WorldSetupModal.jsx - Complete revision
+import React, { useState, useEffect } from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
-import { useWorld } from "../../contexts/WorldContext"; // Add this import
+import { useWorld } from "../../contexts/WorldContext";
+import GameDateInput from "../common/GameDateInput";
 
-const WorldSetupModal = ({ onClose }) => {
+const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
   const { state, setWorldName, setGameTime, setIsConfigured } =
     useWorldSettings();
-  const { setCurrentDate } = useWorld(); // Get setCurrentDate from WorldContext
+  const { setCurrentDate } = useWorld();
+
+  // Only perform auto-checks if we're not in edit mode and not forced to show
+  useEffect(() => {
+    if (editMode) {
+      console.log("WorldSetupModal in edit mode - skipping auto-check");
+      return; // Skip all auto-checks in edit mode
+    }
+
+    if (forceShow) {
+      console.log("Forcing world setup modal to show");
+      return; // Skip the check if forceShow is true
+    }
+
+    const setupCompleted = localStorage.getItem(
+      "gm-weather-companion-setup-completed"
+    );
+    const hasRegions = localStorage.getItem("gm-weather-companion-regions");
+
+    console.log("WorldSetupModal check:", {
+      setupCompleted,
+      hasRegions: !!hasRegions,
+      forceShow,
+      editMode,
+    });
+
+    // If setup is completed or we have regions, close the modal
+    if (setupCompleted === "true" || hasRegions) {
+      console.log("Setup already completed, closing modal");
+      setIsConfigured(true);
+      onClose();
+    }
+  }, [onClose, setIsConfigured, forceShow, editMode]);
 
   // Get current date from state or use current date as fallback
   const currentGameDate = state.gameTime
     ? new Date(state.gameTime)
     : new Date();
 
-  // Form state
+  // Form state - initialize with current values in edit mode
   const [formData, setFormData] = useState({
     worldName: state.worldName || "My Fantasy World",
-    gameDate: currentGameDate.toISOString().split("T")[0], // yyyy-mm-dd format for date input
+    gameDate: currentGameDate.toISOString().split("T")[0],
     hourOfDay: currentGameDate.getHours(),
   });
+
+  // Update form data when state changes (important for edit mode)
+  useEffect(() => {
+    if (editMode && state.gameTime) {
+      const date = new Date(state.gameTime);
+      setFormData({
+        worldName: state.worldName || "My Fantasy World",
+        gameDate: date.toISOString().split("T")[0],
+        hourOfDay: date.getHours(),
+      });
+    }
+  }, [editMode, state.worldName, state.gameTime]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
+    });
+  };
+
+  // Handle date change from our custom component
+  const handleDateChange = (dateString) => {
+    setFormData({
+      ...formData,
+      gameDate: dateString,
     });
   };
 
@@ -44,26 +97,36 @@ const WorldSetupModal = ({ onClose }) => {
       dateTime.setDate(day);
       dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
 
+      console.log("Saving world settings:", {
+        name: formData.worldName,
+        date: dateTime.toString(),
+        editMode,
+      });
+
       // Important: Update both contexts to ensure synchronization
       setWorldName(formData.worldName);
       setGameTime(dateTime);
       setCurrentDate(dateTime); // Also update in the WorldContext
       setIsConfigured(true);
 
-      // Force a re-render by setting a small timeout
+      // Only set the setup completed flag if not in edit mode
+      if (!editMode) {
+        localStorage.setItem("gm-weather-companion-setup-completed", "true");
+        localStorage.removeItem("gm-weather-companion-setup-attempted");
+      }
+
+      // Close modal with a small delay to allow state updates
       setTimeout(() => {
-        // Close modal
         onClose();
       }, 50);
     } catch (error) {
       console.error("Error setting game date/time:", error);
-      // You could add error handling UI here
     }
   };
 
-  // Handle click outside to close
+  // Handle click outside to close - disable this if forceShow is true
   const handleModalClick = (e) => {
-    if (e.target.classList.contains("modal-overlay")) {
+    if (!forceShow && e.target.classList.contains("modal-overlay")) {
       onClose();
     }
   };
@@ -84,10 +147,17 @@ const WorldSetupModal = ({ onClose }) => {
     <div className="modal-overlay" onClick={handleModalClick}>
       <div className="modal-content">
         <div className="flex justify-between items-center p-4 border-b border-border">
-          <h2 className="text-xl font-semibold">World Settings</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            ✕
-          </button>
+          <h2 className="text-xl font-semibold">
+            {editMode ? "Edit World Settings" : "World Setup"}
+          </h2>
+          {!forceShow && (
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="p-4">
@@ -106,26 +176,42 @@ const WorldSetupModal = ({ onClose }) => {
             />
           </div>
 
-          <div>
+          <div className="mb-4">
             <label className="block mb-2">Game Date</label>
             <GameDateInput
               id="world-setup-date"
               initialValue={formData.gameDate}
-              onChange={(date) =>
-                setFormData((prev) => ({ ...prev, gameDate: date }))
-              }
+              onChange={handleDateChange}
             />
             <div className="text-sm text-gray-400 mt-1">
               The date in your game world
             </div>
           </div>
 
+          <div className="mb-4">
+            <label htmlFor="hourOfDay" className="block mb-2">
+              Hour of Day
+            </label>
+            <select
+              id="hourOfDay"
+              name="hourOfDay"
+              value={formData.hourOfDay}
+              onChange={handleChange}
+              className="w-full p-2 rounded bg-surface-light text-white border border-border"
+              required
+            >
+              {hoursOptions}
+            </select>
+          </div>
+
           <div className="flex justify-end gap-3 pt-3 border-t border-border mt-6">
-            <button type="button" onClick={onClose} className="btn">
-              Cancel
-            </button>
+            {!forceShow && (
+              <button type="button" onClick={onClose} className="btn">
+                Cancel
+              </button>
+            )}
             <button type="submit" className="btn btn-primary">
-              Save Settings
+              {editMode ? "Save Changes" : "Create World"}
             </button>
           </div>
         </form>

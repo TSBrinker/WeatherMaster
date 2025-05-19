@@ -81,7 +81,7 @@ const FirstTimeSetup = ({ onComplete }) => {
         <div className="flex justify-between items-center p-4 border-b border-border">
           <h2 className="text-xl font-semibold">
             {step === 1
-              ? "Welcome to WeatherMaster.io"
+              ? "Welcome to WeatherMaster"
               : "Choose Weather Generation Method"}
           </h2>
         </div>
@@ -118,7 +118,7 @@ const FirstTimeSetup = ({ onComplete }) => {
                 }
               />
               <div className="text-sm text-gray-400 mt-1">
-                The date in your game world
+                The current or starting date in your game
               </div>
             </div>
 

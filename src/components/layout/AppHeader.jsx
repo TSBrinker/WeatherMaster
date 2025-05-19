@@ -1,11 +1,11 @@
-// src/components/layout/AppHeader.jsx - Updated
+// src/components/layout/AppHeader.jsx
 import React, { useState } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import WorldRegionsMenu from "../world/WorldRegionsMenu";
 import RegionFormModal from "../forms/RegionFormModal";
 import RegionEditModal from "../forms/RegionEditModal";
+import WorldSetupModal from "../world/WorldSetupModal"; // Make sure this is imported
 import { useRegion } from "../../contexts/RegionContext";
-import WorldSetupModal from "../world/WorldSetupModal";
 
 const AppHeader = () => {
   const { togglePreferencesMenu } = usePreferences();
@@ -13,12 +13,13 @@ const AppHeader = () => {
   const [showRegionsMenu, setShowRegionsMenu] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingRegion, setEditingRegion] = useState(null);
-  const [showWorldSetup, setShowWorldSetup] = useState(false);
+  const [showWorldSetup, setShowWorldSetup] = useState(false); // Add this state
 
   const handleOpenRegionsMenu = () => {
     // Make sure other modals are closed
     setShowCreateForm(false);
     setEditingRegion(null);
+    setShowWorldSetup(false); // Close world setup if open
     setShowRegionsMenu(true);
   };
 
@@ -42,6 +43,17 @@ const AppHeader = () => {
     setEditingRegion(null);
   };
 
+  // Add this handler for opening world settings
+  const handleOpenWorldSettings = () => {
+    console.log("Opening world settings modal");
+    // First close the regions menu if it's open
+    setShowRegionsMenu(false);
+    // Schedule opening the world setup modal after regions menu closes
+    setTimeout(() => {
+      setShowWorldSetup(true);
+    }, 100);
+  };
+
   return (
     <header className="app-header">
       <div className="app-brand">
@@ -49,18 +61,17 @@ const AppHeader = () => {
       </div>
 
       <div className="app-controls">
-        <span className="font-medium">Regions</span>
         {/* Hamburger menu button */}
         <button
-          className="icon-button"
+          className="flex items-center gap-2 px-3 py-2 bg-surface-light hover:bg-surface rounded"
           onClick={handleOpenRegionsMenu}
           title="Regions & Worlds"
         >
           {/* Hamburger icon */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -72,6 +83,7 @@ const AppHeader = () => {
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
+          <span className="font-medium">Regions</span>
         </button>
 
         {/* Settings button */}
@@ -104,7 +116,7 @@ const AppHeader = () => {
         onClose={handleCloseRegionsMenu}
         onRequestCreateRegion={handleRequestCreateRegion}
         onRequestEditRegion={handleRequestEditRegion}
-        onOpenWorldSettings={() => setShowWorldSetup(true)}
+        onOpenWorldSettings={handleOpenWorldSettings} // Pass the handler
       />
 
       {showCreateForm && <RegionFormModal onClose={handleCloseCreateForm} />}
@@ -113,8 +125,13 @@ const AppHeader = () => {
         <RegionEditModal region={editingRegion} onClose={handleCloseEditForm} />
       )}
 
+      {/* Add the WorldSetupModal */}
       {showWorldSetup && (
-        <WorldSetupModal onClose={() => setShowWorldSetup(false)} />
+        <WorldSetupModal
+          onClose={() => setShowWorldSetup(false)}
+          forceShow={false}
+          editMode={true} // Set this to true for manual editing
+        />
       )}
     </header>
   );
