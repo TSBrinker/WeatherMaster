@@ -62,33 +62,34 @@ const RegionFormModal = ({ onClose }) => {
     setFormData((prev) => ({ ...prev, templateId }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      // Create region based on template or basic parameters
-      if (formData.templateId) {
-        createRegion({
-          name: formData.name,
-          latitudeBand: formData.latitudeBand,
-          templateId: formData.templateId,
-          // Still pass climate in case it's needed for fallback
-          climate: formData.climate,
-        });
-      } else {
-        createRegion({
-          name: formData.name,
-          climate: formData.climate,
-          latitudeBand: formData.latitudeBand,
-        });
-      }
-      onClose();
-    } catch (error) {
-      console.error("Error creating region:", error);
-      setIsSubmitting(false);
+  try {
+    // 1. Create the region with template
+    const newRegion = createRegion({
+      name: formData.name,
+      latitudeBand: formData.latitudeBand,
+      templateId: formData.templateId,
+      climate: formData.climate,
+    });
+    
+    // 2. Add a short delay to ensure state updates are processed
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // 3. Force weather regeneration for the new region
+    if (newRegion && newRegion.id) {
+      // This part depends on how your weather manager is structured
+      weatherManager.regenerateWeather(newRegion.id);
     }
-  };
+    
+    onClose();
+  } catch (error) {
+    console.error("Error creating region:", error);
+    setIsSubmitting(false);
+  }
+};
 
   // Handle click outside to close
   const handleModalClick = (e) => {

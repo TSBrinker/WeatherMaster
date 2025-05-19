@@ -721,7 +721,7 @@ class RegionProfileService {
       return "This region has a unique combination of characteristics without a simple real-world analog.";
     }
 
-    /**
+/**
  * Create a region profile from a template
  * @param {string} latitudeBand - Latitude band (equatorial, tropical, temperate, subarctic, polar, special)
  * @param {string} templateId - Template identifier within the latitude band
@@ -746,12 +746,18 @@ createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides 
   }
   
   const templateParams = template.parameters;
+  
+  // CRITICAL FIX: Make sure we use the template's default biome
+  // This addresses the issue where template biomes weren't being respected
   const biome = template.defaultBiome || this.getBiomeFromParameters(templateParams);
+  
+  console.log(`Creating profile from template: ${latitudeBand}/${templateId}, using biome: ${biome}`);
   
   // Create base profile parameters from template
   const baseParams = {
     name: regionName || template.name,
-    biome,
+    biome, // Use the determined biome directly
+    climate: biome, // CRITICAL FIX: Also set climate to same value for backward compatibility
     latitude: templateParams.latitude,
     elevation: templateParams.elevation,
     maritimeInfluence: templateParams.maritimeInfluence,

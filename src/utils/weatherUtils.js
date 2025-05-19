@@ -45,13 +45,16 @@ class WeatherUtils {
    * @returns {object} - Sunrise and sunset hours
    */
   static getDaylightHours(latitude, dayOfYear) {
-    // Simplified model for day length calculation
-    // Based on latitude and day of year
-    const declination = 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * (Math.PI / 180));
+    // Calculate the solar declination angle for the given day of year
+    // This is the angle between the rays of the sun and the equatorial plane
+    const declination = 23.45 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
+    
+    // Convert latitude to radians
     const latRad = latitude * (Math.PI / 180);
+    const decRad = declination * (Math.PI / 180);
     
     // Calculate day length in hours
-    const cosHourAngle = -Math.tan(latRad) * Math.tan(declination * (Math.PI / 180));
+    const cosHourAngle = -Math.tan(latRad) * Math.tan(decRad * (Math.PI / 180));
     
     // Handle special cases (polar day/night)
     if (cosHourAngle < -1) {
@@ -67,7 +70,7 @@ class WeatherUtils {
     const sunrise = 12 - dayLength / 2;
     const sunset = 12 + dayLength / 2;
     
-    return { sunrise, sunset };
+    return { sunrise, sunset, dayLength };
   }
 
   /**
@@ -93,37 +96,60 @@ class WeatherUtils {
     // Determine the phase name and percentage illumination
     let phaseName;
     let illumination;
+    let isWaxing = true;
     
     if (normalizedPhase < 0.025 || normalizedPhase >= 0.975) {
       phaseName = "New Moon";
       illumination = 0;
+      isWaxing = normalizedPhase >= 0.975 ? false : true;
     } else if (normalizedPhase < 0.25) {
       phaseName = "Waxing Crescent";
       illumination = normalizedPhase * 4 * 100;
+      isWaxing = true;
     } else if (normalizedPhase < 0.275) {
       phaseName = "First Quarter";
       illumination = 50;
+      isWaxing = true;
     } else if (normalizedPhase < 0.475) {
       phaseName = "Waxing Gibbous";
       illumination = 50 + (normalizedPhase - 0.25) * 2 * 100;
+      isWaxing = true;
     } else if (normalizedPhase < 0.525) {
       phaseName = "Full Moon";
       illumination = 100;
+      isWaxing = false;
     } else if (normalizedPhase < 0.725) {
       phaseName = "Waning Gibbous";
       illumination = 100 - (normalizedPhase - 0.5) * 2 * 100;
+      isWaxing = false;
     } else if (normalizedPhase < 0.775) {
       phaseName = "Last Quarter";
       illumination = 50;
+      isWaxing = false;
     } else {
       phaseName = "Waning Crescent";
       illumination = 50 - (normalizedPhase - 0.75) * 2 * 100;
+      isWaxing = false;
     }
+    
+    // Determine appropriate emoji
+    let icon;
+    if (phaseName === "New Moon") icon = "🌑";
+    else if (phaseName === "Waxing Crescent") icon = "🌒";
+    else if (phaseName === "First Quarter") icon = "🌓";
+    else if (phaseName === "Waxing Gibbous") icon = "🌔";
+    else if (phaseName === "Full Moon") icon = "🌕";
+    else if (phaseName === "Waning Gibbous") icon = "🌖";
+    else if (phaseName === "Last Quarter") icon = "🌗";
+    else icon = "🌘"; // Waning Crescent
     
     return {
       phase: normalizedPhase,
       phaseName,
-      illumination: Math.round(illumination)
+      illumination: Math.round(illumination),
+      exactPercentage: illumination.toFixed(1),
+      isWaxing,
+      icon
     };
   }
   
@@ -364,6 +390,269 @@ class WeatherUtils {
     
     console.log(`Mapping biome "${biome}" to climate table key:`, biomeMap[biome] || biome);
     return biome ? biomeMap[biome] || biome : "temperate-deciduous";
+  }
+
+  /**
+   * Get detailed climate classification based on latitude, elevation, and maritime influence
+   * @param {number} latitude - Latitude in degrees
+   * @param {number} elevation - Elevation in feet
+   * @param {number} maritimeInfluence - Maritime influence factor (0-1)
+   * @returns {object} - Detailed climate classification
+   */
+  static getDetailedClimateClassification(latitude, elevation, maritimeInfluence) {
+    // Absolute latitude for calculations
+    const absLatitude = Math.abs(latitude);
+    
+    // Base climate from latitude
+    let baseClimate = "";
+    
+    if (absLatitude < 10) {
+      baseClimate = "equatorial";
+    } else if (absLatitude < 30) {
+      baseClimate = "tropical";
+    } else if (absLatitude < 45) {
+      baseClimate = "subtropical";
+    } else if (absLatitude < 60) {
+      baseClimate = "temperate";
+    } else if (absLatitude < 75) {
+      baseClimate = "subarctic";
+    } else {
+      baseClimate = "polar";
+    }
+    
+    // Calculate continentality (opposite of maritime influence)
+    const continentality = 1 - maritimeInfluence;
+    
+    // Continental vs. maritime modifier
+    let continentalityType = "";
+    
+    if (maritimeInfluence > 0.7) {
+      continentalityType = "maritime";
+    } else if (maritimeInfluence < 0.3) {
+      continentalityType = "continental";
+    } else {
+      continentalityType = "moderate";
+    }
+    
+    // Elevation effects
+    let elevationType = "";
+    
+    if (elevation > 8000) {
+      elevationType = "alpine";
+    } else if (elevation > 4000) {
+      elevationType = "montane";
+    } else if (elevation > 1500) {
+      elevationType = "upland";
+    } else {
+      elevationType = "lowland";
+    }
+    
+    // Combine factors for detailed classification
+    return {
+      baseClimate,
+      continentalityType,
+      elevationType,
+      
+      // Annual temperature range estimate (°F)
+      // Higher for continental, lower for maritime
+      annualTemperatureRange: 20 + (continentality * 50) + 
+                           (absLatitude > 30 ? (absLatitude - 30) * 0.6 : 0),
+      
+      // Precipitation seasonality
+      precipitationSeasonality: this.getPrecipitationSeasonality(latitude, maritimeInfluence),
+      
+      // Day length variation (hours between longest and shortest day)
+      dayLengthVariation: this.getDayLengthVariation(absLatitude)
+    };
+  }
+
+  /**
+   * Calculate precipitation seasonality based on latitude and maritime influence
+   * @param {number} latitude - Latitude in degrees
+   * @param {number} maritimeInfluence - Maritime influence factor (0-1)
+   * @returns {object} - Precipitation seasonality details
+   */
+  static getPrecipitationSeasonality(latitude, maritimeInfluence) {
+    const absLatitude = Math.abs(latitude);
+    
+    // Precipitation seasonality depends on latitude and maritime influence
+    let seasonality = "moderate";
+    let wetSeason = null;
+    
+    // Equatorial regions often have two wet seasons
+    if (absLatitude < 10) {
+      seasonality = maritimeInfluence > 0.5 ? "low" : "moderate";
+      wetSeason = "year-round";
+    }
+    // Tropical monsoon regions have strong wet seasons
+    else if (absLatitude < 30) {
+      if (latitude > 0) { // Northern Hemisphere
+        wetSeason = "summer"; // Northern summer (Jun-Aug)
+      } else { // Southern Hemisphere
+        wetSeason = "winter"; // Southern summer (Dec-Feb) is Northern winter
+      }
+      seasonality = "high";
+    }
+    // Mediterranean climates (specific regions at 30-40° with summer drought)
+    else if ((absLatitude > 30 && absLatitude < 40) && 
+           (maritimeInfluence > 0.5 && maritimeInfluence < 0.8)) {
+      if (latitude > 0) { // Northern Hemisphere
+        wetSeason = "winter"; // Mediterranean pattern
+      } else { // Southern Hemisphere
+        wetSeason = "summer"; // Southern Mediterranean pattern
+      }
+      seasonality = "very high"; // Very distinct wet and dry seasons
+    }
+    // Mid-latitude maritime has moderate year-round precipitation
+    else if (absLatitude < 60 && maritimeInfluence > 0.7) {
+      seasonality = "low";
+      wetSeason = "year-round";
+    }
+    // Mid-latitude continental has summer maximum
+    else if (absLatitude < 60) {
+      if (latitude > 0) { // Northern Hemisphere
+        wetSeason = "summer"; // Northern summer
+      } else { // Southern Hemisphere
+        wetSeason = "winter"; // Southern summer
+      }
+      seasonality = "moderate";
+    }
+    // High latitudes often have low precipitation year-round
+    else {
+      seasonality = "moderate";
+      wetSeason = maritimeInfluence > 0.5 ? "winter" : "summer";
+    }
+    
+    return { seasonality, wetSeason };
+  }
+
+  /**
+   * Calculate day length variation based on latitude
+   * @param {number} latitude - Absolute latitude in degrees
+   * @returns {number} - Variation in hours between longest and shortest day
+   */
+  static getDayLengthVariation(latitude) {
+    // Approximate hours difference between longest and shortest day
+    // Based on calculation: 12 * sin(latitude * pi/180)
+    const variation = 12 * Math.sin(latitude * Math.PI / 180);
+    
+    // Cap the variation for very high latitudes where formula breaks down
+    return Math.min(24, variation);
+  }
+  
+  /**
+   * Get the actual latitude value from a latitude band
+   * @param {string} latitudeBand - The latitude band name
+   * @returns {number} - Approximate central latitude value for the band
+   */
+  static getLatitudeFromBand(latitudeBand) {
+    // Center point of each latitude band
+    const latitudeMap = {
+      "equatorial": 5,   // 0° - 10°
+      "tropical": 20,    // 10° - 30°
+      "subtropical": 38, // 30° - 45°
+      "temperate": 45,   // 30° - 60° (or 45° - 60° with subtropical split)
+      "subarctic": 65,   // 60° - 75°
+      "polar": 80        // 75° - 90°
+    };
+    
+    return latitudeMap[latitudeBand] || 45; // Default to temperate
+  }
+  
+  /**
+   * Calculate the appropriate temperature range for a given biome and latitude band
+   * @param {string} biome - The biome type
+   * @param {string} latitudeBand - The latitude band
+   * @param {number} maritimeInfluence - Maritime influence factor (0-1)
+   * @returns {object} - Seasonal temperature ranges
+   */
+  static getSeasonalTemperatureRanges(biome, latitudeBand, maritimeInfluence = 0.5) {
+    // Get base ranges from biome
+    const biomeRanges = this.getBiomeTemperatureRanges(biome);
+    
+    // Get latitude value
+    const latitude = this.getLatitudeFromBand(latitudeBand);
+    
+    // Apply latitude and continentality modifiers
+    const continentality = 1 - maritimeInfluence;
+    
+    // Calculate annual range (larger for continental, smaller for maritime)
+    const annualRange = biomeRanges.annualRange * (0.7 + continentality * 0.6);
+    
+    // Calculate diurnal range (day-night difference)
+    const diurnalRange = biomeRanges.diurnalRange * (0.8 + continentality * 0.4);
+    
+    // Calculate mean temperatures (adjusted for latitude)
+    const latitudeEffect = (latitude - 45) * -0.5; // Cooler as latitude increases
+    
+    const winterMean = biomeRanges.winter + latitudeEffect - (annualRange / 2);
+    const summerMean = biomeRanges.summer + latitudeEffect + (annualRange / 2);
+    const springMean = (winterMean + summerMean) * 0.4 + biomeRanges.mean * 0.2;
+    const fallMean = (winterMean + summerMean) * 0.45 + biomeRanges.mean * 0.1;
+    
+    return {
+      winter: { mean: winterMean, range: diurnalRange * 0.8 },
+      spring: { mean: springMean, range: diurnalRange },
+      summer: { mean: summerMean, range: diurnalRange * 1.2 },
+      fall: { mean: fallMean, range: diurnalRange },
+      annual: { mean: (winterMean + summerMean) / 2, range: annualRange }
+    };
+  }
+  
+  /**
+   * Get base temperature ranges for different biomes
+   * @param {string} biome - The biome type
+   * @returns {object} - Base temperature ranges
+   */
+  static getBiomeTemperatureRanges(biome) {
+    // These are more detailed and realistic temperature ranges
+    switch (biome) {
+      case "tropical-rainforest":
+        return {
+          mean: 80, winter: 78, summer: 82, 
+          annualRange: 8, diurnalRange: 20
+        };
+      case "tropical-seasonal":
+        return {
+          mean: 78, winter: 72, summer: 84, 
+          annualRange: 15, diurnalRange: 22
+        };
+      case "desert":
+        return {
+          mean: 70, winter: 50, summer: 90, 
+          annualRange: 40, diurnalRange: 30
+        };
+      case "temperate-grassland":
+        return {
+          mean: 55, winter: 30, summer: 80, 
+          annualRange: 50, diurnalRange: 25
+        };
+      case "temperate-deciduous":
+        return {
+          mean: 50, winter: 30, summer: 70, 
+          annualRange: 40, diurnalRange: 20
+        };
+      case "temperate-rainforest":
+        return {
+          mean: 50, winter: 40, summer: 65, 
+          annualRange: 25, diurnalRange: 15
+        };
+      case "boreal-forest":
+        return {
+          mean: 35, winter: 10, summer: 65, 
+          annualRange: 55, diurnalRange: 20
+        };
+      case "tundra":
+        return {
+          mean: 20, winter: -10, summer: 50, 
+          annualRange: 60, diurnalRange: 15
+        };
+      default:
+        return {
+          mean: 55, winter: 35, summer: 75, 
+          annualRange: 40, diurnalRange: 20
+        };
+    }
   }
 }
 

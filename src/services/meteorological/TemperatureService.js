@@ -26,13 +26,13 @@ class TemperatureService {
       "tundra": { min: -30, max: 60, amplitude: 40 }
     };
     
-    // Temperature adjustments based on latitude bands
+    // Temperature adjustments based on latitude bands - IMPROVED
     this.latitudeBandAdjustments = {
-      "equatorial": { minMod: +15, maxMod: +10, amplitude: 0.6 },
-      "tropical": { minMod: +10, maxMod: +8, amplitude: 0.8 },
-      "temperate": { minMod: 0, maxMod: 0, amplitude: 1.0 },
-      "subarctic": { minMod: -10, maxMod: -5, amplitude: 1.2 },
-      "polar": { minMod: -20, maxMod: -12, amplitude: 1.5 }
+      "equatorial": { minMod: +15, maxMod: +10, amplitude: 0.6, seasonal: 0.3 },
+      "tropical": { minMod: +10, maxMod: +8, amplitude: 0.8, seasonal: 0.5 },
+      "temperate": { minMod: 0, maxMod: 0, amplitude: 1.0, seasonal: 1.0 },
+      "subarctic": { minMod: -10, maxMod: -5, amplitude: 1.2, seasonal: 1.3 },
+      "polar": { minMod: -20, maxMod: -12, amplitude: 1.5, seasonal: 1.4 }
     };
   }
 
@@ -95,6 +95,15 @@ class TemperatureService {
     adjustedRange.min += bandAdjustments.minMod;
     adjustedRange.max += bandAdjustments.maxMod;
     adjustedRange.amplitude *= bandAdjustments.amplitude;
+    
+    // Additional adjustment based on actual latitude
+    // Apply more extreme temperature range for continental regions
+    if (latitude > 40 && latitude < 60) {
+      // Continental mid-latitude effect
+      adjustedRange.min -= 5;  // Colder winters
+      adjustedRange.max += 5;  // Warmer summers
+      adjustedRange.amplitude *= 1.2; // More seasonal variation
+    }
     
     return adjustedRange;
   }
@@ -230,7 +239,12 @@ class TemperatureService {
     const adjustedSeasonalFactor = latitude < 0 ? -seasonalFactor : seasonalFactor;
     
     // 3. Calculate annual temperature oscillation based on biome amplitude
-    const annualOscillation = biomeRange.amplitude * adjustedSeasonalFactor;
+    // Get seasonal factor from latitude band - IMPROVED to respect different seasonal intensities
+    const bandAdjustment = this.latitudeBandAdjustments[latitudeBand] || this.latitudeBandAdjustments["temperate"];
+    const seasonalIntensity = bandAdjustment.seasonal || 1.0;
+    
+    // Apply seasonal intensity to the annual temperature swing
+    const annualOscillation = biomeRange.amplitude * adjustedSeasonalFactor * seasonalIntensity;
     
     // 4. Adjusting diurnal oscillation based on day length
     // Calculate normalized day length factor (shorter days = less heating)
@@ -265,8 +279,22 @@ class TemperatureService {
     // 7. Calculate mean annual temperature for this latitude and biome
     const meanAnnualTemp = (biomeRange.max + biomeRange.min) / 2;
     
-    // 8. Final temperature: mean + seasonal variation + daily variation
-    return meanAnnualTemp + annualOscillation + diurnalOscillation;
+          // 8. Apply Continental Effect - IMPROVED
+    // Further from coast = more extreme temperature variations
+    let continentalEffect = 0;
+    if (latitude > 30 && latitude < 70) {
+      // Continental effect strongest in mid-latitudes
+      const continentalFactor = (1 - (biomeRange.maritimeInfluence || 0.5)) * 0.7;
+      // Amplify seasonal and diurnal temperature differences
+      if (seasonalFactor > 0) {  // Summer
+        continentalEffect = continentalFactor * diurnalFactor * 8; // Hotter days
+      } else {  // Winter
+        continentalEffect = -continentalFactor * Math.abs(seasonalFactor) * 10; // Colder winters
+      }
+    }
+    
+    // 9. Final temperature: mean + seasonal variation + daily variation + continental effect
+    return meanAnnualTemp + annualOscillation + diurnalOscillation + continentalEffect;
   }
 
   /**
