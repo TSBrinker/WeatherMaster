@@ -723,8 +723,21 @@ const WeatherDashboard = () => {
         <div className="empty-state-icon">🗺️</div>
         <h2 className="empty-state-title">No Region Selected</h2>
         <p className="empty-state-desc">
-          Please select or create a region to view weather information.
+          To get started, you need to create or select a region.
         </p>
+        <div className="mt-4 flex flex-col items-center">
+          <button
+            onClick={() => {
+              const headerButton = document.querySelector(
+                'button[title="Regions & Worlds"]'
+              );
+              if (headerButton) headerButton.click();
+            }}
+            className="mt-4 btn btn-primary"
+          >
+            Open Regions Menu
+          </button>
+        </div>
       </div>
     );
   }

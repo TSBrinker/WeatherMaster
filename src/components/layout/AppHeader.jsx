@@ -49,6 +49,7 @@ const AppHeader = () => {
       </div>
 
       <div className="app-controls">
+        <span className="font-medium">Regions</span>
         {/* Hamburger menu button */}
         <button
           className="icon-button"

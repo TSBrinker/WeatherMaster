@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
 import { usePreferences } from "../../contexts/PreferencesContext";
+import GameDateInput from "../common/GameDateInput";
 
 const FirstTimeSetup = ({ onComplete }) => {
   const [step, setStep] = useState(1);
@@ -32,18 +33,29 @@ const FirstTimeSetup = ({ onComplete }) => {
   const handleWeatherSystemSubmit = (e) => {
     e.preventDefault();
 
-    // Save world settings
     try {
-      const [year, month, day] = worldData.gameDate.split("-").map(Number);
-      const dateTime = new Date(year, month - 1, day);
+      // Create a date from the exact parts to avoid browser auto-corrections
+      const [yearStr, monthStr, dayStr] = worldData.gameDate.split("-");
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1; // 0-indexed months in JS
+      const day = parseInt(dayStr, 10);
+
+      const dateTime = new Date();
+      dateTime.setFullYear(year); // Set year first to avoid auto-correction
+      dateTime.setMonth(month);
+      dateTime.setDate(day);
       dateTime.setHours(parseInt(worldData.hourOfDay, 10), 0, 0, 0);
 
+      // Save world settings
       setWorldName(worldData.worldName);
       setGameTime(dateTime);
       setIsConfigured(true);
 
       // Save weather system preference
       setWeatherSystem(weatherSystem);
+
+      // Add a dedicated flag indicating setup was completed
+      localStorage.setItem("gm-weather-companion-setup-completed", "true");
 
       if (onComplete) onComplete();
     } catch (error) {
@@ -96,38 +108,17 @@ const FirstTimeSetup = ({ onComplete }) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label htmlFor="gameDate" className="block mb-2">
-                  Game Date
-                </label>
-                <input
-                  type="date"
-                  id="gameDate"
-                  name="gameDate"
-                  value={worldData.gameDate}
-                  onChange={handleWorldDataChange}
-                  className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                  required
-                />
-                <div className="text-sm text-gray-400 mt-1">
-                  The date in your game world
-                </div>
-              </div>
-              <div>
-                <label htmlFor="hourOfDay" className="block mb-2">
-                  Hour of Day
-                </label>
-                <select
-                  id="hourOfDay"
-                  name="hourOfDay"
-                  value={worldData.hourOfDay}
-                  onChange={handleWorldDataChange}
-                  className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                  required
-                >
-                  {hoursOptions}
-                </select>
+            <div className="mb-4">
+              <label className="block mb-2">Game Date</label>
+              <GameDateInput
+                id="setup-date"
+                initialValue={worldData.gameDate}
+                onChange={(date) =>
+                  setWorldData((prev) => ({ ...prev, gameDate: date }))
+                }
+              />
+              <div className="text-sm text-gray-400 mt-1">
+                The date in your game world
               </div>
             </div>
 

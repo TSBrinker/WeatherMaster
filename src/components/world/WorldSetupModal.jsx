@@ -4,16 +4,19 @@ import { useWorldSettings } from "../../contexts/WorldSettings";
 import { useWorld } from "../../contexts/WorldContext"; // Add this import
 
 const WorldSetupModal = ({ onClose }) => {
-  const { state, setWorldName, setGameTime, setIsConfigured } = useWorldSettings();
+  const { state, setWorldName, setGameTime, setIsConfigured } =
+    useWorldSettings();
   const { setCurrentDate } = useWorld(); // Get setCurrentDate from WorldContext
 
   // Get current date from state or use current date as fallback
-  const currentGameDate = state.gameTime ? new Date(state.gameTime) : new Date();
+  const currentGameDate = state.gameTime
+    ? new Date(state.gameTime)
+    : new Date();
 
   // Form state
   const [formData, setFormData] = useState({
     worldName: state.worldName || "My Fantasy World",
-    gameDate: currentGameDate.toISOString().split('T')[0], // yyyy-mm-dd format for date input
+    gameDate: currentGameDate.toISOString().split("T")[0], // yyyy-mm-dd format for date input
     hourOfDay: currentGameDate.getHours(),
   });
 
@@ -29,17 +32,24 @@ const WorldSetupModal = ({ onClose }) => {
     e.preventDefault();
 
     try {
-      // Create a new date object with the selected date and time
-      const [year, month, day] = formData.gameDate.split('-').map(Number);
-      const dateTime = new Date(year, month - 1, day);
+      // Create date from exact parts to avoid browser auto-corrections
+      const [yearStr, monthStr, dayStr] = formData.gameDate.split("-");
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10) - 1; // 0-indexed months in JS
+      const day = parseInt(dayStr, 10);
+
+      const dateTime = new Date();
+      dateTime.setFullYear(year); // Set year first to avoid auto-correction
+      dateTime.setMonth(month);
+      dateTime.setDate(day);
       dateTime.setHours(parseInt(formData.hourOfDay, 10), 0, 0, 0);
-      
+
       // Important: Update both contexts to ensure synchronization
       setWorldName(formData.worldName);
       setGameTime(dateTime);
       setCurrentDate(dateTime); // Also update in the WorldContext
       setIsConfigured(true);
-      
+
       // Force a re-render by setting a small timeout
       setTimeout(() => {
         // Close modal
@@ -96,38 +106,17 @@ const WorldSetupModal = ({ onClose }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="gameDate" className="block mb-2">
-                Game Date
-              </label>
-              <input
-                type="date"
-                id="gameDate"
-                name="gameDate"
-                value={formData.gameDate}
-                onChange={handleChange}
-                className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                required
-              />
-              <div className="text-sm text-gray-400 mt-1">
-                The date in your game world
-              </div>
-            </div>
-            <div>
-              <label htmlFor="hourOfDay" className="block mb-2">
-                Hour of Day
-              </label>
-              <select
-                id="hourOfDay"
-                name="hourOfDay"
-                value={formData.hourOfDay}
-                onChange={handleChange}
-                className="w-full p-2 rounded bg-surface-light text-white border border-border"
-                required
-              >
-                {hoursOptions}
-              </select>
+          <div>
+            <label className="block mb-2">Game Date</label>
+            <GameDateInput
+              id="world-setup-date"
+              initialValue={formData.gameDate}
+              onChange={(date) =>
+                setFormData((prev) => ({ ...prev, gameDate: date }))
+              }
+            />
+            <div className="text-sm text-gray-400 mt-1">
+              The date in your game world
             </div>
           </div>
 

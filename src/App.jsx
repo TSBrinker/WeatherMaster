@@ -37,6 +37,18 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    // Check specifically if setup was completed
+    const setupCompleted = localStorage.getItem(
+      "gm-weather-companion-setup-completed"
+    );
+
+    // Only show first-time setup if it hasn't been explicitly completed
+    if (!setupCompleted) {
+      setShowFirstTimeSetup(true);
+    }
+  }, []);
+
   return (
     <PreferencesProvider>
       <WorldSettingsProvider>

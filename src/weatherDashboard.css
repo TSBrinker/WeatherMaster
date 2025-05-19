@@ -832,3 +832,27 @@
 .weather-effects-content h3 {
   margin-bottom: 0.75rem;
 }
+
+.game-date-input {
+  display: grid;
+  grid-template-columns: 3fr 4fr 2fr;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add special style for year field to handle negative and large numbers */
+.date-input-group input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Remove spin buttons for Chrome, Safari, Edge, Opera */
+.date-input-group input[type="number"]::-webkit-outer-spin-button,
+.date-input-group input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
