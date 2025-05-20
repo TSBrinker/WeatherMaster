@@ -36,15 +36,22 @@ class TemperatureService {
     };
   }
 
-  /**
-   * Calculate base temperature at initialization
-   * @param {object} profile - Region profile
-   * @param {object} seasonalBaseline - Seasonal baseline data (still used for variance)
-   * @param {Date} date - Current date
-   * @param {number} hour - Current hour (0-23)
-   * @returns {number} - Temperature in °F
-   */
-  calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
+/**
+ * Calculate base temperature at initialization
+ * @param {object} profile - Region profile
+ * @param {object} seasonalBaseline - Seasonal baseline data (still used for variance)
+ * @param {Date} date - Current date
+ * @param {number} hour - Current hour (0-23)
+ * @returns {number} - Temperature in °F
+ */
+calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
+  try {
+    // Guard against undefined profile
+    if (!profile) {
+      console.error("Missing profile in calculateBaseTemperature");
+      return 70; // Default temperature
+    }
+
     // Calculate physics-based temperature from solar factors
     const dayOfYear = this.getDayOfYear(date);
     
@@ -70,11 +77,35 @@ class TemperatureService {
     );
     
     // Add some randomness - scale randomness by the seasonal variance
-    const randomFactor = (Math.random() * 2 - 1) * 
-                         (seasonalBaseline.temperature.variance * 0.2);
+    // Completely rewritten with thorough error checking
+    let randomFactor = 0;
+    
+    try {
+      // Check each part of the path for validity
+      if (seasonalBaseline && 
+          typeof seasonalBaseline === 'object' && 
+          seasonalBaseline.temperature && 
+          typeof seasonalBaseline.temperature === 'object' &&
+          seasonalBaseline?.temperature?.variance !== undefined && 
+          typeof seasonalBaseline?.temperature?.variance === 'number') {
+        // Use the provided variance
+        randomFactor = (Math.random() * 2 - 1) * (seasonalBaseline?.temperature?.variance * 0.2);
+      } else {
+        // Fallback to a default random factor
+        randomFactor = (Math.random() * 2 - 1) * 2; // Default factor
+        console.log("Using default random factor for temperature");
+      }
+    } catch (error) {
+      console.error("Error calculating temperature randomness:", error);
+      randomFactor = (Math.random() * 2 - 1) * 2; // Default factor
+    }
     
     return baseTemp + randomFactor;
+  } catch (error) {
+    console.error("Error in calculateBaseTemperature:", error);
+    return 70; // Default fallback temperature
   }
+}
   
   /**
    * Adjust biome temperature range based on latitude

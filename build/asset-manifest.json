@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/WeatherMaster/static/css/main.cf021445.css",
-    "main.js": "/WeatherMaster/static/js/main.b39ab6f3.js",
+    "main.js": "/WeatherMaster/static/js/main.3d010c93.js",
     "index.html": "/WeatherMaster/index.html",
     "main.cf021445.css.map": "/WeatherMaster/static/css/main.cf021445.css.map",
-    "main.b39ab6f3.js.map": "/WeatherMaster/static/js/main.b39ab6f3.js.map"
+    "main.3d010c93.js.map": "/WeatherMaster/static/js/main.3d010c93.js.map"
   },
   "entrypoints": [
     "static/css/main.cf021445.css",
-    "static/js/main.b39ab6f3.js"
+    "static/js/main.3d010c93.js"
   ]
 }

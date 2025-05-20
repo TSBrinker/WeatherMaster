@@ -1,10 +1,9 @@
 // src/components/forms/RegionFormModal.jsx
-// Here's a simplified version
-
 import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
+import weatherManager from "../../services/weatherManager";
 
 const RegionFormModal = ({ onClose }) => {
   const { createRegion } = useRegion();
@@ -62,34 +61,64 @@ const RegionFormModal = ({ onClose }) => {
     setFormData((prev) => ({ ...prev, templateId }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    // 1. Create the region with template
-    const newRegion = createRegion({
-      name: formData.name,
-      latitudeBand: formData.latitudeBand,
-      templateId: formData.templateId,
-      climate: formData.climate,
-    });
-    
-    // 2. Add a short delay to ensure state updates are processed
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // 3. Force weather regeneration for the new region
-    if (newRegion && newRegion.id) {
-      // This part depends on how your weather manager is structured
-      weatherManager.regenerateWeather(newRegion.id);
+    try {
+      // MIRRORING APPROACH FROM REGION EDIT MODAL
+      // Add weatherType explicitly
+      const weatherType = preferences.weatherSystem || "diceTable";
+
+      // Create region based on template or basic parameters
+      let newRegion;
+      if (formData.templateId) {
+        newRegion = createRegion({
+          name: formData.name,
+          latitudeBand: formData.latitudeBand,
+          templateId: formData.templateId,
+          // Still pass climate in case it's needed for fallback
+          climate: formData.climate,
+          // Explicitly add weatherType
+          weatherType: weatherType,
+        });
+      } else {
+        newRegion = createRegion({
+          name: formData.name,
+          climate: formData.climate,
+          latitudeBand: formData.latitudeBand,
+          templateId: null, // Explicitly clear template ID if none selected
+          // Explicitly add weatherType
+          weatherType: weatherType,
+        });
+      }
+
+      // Close the modal immediately
+      onClose();
+
+      // Initialize weather after a short delay
+      if (newRegion && newRegion.id) {
+        setTimeout(() => {
+          try {
+            weatherManager.initializeWeather(
+              newRegion.id,
+              newRegion.climate ||
+                newRegion.profile.climate ||
+                "temperate-deciduous",
+              "auto",
+              new Date(),
+              weatherType // Pass weather type explicitly
+            );
+          } catch (error) {
+            console.error("Error initializing weather:", error);
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Error creating region:", error);
+      setIsSubmitting(false);
     }
-    
-    onClose();
-  } catch (error) {
-    console.error("Error creating region:", error);
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // Handle click outside to close
   const handleModalClick = (e) => {
@@ -192,49 +221,6 @@ const handleSubmit = async (e) => {
               )}
             </div>
           )}
-
-          {/* <div className="mb-4">
-            <label htmlFor="climate" className="block mb-2">
-              Biome Type
-            </label>
-            <select
-              id="climate"
-              name="climate"
-              value={formData.climate}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-surface-light text-white border border-border"
-              required
-            >
-              <option value="tropical-rainforest">Tropical Rainforest</option>
-              <option value="tropical-seasonal">Tropical Seasonal</option>
-              <option value="desert">Desert</option>
-              <option value="temperate-grassland">Temperate Grassland</option>
-              <option value="temperate-deciduous">
-                Temperate Deciduous Forest
-              </option>
-              <option value="temperate-rainforest">Temperate Rainforest</option>
-              <option value="boreal-forest">Boreal Forest</option>
-              <option value="tundra">Tundra</option>
-            </select>
-            <div className="text-sm text-gray-400 mt-1">
-              Determines weather patterns and temperature ranges
-            </div>
-          </div> */}
-
-          {/* Weather system info (now just showing the global setting) */}
-          {/* <div className="mb-4 p-3 bg-surface-light rounded">
-            <h3 className="font-semibold mb-1">Weather Generation System</h3>
-            <div className="text-sm text-gray-300">
-              Using{" "}
-              {preferences.weatherSystem === "meteorological"
-                ? "Advanced (Meteorological)"
-                : "Basic (Dice Tables)"}{" "}
-              system for all regions
-            </div>
-            <div className="text-xs text-gray-400 mt-1">
-              This setting can be changed in App Preferences
-            </div>
-          </div> */}
 
           <div className="flex justify-end gap-3 pt-3 border-t border-border mt-6">
             <button type="button" onClick={onClose} className="btn">

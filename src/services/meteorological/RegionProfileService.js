@@ -800,6 +800,85 @@ createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides 
   
   // Use the existing getRegionProfile method to ensure all calculated properties are set
   return this.getRegionProfile(mergedParams.biome, mergedParams);
+}createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides = {}) {
+  // Import template parameters
+  const { regionTemplates } = require('../../data-tables/region-templates');
+  
+  // Get base template - with better debugging
+  const template = latitudeBand === "special"
+    ? regionTemplates.special[templateId]
+    : regionTemplates[latitudeBand]?.[templateId];
+  
+  if (!template || !template.parameters) {
+    console.error(`Template not found or incomplete: ${latitudeBand}/${templateId}`);
+    // Fall back to a default biome based on latitude band with explicit logging
+    const fallbackBiome = this.getFallbackBiome(latitudeBand);
+    console.log(`Using fallback biome for ${latitudeBand}: ${fallbackBiome}`);
+    return this.getRegionProfile(fallbackBiome, { name: regionName });
+  }
+  
+  const templateParams = template.parameters;
+  
+  // CRITICAL FIX: Make sure we use the template's default biome
+  const biome = template.defaultBiome || this.getBiomeFromParameters(templateParams);
+  
+  console.log(`Creating profile from template: ${latitudeBand}/${templateId}`);
+  console.log(`Using biome: ${biome}, template latitude: ${templateParams.latitude}`);
+  console.log(`Template params:`, JSON.stringify(templateParams));
+  
+  // Create base profile parameters from template WITH EXPLICIT PROPERTIES
+  const baseParams = {
+    name: regionName || template.name,
+    biome, // Use the determined biome directly
+    climate: biome, // CRITICAL FIX: Also set climate to same value for backward compatibility
+    latitude: templateParams.latitude,
+    elevation: templateParams.elevation,
+    maritimeInfluence: templateParams.maritimeInfluence,
+    terrainRoughness: templateParams.terrainRoughness,
+    specialFactors: templateParams.specialFactors,
+    temperatureProfile: templateParams.temperatureProfile,
+    humidityProfile: templateParams.humidityProfile,
+    latitudeBand, // IMPORTANT: Keep the original latitude band
+    templateId,
+    // Store template information for reference
+    template: {
+      name: template.name,
+      description: template.description,
+      gameplayImpact: template.gameplayImpact
+    }
+  };
+  
+  // Merge with any custom overrides
+  const mergedParams = { ...baseParams, ...customOverrides };
+  
+  // Special handling for nested property overrides
+  if (customOverrides.specialFactors) {
+    mergedParams.specialFactors = { 
+      ...baseParams.specialFactors, 
+      ...customOverrides.specialFactors 
+    };
+  }
+  if (customOverrides.temperatureProfile) {
+    mergedParams.temperatureProfile = this.mergeTemperatureProfiles(
+      baseParams.temperatureProfile, 
+      customOverrides.temperatureProfile
+    );
+  }
+  if (customOverrides.humidityProfile) {
+    mergedParams.humidityProfile = this.mergeHumidityProfiles(
+      baseParams.humidityProfile, 
+      customOverrides.humidityProfile
+    );
+  }
+  
+  // Use the existing getRegionProfile method to ensure all calculated properties are set
+  // BUT here's the key: pass both biome AND latitudeBand explicitly
+  const finalProfile = this.getRegionProfile(mergedParams.biome, mergedParams);
+  
+  // One last verification check
+  console.log(`Final profile created with biome: ${finalProfile.biome}, latitude: ${finalProfile.latitude}`);
+  
+  return finalProfile;
 }
 
 /**
