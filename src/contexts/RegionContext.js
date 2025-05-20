@@ -3,6 +3,7 @@ import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { storageUtils } from '../utils/storageUtils';
 import RegionProfileService from '../services/meteorological/RegionProfileService';
+import { processRegionData } from '../utils/regionUtils';
 
 // Storage keys for localStorage
 const STORAGE_KEY = 'gm-weather-companion-regions';
@@ -185,76 +186,39 @@ export const useRegion = () => {
   };
 
   // Action creators
-  const createRegion = (regionData) => {
-    // Check if we're creating with a template
-    let profile = null;
-    
-    if (regionData.templateId) {
-      // Create region profile from template
-      profile = createRegionProfileFromTemplate(
-        regionData.name,
-        regionData.latitudeBand,
-        regionData.templateId
-      );
-    } else {
-      // Create basic region profile from climate type
-      profile = regionProfileService.getRegionProfile(regionData.climate, {
-        name: regionData.name,
-        latitudeBand: regionData.latitudeBand
-      });
-    }
-    
-    // Create the new region with the profile
-    const newRegion = {
-      id: uuidv4(),
-      name: regionData.name,
-      profile: profile,
-      templateInfo: regionData.templateId ? {
-        latitudeBand: regionData.latitudeBand,
-        templateId: regionData.templateId
-      } : null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    dispatch({ type: ACTIONS.ADD_REGION, payload: newRegion });
-    return newRegion;
-  };
+const createRegion = (regionData) => {
+  const preferredWeatherSystem = preferences?.weatherSystem || 'diceTable';
+  
+  const newRegion = processRegionData(
+    regionData,
+    null,
+    regionProfileService,
+    preferredWeatherSystem
+  );
+  
+  dispatch({ type: ACTIONS.ADD_REGION, payload: newRegion });
+  return newRegion;
+};
 
-  const updateRegion = (id, regionData) => {
-    const existingRegion = state.regions.find(region => region.id === id);
-    
-    // If updating with template-related data, regenerate the profile
-    let profile = existingRegion.profile;
-    
-    if (regionData.templateId) {
-      profile = createRegionProfileFromTemplate(
-        regionData.name || existingRegion.name,
-        regionData.latitudeBand || existingRegion.profile.latitudeBand,
-        regionData.templateId
-      );
-    } else if (regionData.climate) {
-      // Update with a new climate type
-      profile = regionProfileService.getRegionProfile(regionData.climate, {
-        name: regionData.name || existingRegion.name,
-        latitudeBand: regionData.latitudeBand || existingRegion.profile.latitudeBand
-      });
-    }
-    
-    const updatedRegion = {
-      ...existingRegion,
-      ...regionData,
-      profile: profile,
-      templateInfo: regionData.templateId ? {
-        latitudeBand: regionData.latitudeBand || existingRegion.profile.latitudeBand,
-        templateId: regionData.templateId
-      } : existingRegion.templateInfo,
-      updatedAt: new Date().toISOString()
-    };
-    
-    dispatch({ type: ACTIONS.UPDATE_REGION, payload: updatedRegion });
-    return updatedRegion;
-  };
+const updateRegion = (id, regionData) => {
+  const existingRegion = state.regions.find(region => region.id === id);
+  const preferredWeatherSystem = preferences?.weatherSystem || 'diceTable';
+  
+  if (!existingRegion) {
+    console.error(`Region with id ${id} not found`);
+    return null;
+  }
+  
+  const updatedRegion = processRegionData(
+    regionData,
+    existingRegion,
+    regionProfileService,
+    preferredWeatherSystem
+  );
+  
+  dispatch({ type: ACTIONS.UPDATE_REGION, payload: updatedRegion });
+  return updatedRegion;
+};
 
   const deleteRegion = (id) => {
     dispatch({ type: ACTIONS.DELETE_REGION, payload: id });

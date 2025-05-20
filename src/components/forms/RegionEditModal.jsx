@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
+import weatherManager from "../../services/weatherManager"; // Add this import
 
 const RegionEditModal = ({ region, onClose }) => {
   const { updateRegion } = useRegion();
@@ -67,24 +68,42 @@ const RegionEditModal = ({ region, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      // Update region based on template or basic parameters
-      if (formData.templateId) {
-        updateRegion(region.id, {
-          name: formData.name,
-          latitudeBand: formData.latitudeBand,
-          templateId: formData.templateId,
-          // Still pass climate in case it's needed for fallback
-          climate: formData.climate,
-        });
-      } else {
-        updateRegion(region.id, {
-          name: formData.name,
-          climate: formData.climate,
-          latitudeBand: formData.latitudeBand,
-          templateId: null, // Explicitly clear template ID if none selected
-        });
-      }
+      // Get weather system preference
+      const weatherType = preferences.weatherSystem || "diceTable";
+
+      // Update the region with weather type
+      const updatedRegion = updateRegion(region.id, {
+        name: formData.name,
+        climate: formData.climate,
+        latitudeBand: formData.latitudeBand,
+        templateId: formData.templateId,
+        weatherType: weatherType,
+      });
+
+      // Close modal immediately
       onClose();
+
+      // Reinitialize weather after a delay (optional)
+      if (updatedRegion && updatedRegion.id) {
+        setTimeout(() => {
+          try {
+            console.log(
+              `Reinitializing weather for region ${updatedRegion.id}`
+            );
+            weatherManager.initializeWeather(
+              updatedRegion.id,
+              updatedRegion.climate ||
+                (updatedRegion.profile && updatedRegion.profile.climate) ||
+                "temperate-deciduous",
+              "auto",
+              new Date(),
+              weatherType
+            );
+          } catch (error) {
+            console.error("Error reinitializing weather:", error);
+          }
+        }, 100);
+      }
     } catch (error) {
       console.error("Error updating region:", error);
       setIsSubmitting(false);
@@ -191,51 +210,6 @@ const RegionEditModal = ({ region, onClose }) => {
               )}
             </div>
           )}
-
-          {/* <div className="mb-4">
-            <label htmlFor="climate" className="block mb-2">
-              Biome Type
-            </label>
-            <select
-              id="climate"
-              name="climate"
-              value={formData.climate}
-              onChange={handleChange}
-              className="w-full p-2 rounded bg-surface-light text-white border border-border"
-              required
-            >
-              <option value="tropical-rainforest">Tropical Rainforest</option>
-              <option value="tropical-seasonal">Tropical Seasonal</option>
-              <option value="desert">Desert</option>
-              <option value="temperate-grassland">Temperate Grassland</option>
-              <option value="temperate-deciduous">
-                Temperate Deciduous Forest
-              </option>
-              <option value="temperate-rainforest">
-                Temperate Rainforest
-              </option>
-              <option value="boreal-forest">Boreal Forest</option>
-              <option value="tundra">Tundra</option>
-            </select>
-            <div className="text-sm text-gray-400 mt-1">
-              Determines weather patterns and temperature ranges
-            </div>
-          </div> */}
-
-          {/* Weather system info (now just showing the global setting) */}
-          {/* <div className="mb-4 p-3 bg-surface-light rounded">
-            <h3 className="font-semibold mb-1">Weather Generation System</h3>
-            <div className="text-sm text-gray-300">
-              Using{" "}
-              {preferences.weatherSystem === "meteorological"
-                ? "Advanced (Meteorological)"
-                : "Basic (Dice Tables)"}{" "}
-              system for all regions
-            </div>
-            <div className="text-xs text-gray-400 mt-1">
-              This setting can be changed in App Preferences
-            </div>
-          </div> */}
 
           <div className="flex justify-end gap-3 pt-3 border-t border-border mt-6">
             <button type="button" onClick={onClose} className="btn">

@@ -53,18 +53,27 @@ class SunriseSunsetService {
     }
     
     // Convert latitude band to actual latitude value for calculations
-    getLatitudeFromBand(latitudeBand) {
-      // Center point of each latitude band
-      const latitudeMap = {
-        "equatorial": 5,   // 0° - 10°
-        "tropical": 20,    // 10° - 30°
-        "temperate": 45,   // 30° - 60°
-        "subarctic": 65,   // 60° - 75°
-        "polar": 80        // 75° - 90°
-      };
-      
-      return latitudeMap[latitudeBand] || 45; // Default to temperate
-    }
+getLatitudeFromBand(latitudeBand) {
+  // Add debugging
+  console.log(`Getting latitude for band: ${latitudeBand}`);
+  
+  // Center point of each latitude band with more robust fallback
+  const latitudeMap = {
+    "equatorial": 5,   // 0° - 10°
+    "tropical": 20,    // 10° - 30°
+    "temperate": 45,   // 30° - 60°
+    "subarctic": 65,   // 60° - 75°
+    "polar": 80        // 75° - 90°
+  };
+  
+  // More robust fallback logic
+  const latitude = latitudeBand && latitudeMap[latitudeBand] 
+    ? latitudeMap[latitudeBand] 
+    : 45; // Default to temperate
+  
+  console.log(`Resolved latitude: ${latitude}° (${latitudeBand || 'default'})`);
+  return latitude;
+}
     
     // Get sunrise and sunset times
     getSunriseSunset(latitudeBand, date) {

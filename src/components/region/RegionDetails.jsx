@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import MeteorologicalDebugPanel from "../debug/MeteorologicalDebugPanel";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
+import RegionDebug from "../debug/RegionDebug";
 
 const RegionDetails = ({
   region,
@@ -135,6 +136,7 @@ const RegionDetails = ({
 
   return (
     <div className="region-details-section">
+      <RegionDebug />
       <div className="card p-4">
         <h2 className="text-xl font-semibold mb-4">Region Details</h2>
 

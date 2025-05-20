@@ -66,48 +66,34 @@ const RegionFormModal = ({ onClose }) => {
     setIsSubmitting(true);
 
     try {
-      // MIRRORING APPROACH FROM REGION EDIT MODAL
-      // Add weatherType explicitly
+      // Get weather system preference
       const weatherType = preferences.weatherSystem || "diceTable";
 
-      // Create region based on template or basic parameters
-      let newRegion;
-      if (formData.templateId) {
-        newRegion = createRegion({
-          name: formData.name,
-          latitudeBand: formData.latitudeBand,
-          templateId: formData.templateId,
-          // Still pass climate in case it's needed for fallback
-          climate: formData.climate,
-          // Explicitly add weatherType
-          weatherType: weatherType,
-        });
-      } else {
-        newRegion = createRegion({
-          name: formData.name,
-          climate: formData.climate,
-          latitudeBand: formData.latitudeBand,
-          templateId: null, // Explicitly clear template ID if none selected
-          // Explicitly add weatherType
-          weatherType: weatherType,
-        });
-      }
+      // Create region with weather type
+      const newRegion = createRegion({
+        name: formData.name,
+        climate: formData.climate,
+        latitudeBand: formData.latitudeBand,
+        templateId: formData.templateId,
+        weatherType: weatherType,
+      });
 
-      // Close the modal immediately
+      // Close modal immediately
       onClose();
 
-      // Initialize weather after a short delay
+      // Initialize weather after a delay
       if (newRegion && newRegion.id) {
         setTimeout(() => {
           try {
+            console.log(`Initializing weather for region ${newRegion.id}`);
             weatherManager.initializeWeather(
               newRegion.id,
               newRegion.climate ||
-                newRegion.profile.climate ||
+                (newRegion.profile && newRegion.profile.climate) ||
                 "temperate-deciduous",
               "auto",
               new Date(),
-              weatherType // Pass weather type explicitly
+              weatherType
             );
           } catch (error) {
             console.error("Error initializing weather:", error);
