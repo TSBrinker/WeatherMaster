@@ -730,91 +730,25 @@ class RegionProfileService {
  * @returns {object} - Complete region profile
  */
 createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides = {}) {
-  // Import template parameters from the region-templates module
-  const { regionTemplates, getTemplateParameters } = require('../../data-tables/region-templates');
+  console.log(`[ProfileService] Creating profile from template: ${latitudeBand}/${templateId}, name: ${regionName}`);
   
-  // Get base template
-  const template = latitudeBand === "special"
-    ? regionTemplates.special[templateId]
-    : regionTemplates[latitudeBand]?.[templateId];
-  
-  if (!template || !template.parameters) {
-    console.error(`Template not found: ${latitudeBand}/${templateId}`);
-    // Fall back to a default biome based on latitude band
-    const fallbackBiome = this.getFallbackBiome(latitudeBand);
-    return this.getRegionProfile(fallbackBiome, { name: regionName });
-  }
-  
-  const templateParams = template.parameters;
-  
-  // CRITICAL FIX: Make sure we use the template's default biome
-  // This addresses the issue where template biomes weren't being respected
-  const biome = template.defaultBiome || this.getBiomeFromParameters(templateParams);
-  
-  console.log(`Creating profile from template: ${latitudeBand}/${templateId}, using biome: ${biome}`);
-  
-  // Create base profile parameters from template
-  const baseParams = {
-    name: regionName || template.name,
-    biome, // Use the determined biome directly
-    climate: biome, // CRITICAL FIX: Also set climate to same value for backward compatibility
-    latitude: templateParams.latitude,
-    elevation: templateParams.elevation,
-    maritimeInfluence: templateParams.maritimeInfluence,
-    terrainRoughness: templateParams.terrainRoughness,
-    specialFactors: templateParams.specialFactors,
-    temperatureProfile: templateParams.temperatureProfile,
-    humidityProfile: templateParams.humidityProfile,
-    latitudeBand,
-    templateId,
-    // Store template information for reference
-    template: {
-      name: template.name,
-      description: template.description,
-      gameplayImpact: template.gameplayImpact
-    }
-  };
-  
-  // Merge with any custom overrides
-  const mergedParams = { ...baseParams, ...customOverrides };
-  
-  // Special handling for nested property overrides
-  if (customOverrides.specialFactors) {
-    mergedParams.specialFactors = { 
-      ...baseParams.specialFactors, 
-      ...customOverrides.specialFactors 
-    };
-  }
-  if (customOverrides.temperatureProfile) {
-    mergedParams.temperatureProfile = this.mergeTemperatureProfiles(
-      baseParams.temperatureProfile, 
-      customOverrides.temperatureProfile
-    );
-  }
-  if (customOverrides.humidityProfile) {
-    mergedParams.humidityProfile = this.mergeHumidityProfiles(
-      baseParams.humidityProfile, 
-      customOverrides.humidityProfile
-    );
-  }
-  
-  // Use the existing getRegionProfile method to ensure all calculated properties are set
-  return this.getRegionProfile(mergedParams.biome, mergedParams);
-}createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides = {}) {
   // Import template parameters
   const { regionTemplates } = require('../../data-tables/region-templates');
   
   // Get base template - with better debugging
   const template = latitudeBand === "special"
-    ? regionTemplates.special[templateId]
+    ? regionTemplates.special?.[templateId]
     : regionTemplates[latitudeBand]?.[templateId];
   
   if (!template || !template.parameters) {
-    console.error(`Template not found or incomplete: ${latitudeBand}/${templateId}`);
+    console.error(`[ProfileService] Template not found or incomplete: ${latitudeBand}/${templateId}`);
     // Fall back to a default biome based on latitude band with explicit logging
     const fallbackBiome = this.getFallbackBiome(latitudeBand);
-    console.log(`Using fallback biome for ${latitudeBand}: ${fallbackBiome}`);
-    return this.getRegionProfile(fallbackBiome, { name: regionName });
+    console.log(`[ProfileService] Using fallback biome for ${latitudeBand}: ${fallbackBiome}`);
+    return this.getRegionProfile(fallbackBiome, { 
+      name: regionName,
+      latitudeBand: latitudeBand // CRITICAL: Ensure latitudeBand is passed to fallback biome
+    });
   }
   
   const templateParams = template.parameters;
@@ -822,9 +756,12 @@ createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides 
   // CRITICAL FIX: Make sure we use the template's default biome
   const biome = template.defaultBiome || this.getBiomeFromParameters(templateParams);
   
-  console.log(`Creating profile from template: ${latitudeBand}/${templateId}`);
-  console.log(`Using biome: ${biome}, template latitude: ${templateParams.latitude}`);
-  console.log(`Template params:`, JSON.stringify(templateParams));
+  console.log(`[ProfileService] Using template params:`, {
+    latitudeBand,
+    templateId,
+    biome,
+    latitude: templateParams.latitude
+  });
   
   // Create base profile parameters from template WITH EXPLICIT PROPERTIES
   const baseParams = {
@@ -876,7 +813,11 @@ createProfileFromTemplate(latitudeBand, templateId, regionName, customOverrides 
   const finalProfile = this.getRegionProfile(mergedParams.biome, mergedParams);
   
   // One last verification check
-  console.log(`Final profile created with biome: ${finalProfile.biome}, latitude: ${finalProfile.latitude}`);
+  console.log(`[ProfileService] Final profile created:`, {
+    biome: finalProfile.biome, 
+    latitude: finalProfile.latitude,
+    latitudeBand: finalProfile.latitudeBand
+  });
   
   return finalProfile;
 }

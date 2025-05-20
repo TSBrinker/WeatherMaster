@@ -1,26 +1,48 @@
-// src/components/forms/RegionEditModal.jsx
+// src/components/forms/RegionEditModal.jsx - Fixed
 import React, { useState, useEffect } from "react";
 import { useRegion } from "../../contexts/RegionContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import { getTemplatesForLatitudeBand } from "../../data-tables/region-templates";
-import weatherManager from "../../services/weatherManager"; // Add this import
+import weatherManager from "../../services/weatherManager";
 
 const RegionEditModal = ({ region, onClose }) => {
   const { updateRegion } = useRegion();
   const { state: preferences } = usePreferences();
 
+  // Initialize form data from region with improved extraction
   const [formData, setFormData] = useState({
-    name: region.name,
-    climate: region.climate || "temperate-deciduous",
-    latitudeBand: region.latitudeBand || "temperate",
+    name: region.name || "",
+    climate:
+      region.climate ||
+      (region.profile && region.profile.climate) ||
+      (region.profile && region.profile.biome) ||
+      "temperate-deciduous",
+    latitudeBand:
+      region.latitudeBand ||
+      (region.profile && region.profile.latitudeBand) ||
+      "temperate",
     templateId:
       region.templateId ||
-      (region.templateInfo ? region.templateInfo.templateId : null),
+      (region.templateInfo && region.templateInfo.templateId) ||
+      null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableTemplates, setAvailableTemplates] = useState({});
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+  // Debug log for initial form data
+  useEffect(() => {
+    console.log("[RegionEditModal] Initialized form with data:", formData);
+    console.log("[RegionEditModal] Original region data:", {
+      id: region.id,
+      name: region.name,
+      latitudeBand: region.latitudeBand,
+      profileLatitudeBand: region.profile?.latitudeBand,
+      climate: region.climate,
+      profileClimate: region.profile?.climate || region.profile?.biome,
+    });
+  }, []);
 
   // Update available templates when latitude band changes
   useEffect(() => {
@@ -65,13 +87,25 @@ const RegionEditModal = ({ region, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("[RegionEditModal] Form submitted with data:", formData);
     setIsSubmitting(true);
 
     try {
       // Get weather system preference
-      const weatherType = preferences.weatherSystem || "diceTable";
+      const weatherType =
+        preferences.weatherSystem || region.weatherType || "diceTable";
+      console.log(`[RegionEditModal] Using weather system: ${weatherType}`);
 
       // Update the region with weather type
+      console.log("[RegionEditModal] Calling updateRegion with:", {
+        id: region.id,
+        name: formData.name,
+        climate: formData.climate,
+        latitudeBand: formData.latitudeBand,
+        templateId: formData.templateId,
+        weatherType,
+      });
+
       const updatedRegion = updateRegion(region.id, {
         name: formData.name,
         climate: formData.climate,
@@ -80,32 +114,53 @@ const RegionEditModal = ({ region, onClose }) => {
         weatherType: weatherType,
       });
 
+      console.log("[RegionEditModal] Region updated:", {
+        id: updatedRegion?.id,
+        name: updatedRegion?.name,
+        latitudeBand: updatedRegion?.latitudeBand,
+        profile: {
+          latitudeBand: updatedRegion?.profile?.latitudeBand,
+          biome: updatedRegion?.profile?.biome,
+          climate: updatedRegion?.profile?.climate,
+        },
+      });
+
       // Close modal immediately
       onClose();
 
-      // Reinitialize weather after a delay (optional)
+      // Reinitialize weather after a delay
       if (updatedRegion && updatedRegion.id) {
         setTimeout(() => {
           try {
             console.log(
-              `Reinitializing weather for region ${updatedRegion.id}`
+              `[RegionEditModal] Reinitializing weather for region ${updatedRegion.id}`
             );
+
+            // Determine climate and latitude band from the updated region for weather init
+            const regionClimate =
+              updatedRegion.climate ||
+              (updatedRegion.profile && updatedRegion.profile.climate) ||
+              updatedRegion.profile?.biome ||
+              "temperate-deciduous";
+
+            // Initialize weather with explicit type
             weatherManager.initializeWeather(
               updatedRegion.id,
-              updatedRegion.climate ||
-                (updatedRegion.profile && updatedRegion.profile.climate) ||
-                "temperate-deciduous",
+              regionClimate,
               "auto",
               new Date(),
               weatherType
             );
           } catch (error) {
-            console.error("Error reinitializing weather:", error);
+            console.error(
+              "[RegionEditModal] Error reinitializing weather:",
+              error
+            );
           }
-        }, 100);
+        }, 200); // Slightly longer delay to ensure region is saved
       }
     } catch (error) {
-      console.error("Error updating region:", error);
+      console.error("[RegionEditModal] Error updating region:", error);
       setIsSubmitting(false);
     }
   };
@@ -191,6 +246,30 @@ const RegionEditModal = ({ region, onClose }) => {
               Templates provide pre-configured climate settings with rich
               descriptions and gameplay impacts
             </div>
+          </div>
+
+          {/* Debug info about selected latitude band */}
+          <div className="mb-4 p-2 bg-gray-800 rounded text-xs border border-gray-700">
+            <div>
+              <strong>Selected latitude band:</strong> {formData.latitudeBand}
+            </div>
+            <div>
+              <strong>Default latitude:</strong>{" "}
+              {formData.latitudeBand === "polar"
+                ? "80°"
+                : formData.latitudeBand === "subarctic"
+                ? "65°"
+                : formData.latitudeBand === "temperate"
+                ? "45°"
+                : formData.latitudeBand === "tropical"
+                ? "20°"
+                : "5°"}
+            </div>
+            {formData.latitudeBand === "polar" && (
+              <div className="mt-1 text-green-400">
+                Polar latitude should produce 24hr daylight near summer solstice
+              </div>
+            )}
           </div>
 
           {/* Template details */}

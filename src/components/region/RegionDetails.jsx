@@ -1,4 +1,4 @@
-// src/components/region/RegionDetails.jsx
+// src/components/region/RegionDetails.jsx - Fixed
 import React, { useState, useEffect } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import MeteorologicalDebugPanel from "../debug/MeteorologicalDebugPanel";
@@ -12,6 +12,10 @@ const RegionDetails = ({
   season,
   setSeason,
   onRegenerateWeather,
+  weatherSystemType,
+  onChangeWeatherSystem,
+  showDebug,
+  setShowDebug,
   currentWeather,
 }) => {
   const { state: preferences } = usePreferences();
@@ -134,9 +138,33 @@ const RegionDetails = ({
     return null;
   };
 
+  // Get a human-readable description of the latitude band
+  const getLatitudeBandDescription = (band) => {
+    const descriptions = {
+      equatorial: "Equatorial (0° - 10°)",
+      tropical: "Tropical (10° - 30°)",
+      temperate: "Temperate (30° - 60°)",
+      subarctic: "Subarctic (60° - 75°)",
+      polar: "Polar (75° - 90°)",
+    };
+    return descriptions[band] || band;
+  };
+
+  // Get the latitude value used for calculations
+  const getLatitudeValue = (band) => {
+    const values = {
+      equatorial: 5,
+      tropical: 20,
+      temperate: 45,
+      subarctic: 65,
+      polar: 80,
+    };
+    return values[band] || 45;
+  };
+
   return (
     <div className="region-details-section">
-      <RegionDebug />
+      <RegionDebug region={region} />
       <div className="card p-4">
         <h2 className="text-xl font-semibold mb-4">Region Details</h2>
 
@@ -149,11 +177,20 @@ const RegionDetails = ({
           </div>
           <div className="col-span-2">
             <span className="text-gray-400">Latitude Band:</span>{" "}
-            {getLatitudeBand()}
+            {getLatitudeBandDescription(getLatitudeBand())}
+            <div className="text-xs text-gray-500 mt-1">
+              Calculated as {getLatitudeValue(getLatitudeBand())}° latitude
+            </div>
           </div>
           <div className="col-span-2">
             <span className="text-gray-400">Daylight:</span>{" "}
             {celestialInfo.dayLengthFormatted || "N/A"}
+            {getLatitudeBand() === "polar" && (
+              <div className="text-xs text-green-400 mt-1">
+                Polar regions experience extended daylight in summer and
+                darkness in winter
+              </div>
+            )}
           </div>
         </div>
 
@@ -234,6 +271,20 @@ const RegionDetails = ({
                   {celestialInfo.moonsetTime || "N/A"}
                 </div>
               </div>
+
+              {getLatitudeBand() === "polar" && (
+                <div className="mt-3 p-2 bg-gray-800 rounded text-xs">
+                  <div className="font-semibold mb-1">Polar Regions:</div>
+                  <p>
+                    Near the summer solstice (June 21), polar regions experience
+                    24 hours of daylight.
+                  </p>
+                  <p className="mt-1">
+                    Near the winter solstice (December 21), polar regions
+                    experience 24 hours of darkness.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -247,6 +298,7 @@ const RegionDetails = ({
             <MeteorologicalDebugPanel
               weatherData={currentWeather}
               region={region}
+              weatherService={null}
             />
           </div>
         )}
@@ -261,5 +313,4 @@ const RegionDetails = ({
     </div>
   );
 };
-
 export default RegionDetails;

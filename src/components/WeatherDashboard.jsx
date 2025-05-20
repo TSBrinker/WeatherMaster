@@ -1,4 +1,4 @@
-// src/components/WeatherDashboard.jsx
+// src/components/WeatherDashboard.jsx - Fully Updated
 import React, {
   useState,
   useEffect,
@@ -16,6 +16,7 @@ import moonService from "../services/MoonService";
 import weatherDescriptionService from "../services/WeatherDescriptionService";
 import { getPreciseSkyGradient } from "../utils/SkyGradients";
 import MeteorologicalDebugPanel from "./debug/MeteorologicalDebugPanel";
+import RegionDebug from "./debug/RegionDebug";
 
 // Import components
 import TimeDisplay from "./weather/TimeDisplay";
@@ -100,7 +101,10 @@ const WeatherDashboard = () => {
 
   // Get current celestial data - MEMOIZED to prevent recalculations
   const getCelestialInfo = useCallback(() => {
-    if (!activeRegion)
+    if (!activeRegion) {
+      console.log(
+        "[WeatherDashboard] No active region, returning default celestial info"
+      );
       return {
         sunrise: null,
         sunset: null,
@@ -113,18 +117,43 @@ const WeatherDashboard = () => {
         moonsetTime: "N/A",
         dayLengthFormatted: "N/A",
       };
+    }
 
     try {
-      // Get sun data
+      // Get the proper latitude band with fallback logic
+      const latitudeBand =
+        activeRegion.latitudeBand ||
+        (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+        "temperate";
+
+      console.log(
+        `[WeatherDashboard] Calculating celestial info for ${activeRegion.name}`,
+        {
+          latitudeBand,
+          date: currentDate.toISOString(),
+          isDaylight:
+            latitudeBand === "polar"
+              ? "possible 24hr daylight in summer"
+              : "normal daylight cycle",
+        }
+      );
+
+      // Get sun data with debug info
       const sunData = sunriseSunsetService.getFormattedSunriseSunset(
-        activeRegion.latitudeBand || "temperate",
+        latitudeBand,
         currentDate
       );
+
+      console.log("[WeatherDashboard] Sunrise/sunset result:", {
+        sunriseTime: sunData.sunriseTime,
+        sunsetTime: sunData.sunsetTime,
+        dayLength: sunData.dayLengthFormatted,
+      });
 
       // Get moon data - now uses the cached implementation
       const { moonrise, moonset } = moonService.getMoonTimes(
         currentDate,
-        activeRegion.latitudeBand || "temperate"
+        latitudeBand
       );
 
       // Format time strings consistently with hours:minutes
@@ -148,8 +177,6 @@ const WeatherDashboard = () => {
         moonrise,
         moonset,
         // Ensure all time strings are directly created here
-        sunriseTime: formatTimeString(sunData.sunrise),
-        sunsetTime: formatTimeString(sunData.sunset),
         moonriseTime: formatTimeString(moonrise),
         moonsetTime: formatTimeString(moonset),
       };
@@ -159,19 +186,36 @@ const WeatherDashboard = () => {
         sunrise: null,
         sunset: null,
         isDaytime: false,
-        sunriseTime: "N/A",
-        sunsetTime: "N/A",
+        sunriseTime: "Error",
+        sunsetTime: "Error",
         moonrise: null,
         moonset: null,
-        moonriseTime: "N/A",
-        moonsetTime: "N/A",
-        dayLengthFormatted: "N/A",
+        moonriseTime: "Error",
+        moonsetTime: "Error",
+        dayLengthFormatted: "Error",
       };
     }
   }, [activeRegion, currentDate]);
 
   // Memoize celestial info to prevent recalculation on every render
   const celestialInfo = useMemo(() => getCelestialInfo(), [getCelestialInfo]);
+
+  // Log celestial info changes
+  useEffect(() => {
+    if (celestialInfo && activeRegion) {
+      console.log(
+        `[WeatherDashboard] Celestial info updated for ${activeRegion.name}:`,
+        {
+          dayLength: celestialInfo.dayLengthFormatted,
+          latitudeBand:
+            activeRegion.latitudeBand ||
+            activeRegion.profile?.latitudeBand ||
+            "unknown",
+          date: currentDate.toISOString().split("T")[0],
+        }
+      );
+    }
+  }, [celestialInfo, activeRegion, currentDate]);
 
   // Update theme colors - with stable dependency check and throttling
   useEffect(() => {
@@ -209,7 +253,9 @@ const WeatherDashboard = () => {
       const skyColors = skyColorService.calculateSkyColor(
         weatherTime,
         weatherCondition,
-        activeRegion.latitudeBand || "temperate"
+        activeRegion.latitudeBand ||
+          activeRegion.profile?.latitudeBand ||
+          "temperate"
       );
 
       // Update theme colors
@@ -282,7 +328,16 @@ const WeatherDashboard = () => {
     prevRegionIdRef.current = regionId;
     prevDateRef.current = dateString;
 
-    // console.log(`Initializing weather: region=${regionId}, date=${dateString}`);
+    console.log(`[WeatherDashboard] Initializing weather:`, {
+      region: regionId,
+      name: activeRegion.name,
+      date: dateString,
+      latitudeBand:
+        activeRegion.latitudeBand ||
+        activeRegion.profile?.latitudeBand ||
+        "temperate",
+    });
+
     setIsLoading(true);
 
     // Try to get existing weather
@@ -317,13 +372,30 @@ const WeatherDashboard = () => {
               activeRegion.weatherType ||
               preferences.weatherSystem ||
               "diceTable";
+
             console.log(
-              "Regenerating weather with system: ${weatherType} (preference: ${preferences.weatherSystem}, region: ${activeRegion.weatherType})"
+              `[WeatherDashboard] Regenerating weather with system: ${weatherType} (preference: ${preferences.weatherSystem}, region: ${activeRegion.weatherType})`
+            );
+
+            // Get the proper climate and latitude band values
+            const regionClimate =
+              activeRegion.climate ||
+              (activeRegion.profile && activeRegion.profile.climate) ||
+              activeRegion.profile?.biome ||
+              "temperate-deciduous";
+
+            const regionLatitudeBand =
+              activeRegion.latitudeBand ||
+              (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+              "temperate";
+
+            console.log(
+              `[WeatherDashboard] Using climate: ${regionClimate}, latitudeBand: ${regionLatitudeBand}`
             );
 
             const newForecast = weatherManager.initializeWeather(
               regionId,
-              activeRegion.climate,
+              regionClimate,
               actualSeason,
               currentWorldDate,
               weatherType
@@ -333,7 +405,7 @@ const WeatherDashboard = () => {
             const newDescription =
               weatherDescriptionService.generateDescription(
                 newForecast[0],
-                activeRegion.climate,
+                regionClimate,
                 currentWorldDate,
                 regionId
               );
@@ -360,21 +432,46 @@ const WeatherDashboard = () => {
                 : season;
 
             const absHoursDiff = Math.abs(hoursDiff);
-            const weatherType = activeRegion.weatherType || "diceTable";
+            const weatherType =
+              activeRegion.weatherType ||
+              preferences.weatherSystem ||
+              "diceTable";
             let newForecast;
 
             if (hoursDiff > 0) {
+              // Determine climate and latitudeBand for weather advancement
+              const regionClimate =
+                activeRegion.climate ||
+                (activeRegion.profile && activeRegion.profile.climate) ||
+                activeRegion.profile?.biome ||
+                "temperate-deciduous";
+
+              console.log(
+                `[WeatherDashboard] Advancing time with climate: ${regionClimate}`
+              );
+
               newForecast = weatherManager.advanceTime(
                 regionId,
                 absHoursDiff,
-                activeRegion.climate,
+                regionClimate,
                 actualSeason,
                 new Date(lastUpdateDate.getTime())
               );
             } else {
+              // Determine climate and latitudeBand for weather reinitialization
+              const regionClimate =
+                activeRegion.climate ||
+                (activeRegion.profile && activeRegion.profile.climate) ||
+                activeRegion.profile?.biome ||
+                "temperate-deciduous";
+
+              console.log(
+                `[WeatherDashboard] Reinitializing with climate: ${regionClimate}`
+              );
+
               newForecast = weatherManager.initializeWeather(
                 regionId,
-                activeRegion.climate,
+                regionClimate,
                 actualSeason,
                 currentWorldDate,
                 weatherType
@@ -385,7 +482,9 @@ const WeatherDashboard = () => {
             const newDescription =
               weatherDescriptionService.generateDescription(
                 newForecast[0],
-                activeRegion.climate,
+                activeRegion.climate ||
+                  activeRegion.profile?.biome ||
+                  "temperate-deciduous",
                 currentWorldDate,
                 regionId
               );
@@ -437,7 +536,9 @@ const WeatherDashboard = () => {
       } else {
         const newDescription = weatherDescriptionService.generateDescription(
           loadedForecast[0],
-          activeRegion.climate,
+          activeRegion.climate ||
+            activeRegion.profile?.biome ||
+            "temperate-deciduous",
           currentDate,
           regionId
         );
@@ -447,19 +548,36 @@ const WeatherDashboard = () => {
 
       updateRegionTimestamp(regionId, currentDate.toISOString());
     } else {
-      console.log("Generating new weather");
+      console.log("[WeatherDashboard] Generating new weather");
       const actualSeason =
         season === "auto"
           ? weatherManager.getSeasonFromDate(currentDate)
           : season;
 
       // Default to dice table if not specified
-      const weatherType = activeRegion.weatherType || "diceTable";
+      const weatherType =
+        activeRegion.weatherType || preferences.weatherSystem || "diceTable";
+
+      // Determine climate and latitudeBand for weather initialization
+      const regionClimate =
+        activeRegion.climate ||
+        (activeRegion.profile && activeRegion.profile.climate) ||
+        activeRegion.profile?.biome ||
+        "temperate-deciduous";
+
+      const regionLatitudeBand =
+        activeRegion.latitudeBand ||
+        (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+        "temperate";
+
+      console.log(
+        `[WeatherDashboard] New weather with climate: ${regionClimate}, latitudeBand: ${regionLatitudeBand}`
+      );
 
       setCurrentSeason(actualSeason);
       const newForecast = weatherManager.initializeWeather(
         regionId,
-        activeRegion.climate,
+        regionClimate,
         actualSeason,
         currentDate,
         weatherType
@@ -468,7 +586,7 @@ const WeatherDashboard = () => {
       // Generate a new description for the current weather
       const newDescription = weatherDescriptionService.generateDescription(
         newForecast[0],
-        activeRegion.climate,
+        regionClimate,
         currentDate,
         regionId
       );
@@ -501,6 +619,7 @@ const WeatherDashboard = () => {
     initialized,
     storeWeatherDescription,
     getStoredWeatherDescription,
+    preferences,
   ]);
 
   // Initialize weather effect - with stable dependencies
@@ -514,7 +633,7 @@ const WeatherDashboard = () => {
       if (!activeRegion) return;
 
       setIsLoading(true);
-      console.log(`Advancing time by ${hours} hours`);
+      console.log(`[WeatherDashboard] Advancing time by ${hours} hours`);
 
       const beforeDate = new Date(currentDate);
       advanceTime(hours);
@@ -529,13 +648,25 @@ const WeatherDashboard = () => {
           : season;
 
       // Get weather type (default to dice table if not specified)
-      const weatherType = activeRegion.weatherType || "diceTable";
+      const weatherType =
+        activeRegion.weatherType || preferences.weatherSystem || "diceTable";
+
+      // Determine climate and latitudeBand for weather advancement
+      const regionClimate =
+        activeRegion.climate ||
+        (activeRegion.profile && activeRegion.profile.climate) ||
+        activeRegion.profile?.biome ||
+        "temperate-deciduous";
+
+      console.log(
+        `[WeatherDashboard] Advancing with climate: ${regionClimate}, weatherType: ${weatherType}`
+      );
 
       // Handle weather advancement
       const newForecast = weatherManager.advanceTime(
         activeRegion.id,
         hours,
-        activeRegion.climate,
+        regionClimate,
         actualSeason,
         afterDate
       );
@@ -543,7 +674,7 @@ const WeatherDashboard = () => {
       // Generate a new description for the current weather
       const newDescription = weatherDescriptionService.generateDescription(
         newForecast[0],
-        activeRegion.climate,
+        regionClimate,
         afterDate,
         activeRegion.id
       );
@@ -577,6 +708,7 @@ const WeatherDashboard = () => {
       updateRegionWeather,
       updateRegionTimestamp,
       storeWeatherDescription,
+      preferences,
     ]
   );
 
@@ -590,13 +722,34 @@ const WeatherDashboard = () => {
         ? weatherManager.getSeasonFromDate(currentDate)
         : season;
 
-    // Get weather type from region settings
-    const weatherType = activeRegion.weatherType || "diceTable";
+    // Get weather type from region settings or preferences
+    const weatherType =
+      activeRegion.weatherType || preferences.weatherSystem || "diceTable";
+
+    console.log(
+      `[WeatherDashboard] Regenerating weather with type: ${weatherType}`
+    );
+
+    // Determine climate and latitudeBand for weather regeneration
+    const regionClimate =
+      activeRegion.climate ||
+      (activeRegion.profile && activeRegion.profile.climate) ||
+      activeRegion.profile?.biome ||
+      "temperate-deciduous";
+
+    const regionLatitudeBand =
+      activeRegion.latitudeBand ||
+      (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+      "temperate";
+
+    console.log(
+      `[WeatherDashboard] Regenerating with climate: ${regionClimate}, latitudeBand: ${regionLatitudeBand}`
+    );
 
     setCurrentSeason(actualSeason);
     const newForecast = weatherManager.initializeWeather(
       activeRegion.id,
-      activeRegion.climate,
+      regionClimate,
       actualSeason,
       currentDate,
       weatherType
@@ -605,7 +758,7 @@ const WeatherDashboard = () => {
     // Generate a new description for the current weather
     const newDescription = weatherDescriptionService.generateDescription(
       newForecast[0],
-      activeRegion.climate,
+      regionClimate,
       currentDate,
       activeRegion.id
     );
@@ -634,7 +787,7 @@ const WeatherDashboard = () => {
     activeRegion,
     season,
     currentDate,
-    preferences.weatherSystem,
+    preferences,
     updateRegionWeather,
     updateRegionTimestamp,
     storeWeatherDescription,
@@ -663,10 +816,26 @@ const WeatherDashboard = () => {
           ? weatherManager.getSeasonFromDate(currentDate)
           : season;
 
+      // Determine climate and latitudeBand for weather system change
+      const regionClimate =
+        activeRegion.climate ||
+        (activeRegion.profile && activeRegion.profile.climate) ||
+        activeRegion.profile?.biome ||
+        "temperate-deciduous";
+
+      const regionLatitudeBand =
+        activeRegion.latitudeBand ||
+        (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+        "temperate";
+
+      console.log(
+        `[WeatherDashboard] Changing weather system with climate: ${regionClimate}, latitudeBand: ${regionLatitudeBand}`
+      );
+
       // Initialize weather with new type
       const newForecast = weatherManager.initializeWeather(
         activeRegion.id,
-        activeRegion.climate,
+        regionClimate,
         actualSeason,
         currentDate,
         newType
@@ -675,7 +844,7 @@ const WeatherDashboard = () => {
       // Generate a new description for the current weather
       const newDescription = weatherDescriptionService.generateDescription(
         newForecast[0],
-        activeRegion.climate,
+        regionClimate,
         currentDate,
         activeRegion.id
       );
@@ -766,7 +935,8 @@ const WeatherDashboard = () => {
   const currentWeather = forecast.length > 0 ? forecast[0] : null;
 
   // Current weather system type
-  const weatherSystemType = activeRegion.weatherType || "diceTable";
+  const weatherSystemType =
+    activeRegion.weatherType || preferences.weatherSystem || "diceTable";
 
   return (
     <div className="weather-dashboard">
@@ -820,7 +990,11 @@ const WeatherDashboard = () => {
         {/* No extra wrapper divs! ForecastDisplay directly here */}
         <ForecastDisplay
           forecast={isForecastExpanded ? forecast : forecast.slice(0, 6)}
-          latitudeBand={activeRegion.latitudeBand || "temperate"}
+          latitudeBand={
+            activeRegion.latitudeBand ||
+            (activeRegion.profile && activeRegion.profile.latitudeBand) ||
+            "temperate"
+          }
           celestialInfo={celestialInfo}
           isExpanded={isForecastExpanded}
         />
@@ -841,8 +1015,17 @@ const WeatherDashboard = () => {
               weatherEffects={currentWeather?.effects || ""}
               currentWeather={currentWeather}
               currentDate={currentDate}
-              latitudeBand={activeRegion?.latitudeBand || "temperate"}
-              biome={activeRegion?.climate || "temperate-deciduous"}
+              latitudeBand={
+                activeRegion?.latitudeBand ||
+                activeRegion.profile?.latitudeBand ||
+                "temperate"
+              }
+              biome={
+                activeRegion?.climate ||
+                activeRegion.profile?.climate ||
+                activeRegion.profile?.biome ||
+                "temperate-deciduous"
+              }
               regionId={activeRegion.id}
               cachedDescription={weatherDescription}
             />

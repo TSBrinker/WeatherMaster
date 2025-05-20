@@ -186,8 +186,22 @@ export const useRegion = () => {
   };
 
   // Action creators
+// Action creators with preference support
 const createRegion = (regionData) => {
-  const preferredWeatherSystem = preferences?.weatherSystem || 'diceTable';
+  // Get global weather system preference
+  let preferredWeatherSystem = 'diceTable';
+  
+  try {
+    const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
+    if (savedPrefs) {
+      const prefs = JSON.parse(savedPrefs);
+      preferredWeatherSystem = prefs.weatherSystem || 'diceTable';
+    }
+  } catch (e) {
+    console.error("Error reading preferences:", e);
+  }
+  
+  console.log(`[RegionContext] Creating region with weather system: ${preferredWeatherSystem}`);
   
   const newRegion = processRegionData(
     regionData,
@@ -202,12 +216,26 @@ const createRegion = (regionData) => {
 
 const updateRegion = (id, regionData) => {
   const existingRegion = state.regions.find(region => region.id === id);
-  const preferredWeatherSystem = preferences?.weatherSystem || 'diceTable';
+  
+  // Get global weather system preference
+  let preferredWeatherSystem = existingRegion?.weatherType || 'diceTable';
+  
+  try {
+    const savedPrefs = localStorage.getItem('gm-weather-companion-preferences');
+    if (savedPrefs) {
+      const prefs = JSON.parse(savedPrefs);
+      preferredWeatherSystem = prefs.weatherSystem || preferredWeatherSystem;
+    }
+  } catch (e) {
+    console.error("Error reading preferences:", e);
+  }
   
   if (!existingRegion) {
     console.error(`Region with id ${id} not found`);
     return null;
   }
+  
+  console.log(`[RegionContext] Updating region with weather system: ${preferredWeatherSystem}`);
   
   const updatedRegion = processRegionData(
     regionData,

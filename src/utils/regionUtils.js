@@ -1,4 +1,4 @@
-// src/utils/regionUtils.js
+// src/utils/regionUtils.js - Fixed
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -15,11 +15,15 @@ export const processRegionData = (
   regionProfileService,
   preferredWeatherSystem = 'diceTable'
 ) => {
-  console.log('Processing region data:', {
-    isUpdate: !!existingRegion,
-    regionData,
-    existingRegion,
-    weatherSystem: preferredWeatherSystem
+  const isUpdate = !!existingRegion;
+  console.log(`[RegionUtils] Processing region data (${isUpdate ? 'UPDATE' : 'CREATE'})`, {
+    name: regionData.name,
+    latitudeBand: regionData.latitudeBand, 
+    existingLatitudeBand: existingRegion?.latitudeBand,
+    climate: regionData.climate,
+    existingClimate: existingRegion?.climate,
+    templateId: regionData.templateId,
+    existingTemplateId: existingRegion?.templateId || (existingRegion?.templateInfo ? existingRegion.templateInfo.templateId : null)
   });
   
   // Get base properties with proper fallbacks
@@ -27,26 +31,33 @@ export const processRegionData = (
   const latitudeBand = regionData.latitudeBand || 
     (existingRegion ? (existingRegion.latitudeBand || (existingRegion.profile ? existingRegion.profile.latitudeBand : 'temperate')) : 'temperate');
   const climate = regionData.climate || 
-    (existingRegion ? (existingRegion.climate || (existingRegion.profile ? existingRegion.profile.climate : 'temperate-deciduous')) : 'temperate-deciduous');
+    (existingRegion ? (existingRegion.climate || (existingRegion.profile ? existingRegion.profile.climate || existingRegion.profile.biome : 'temperate-deciduous')) : 'temperate-deciduous');
   const templateId = regionData.templateId || 
     (existingRegion ? (existingRegion.templateId || (existingRegion.templateInfo ? existingRegion.templateInfo.templateId : null)) : null);
+  
+  console.log(`[RegionUtils] Resolved base properties:`, {
+    name,
+    latitudeBand,
+    climate,
+    templateId
+  });
   
   // Create profile based on template or basic parameters
   let profile = null;
   
   if (templateId) {
-    console.log(`Creating profile from template: ${latitudeBand}/${templateId}`);
+    console.log(`[RegionUtils] Creating profile from template: ${latitudeBand}/${templateId}`);
     
-    // Create from template - use regionProfileService from context
+    // Create from template
     profile = regionProfileService.createProfileFromTemplate(
-      name,
       latitudeBand,
-      templateId
+      templateId, 
+      name
     );
   } else {
-    console.log(`Creating basic profile: ${climate}, ${latitudeBand}`);
+    console.log(`[RegionUtils] Creating basic profile: ${climate}, ${latitudeBand}`);
     
-    // Create basic profile - use regionProfileService from context
+    // Create basic profile
     profile = regionProfileService.getRegionProfile(climate, {
       name: name,
       latitudeBand: latitudeBand
@@ -55,13 +66,13 @@ export const processRegionData = (
   
   // CRITICAL: Ensure latitude band is explicitly set at the root level
   if (profile && !profile.latitudeBand) {
-    console.log(`Fixing missing latitudeBand in profile: ${latitudeBand}`);
+    console.log(`[RegionUtils] Fixing missing latitudeBand in profile: ${latitudeBand}`);
     profile.latitudeBand = latitudeBand;
   }
   
   // CRITICAL: Ensure climate is explicitly set for backward compatibility
   if (profile && !profile.climate) {
-    console.log(`Fixing missing climate in profile: ${climate}`);
+    console.log(`[RegionUtils] Fixing missing climate in profile: ${climate}`);
     profile.climate = climate;
   }
   
@@ -81,16 +92,18 @@ export const processRegionData = (
       latitudeBand,
       templateId
     } : (existingRegion ? existingRegion.templateInfo : null),
+    templateId,   // EXPLICITLY store for easier access
     weatherType: preferredWeatherSystem,
     updatedAt: new Date().toISOString()
   });
   
-  console.log('Processed region:', {
+  console.log('[RegionUtils] Final processed region:', {
     name: regionObject.name,
     latitudeBand: regionObject.latitudeBand,
     profileLatitudeBand: regionObject.profile.latitudeBand,
     climate: regionObject.climate,
     profileClimate: regionObject.profile.climate || regionObject.profile.biome,
+    templateId: regionObject.templateId,
     weatherType: regionObject.weatherType
   });
   
