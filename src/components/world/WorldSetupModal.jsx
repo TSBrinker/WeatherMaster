@@ -1,13 +1,31 @@
-// src/components/world/WorldSetupModal.jsx - Complete revision
+// src/components/world/WorldSetupModal.jsx
 import React, { useState, useEffect } from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
 import { useWorld } from "../../contexts/WorldContext";
 import GameDateInput from "../common/GameDateInput";
+import { storageUtils } from "../../utils/storageUtils";
 
 const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
   const { state, setWorldName, setGameTime, setIsConfigured } =
     useWorldSettings();
   const { setCurrentDate } = useWorld();
+
+  // Add states for data checking and restoration
+  const [dataChecked, setDataChecked] = useState(false);
+  const [dataRestored, setDataRestored] = useState(false);
+  const [checkMessage, setCheckMessage] = useState("");
+
+  // Get current date from state or use current date as fallback
+  const currentGameDate = state.gameTime
+    ? new Date(state.gameTime)
+    : new Date();
+
+  // Form state - initialize with current values in edit mode
+  const [formData, setFormData] = useState({
+    worldName: state.worldName || "My Fantasy World",
+    gameDate: currentGameDate.toISOString().split("T")[0],
+    hourOfDay: currentGameDate.getHours(),
+  });
 
   // Only perform auto-checks if we're not in edit mode and not forced to show
   useEffect(() => {
@@ -41,18 +59,6 @@ const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
     }
   }, [onClose, setIsConfigured, forceShow, editMode]);
 
-  // Get current date from state or use current date as fallback
-  const currentGameDate = state.gameTime
-    ? new Date(state.gameTime)
-    : new Date();
-
-  // Form state - initialize with current values in edit mode
-  const [formData, setFormData] = useState({
-    worldName: state.worldName || "My Fantasy World",
-    gameDate: currentGameDate.toISOString().split("T")[0],
-    hourOfDay: currentGameDate.getHours(),
-  });
-
   // Update form data when state changes (important for edit mode)
   useEffect(() => {
     if (editMode && state.gameTime) {
@@ -79,6 +85,58 @@ const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
       ...formData,
       gameDate: dateString,
     });
+  };
+
+  // Function to check for existing data
+  const checkForExistingData = () => {
+    try {
+      // Check for world settings
+      const savedSettings = storageUtils.loadData(
+        "gm-weather-companion-world-settings",
+        null
+      );
+      const setupCompleted = localStorage.getItem(
+        "gm-weather-companion-setup-completed"
+      );
+      const hasRegions = localStorage.getItem("gm-weather-companion-regions");
+
+      setDataChecked(true);
+
+      if (savedSettings) {
+        // Update form with saved data
+        const savedDate = new Date(savedSettings.gameTime || new Date());
+
+        setFormData({
+          worldName: savedSettings.worldName || "My Fantasy World",
+          gameDate: savedDate.toISOString().split("T")[0],
+          hourOfDay: savedDate.getHours(),
+        });
+
+        setDataRestored(true);
+        setCheckMessage("World settings restored successfully!");
+        console.log("Existing world data found and restored!", savedSettings);
+
+        // If setup was completed, we could ask user if they want to proceed
+        if (setupCompleted === "true" && !forceShow) {
+          setCheckMessage("World already configured. Settings restored!");
+        }
+      } else if (hasRegions) {
+        setDataRestored(false);
+        setCheckMessage(
+          "Found regions but no world settings. Create new world settings or cancel to use defaults."
+        );
+      } else {
+        setDataRestored(false);
+        setCheckMessage(
+          "No existing world data found. Please create new settings."
+        );
+      }
+    } catch (error) {
+      console.error("Error checking for existing data:", error);
+      setDataChecked(true);
+      setDataRestored(false);
+      setCheckMessage("Error checking for data: " + error.message);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -160,6 +218,36 @@ const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
           )}
         </div>
 
+        {/* Data check/restore section - only show in creation mode */}
+        {!editMode && (
+          <div className="p-4 bg-gray-800 rounded-md m-4 mb-2">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-medium text-white">Existing World Data</h3>
+                <p className="text-sm text-gray-400">
+                  {dataChecked
+                    ? checkMessage
+                    : "Check for previously saved world settings."}
+                </p>
+              </div>
+              <button
+                onClick={checkForExistingData}
+                className={`px-3 py-1 rounded text-sm ${
+                  dataRestored
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {dataChecked
+                  ? dataRestored
+                    ? "✓ Data Restored"
+                    : "Check Again"
+                  : "Check for Data"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="p-4">
           <div className="mb-4">
             <label htmlFor="worldName" className="block mb-2">
@@ -211,7 +299,11 @@ const WorldSetupModal = ({ onClose, forceShow = false, editMode = false }) => {
               </button>
             )}
             <button type="submit" className="btn btn-primary">
-              {editMode ? "Save Changes" : "Create World"}
+              {editMode
+                ? "Save Changes"
+                : dataRestored
+                ? "Use Restored Settings"
+                : "Create World"}
             </button>
           </div>
         </form>
