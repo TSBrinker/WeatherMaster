@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/WeatherMaster/static/css/main.276fdd64.css",
+    "main.js": "/WeatherMaster/static/js/main.52b94c58.js",
+    "index.html": "/WeatherMaster/index.html",
+    "main.276fdd64.css.map": "/WeatherMaster/static/css/main.276fdd64.css.map",
+    "main.52b94c58.js.map": "/WeatherMaster/static/js/main.52b94c58.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.276fdd64.css",
+    "static/js/main.52b94c58.js"
+  ]
+}
