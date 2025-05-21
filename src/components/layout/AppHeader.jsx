@@ -6,6 +6,7 @@ import RegionFormModal from "../forms/RegionFormModal";
 import RegionEditModal from "../forms/RegionEditModal";
 import WorldSetupModal from "../world/WorldSetupModal"; // Make sure this is imported
 import { useRegion } from "../../contexts/RegionContext";
+import appIcon from "../../WM TP WithText.png";
 
 const AppHeader = () => {
   const { togglePreferencesMenu } = usePreferences();
@@ -57,7 +58,8 @@ const AppHeader = () => {
   return (
     <header className="app-header">
       <div className="app-brand">
-        <h1>WeatherMaster</h1>
+        <img src={appIcon} alt="WeatherMaster" className="header-icon" />
+        {/* <h1>WeatherMaster</h1> */}
       </div>
 
       <div className="app-controls">
