@@ -18,56 +18,59 @@ const CustomTimeControls = ({
   const [advanceMode, setAdvanceMode] = useState("hours"); // "hours" or "datetime"
   const [customHours, setCustomHours] = useState(48);
 
-  // State for the date-time picker
+  // Error message state
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // State for separate date inputs
   const [targetDate, setTargetDate] = useState({
-    date: formatDateForInput(safeCurrentDate),
+    year: safeCurrentDate.getFullYear(),
+    month: safeCurrentDate.getMonth() + 1, // Convert to 1-indexed month
+    day: safeCurrentDate.getDate(),
     hour: safeCurrentDate.getHours(),
-    minute: 0,
   });
 
-  // Format date for date input
-  function formatDateForInput(date) {
-    try {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      // Return today's date as fallback
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, "0");
-      const day = String(today.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+  // Update date state when currentDate changes
+  useEffect(() => {
+    if (currentDate instanceof Date && !isNaN(currentDate.getTime())) {
+      setTargetDate({
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() + 1, // Convert to 1-indexed month
+        day: currentDate.getDate(),
+        hour: currentDate.getHours(),
+      });
     }
-  }
+  }, [currentDate]);
 
   // Handle hours advancement - Don't close on submit
   const handleAdvanceByHours = () => {
-    if (customHours > 0) {
-      onAdvanceTime(parseInt(customHours));
-      // No onClose() call - keep dialog open
+    if (customHours <= 0) {
+      setErrorMessage("Please enter a positive number of hours.");
+      return;
     }
+
+    setErrorMessage("");
+    onAdvanceTime(parseInt(customHours));
+    // No onClose() call - keep dialog open
   };
 
   // Handle advancing to specific date/time - Don't close on submit
   const handleAdvanceToDateTime = () => {
     try {
-      // Parse the target date and time
-      const [year, month, day] = targetDate.date
-        .split("-")
-        .map((num) => parseInt(num));
-
-      // Create a new date object (month is 0-indexed in JavaScript)
+      // Create a new date object from separate inputs
       const newDate = new Date(
-        year,
-        month - 1,
-        day,
+        targetDate.year,
+        targetDate.month - 1, // Convert back to 0-indexed month
+        targetDate.day,
         targetDate.hour,
-        targetDate.minute,
-        0
+        0, // Minutes set to 0
+        0 // Seconds set to 0
       );
+
+      // Check if date is valid
+      if (isNaN(newDate.getTime())) {
+        setErrorMessage("Invalid date. Please check your inputs.");
+        return;
+      }
 
       // Calculate hours difference between current date and target date
       const currentTime = safeCurrentDate.getTime();
@@ -75,6 +78,17 @@ const CustomTimeControls = ({
       const hoursDiff = Math.round(
         (targetTime - currentTime) / (1000 * 60 * 60)
       );
+
+      // Check if date is in the past
+      if (hoursDiff < 0) {
+        setErrorMessage(
+          "Cannot travel back in time. Please select a future date."
+        );
+        return;
+      }
+
+      // Clear any error message
+      setErrorMessage("");
 
       if (hoursDiff !== 0) {
         if (typeof onAdvanceToDateTime === "function") {
@@ -85,46 +99,41 @@ const CustomTimeControls = ({
         }
         // No onClose() call - keep dialog open
       } else {
-        // Optional: Show a message that dates are the same
-        alert(
+        setErrorMessage(
           "Target date and time is the same as current. No advancement needed."
         );
       }
     } catch (error) {
       console.error("Error advancing to date/time:", error);
-      alert("There was a problem with the date selection. Please try again.");
+      setErrorMessage(
+        "There was a problem with the date selection. Please try again."
+      );
     }
   };
 
-  // Handle changes to the date input
-  const handleDateChange = (e) => {
-    setTargetDate({
-      ...targetDate,
-      date: e.target.value,
-    });
+  // Handle changes to date part inputs
+  const handleDatePartChange = (e) => {
+    const { name, value } = e.target;
+    let parsedValue = value === "" ? "" : parseInt(value, 10);
+
+    // Clear error message when user makes changes
+    setErrorMessage("");
+
+    setTargetDate((prev) => ({
+      ...prev,
+      [name]: parsedValue,
+    }));
   };
 
   // Handle changes to the hour input
   const handleHourChange = (e) => {
     const newHour = parseInt(e.target.value);
-    if (!isNaN(newHour) && newHour >= 0 && newHour <= 23) {
-      setTargetDate({
-        ...targetDate,
-        hour: newHour,
-      });
-    }
+    setErrorMessage("");
+    setTargetDate({
+      ...targetDate,
+      hour: newHour,
+    });
   };
-
-  // // Handle changes to the minute input
-  // const handleMinuteChange = (e) => {
-  //   const newMinute = parseInt(e.target.value);
-  //   if (!isNaN(newMinute) && newMinute >= 0 && newMinute <= 59) {
-  //     setTargetDate({
-  //       ...targetDate,
-  //       minute: newMinute,
-  //     });
-  //   }
-  // };
 
   // Generate hour options for select
   const hourOptions = [];
@@ -137,16 +146,6 @@ const CustomTimeControls = ({
       </option>
     );
   }
-
-  // // Generate minute options for select (intervals of 5)
-  // const minuteOptions = [];
-  // for (let i = 0; i < 60; i += 5) {
-  //   minuteOptions.push(
-  //     <option key={i} value={i}>
-  //       {String(i).padStart(2, "0")}
-  //     </option>
-  //   );
-  // }
 
   return (
     <div className="custom-time-control-panel">
@@ -180,6 +179,9 @@ const CustomTimeControls = ({
         </button>
       </div>
 
+      {/* Error message display */}
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+
       {advanceMode === "hours" ? (
         <div className="hours-advancement">
           {/* Improved layout with side-by-side input and button */}
@@ -193,9 +195,10 @@ const CustomTimeControls = ({
                   min="1"
                   max="8760" // Max 1 year in hours
                   value={customHours}
-                  onChange={(e) =>
-                    setCustomHours(parseInt(e.target.value) || 1)
-                  }
+                  onChange={(e) => {
+                    setCustomHours(parseInt(e.target.value) || 1);
+                    setErrorMessage("");
+                  }}
                   className="custom-hours-input"
                 />
                 <span className="input-suffix">hours</span>
@@ -220,18 +223,53 @@ const CustomTimeControls = ({
         </div>
       ) : (
         <div className="datetime-advancement">
-          {/* Improved layout with side-by-side date and button */}
+          {/* Separated date inputs */}
           <div className="datetime-input-row">
             <div className="date-time-inputs">
-              <div className="input-group">
-                <label htmlFor="target-date">Target Date:</label>
-                <input
-                  id="target-date"
-                  type="date"
-                  value={targetDate.date}
-                  onChange={handleDateChange}
-                  className="date-input"
-                />
+              <div className="date-inputs">
+                <div className="date-input-group">
+                  <div className="input-group">
+                    <label htmlFor="target-year">Year:</label>
+                    <input
+                      id="target-year"
+                      type="number"
+                      name="year"
+                      min="1"
+                      max="9999"
+                      value={targetDate.year}
+                      onChange={handleDatePartChange}
+                      className="date-part-input"
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="target-month">Month:</label>
+                    <input
+                      id="target-month"
+                      type="number"
+                      name="month"
+                      min="1"
+                      max="12"
+                      value={targetDate.month}
+                      onChange={handleDatePartChange}
+                      className="date-part-input"
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="target-day">Day:</label>
+                    <input
+                      id="target-day"
+                      type="number"
+                      name="day"
+                      min="1"
+                      max="31"
+                      value={targetDate.day}
+                      onChange={handleDatePartChange}
+                      className="date-part-input"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="time-inputs">
