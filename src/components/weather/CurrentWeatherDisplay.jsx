@@ -8,6 +8,7 @@ const CurrentWeatherDisplay = ({
   currentWeather,
   celestialInfo,
   isDaytime,
+  themeColors,
 }) => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 

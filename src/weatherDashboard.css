@@ -175,6 +175,17 @@
 }
 
 /* Weather section */
+.celestial-section, 
+.weather-overlay,
+.region-name,
+.temperature-display-large,
+.feels-like-temp,
+.weather-condition,
+.wind-display-large,
+.next-event-display {
+  color: #ffffff !important; /* Force white text */
+}
+
 .celestial-section {
   padding: 2rem 1rem;
   display: flex;
@@ -510,9 +521,7 @@
 }
 
 /* Align the hours advance button with the input field */
-.hours-advance-button {
-  /* margin-bottom: 0.5rem;  */
-}
+
 
 /* Align the datetime advance button */
  /* .datetime-advance-button {

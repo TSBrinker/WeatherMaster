@@ -263,7 +263,7 @@ const WeatherDashboard = () => {
       // Update theme colors
       setThemeColors({
         backgroundColor: skyColors.backgroundColor,
-        textColor: skyColors.textColor,
+        textColor: "#ffffff",
         backgroundImage: backgroundGradient,
       });
 
@@ -982,6 +982,7 @@ const WeatherDashboard = () => {
             }}
             celestialInfo={celestialInfo}
             isDaytime={celestialInfo.isDaytime}
+            themeColors={themeColors}
           />
         )}
       </div>
