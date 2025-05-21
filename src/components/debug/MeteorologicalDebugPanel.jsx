@@ -8,22 +8,22 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
   const { state: preferences } = usePreferences();
 
   // Helper to fix weather systems
-  const fixWeatherSystems = () => {
-    if (!weatherService || !weatherService.weatherSystemService) {
-      setDebugMessage("No weather service available to fix");
-      return;
-    }
+  // const fixWeatherSystems = () => {
+  //   if (!weatherService || !weatherService.weatherSystemService) {
+  //     setDebugMessage("No weather service available to fix");
+  //     return;
+  //   }
 
-    try {
-      // Force reset everything
-      meteoUtils.forceReset(weatherService);
-      setDebugMessage(
-        "Forced reset of weather systems. Refresh or advance time to see changes."
-      );
-    } catch (error) {
-      setDebugMessage(`Error: ${error.message}`);
-    }
-  };
+  //   try {
+  //     // Force reset everything
+  //     meteoUtils.forceReset(weatherService);
+  //     setDebugMessage(
+  //       "Forced reset of weather systems. Refresh or advance time to see changes."
+  //     );
+  //   } catch (error) {
+  //     setDebugMessage(`Error: ${error.message}`);
+  //   }
+  // };
 
   // Get the effective weather system type (region setting or global preference)
   const effectiveWeatherType =
@@ -85,7 +85,7 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
       </h3>
 
       {/* Fix button */}
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <button
           onClick={fixWeatherSystems}
           className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
@@ -95,7 +95,7 @@ const MeteorologicalDebugPanel = ({ weatherData, region, weatherService }) => {
         {debugMessage && (
           <div className="mt-2 text-sm text-yellow-300">{debugMessage}</div>
         )}
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="col-span-2 bg-gray-800 p-3 rounded">

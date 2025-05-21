@@ -29,6 +29,7 @@ import ForecastDisplay from "./weather/ForecastDisplay";
 import RegionDetails from "./region/RegionDetails";
 import WeatherEffects from "./weather/WeatherEffects";
 import { usePreferences } from "../contexts/PreferencesContext";
+import TimeControls from "./weather/TimeControls";
 
 // Import CSS
 import "../weatherDashboard.css";
@@ -61,7 +62,7 @@ const WeatherDashboard = () => {
   const [season, setSeason] = useState("auto");
   const [currentSeason, setCurrentSeason] = useState("");
   const [forecast, setForecast] = useState([]);
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState("effects");
   const [themeColors, setThemeColors] = useState({
     backgroundColor: "#1f2937",
     textColor: "#f9fafb",
@@ -73,6 +74,7 @@ const WeatherDashboard = () => {
   const [weatherDescription, setWeatherDescription] = useState("");
   const [showDebug, setShowDebug] = useState(false);
   const [isForecastExpanded, setIsForecastExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Add this debug tracking code
   useEffect(() => {
@@ -632,13 +634,19 @@ const WeatherDashboard = () => {
     (hours) => {
       if (!activeRegion) return;
 
-      setIsLoading(true);
+      // Show loading indicator without full-page refresh
+      setIsUpdating(true); // Add a new state variable for this
+
       console.log(`[WeatherDashboard] Advancing time by ${hours} hours`);
 
+      // Get the current date before advancement
       const beforeDate = new Date(currentDate);
+
+      // Advance time in the contexts
       advanceTime(hours);
       advanceGameTime(hours);
 
+      // Calculate the new date
       const afterDate = new Date(beforeDate);
       afterDate.setHours(afterDate.getHours() + hours);
 
@@ -651,18 +659,14 @@ const WeatherDashboard = () => {
       const weatherType =
         activeRegion.weatherType || preferences.weatherSystem || "diceTable";
 
-      // Determine climate and latitudeBand for weather advancement
+      // Determine climate for weather advancement
       const regionClimate =
         activeRegion.climate ||
         (activeRegion.profile && activeRegion.profile.climate) ||
         activeRegion.profile?.biome ||
         "temperate-deciduous";
 
-      console.log(
-        `[WeatherDashboard] Advancing with climate: ${regionClimate}, weatherType: ${weatherType}`
-      );
-
-      // Handle weather advancement
+      // Handle weather advancement without full page reload
       const newForecast = weatherManager.advanceTime(
         activeRegion.id,
         hours,
@@ -679,11 +683,13 @@ const WeatherDashboard = () => {
         activeRegion.id
       );
 
+      // Update state
       setWeatherDescription(newDescription);
       storeWeatherDescription(activeRegion.id, newDescription);
-
       setForecast(newForecast);
       setCurrentSeason(actualSeason);
+
+      // Update stored data
       updateRegionWeather(activeRegion.id, {
         season,
         currentSeason: actualSeason,
@@ -695,9 +701,12 @@ const WeatherDashboard = () => {
       });
       updateRegionTimestamp(activeRegion.id, afterDate.toISOString());
 
-      setIsLoading(false);
-      // Force update celestial calculations after time change
-      setForceUpdate((prev) => prev + 1);
+      // Hide loading indicator after a short delay (for UI feedback)
+      setTimeout(() => {
+        setIsUpdating(false);
+        // Force update to ensure celestial calculations are refreshed
+        setForceUpdate((prev) => prev + 1);
+      }, 300);
     },
     [
       activeRegion,
@@ -940,6 +949,13 @@ const WeatherDashboard = () => {
 
   return (
     <div className="weather-dashboard">
+      {/* Loading overlay for time updates */}
+      {isUpdating && (
+        <div className="time-update-overlay">
+          <div className="time-update-spinner"></div>
+        </div>
+      )}
+
       {/* Single World/Region selector - top right */}
       <div className="region-selector">
         <div className="region-selector-world">
@@ -972,22 +988,23 @@ const WeatherDashboard = () => {
 
       {/* Time Controls - below weather display */}
       <div className="time-control-panel">
-        <QuickTimeControls onAdvanceTime={handleAdvanceTime} />
-        <CustomTimeControls onAdvanceTime={handleAdvanceTime} />
+        <TimeControls
+          onAdvanceTime={handleAdvanceTime}
+          currentDate={currentDate}
+        />
       </div>
 
       {/* Forecast Section - expandable */}
       <div className="forecast-section">
         <div className="forecast-header" onClick={toggleForecast}>
           <h3 className="forecast-title">
-            {isForecastExpanded ? "24-Hour Forecast" : "Upcoming Hours"}
+            {isForecastExpanded ? "24-Hour Forecast" : "6-Hour Forecast"}
           </h3>
           <span className="expand-icon">
             {isForecastExpanded ? "See Less" : "See More"}
           </span>
         </div>
 
-        {/* No extra wrapper divs! ForecastDisplay directly here */}
         <ForecastDisplay
           forecast={isForecastExpanded ? forecast : forecast.slice(0, 6)}
           latitudeBand={

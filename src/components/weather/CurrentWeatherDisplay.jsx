@@ -1,5 +1,5 @@
 // src/components/weather/CurrentWeatherDisplay.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { formatTimeWithMinutes } from "../../utils/timeUtils";
 import WeatherIcon from "./WeatherIcon";
 import "../../weatherDashboard.css";
@@ -9,6 +9,20 @@ const CurrentWeatherDisplay = ({
   celestialInfo,
   isDaytime,
 }) => {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Add event listener to track window size
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   if (!currentWeather) return null;
 
   const nextEvent = isDaytime ? "sunset" : "sunrise";
@@ -27,44 +41,63 @@ const CurrentWeatherDisplay = ({
   const tempDiff = feelsLikeTemp - currentWeather.temperature;
   const showFeelsLike = Math.abs(tempDiff) >= 1;
 
+  // Determine if we should use side-by-side layout
+  // You can adjust this breakpoint (768px) based on your needs
+  const useSideBySide = windowWidth >= 768;
+
   return (
-    <div className="weather-overlay">
+    <div className={`weather-overlay ${useSideBySide ? "side-by-side" : ""}`}>
       {/* Region name at top */}
       <div className="region-name">
         {currentWeather.regionName || "Placeville"}
       </div>
 
-      {/* Temperature with feels-like */}
-      <div className="temperature-display-large">
-        {currentWeather.temperature}°
-      </div>
-
-      <div className="feels-like-container">
-        {showFeelsLike ? (
-          <div
-            className={`feels-like-temp ${
-              tempDiff < 0 ? "feels-colder" : "feels-warmer"
-            }`}
-          >
-            Feels Like: {feelsLikeTemp}°
+      {/* Flex container for weather info */}
+      <div className="weather-content-container">
+        {/* Left side / Top (Temperature section) */}
+        <div className="temperature-section">
+          <div className="temperature-display-large">
+            {currentWeather.temperature}°
           </div>
-        ) : (
-          <div className="feels-like-temp">Actual Temperature</div>
-        )}
-      </div>
 
-      {/* Weather condition */}
-      <div className="weather-condition">{currentWeather.condition}</div>
+          <div className="feels-like-container">
+            {showFeelsLike ? (
+              <div
+                className={`feels-like-temp ${
+                  tempDiff < 0 ? "feels-colder" : "feels-warmer"
+                }`}
+              >
+                Feels Like: {feelsLikeTemp}°
+              </div>
+            ) : (
+              <div className="feels-like-temp">Actual Temperature</div>
+            )}
+          </div>
+        </div>
 
-      {/* Wind information */}
-      <div className="wind-display-large">
-        {currentWeather.windSpeed} mph {currentWeather.windDirection} •{" "}
-        {currentWeather.windIntensity}
-      </div>
+        {/* Right side / Bottom (Condition section) */}
+        <div className="condition-section">
+          {/* Weather condition with icon */}
+          <div className="weather-condition-container">
+            <WeatherIcon
+              condition={currentWeather.condition}
+              isDaytime={isDaytime}
+              size={32}
+            />
+            <div className="weather-condition">{currentWeather.condition}</div>
+          </div>
 
-      {/* Next celestial event */}
-      <div className="next-event-display">
-        Next {nextEvent}: {nextEventTime}
+          {/* Wind information */}
+          <div className="wind-display-large">
+            {currentWeather.windSpeed} mph {currentWeather.windDirection} •{" "}
+            {currentWeather.windIntensity}
+          </div>
+
+          {/* Next celestial event */}
+          <div className="next-event-display">
+            Next {nextEvent}: {nextEventTime}
+          </div>
+        </div>
       </div>
     </div>
   );
