@@ -8,9 +8,15 @@ const REGIONS_STORAGE_KEY = 'gm-weather-companion-regions';
 
 // Initial preferences - FORCED TO METEOROLOGICAL
 const initialPreferences = {
-  weatherSystem: 'meteorological', // CHANGED: Always use meteorological
+  weatherSystem: 'meteorological', 
   debugMode: false,
-  isOpen: false // Whether the preferences menu is open
+  isOpen: false, // Whether the preferences menu is open
+    temperatureUnit: 'fahrenheit',
+  timeFormat: '12hour',
+  windSpeedUnit: 'mph',
+  showFeelsLike: true,
+  forecastLength: 24,
+  autoAdvanceTime: false
 };
 
 // Create context
