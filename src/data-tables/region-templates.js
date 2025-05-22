@@ -906,7 +906,8 @@ export const regionTemplates = {
           permafrost: 0.9,
           polarDay: true,
           polarNight: true,
-          coldWinters: true
+          coldWinters: true,
+          permanentIce: 0.6,
         },
         temperatureProfile: {
           annual: { mean: 15, variance: 40 },

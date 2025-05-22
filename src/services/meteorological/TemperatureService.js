@@ -203,23 +203,32 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     const seasonalPosition = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
     const maritimeEffect = profile.maritimeInfluence * 5 * (1 - Math.abs(seasonalPosition));
     
-    // 3. Weather system effects on temperature
+    // 3. Special factor temperature effects
+    const specialFactorEffects = this.calculateSpecialFactorTemperatureEffects(
+      profile.specialFactors || {}, 
+      hour, 
+      isDaytime, 
+      seasonalPosition
+    );
+    
+    // 4. Weather system effects on temperature
     const systemEffect = this.calculateSystemTemperatureEffect(weatherSystems);
     
-    // 4. Cloud cover effect - clouds reduce daytime heating and nighttime cooling
+    // 5. Cloud cover effect - clouds reduce daytime heating and nighttime cooling
     const cloudEffect = this.calculateCloudTemperatureEffect(hour, cloudCover, date, latitudeBand);
     
-    // 5. Recent precipitation has cooling effect through evaporation
+    // 6. Recent precipitation has cooling effect through evaporation
     const recentPrecip = getRecentPrecipitation ? getRecentPrecipitation() : 0;
     const precipEffect = recentPrecip * -5; // Cooling effect from evaporation
     
-    // 6. Random variation - weather isn't perfectly predictable
+    // 7. Random variation - weather isn't perfectly predictable
     const randomVariation = (Math.random() * 2 - 1) * 2;
     
     // Calculate final temperature
     let temp = solarTemp + 
                elevationEffect + 
                maritimeEffect + 
+               specialFactorEffects + 
                systemEffect + 
                cloudEffect + 
                precipEffect + 
@@ -233,6 +242,99 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     
     // Return the temperature, ensuring it's a reasonable value
     return Math.max(-60, Math.min(130, temp));
+  }
+
+  /**
+   * Calculate temperature effects from special factors
+   * @param {object} specialFactors - Region's special factors
+   * @param {number} hour - Current hour (0-23)
+   * @param {boolean} isDaytime - Whether it's currently daytime
+   * @param {number} seasonalPosition - Seasonal position (-1 to 1, where 1 is summer)
+   * @returns {number} - Combined temperature effect in °F
+   */
+  calculateSpecialFactorTemperatureEffects(specialFactors, hour, isDaytime, seasonalPosition) {
+    let totalEffect = 0;
+    
+    // Ice and permafrost effects - create significant cooling
+    if (specialFactors.permanentIce) {
+      // Permanent ice creates strong cooling through albedo effect
+      totalEffect += specialFactors.permanentIce * -15;
+    }
+    
+    if (specialFactors.seaIce) {
+      // Sea ice has cooling effect, but varies seasonally
+      const seasonalIceEffect = specialFactors.seaIce * (0.7 + 0.3 * Math.abs(seasonalPosition));
+      totalEffect += seasonalIceEffect * -8;
+    }
+    
+    if (specialFactors.permafrost) {
+      // Permafrost keeps ground frozen, reducing heat absorption
+      // Effect is strongest in summer when contrast is greatest
+      const permafrostCooling = specialFactors.permafrost * -5;
+      const seasonalMultiplier = 1 + (seasonalPosition * 0.5); // Stronger cooling in summer
+      totalEffect += permafrostCooling * seasonalMultiplier;
+    }
+    
+    // High diurnal variation - increases temperature swings between day and night
+    if (specialFactors.highDiurnalVariation) {
+      const diurnalIntensity = specialFactors.highDiurnalVariation;
+      if (isDaytime) {
+        // Hotter days
+        totalEffect += diurnalIntensity * 8;
+      } else {
+        // Colder nights
+        totalEffect += diurnalIntensity * -10;
+      }
+    }
+    
+    // Cold ocean currents - moderate temperatures year-round
+    if (specialFactors.coldOceanCurrent) {
+      const currentEffect = specialFactors.coldOceanCurrent;
+      if (seasonalPosition > 0) {
+        // Cooling effect in summer
+        totalEffect += currentEffect * seasonalPosition * -8;
+      } else {
+        // Warming effect in winter (less extreme cold)
+        totalEffect += currentEffect * Math.abs(seasonalPosition) * 3;
+      }
+    }
+    
+    // Geothermal features - localized warming
+    if (specialFactors.geothermalFeatures) {
+      // Consistent warming effect regardless of season
+      totalEffect += specialFactors.geothermalFeatures * 5;
+    }
+    
+    // Volcanic activity - can create localized heating
+    if (specialFactors.volcanicActivity) {
+      // Mild warming from geothermal effects
+      totalEffect += specialFactors.volcanicActivity * 2;
+    }
+    
+    // Forest density - moderates temperature through shade and transpiration
+    if (specialFactors.forestDensity) {
+      const forestEffect = specialFactors.forestDensity;
+      if (isDaytime && seasonalPosition > 0) {
+        // Cooling effect during hot summer days through shade
+        totalEffect += forestEffect * seasonalPosition * -3;
+      } else if (!isDaytime) {
+        // Warming effect at night through reduced radiative cooling
+        totalEffect += forestEffect * 2;
+      }
+    }
+    
+    // Standing water - moderates temperature through thermal mass
+    if (specialFactors.standingWater) {
+      const waterEffect = specialFactors.standingWater;
+      // Water moderates temperature extremes - cooling in summer, warming in winter
+      if (seasonalPosition > 0) {
+        totalEffect += waterEffect * seasonalPosition * -2; // Summer cooling
+      } else {
+        totalEffect += waterEffect * Math.abs(seasonalPosition) * 1; // Winter warming
+      }
+    }
+    
+    return totalEffect;
   }
   
   /**

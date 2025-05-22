@@ -6,9 +6,9 @@ import { storageUtils } from '../utils/storageUtils';
 const PREFS_STORAGE_KEY = 'gm-weather-companion-preferences';
 const REGIONS_STORAGE_KEY = 'gm-weather-companion-regions';
 
-// Initial preferences
+// Initial preferences - FORCED TO METEOROLOGICAL
 const initialPreferences = {
-  weatherSystem: 'diceTable', // 'diceTable' or 'meteorological'
+  weatherSystem: 'meteorological', // CHANGED: Always use meteorological
   debugMode: false,
   isOpen: false // Whether the preferences menu is open
 };
@@ -28,9 +28,11 @@ export const ACTIONS = {
 const preferencesReducer = (state, action) => {
   switch (action.type) {
     case ACTIONS.SET_WEATHER_SYSTEM:
+      // ADDED: Force meteorological system only
+      console.log('Weather system change blocked - meteorological only mode');
       return {
         ...state,
-        weatherSystem: action.payload
+        weatherSystem: 'meteorological' // Always force meteorological
       };
     
     case ACTIONS.SET_DEBUG_MODE:
@@ -46,10 +48,15 @@ const preferencesReducer = (state, action) => {
       };
     
     case ACTIONS.LOAD_PREFERENCES:
+      // ADDED: Force meteorological even when loading saved preferences
+      const loadedPrefs = {
+        ...action.payload,
+        weatherSystem: 'meteorological', // Override any saved dice table preference
+        isOpen: state.isOpen // Preserve UI state
+      };
       return {
         ...state,
-        ...action.payload,
-        isOpen: state.isOpen // Preserve UI state
+        ...loadedPrefs
       };
     
     default:
@@ -75,8 +82,8 @@ export const PreferencesProvider = ({ children }) => {
           payload: savedPrefs 
         });
         
-        // Initialize the ref with the loaded value
-        previousWeatherSystem.current = savedPrefs.weatherSystem || 'diceTable';
+        // CHANGED: Always initialize with meteorological
+        previousWeatherSystem.current = 'meteorological';
       }
     };
     
@@ -85,15 +92,15 @@ export const PreferencesProvider = ({ children }) => {
   
   // Save preferences when they change and update regions if weather system changes
   useEffect(() => {
-    // Don't save the isOpen state as that's just UI state
+    // CHANGED: Always save meteorological system
     const prefsToSave = {
-      weatherSystem: state.weatherSystem,
+      weatherSystem: 'meteorological', // Force meteorological in saved preferences
       debugMode: state.debugMode
     };
     
     storageUtils.saveData(PREFS_STORAGE_KEY, prefsToSave);
     
-    // Check if the weather system has changed
+    // Check if the weather system has changed (should always be meteorological now)
     if (previousWeatherSystem.current !== state.weatherSystem) {
       console.log(`Weather system changed from ${previousWeatherSystem.current} to ${state.weatherSystem}`);
       updateAllRegionsWeatherType(state.weatherSystem);
@@ -114,15 +121,15 @@ export const PreferencesProvider = ({ children }) => {
       
       console.log(`Updating ${regions.length} regions to use weather system: ${weatherSystem}`);
       
-      // Update each region's weatherType
+      // CHANGED: Force all regions to use meteorological
       const updatedRegions = regions.map(region => ({
         ...region,
-        weatherType: weatherSystem
+        weatherType: 'meteorological' // Force meteorological for all regions
       }));
       
       // Save the updated regions
       storageUtils.saveData(REGIONS_STORAGE_KEY, updatedRegions);
-      console.log('Regions updated successfully');
+      console.log('Regions updated to meteorological system');
       
       // Also clear any cached weather data that might be using the old system
       const weatherDataKeys = Object.keys(localStorage).filter(key => 
@@ -140,10 +147,36 @@ export const PreferencesProvider = ({ children }) => {
     }
   };
   
+  // ADDED: Function to migrate any existing dice table regions to meteorological
+  const migrateExistingRegionsToMeteorological = () => {
+    try {
+      const regions = storageUtils.loadData(REGIONS_STORAGE_KEY, []);
+      
+      if (regions && regions.length > 0) {
+        const hasUpdates = regions.some(region => region.weatherType !== 'meteorological');
+        
+        if (hasUpdates) {
+          console.log('Migrating existing regions to meteorological system');
+          updateAllRegionsWeatherType('meteorological');
+        }
+      }
+    } catch (error) {
+      console.error('Error migrating regions:', error);
+    }
+  };
+  
+  // Run migration on component mount
+  useEffect(() => {
+    migrateExistingRegionsToMeteorological();
+  }, []);
+  
   // Create context value
   const value = {
     state,
     setWeatherSystem: (system) => {
+      // ADDED: Log that weather system changes are disabled
+      console.log(`Weather system change to "${system}" ignored - meteorological only mode`);
+      // Still dispatch but reducer will force meteorological
       dispatch({ type: ACTIONS.SET_WEATHER_SYSTEM, payload: system });
     },
     setDebugMode: (enabled) => {
@@ -152,8 +185,10 @@ export const PreferencesProvider = ({ children }) => {
     togglePreferencesMenu: () => {
       dispatch({ type: ACTIONS.TOGGLE_PREFERENCES_MENU });
     },
-    // Expose the function to update all regions
-    updateAllRegionsWeatherType
+    // Expose the function to update all regions (will always use meteorological now)
+    updateAllRegionsWeatherType,
+    // ADDED: Expose the migration function
+    migrateExistingRegionsToMeteorological
   };
   
   return (
