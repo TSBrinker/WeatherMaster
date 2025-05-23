@@ -10,11 +10,19 @@ export const convertTemperature = (fahrenheit, unit) => {
 export const formatTemperature = (fahrenheit, unit) => {
   if (unit === 'both') {
     const celsius = convertTemperature(fahrenheit, 'celsius');
-    return `${Math.round(fahrenheit)}°F / ${celsius}°C`;
+    return `${Math.round(fahrenheit)}°F/${celsius}°C`;
   }
   const temp = convertTemperature(fahrenheit, unit);
   const symbol = unit === 'celsius' ? '°C' : '°F';
   return `${temp}${symbol}`;
+};
+
+export const formatTemperatureValue = (fahrenheit, unit) => {
+  // Returns just the number part for display
+  if (unit === 'celsius') {
+    return Math.round((fahrenheit - 32) * 5/9);
+  }
+  return Math.round(fahrenheit);
 };
 
 export const convertWindSpeed = (mph, unit) => {
@@ -32,14 +40,4 @@ export const formatWindSpeed = (mph, unit) => {
   const speed = convertWindSpeed(mph, unit);
   const unitLabel = unit === 'kph' ? 'kph' : unit === 'knots' ? 'kts' : 'mph';
   return `${speed} ${unitLabel}`;
-};
-
-export const formatTime = (hour, format) => {
-  if (format === '24hour') {
-    return `${hour.toString().padStart(2, '0')}:00`;
-  }
-  // 12-hour format
-  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  const ampm = hour < 12 ? 'AM' : 'PM';
-  return `${hour12} ${ampm}`;
 };

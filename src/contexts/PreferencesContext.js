@@ -11,12 +11,10 @@ const initialPreferences = {
   weatherSystem: 'meteorological', 
   debugMode: false,
   isOpen: false, // Whether the preferences menu is open
-    temperatureUnit: 'fahrenheit',
+  temperatureUnit: 'fahrenheit',
   timeFormat: '12hour',
   windSpeedUnit: 'mph',
-  showFeelsLike: true,
-  forecastLength: 24,
-  autoAdvanceTime: false
+  showFeelsLike: true
 };
 
 // Create context
@@ -27,7 +25,11 @@ export const ACTIONS = {
   SET_WEATHER_SYSTEM: 'set_weather_system',
   SET_DEBUG_MODE: 'set_debug_mode',
   TOGGLE_PREFERENCES_MENU: 'toggle_preferences_menu',
-  LOAD_PREFERENCES: 'load_preferences'
+  LOAD_PREFERENCES: 'load_preferences',
+  SET_TEMPERATURE_UNIT: 'set_temperature_unit',
+  SET_TIME_FORMAT: 'set_time_format',
+  SET_WIND_SPEED_UNIT: 'set_wind_speed_unit',
+  SET_SHOW_FEELS_LIKE: 'set_show_feels_like'
 };
 
 // Reducer function
@@ -64,6 +66,29 @@ const preferencesReducer = (state, action) => {
         ...state,
         ...loadedPrefs
       };
+          case ACTIONS.SET_TEMPERATURE_UNIT:
+      return {
+        ...state,
+        temperatureUnit: action.payload
+      };
+    
+    case ACTIONS.SET_TIME_FORMAT:
+      return {
+        ...state,
+        timeFormat: action.payload
+      };
+    
+    case ACTIONS.SET_WIND_SPEED_UNIT:
+      return {
+        ...state,
+        windSpeedUnit: action.payload
+      };
+    
+    case ACTIONS.SET_SHOW_FEELS_LIKE:
+      return {
+        ...state,
+        showFeelsLike: action.payload
+      };
     
     default:
       return state;
@@ -97,22 +122,19 @@ export const PreferencesProvider = ({ children }) => {
   }, []);
   
   // Save preferences when they change and update regions if weather system changes
-  useEffect(() => {
-    // CHANGED: Always save meteorological system
-    const prefsToSave = {
-      weatherSystem: 'meteorological', // Force meteorological in saved preferences
-      debugMode: state.debugMode
-    };
-    
-    storageUtils.saveData(PREFS_STORAGE_KEY, prefsToSave);
-    
-    // Check if the weather system has changed (should always be meteorological now)
-    if (previousWeatherSystem.current !== state.weatherSystem) {
-      console.log(`Weather system changed from ${previousWeatherSystem.current} to ${state.weatherSystem}`);
-      updateAllRegionsWeatherType(state.weatherSystem);
-      previousWeatherSystem.current = state.weatherSystem;
-    }
-  }, [state.weatherSystem, state.debugMode]);
+useEffect(() => {
+  const prefsToSave = {
+    weatherSystem: 'meteorological',
+    debugMode: state.debugMode,
+    temperatureUnit: state.temperatureUnit,
+    timeFormat: state.timeFormat,
+    windSpeedUnit: state.windSpeedUnit,
+    showFeelsLike: state.showFeelsLike
+  };
+  
+  storageUtils.saveData(PREFS_STORAGE_KEY, prefsToSave);
+}, [state.weatherSystem, state.debugMode, state.temperatureUnit, state.timeFormat, state.windSpeedUnit, state.showFeelsLike]);
+  
   
   // Function to update all regions' weather type
   const updateAllRegionsWeatherType = (weatherSystem) => {
@@ -191,6 +213,18 @@ export const PreferencesProvider = ({ children }) => {
     togglePreferencesMenu: () => {
       dispatch({ type: ACTIONS.TOGGLE_PREFERENCES_MENU });
     },
+      setTemperatureUnit: (unit) => {
+    dispatch({ type: ACTIONS.SET_TEMPERATURE_UNIT, payload: unit });
+  },
+  setTimeFormat: (format) => {
+    dispatch({ type: ACTIONS.SET_TIME_FORMAT, payload: format });
+  },
+  setWindSpeedUnit: (unit) => {
+    dispatch({ type: ACTIONS.SET_WIND_SPEED_UNIT, payload: unit });
+  },
+  setShowFeelsLike: (show) => {
+    dispatch({ type: ACTIONS.SET_SHOW_FEELS_LIKE, payload: show });
+  },
     // Expose the function to update all regions (will always use meteorological now)
     updateAllRegionsWeatherType,
     // ADDED: Expose the migration function

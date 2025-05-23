@@ -3,7 +3,15 @@ import React, { useState } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
 
 const PreferencesMenu = () => {
-  const { state, setDebugMode, togglePreferencesMenu } = usePreferences();
+const { 
+  state, 
+  setDebugMode, 
+  togglePreferencesMenu,
+  setTemperatureUnit,
+  setTimeFormat,
+  setWindSpeedUnit,
+  setShowFeelsLike
+} = usePreferences();
 
   // States for various sections
   const [showNuclearConfirm, setShowNuclearConfirm] = useState(false);
@@ -12,10 +20,10 @@ const PreferencesMenu = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   
   // New preference states (these would need to be added to PreferencesContext)
-  const [temperatureUnit, setTemperatureUnit] = useState('fahrenheit');
-  const [timeFormat, setTimeFormat] = useState('12hour');
-  const [windSpeedUnit, setWindSpeedUnit] = useState('mph');
-  const [showFeelsLike, setShowFeelsLike] = useState(true);
+  // const [temperatureUnit, setTemperatureUnit] = useState('fahrenheit');
+  // const [timeFormat, setTimeFormat] = useState('12hour');
+  // const [windSpeedUnit, setWindSpeedUnit] = useState('mph');
+  // const [showFeelsLike, setShowFeelsLike] = useState(true);
 
   // Handle clicking outside to close
   const handleModalClick = (e) => {
@@ -119,13 +127,13 @@ const PreferencesMenu = () => {
                   <label htmlFor="temperatureUnit" className="font-medium">Temperature Unit</label>
                   <select
                     id="temperatureUnit"
-                    value={temperatureUnit}
+                    value={state.temperatureUnit}
                     onChange={(e) => setTemperatureUnit(e.target.value)}
                     className="p-2 rounded bg-surface text-white border border-border"
                   >
                     <option value="fahrenheit">Fahrenheit (°F)</option>
                     <option value="celsius">Celsius (°C)</option>
-                    <option value="both">Both (°F/°C)</option>
+                    {/* <option value="both">Both (°F/°C)</option> */}
                   </select>
                 </div>
               </div>
@@ -135,7 +143,7 @@ const PreferencesMenu = () => {
                   <label htmlFor="windSpeedUnit" className="font-medium">Wind Speed Unit</label>
                   <select
                     id="windSpeedUnit"
-                    value={windSpeedUnit}
+                    value={state.windSpeedUnit}
                     onChange={(e) => setWindSpeedUnit(e.target.value)}
                     className="p-2 rounded bg-surface text-white border border-border"
                   >
@@ -151,7 +159,7 @@ const PreferencesMenu = () => {
                   <label htmlFor="timeFormat" className="font-medium">Time Format</label>
                   <select
                     id="timeFormat"
-                    value={timeFormat}
+                    value={state.timeFormat}
                     onChange={(e) => setTimeFormat(e.target.value)}
                     className="p-2 rounded bg-surface text-white border border-border"
                   >
@@ -166,7 +174,7 @@ const PreferencesMenu = () => {
                   <input
                     type="checkbox"
                     id="showFeelsLike"
-                    checked={showFeelsLike}
+                    checked={state.showFeelsLike}
                     onChange={(e) => setShowFeelsLike(e.target.checked)}
                     className="mr-3"
                   />

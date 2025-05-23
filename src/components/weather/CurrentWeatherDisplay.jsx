@@ -1,6 +1,8 @@
 // src/components/weather/CurrentWeatherDisplay.jsx
 import React, { useEffect, useState } from "react";
+import { usePreferences } from "../../contexts/PreferencesContext";
 import { formatTimeWithMinutes } from "../../utils/timeUtils";
+import { formatTemperature, formatTemperatureValue, formatWindSpeed } from "../../utils/unitConversions";
 import WeatherIcon from "./WeatherIcon";
 import "../../weatherDashboard.css";
 
@@ -10,6 +12,7 @@ const CurrentWeatherDisplay = ({
   isDaytime,
   themeColors,
 }) => {
+  const { state: preferences } = usePreferences();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   // Add event listener to track window size
@@ -38,13 +41,17 @@ const CurrentWeatherDisplay = ({
     currentWeather.windSpeed
   );
 
-  // Show "feels like" if any noticeable difference exists
+  // Show "feels like" based on preference and if difference exists
   const tempDiff = feelsLikeTemp - currentWeather.temperature;
-  const showFeelsLike = Math.abs(tempDiff) >= 1;
+  const showFeelsLike = preferences.showFeelsLike && Math.abs(tempDiff) >= 1;
 
   // Determine if we should use side-by-side layout
-  // You can adjust this breakpoint (768px) based on your needs
   const useSideBySide = windowWidth >= 768;
+
+  // Format temperature based on unit preference
+  const displayTemp = formatTemperatureValue(currentWeather.temperature, preferences.temperatureUnit);
+  const displayFeelsLike = formatTemperatureValue(feelsLikeTemp, preferences.temperatureUnit);
+  const tempSymbol = preferences.temperatureUnit === 'celsius' ? '°C' : '°F';
 
   return (
     <div className={`weather-overlay ${useSideBySide ? "side-by-side" : ""}`}>
@@ -58,7 +65,7 @@ const CurrentWeatherDisplay = ({
         {/* Left side / Top (Temperature section) */}
         <div className="temperature-section">
           <div className="temperature-display-large">
-            {currentWeather.temperature}°
+            {displayTemp}°
           </div>
 
           <div className="feels-like-container">
@@ -68,11 +75,11 @@ const CurrentWeatherDisplay = ({
                   tempDiff < 0 ? "feels-colder" : "feels-warmer"
                 }`}
               >
-                Feels Like: {feelsLikeTemp}°
+                Feels Like: {displayFeelsLike}°
               </div>
-            ) : (
+            ) : preferences.showFeelsLike ? (
               <div className="feels-like-temp">Actual Temperature</div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -90,7 +97,7 @@ const CurrentWeatherDisplay = ({
 
           {/* Wind information */}
           <div className="wind-display-large">
-            {currentWeather.windSpeed} mph {currentWeather.windDirection} •{" "}
+            {formatWindSpeed(currentWeather.windSpeed, preferences.windSpeedUnit)} {currentWeather.windDirection} •{" "}
             {currentWeather.windIntensity}
           </div>
 

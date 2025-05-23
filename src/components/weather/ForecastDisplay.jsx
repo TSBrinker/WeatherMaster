@@ -1,7 +1,9 @@
 // src/components/weather/ForecastDisplay.jsx
 import React from "react";
 import { useEffect } from "react";
+import { usePreferences } from "../../contexts/PreferencesContext";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
+import { formatTemperature, formatWindSpeed } from "../../utils/unitConversions";
 import WeatherIcon from "./WeatherIcon";
 import { Wind } from "lucide-react";
 
@@ -11,8 +13,17 @@ const ForecastDisplay = ({
   celestialInfo,
   isExpanded = false,
 }) => {
-  // Format hour with minutes
+  const { state: preferences } = usePreferences();
+
+  // Format hour with minutes based on time format preference
   const formatHour = (date) => {
+    if (preferences.timeFormat === '24hour') {
+      return date.toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
     return date.toLocaleString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -122,12 +133,14 @@ const ForecastDisplay = ({
               </div>
 
               <div className="forecast-condition">{hour.condition}</div>
-              <div className="forecast-temp">{hour.temperature}°</div>
+              <div className="forecast-temp">
+                {formatTemperature(hour.temperature, preferences.temperatureUnit)}
+              </div>
 
               {/* Show wind in both compact and expanded view */}
               <div className="forecast-wind">
                 <Wind size={12} />
-                <span>{hour.windSpeed} mph</span>
+                <span>{formatWindSpeed(hour.windSpeed, preferences.windSpeedUnit)}</span>
               </div>
             </div>
           );

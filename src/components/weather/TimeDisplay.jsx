@@ -1,9 +1,11 @@
 // src/components/weather/TimeDisplay.jsx
 import React from "react";
 import { useWorldSettings } from "../../contexts/WorldSettings";
+import { usePreferences } from "../../contexts/PreferencesContext";
 
 const TimeDisplay = ({ currentDate, currentSeason }) => {
   const { formatGameDate, formatGameTime } = useWorldSettings();
+  const { state: preferences } = usePreferences();
 
   // Calculate the season phase (early, mid, late) based on equinoxes and solstices
   const getSeasonPhase = (date) => {
@@ -80,13 +82,24 @@ const TimeDisplay = ({ currentDate, currentSeason }) => {
     }
   };
 
+  // Format time based on preference
+  const formatTimeBasedOnPreference = (date) => {
+    if (preferences.timeFormat === '24hour') {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    // Use the existing formatGameTime for 12-hour format
+    return formatGameTime(date);
+  };
+
   // Get the season phase
   const seasonPhase = getSeasonPhase(currentDate);
 
   return (
     <div className="time-display">
       {/* Changed the order to match your screenshot */}
-      <div className="time-display-large">{formatGameTime(currentDate)}</div>
+      <div className="time-display-large">{formatTimeBasedOnPreference(currentDate)}</div>
       <div className="date-display">{formatGameDate(currentDate)}</div>
       <div className="season-display">{seasonPhase}</div>
     </div>
