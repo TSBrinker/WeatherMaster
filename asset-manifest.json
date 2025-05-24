@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/WeatherMaster/static/css/main.ee93bcde.css",
+    "main.js": "/WeatherMaster/static/js/main.47b90a86.js",
+    "static/media/WM TP WithText.png": "/WeatherMaster/static/media/WM TP WithText.edbd549b4ad2d32e1f83.png",
+    "index.html": "/WeatherMaster/index.html",
+    "main.ee93bcde.css.map": "/WeatherMaster/static/css/main.ee93bcde.css.map",
+    "main.47b90a86.js.map": "/WeatherMaster/static/js/main.47b90a86.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ee93bcde.css",
+    "static/js/main.47b90a86.js"
+  ]
+}
