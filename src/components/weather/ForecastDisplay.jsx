@@ -5,7 +5,7 @@ import { usePreferences } from "../../contexts/PreferencesContext";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import { formatTemperature, formatWindSpeed } from "../../utils/unitConversions";
 import WeatherIcon from "./WeatherIcon";
-import { Wind } from "lucide-react";
+import { Wind, Sun, Moon } from "lucide-react";
 
 const ForecastDisplay = ({
   forecast,
@@ -33,7 +33,7 @@ const ForecastDisplay = ({
 
   // Check if it's daytime for a given hour
   const isDaytime = (date) => {
-    if (!celestialInfo) {
+    if (!celestialInfo || !celestialInfo.sunrise || !celestialInfo.sunset) {
       const { sunrise, sunset } =
         sunriseSunsetService.getFormattedSunriseSunset(latitudeBand, date);
       return date >= sunrise && date <= sunset;
@@ -47,6 +47,26 @@ const ForecastDisplay = ({
     return sunriseTime && sunsetTime
       ? dateTime >= sunriseTime && dateTime <= sunsetTime
       : true; // Default to daytime if no info available
+  };
+
+  // Check if hour is during dawn or dusk
+  const isDawnOrDusk = (date) => {
+    if (!celestialInfo || !celestialInfo.sunrise || !celestialInfo.sunset) return false;
+    
+    const dateTime = date.getTime();
+    const sunriseTime = celestialInfo.sunrise.getTime();
+    const sunsetTime = celestialInfo.sunset.getTime();
+    
+    // Dawn: 1 hour before to 30 minutes after sunrise
+    const dawnStart = sunriseTime - (60 * 60 * 1000); // 1 hour before
+    const dawnEnd = sunriseTime + (30 * 60 * 1000); // 30 min after
+    
+    // Dusk: 30 minutes before to 1 hour after sunset
+    const duskStart = sunsetTime - (30 * 60 * 1000); // 30 min before
+    const duskEnd = sunsetTime + (60 * 60 * 1000); // 1 hour after
+    
+    return (dateTime >= dawnStart && dateTime <= dawnEnd) || 
+           (dateTime >= duskStart && dateTime <= duskEnd);
   };
 
   // Check if hour contains sunrise or sunset
@@ -94,6 +114,7 @@ const ForecastDisplay = ({
       <div className={`forecast-hours ${isExpanded ? "expanded" : ""}`}>
         {forecast.map((hour, index) => {
           const hourIsDaytime = isDaytime(hour.date);
+          const hourIsDawnDusk = isDawnOrDusk(hour.date);
           const hourHasSunrise = isSunrise(hour.date);
           const hourHasSunset = isSunset(hour.date);
 
@@ -104,9 +125,11 @@ const ForecastDisplay = ({
             ? "sunset-hour"
             : "";
 
-          // Background based on daytime/nighttime
-          const timeClass = hourIsDaytime
-            ? "day-background"
+          // Background based on time of day
+          const timeClass = hourIsDawnDusk 
+            ? "dawn-dusk-background" 
+            : hourIsDaytime 
+            ? "day-background" 
             : "night-background";
 
           return (
@@ -141,6 +164,15 @@ const ForecastDisplay = ({
               <div className="forecast-wind">
                 <Wind size={12} />
                 <span>{formatWindSpeed(hour.windSpeed, preferences.windSpeedUnit)}</span>
+              </div>
+              
+              {/* Day/Night indicator icon */}
+              <div className="celestial-indicator">
+                {hourIsDaytime ? (
+                  <Sun size={14} className="text-yellow-400" />
+                ) : (
+                  <Moon size={14} className="text-blue-200" />
+                )}
               </div>
             </div>
           );
