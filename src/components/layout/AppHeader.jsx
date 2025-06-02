@@ -65,7 +65,7 @@ const AppHeader = () => {
       <div className="app-controls">
         {/* Hamburger menu button */}
         <button
-          className="flex items-center gap-2 px-3 py-2 bg-surface-light hover:bg-surface rounded"
+          className="btn flex items-center gap-2 px-3 py-2 bg-surface-light hover:bg-surface rounded"
           onClick={handleOpenRegionsMenu}
           title="Regions & Worlds"
         >

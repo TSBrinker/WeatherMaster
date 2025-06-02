@@ -108,13 +108,16 @@ const {
       <div className="preferences-modal">
         <div className="flex justify-between items-center p-4 border-b border-border">
           <h2 className="text-xl font-semibold">Settings</h2>
+          
           <button
             onClick={togglePreferencesMenu}
             className="text-gray-400 hover:text-white"
           >
             ✕
           </button>
+          
         </div>
+        
 
         <div className="p-4">
           {/* Display Preferences */}
@@ -191,11 +194,11 @@ const {
 
           {/* Data Management */}
           <div className="mb-6">
-            <button disabled
-              className="text-left w-full flex justify-between items-center py-3 px-4 bg-surface-light rounded hover:bg-opacity-80 transition-colors"
+            <button
+              className="btn text-left w-full flex justify-between items-center py-3 px-4 bg-surface-light rounded hover:bg-opacity-80 transition-colors"
               onClick={() => setShowDataManagement(!showDataManagement)}
             >
-              <span className="font-semibold">Data Management (in progress)</span>
+              <span className="font-semibold">Data Management</span>
               <span className="text-gray-400">{showDataManagement ? "▲" : "▼"}</span>
             </button>
 
@@ -299,7 +302,7 @@ const {
           {/* How Weather Generation Works */}
           <div className="mb-4">
             <button
-              className="text-left w-full flex justify-between items-center py-3 px-4 bg-surface-light rounded hover:bg-opacity-80 transition-colors"
+              className="btn text-left w-full flex justify-between items-center py-3 px-4 bg-surface-light rounded hover:bg-opacity-80 transition-colors"
               onClick={() => setShowWeatherExplanation(!showWeatherExplanation)}
             >
               <span className="font-semibold">How does weather generation work?</span>
@@ -355,11 +358,7 @@ const {
           </div>
         </div>
 
-        <div className="p-4 border-t border-border">
-          <p className="text-sm text-gray-400">
-            Changes are saved automatically and apply to all regions.
-          </p>
-        </div>
+
       </div>
     </div>
   );

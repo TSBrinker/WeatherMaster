@@ -100,24 +100,6 @@ const GameDateInput = ({ initialValue, onChange, id }) => {
 
   return (
     <div className="game-date-input">
-      {/* Year input */}
-      <div className="date-input-group">
-        <label
-          htmlFor={`${id}-year`}
-          className="block text-sm text-gray-400 mb-1"
-        >
-          Year
-        </label>
-        <input
-          type="number"
-          id={`${id}-year`}
-          name="year"
-          value={dateValues.year}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-surface-light text-white border border-border"
-          aria-label="Year"
-        />
-      </div>
 
       {/* Month dropdown */}
       <div className="date-input-group">
@@ -165,6 +147,25 @@ const GameDateInput = ({ initialValue, onChange, id }) => {
             </option>
           ))}
         </select>
+      </div>
+      
+      {/* Year input */}
+      <div className="date-input-group">
+        <label
+          htmlFor={`${id}-year`}
+          className="block text-sm text-gray-400 mb-1"
+        >
+          Year
+        </label>
+        <input
+          type="number"
+          id={`${id}-year`}
+          name="year"
+          value={dateValues.year}
+          onChange={handleChange}
+          className="w-full p-2 rounded bg-surface-light text-white border border-border"
+          aria-label="Year"
+        />
       </div>
     </div>
   );
