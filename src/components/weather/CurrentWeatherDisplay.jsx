@@ -2,7 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { usePreferences } from "../../contexts/PreferencesContext";
 import { formatTimeWithMinutes } from "../../utils/timeUtils";
-import { formatTemperature, formatTemperatureValue, formatWindSpeed } from "../../utils/unitConversions";
+import {
+  formatTemperature,
+  formatTemperatureValue,
+  formatWindSpeed,
+} from "../../utils/unitConversions";
 import WeatherIcon from "./WeatherIcon";
 import "../../weatherDashboard.css";
 
@@ -49,9 +53,15 @@ const CurrentWeatherDisplay = ({
   const useSideBySide = windowWidth >= 768;
 
   // Format temperature based on unit preference
-  const displayTemp = formatTemperatureValue(currentWeather.temperature, preferences.temperatureUnit);
-  const displayFeelsLike = formatTemperatureValue(feelsLikeTemp, preferences.temperatureUnit);
-  const tempSymbol = preferences.temperatureUnit === 'celsius' ? '°C' : '°F';
+  const displayTemp = formatTemperatureValue(
+    currentWeather.temperature,
+    preferences.temperatureUnit
+  );
+  const displayFeelsLike = formatTemperatureValue(
+    feelsLikeTemp,
+    preferences.temperatureUnit
+  );
+  const tempSymbol = preferences.temperatureUnit === "celsius" ? "C" : "F";
 
   return (
     <div className={`weather-overlay ${useSideBySide ? "side-by-side" : ""}`}>
@@ -65,7 +75,7 @@ const CurrentWeatherDisplay = ({
         {/* Left side / Top (Temperature section) */}
         <div className="temperature-section">
           <div className="temperature-display-large">
-            {displayTemp}°
+            {displayTemp}° {tempSymbol}
           </div>
 
           <div className="feels-like-container">
@@ -97,8 +107,11 @@ const CurrentWeatherDisplay = ({
 
           {/* Wind information */}
           <div className="wind-display-large">
-            {formatWindSpeed(currentWeather.windSpeed, preferences.windSpeedUnit)} {currentWeather.windDirection} •{" "}
-            {currentWeather.windIntensity}
+            {formatWindSpeed(
+              currentWeather.windSpeed,
+              preferences.windSpeedUnit
+            )}{" "}
+            {currentWeather.windDirection} • {currentWeather.windIntensity}
           </div>
 
           {/* Next celestial event */}

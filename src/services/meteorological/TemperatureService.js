@@ -38,11 +38,7 @@ class TemperatureService {
 
 /**
  * Calculate base temperature at initialization
- * @param {object} profile - Region profile
- * @param {object} seasonalBaseline - Seasonal baseline data (still used for variance)
- * @param {Date} date - Current date
- * @param {number} hour - Current hour (0-23)
- * @returns {number} - Temperature in °F
+ * UPDATED to pass profile to calculateSolarBasedTemperature
  */
 calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
   try {
@@ -55,7 +51,7 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     // Calculate physics-based temperature from solar factors
     const dayOfYear = this.getDayOfYear(date);
     
-    // Get biome temperature range
+    // Get biome temperature range (used as fallback only)
     const biomeRange = this.biomeTemperatureRanges[profile.biome] || 
                       this.biomeTemperatureRanges["temperate-deciduous"];
     
@@ -67,33 +63,38 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     );
     
     // Calculate baseline temperature from solar angle and day of year
+    // UPDATED: Pass profile as the last parameter
     const baseTemp = this.calculateSolarBasedTemperature(
       profile.latitude, 
       dayOfYear, 
       hour,
-      adjustedRange,  // Use adjusted range here
+      adjustedRange,
       date,
-      profile.latitudeBand || "temperate"
+      profile.latitudeBand || "temperate",
+      profile  // NEW: Pass the profile so temperature calculation can use temperatureProfile
     );
     
     // Add some randomness - scale randomness by the seasonal variance
-    // Completely rewritten with thorough error checking
     let randomFactor = 0;
     
     try {
-      // Check each part of the path for validity
       if (seasonalBaseline && 
           typeof seasonalBaseline === 'object' && 
           seasonalBaseline.temperature && 
           typeof seasonalBaseline.temperature === 'object' &&
           seasonalBaseline?.temperature?.variance !== undefined && 
           typeof seasonalBaseline?.temperature?.variance === 'number') {
-        // Use the provided variance
         randomFactor = (Math.random() * 2 - 1) * (seasonalBaseline?.temperature?.variance * 0.2);
       } else {
-        // Fallback to a default random factor
-        randomFactor = (Math.random() * 2 - 1) * 2; // Default factor
-        console.log("Using default random factor for temperature");
+        // Try to use temperatureProfile variance if available
+        if (profile?.temperatureProfile) {
+          const currentSeason = this.getCurrentSeason(date);
+          const seasonalVariance = profile.temperatureProfile[currentSeason]?.variance || 
+                                 profile.temperatureProfile.annual?.variance || 10;
+          randomFactor = (Math.random() * 2 - 1) * (seasonalVariance * 0.2);
+        } else {
+          randomFactor = (Math.random() * 2 - 1) * 2; // Default factor
+        }
       }
     } catch (error) {
       console.error("Error calculating temperature randomness:", error);
@@ -152,97 +153,97 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
    * @param {Function} getDayOfYear - Function to get day of year
    * @returns {number} - Temperature in °F
    */
-  calculateTemperature(
-    profile, 
-    seasonalBaseline, 
-    date, 
+
+calculateTemperature(
+  profile, 
+  seasonalBaseline, 
+  date, 
+  hour, 
+  currentTemperature, 
+  cloudCover, 
+  weatherSystems, 
+  getRecentPrecipitation,
+  getDayOfYear
+) {
+  // Get the day of year for solar calculations
+  const dayOfYear = getDayOfYear ? getDayOfYear(date) : this.getDayOfYear(date);
+  
+  // Get biome temperature range (fallback only)
+  const biomeRange = this.biomeTemperatureRanges[profile.biome] || 
+                    this.biomeTemperatureRanges["temperate-deciduous"];
+  
+  // Apply latitude band adjustments to biome range
+  const adjustedRange = this.adjustBiomeRangeForLatitude(
+    biomeRange,
+    profile.latitude, 
+    profile.latitudeBand || "temperate"
+  );
+  
+  // Get sunrise/sunset info
+  const latitudeBand = profile.latitudeBand || "temperate";
+  const { isDaytime } = sunriseSunsetService.getFormattedSunriseSunset(
+    latitudeBand, 
+    date
+  );
+  
+  // PHYSICS-BASED TEMPERATURE CALCULATION
+  // 1. Calculate baseline temperature from solar radiation and day of year
+  // UPDATED: Pass profile as the last parameter
+  const solarTemp = this.calculateSolarBasedTemperature(
+    profile.latitude, 
+    dayOfYear, 
+    hour,
+    adjustedRange,
+    date,
+    latitudeBand,
+    profile  // NEW: Pass the profile
+  );
+  
+  // 2. Apply geographical adjustments
+  const elevationEffect = -0.0035 * profile.elevation;
+  
+  // Maritime influence
+  const seasonalPosition = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
+  const maritimeEffect = profile.maritimeInfluence * 5 * (1 - Math.abs(seasonalPosition));
+  
+  // 3. Special factor temperature effects
+  const specialFactorEffects = this.calculateSpecialFactorTemperatureEffects(
+    profile.specialFactors || {}, 
     hour, 
-    currentTemperature, 
-    cloudCover, 
-    weatherSystems, 
-    getRecentPrecipitation,
-    getDayOfYear
-  ) {
-    // Get the day of year for solar calculations
-    const dayOfYear = getDayOfYear ? getDayOfYear(date) : this.getDayOfYear(date);
-    
-    // Get biome temperature range
-    const biomeRange = this.biomeTemperatureRanges[profile.biome] || 
-                      this.biomeTemperatureRanges["temperate-deciduous"];
-    
-    // Apply latitude band adjustments to biome range
-    const adjustedRange = this.adjustBiomeRangeForLatitude(
-      biomeRange,
-      profile.latitude, 
-      profile.latitudeBand || "temperate"
-    );
-    
-    // Get sunrise/sunset info
-    const latitudeBand = profile.latitudeBand || "temperate";
-    const { isDaytime } = sunriseSunsetService.getFormattedSunriseSunset(
-      latitudeBand, 
-      date
-    );
-    
-    // PHYSICS-BASED TEMPERATURE CALCULATION
-    // 1. Calculate baseline temperature from solar radiation and day of year
-    const solarTemp = this.calculateSolarBasedTemperature(
-      profile.latitude, 
-      dayOfYear, 
-      hour,
-      adjustedRange,  // Use adjusted range here
-      date,
-      latitudeBand
-    );
-    
-    // 2. Apply geographical adjustments
-    // Elevation effect - approximately -3.5°F per 1000ft
-    const elevationEffect = -0.0035 * profile.elevation;
-    
-    // Maritime influence - reduces temperature extremes
-    const seasonalPosition = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
-    const maritimeEffect = profile.maritimeInfluence * 5 * (1 - Math.abs(seasonalPosition));
-    
-    // 3. Special factor temperature effects
-    const specialFactorEffects = this.calculateSpecialFactorTemperatureEffects(
-      profile.specialFactors || {}, 
-      hour, 
-      isDaytime, 
-      seasonalPosition
-    );
-    
-    // 4. Weather system effects on temperature
-    const systemEffect = this.calculateSystemTemperatureEffect(weatherSystems);
-    
-    // 5. Cloud cover effect - clouds reduce daytime heating and nighttime cooling
-    const cloudEffect = this.calculateCloudTemperatureEffect(hour, cloudCover, date, latitudeBand);
-    
-    // 6. Recent precipitation has cooling effect through evaporation
-    const recentPrecip = getRecentPrecipitation ? getRecentPrecipitation() : 0;
-    const precipEffect = recentPrecip * -5; // Cooling effect from evaporation
-    
-    // 7. Random variation - weather isn't perfectly predictable
-    const randomVariation = (Math.random() * 2 - 1) * 2;
-    
-    // Calculate final temperature
-    let temp = solarTemp + 
-               elevationEffect + 
-               maritimeEffect + 
-               specialFactorEffects + 
-               systemEffect + 
-               cloudEffect + 
-               precipEffect + 
-               randomVariation;
-    
-    // Apply temperature inertia - temperature changes gradually, not instantly
-    if (currentTemperature !== null) {
-      // Blend with 70% of new calculation, 30% of previous temperature
-      temp = temp * 0.7 + currentTemperature * 0.3;
-    }
-    
-    // Return the temperature, ensuring it's a reasonable value
-    return Math.max(-60, Math.min(130, temp));
+    isDaytime, 
+    seasonalPosition
+  );
+  
+  // 4. Weather system effects on temperature
+  const systemEffect = this.calculateSystemTemperatureEffect(weatherSystems);
+  
+  // 5. Cloud cover effect
+  const cloudEffect = this.calculateCloudTemperatureEffect(hour, cloudCover, date, latitudeBand);
+  
+  // 6. Recent precipitation cooling effect
+  const recentPrecip = getRecentPrecipitation ? getRecentPrecipitation() : 0;
+  const precipEffect = recentPrecip * -5;
+  
+  // 7. Random variation
+  const randomVariation = (Math.random() * 2 - 1) * 2;
+  
+  // Calculate final temperature
+  let temp = solarTemp + 
+             elevationEffect + 
+             maritimeEffect + 
+             specialFactorEffects + 
+             systemEffect + 
+             cloudEffect + 
+             precipEffect + 
+             randomVariation;
+  
+  // Apply temperature inertia
+  if (currentTemperature !== null) {
+    temp = temp * 0.7 + currentTemperature * 0.3;
   }
+  
+  return Math.max(-60, Math.min(130, temp));
+}
 
   /**
    * Calculate temperature effects from special factors
@@ -337,98 +338,140 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     return totalEffect;
   }
   
-  /**
-   * Calculate temperature based on solar angle and day of year
-   * @param {number} latitude - Latitude in degrees
-   * @param {number} dayOfYear - Day of year (0-365)
-   * @param {number} hour - Hour of day (0-23)
-   * @param {object} biomeRange - Biome temperature range parameters
-   * @param {Date} date - Current date
-   * @param {string} latitudeBand - Latitude band
-   * @returns {number} - Base temperature in °F
-   */
-  calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, latitudeBand = "temperate") {
-    // Get actual sunrise/sunset info
-    const { sunrise, sunset, isDaytime, dayLengthHours } = sunriseSunsetService.getSunriseSunset(
-      latitudeBand, 
-      date
-    );
+/**
+ * Calculate temperature based on solar angle and day of year
+ * UPDATED to use region's temperatureProfile data instead of generic biome ranges
+ * @param {number} latitude - Latitude in degrees
+ * @param {number} dayOfYear - Day of year (0-365)
+ * @param {number} hour - Hour of day (0-23)
+ * @param {object} biomeRange - Biome temperature range parameters (fallback only)
+ * @param {Date} date - Current date
+ * @param {string} latitudeBand - Latitude band
+ * @param {object} profile - Region profile with temperatureProfile data
+ * @returns {number} - Base temperature in °F
+ */
+calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, latitudeBand = "temperate", profile = null) {
+  // Get actual sunrise/sunset info
+  const { sunrise, sunset, isDaytime, dayLengthHours } = sunriseSunsetService.getSunriseSunset(
+    latitudeBand, 
+    date
+  );
+  
+  // Create hour date for solar position calculation
+  const hourDate = new Date(date);
+  hourDate.setHours(hour, 0, 0, 0);
+  
+  // Calculate how far through the day we are (0-1)
+  const solarPosition = sunriseSunsetService.getSolarPosition(
+    hourDate,
+    sunrise,
+    sunset
+  );
+  
+  // 1. Seasonal factor - varies throughout the year (-1 to 1)
+  const seasonalFactor = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
+  
+  // 2. Adjust for southern hemisphere if needed
+  const adjustedSeasonalFactor = latitude < 0 ? -seasonalFactor : seasonalFactor;
+  
+  // 3. NEW: Use region's temperatureProfile if available, otherwise fall back to biome ranges
+  let meanAnnualTemp, seasonalAmplitude;
+  
+  if (profile && profile.temperatureProfile) {
+    // Use the region's custom temperature profile
+    const tempProfile = profile.temperatureProfile;
     
-    // Create hour date for solar position calculation
-    const hourDate = new Date(date);
-    hourDate.setHours(hour, 0, 0, 0);
-    
-    // Calculate how far through the day we are (0-1)
-    const solarPosition = sunriseSunsetService.getSolarPosition(
-      hourDate,
-      sunrise,
-      sunset
-    );
-    
-    // 1. Seasonal factor - varies throughout the year (-1 to 1)
-    const seasonalFactor = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
-    
-    // 2. Adjust for southern hemisphere if needed
-    const adjustedSeasonalFactor = latitude < 0 ? -seasonalFactor : seasonalFactor;
-    
-    // 3. Calculate annual temperature oscillation based on biome amplitude
-    // Get seasonal factor from latitude band - IMPROVED to respect different seasonal intensities
-    const bandAdjustment = this.latitudeBandAdjustments[latitudeBand] || this.latitudeBandAdjustments["temperate"];
-    const seasonalIntensity = bandAdjustment.seasonal || 1.0;
-    
-    // Apply seasonal intensity to the annual temperature swing
-    const annualOscillation = biomeRange.amplitude * adjustedSeasonalFactor * seasonalIntensity;
-    
-    // 4. Adjusting diurnal oscillation based on day length
-    // Calculate normalized day length factor (shorter days = less heating)
-    const normalDayLength = 12; // Reference "normal" day length in hours
-    const dayLengthFactor = Math.min(1.3, Math.max(0.7, dayLengthHours / normalDayLength));
-    
-    // 5. Calculate diurnal factor based on solar position
-    let diurnalFactor;
-    
-    // Check if we're in daylight hours
-    if (solarPosition >= 0.25 && solarPosition < 0.75) {
-      // Daytime: Peak at solar noon (0.5)
-      // Normalize to -1 to 1 scale, where 1 is at solar noon
-      diurnalFactor = 1 - Math.abs((solarPosition - 0.5) * 4);
-    } else {
-      // Nighttime: Coldest point is just before sunrise
-      // For early night (0.75-1.0), temperature decreases
-      // For late night (0.0-0.25), temperature starts increasing slightly
-      if (solarPosition >= 0.75) {
-        // Early night: cooling down (1.0 → 0.0)
-        diurnalFactor = -((solarPosition - 0.75) * 4);
+    // Calculate current season's temperature based on seasonal factor
+    let seasonalMean;
+    if (adjustedSeasonalFactor >= 0.5) {
+      // Peak summer
+      seasonalMean = tempProfile.summer.mean;
+    } else if (adjustedSeasonalFactor >= -0.5) {
+      // Spring or fall - interpolate
+      if (seasonalFactor > 0) {
+        // Spring to summer transition
+        const blend = adjustedSeasonalFactor * 2; // 0 to 1
+        seasonalMean = tempProfile.spring.mean + (tempProfile.summer.mean - tempProfile.spring.mean) * blend;
       } else {
-        // Late night: coldest to slightly warming (−1.0 → -0.8)
-        diurnalFactor = -1.0 + ((solarPosition / 0.25) * 0.2);
+        // Fall transition
+        const blend = Math.abs(adjustedSeasonalFactor) * 2; // 0 to 1
+        seasonalMean = tempProfile.fall.mean + (tempProfile.winter.mean - tempProfile.fall.mean) * blend;
       }
+    } else {
+      // Peak winter
+      seasonalMean = tempProfile.winter.mean;
     }
     
-    // 6. Scale the diurnal oscillation and adjust by day length
-    const diurnalAmplitude = biomeRange.amplitude * 0.4 * dayLengthFactor;
-    const diurnalOscillation = diurnalAmplitude * diurnalFactor;
+    // Use annual mean as base, seasonal mean for current calculation
+    meanAnnualTemp = tempProfile.annual.mean;
     
-    // 7. Calculate mean annual temperature for this latitude and biome
-    const meanAnnualTemp = (biomeRange.max + biomeRange.min) / 2;
+    // Calculate amplitude based on the difference between seasonal extremes
+    const maxSeasonal = Math.max(
+      tempProfile.winter.mean, 
+      tempProfile.spring.mean, 
+      tempProfile.summer.mean, 
+      tempProfile.fall.mean
+    );
+    const minSeasonal = Math.min(
+      tempProfile.winter.mean, 
+      tempProfile.spring.mean, 
+      tempProfile.summer.mean, 
+      tempProfile.fall.mean
+    );
+    seasonalAmplitude = (maxSeasonal - minSeasonal) / 2;
     
-          // 8. Apply Continental Effect - IMPROVED
-    // Further from coast = more extreme temperature variations
-    let continentalEffect = 0;
-    if (latitude > 30 && latitude < 70) {
-      // Continental effect strongest in mid-latitudes
-      const continentalFactor = (1 - (biomeRange.maritimeInfluence || 0.5)) * 0.7;
-      // Amplify seasonal and diurnal temperature differences
-      if (seasonalFactor > 0) {  // Summer
-        continentalEffect = continentalFactor * diurnalFactor * 8; // Hotter days
-      } else {  // Winter
-        continentalEffect = -continentalFactor * Math.abs(seasonalFactor) * 10; // Colder winters
-      }
-    }
+    // Use the current season's mean as our base temperature
+    meanAnnualTemp = seasonalMean;
     
-    // 9. Final temperature: mean + seasonal variation + daily variation + continental effect
-    return meanAnnualTemp + annualOscillation + diurnalOscillation + continentalEffect;
+  } else {
+    // Fallback to original biome-based calculation
+    console.log("No temperatureProfile found, using biome ranges as fallback");
+    meanAnnualTemp = (biomeRange.max + biomeRange.min) / 2;
+    seasonalAmplitude = biomeRange.amplitude;
   }
+  
+  // 4. Get seasonal factor from latitude band
+  const bandAdjustment = this.latitudeBandAdjustments[latitudeBand] || this.latitudeBandAdjustments["temperate"];
+  const seasonalIntensity = bandAdjustment.seasonal || 1.0;
+  
+  // 5. Calculate diurnal oscillation based on day length
+  const normalDayLength = 12;
+  const dayLengthFactor = Math.min(1.3, Math.max(0.7, dayLengthHours / normalDayLength));
+  
+  // 6. Calculate diurnal factor based on solar position
+  let diurnalFactor;
+  
+  if (solarPosition >= 0.25 && solarPosition < 0.75) {
+    // Daytime: Peak at solar noon (0.5)
+    diurnalFactor = 1 - Math.abs((solarPosition - 0.5) * 4);
+  } else {
+    // Nighttime
+    if (solarPosition >= 0.75) {
+      diurnalFactor = -((solarPosition - 0.75) * 4);
+    } else {
+      diurnalFactor = -1.0 + ((solarPosition / 0.25) * 0.2);
+    }
+  }
+  
+  // 7. Scale the diurnal oscillation
+  const diurnalAmplitude = seasonalAmplitude * 0.4 * dayLengthFactor;
+  const diurnalOscillation = diurnalAmplitude * diurnalFactor;
+  
+  // 8. Apply Continental Effect
+  let continentalEffect = 0;
+  if (latitude > 30 && latitude < 70) {
+    const continentalFactor = (1 - (profile?.maritimeInfluence || 0.5)) * 0.7;
+    if (adjustedSeasonalFactor > 0) {
+      continentalEffect = continentalFactor * diurnalFactor * 8;
+    } else {
+      continentalEffect = -continentalFactor * Math.abs(adjustedSeasonalFactor) * 10;
+    }
+  }
+  
+  // 9. Final temperature: base mean + daily variation + continental effect
+  // Note: We're not adding seasonal oscillation here since meanAnnualTemp is already seasonal
+  return meanAnnualTemp + diurnalOscillation + continentalEffect;
+}
 
   /**
    * Calculate how cloud cover affects temperature
