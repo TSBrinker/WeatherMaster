@@ -628,16 +628,58 @@ const WeatherDashboard = () => {
   useEffect(() => {
     initializeWeather();
   }, [initializeWeather]);
+  // WeatherDashboard.jsx - Complete updated handleAdvanceTime function and related code
+  // Replace the existing handleAdvanceTime function (around line 1033) with this version
 
-  // Handle time advancement
+  // Add this debug function before the handleAdvanceTime function:
+  const debugForecastContinuity = useCallback((forecast, label) => {
+    if (!forecast || forecast.length === 0) {
+      console.error(`[DEBUG] ${label}: EMPTY FORECAST!`);
+      return;
+    }
+
+    console.log(`[DEBUG] ${label}:`, {
+      length: forecast.length,
+      timeSpan: `${forecast[0].date.toISOString()} to ${forecast[
+        forecast.length - 1
+      ].date.toISOString()}`,
+      conditions: forecast
+        .slice(0, 6)
+        .map((h) => `${h.date.getHours()}:00=${h.condition}`), // Show first 6 hours
+    });
+
+    // Check for time gaps
+    const gaps = [];
+    for (let i = 1; i < forecast.length; i++) {
+      const prevTime = new Date(forecast[i - 1].date).getTime();
+      const currTime = new Date(forecast[i].date).getTime();
+      const hourDiff = (currTime - prevTime) / (1000 * 60 * 60);
+
+      if (Math.abs(hourDiff - 1) > 0.1) {
+        // Allow small floating point differences
+        gaps.push(
+          `${hourDiff.toFixed(1)}h gap between ${forecast[
+            i - 1
+          ].date.toISOString()} and ${forecast[i].date.toISOString()}`
+        );
+      }
+    }
+
+    if (gaps.length > 0) {
+      console.error(`[DEBUG] ${label} TIME GAPS FOUND:`, gaps);
+    } else {
+      console.log(`[DEBUG] ${label}: ✅ No time gaps found`);
+    }
+  }, []);
+
+  // Updated handleAdvanceTime function:
   const handleAdvanceTime = useCallback(
     (hours) => {
       if (!activeRegion) return;
 
-      // Show loading indicator without full-page refresh
-      setIsUpdating(true); // Add a new state variable for this
-
-      console.log(`[WeatherDashboard] Advancing time by ${hours} hours`);
+      // Show loading indicator
+      setIsUpdating(true);
+      console.log(`[WeatherDashboard] ⏰ Advancing time by ${hours} hours`);
 
       // Get the current date before advancement
       const beforeDate = new Date(currentDate);
@@ -646,7 +688,7 @@ const WeatherDashboard = () => {
       advanceTime(hours);
       advanceGameTime(hours);
 
-      // Calculate the new date
+      // Calculate the new date after advancement
       const afterDate = new Date(beforeDate);
       afterDate.setHours(afterDate.getHours() + hours);
 
@@ -654,28 +696,100 @@ const WeatherDashboard = () => {
         season === "auto"
           ? weatherManager.getSeasonFromDate(afterDate)
           : season;
-
-      // Get weather type (default to dice table if not specified)
       const weatherType =
         activeRegion.weatherType || preferences.weatherSystem || "diceTable";
-
-      // Determine climate for weather advancement
       const regionClimate =
         activeRegion.climate ||
-        (activeRegion.profile && activeRegion.profile.climate) ||
+        activeRegion.profile?.climate ||
         activeRegion.profile?.biome ||
         "temperate-deciduous";
 
-      // Handle weather advancement without full page reload
-      const newForecast = weatherManager.advanceTime(
-        activeRegion.id,
-        hours,
-        regionClimate,
-        actualSeason,
-        afterDate
+      console.log(
+        `[WeatherDashboard] 🌍 Region: ${activeRegion.name}, Climate: ${regionClimate}, Season: ${actualSeason}`
       );
 
-      // Generate a new description for the current weather
+      let newForecast;
+
+      if (hours > 168) {
+        // For very large jumps (> 1 week), weather patterns would naturally change anyway
+        console.log(
+          `[WeatherDashboard] 🔄 Large time jump (${hours}h > 168h), regenerating from scratch`
+        );
+        newForecast = weatherManager.initializeWeather(
+          activeRegion.id,
+          regionClimate,
+          actualSeason,
+          afterDate,
+          weatherType
+        );
+      } else {
+        // For normal advancement, extend the existing forecast
+        console.log(
+          `[WeatherDashboard] ➡️ Extending forecast by ${hours} hours (preserving continuity)`
+        );
+
+        // Debug current forecast before extending
+        debugForecastContinuity(
+          forecast,
+          `Current forecast (before ${hours}h extension)`
+        );
+
+        // Use forecast extension to maintain continuity
+        newForecast = weatherManager.extendForecast(
+          activeRegion.id,
+          hours,
+          regionClimate,
+          actualSeason,
+          forecast // Pass current forecast for extension
+        );
+      }
+
+      // Debug the result
+      debugForecastContinuity(newForecast, `After ${hours}h advancement`);
+
+      // Validate forecast completeness and timing
+      if (!newForecast || newForecast.length !== 24) {
+        console.error(
+          `[WeatherDashboard] ❌ Invalid forecast length (${newForecast?.length}/24), regenerating`
+        );
+        newForecast = weatherManager.initializeWeather(
+          activeRegion.id,
+          regionClimate,
+          actualSeason,
+          afterDate,
+          weatherType
+        );
+        debugForecastContinuity(newForecast, "After regeneration fallback");
+      }
+
+      // Validate that forecast starts at the correct time
+      const expectedStartTime = afterDate.getTime();
+      const actualStartTime = newForecast[0]
+        ? new Date(newForecast[0].date).getTime()
+        : 0;
+      const timeDifference = Math.abs(expectedStartTime - actualStartTime);
+
+      if (timeDifference > 60000) {
+        // More than 1 minute difference
+        console.error(
+          `[WeatherDashboard] ❌ Forecast time mismatch: Expected ${afterDate.toISOString()}, Got ${newForecast[0]?.date.toISOString()}`
+        );
+        // Try regenerating if time is wrong
+        newForecast = weatherManager.initializeWeather(
+          activeRegion.id,
+          regionClimate,
+          actualSeason,
+          afterDate,
+          weatherType
+        );
+        debugForecastContinuity(newForecast, "After time correction");
+      } else {
+        console.log(
+          `[WeatherDashboard] ✅ Forecast timing correct: starts at ${newForecast[0]?.date.toISOString()}`
+        );
+      }
+
+      // Generate new weather description for the current weather
       const newDescription = weatherDescriptionService.generateDescription(
         newForecast[0],
         regionClimate,
@@ -701,6 +815,10 @@ const WeatherDashboard = () => {
       });
       updateRegionTimestamp(activeRegion.id, afterDate.toISOString());
 
+      console.log(
+        `[WeatherDashboard] ✅ Time advancement complete: ${beforeDate.toISOString()} → ${afterDate.toISOString()}`
+      );
+
       // Hide loading indicator after a short delay (for UI feedback)
       setTimeout(() => {
         setIsUpdating(false);
@@ -712,47 +830,40 @@ const WeatherDashboard = () => {
       activeRegion,
       currentDate,
       season,
+      forecast, // IMPORTANT: Include forecast in dependencies for extension
       advanceTime,
       advanceGameTime,
       updateRegionWeather,
       updateRegionTimestamp,
       storeWeatherDescription,
       preferences,
+      debugForecastContinuity, // Include debug function in dependencies
     ]
   );
 
-  // Regenerate weather
+  // Also update the regenerateWeather function to include better logging:
   const regenerateWeather = useCallback(() => {
     if (!activeRegion) return;
 
     setIsLoading(true);
+    console.log(
+      `[WeatherDashboard] 🔄 Regenerating weather for ${activeRegion.name}`
+    );
+
     const actualSeason =
       season === "auto"
         ? weatherManager.getSeasonFromDate(currentDate)
         : season;
-
-    // Get weather type from region settings or preferences
     const weatherType =
       activeRegion.weatherType || preferences.weatherSystem || "diceTable";
-
-    console.log(
-      `[WeatherDashboard] Regenerating weather with type: ${weatherType}`
-    );
-
-    // Determine climate and latitudeBand for weather regeneration
     const regionClimate =
       activeRegion.climate ||
-      (activeRegion.profile && activeRegion.profile.climate) ||
+      activeRegion.profile?.climate ||
       activeRegion.profile?.biome ||
       "temperate-deciduous";
 
-    const regionLatitudeBand =
-      activeRegion.latitudeBand ||
-      (activeRegion.profile && activeRegion.profile.latitudeBand) ||
-      "temperate";
-
     console.log(
-      `[WeatherDashboard] Regenerating with climate: ${regionClimate}, latitudeBand: ${regionLatitudeBand}`
+      `[WeatherDashboard] Using weather type: ${weatherType}, climate: ${regionClimate}`
     );
 
     setCurrentSeason(actualSeason);
@@ -763,6 +874,9 @@ const WeatherDashboard = () => {
       currentDate,
       weatherType
     );
+
+    // Debug the regenerated forecast
+    debugForecastContinuity(newForecast, "After regeneration");
 
     // Generate a new description for the current weather
     const newDescription = weatherDescriptionService.generateDescription(
@@ -792,6 +906,8 @@ const WeatherDashboard = () => {
 
     setIsLoading(false);
     setForceUpdate((prev) => prev + 1);
+
+    console.log(`[WeatherDashboard] ✅ Weather regeneration complete`);
   }, [
     activeRegion,
     season,
@@ -800,6 +916,7 @@ const WeatherDashboard = () => {
     updateRegionWeather,
     updateRegionTimestamp,
     storeWeatherDescription,
+    debugForecastContinuity, // Include debug function
   ]);
 
   // Change weather generation system
