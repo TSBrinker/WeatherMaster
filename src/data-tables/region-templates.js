@@ -907,17 +907,17 @@ export const regionTemplates = {
           polarDay: true,
           polarNight: true,
           coldWinters: true,
-          permanentIce: 0.6,
+          permanentIce: 0.3,
         },
         temperatureProfile: {
           annual: { mean: 15, variance: 40 },
           winter: { mean: -20, variance: 20 },
           spring: { mean: 15, variance: 15 },
           summer: { mean: 45, variance: 10 },
-          fall: { mean: 20, variance: 15 }
+          fall: { mean: 10, variance: 15 }
         },
         humidityProfile: {
-          annual: { mean: 70, variance: 15 },
+          annual: { mean: 60, variance: 15 },
           winter: { mean: 75, variance: 10 },
           spring: { mean: 70, variance: 15 },
           summer: { mean: 65, variance: 15 },
@@ -1009,11 +1009,11 @@ export const regionTemplates = {
           annual: { mean: -5, variance: 35 },
           winter: { mean: -30, variance: 20 },
           spring: { mean: -5, variance: 15 },
-          summer: { mean: 35, variance: 15 },
+          summer: { mean: 30, variance: 10 },
           fall: { mean: -5, variance: 15 }
         },
         humidityProfile: {
-          annual: { mean: 40, variance: 15 },
+          annual: { mean: 30, variance: 10 },
           winter: { mean: 45, variance: 15 },
           spring: { mean: 40, variance: 15 },
           summer: { mean: 35, variance: 15 },

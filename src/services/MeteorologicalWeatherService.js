@@ -1,4 +1,4 @@
-// src/services/MeteorologicalWeatherService.js - UPDATED
+// src/services/MeteorologicalWeatherService.js - FIXED VERSION
 // Main coordinator service for meteorological weather generation
 
 import WeatherServiceBase from "./WeatherServiceBase";
@@ -19,7 +19,7 @@ import ExtremeWeatherService from "./meteorological/ExtremeWeatherService";
 export default class MeteorologicalWeatherService extends WeatherServiceBase {
   constructor() {
     super();
-    console.error("METEO SERVICE CREATED - VERSION FIX 2.0"); // Check this appears in console
+    console.log("METEO SERVICE CREATED - FIXED VERSION 3.0");
 
     // Initialize specialized services
     this.temperatureService = new TemperatureService();
@@ -44,7 +44,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     this.weatherSystemService.weatherSystems = []; // Clear any existing systems
     // Add default systems immediately in constructor
     this.weatherSystemService.addDefaultSystems();
-    console.error("Added default systems in constructor:", 
+    console.log("Added default systems in constructor:", 
                  this.weatherSystemService.weatherSystems.length);
   }
 
@@ -68,6 +68,11 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 
     // Get the region profile based on biome
     const profile = this.regionProfileService.getRegionProfile(biome);
+
+    // Store these for later use (needed for initialization)
+    this.currentProfile = profile;
+    this.currentSeason = season;
+    this.currentBiome = biome;
 
     // Initialize base meteorological parameters
     this.initializeBaseParameters(profile, season, currentDate);
@@ -359,7 +364,13 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
         precipitationPotential,
         precipAmount,
         pressureTrend,
-        weatherSystems: [...weatherSystems] // Clone the array to avoid reference issues
+        weatherSystems: [...weatherSystems], // Clone the array to avoid reference issues
+        
+        // CRITICAL: Store all the context needed for stateless generation
+        profile: JSON.parse(JSON.stringify(profile)), // Deep clone
+        season,
+        biome: this.currentBiome || "temperate-deciduous",
+        seasonalBaseline: JSON.parse(JSON.stringify(this.regionProfileService.getSeasonalBaseline(profile, season)))
       }
     };
 
@@ -447,201 +458,273 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     return this.getCurrentWeather();
   }
 
-
-extendForecast(currentForecast, hours, climate, season) {
-  console.log(`[MeteorologicalWeatherService] Extending forecast by ${hours} hours`);
-  
-  if (!currentForecast || currentForecast.length === 0) {
-    console.error("[MeteorologicalWeatherService] No current forecast provided to extend");
-    return [];
-  }
-  
-  // Make a copy of the current forecast to avoid mutating the original
-  const extendedForecast = [...currentForecast];
-  
-  console.log(`[MeteorologicalWeatherService] Starting with ${extendedForecast.length} existing hours`);
-  
-  // STEP 1: Generate new hours at the end of the forecast
-  // Get the last hour in the current forecast to continue from
-  const lastHour = extendedForecast[extendedForecast.length - 1];
-  const lastHourTime = new Date(lastHour.date);
-  
-  console.log(`[MeteorologicalWeatherService] Extending from: ${lastHourTime.toISOString()}`);
-  
-  // Generate the requested number of new hours
-  for (let i = 1; i <= hours; i++) {
-    const newHourTime = new Date(lastHourTime);
-    newHourTime.setHours(newHourTime.getHours() + i);
+  /**
+   * FIXED: Extend forecast using ONLY previous hour's meteorological data (stateless)
+   * @param {Array} currentForecast - The current 24-hour forecast array
+   * @param {number} hours - Hours to advance and extend
+   * @param {string} climate - Climate type (used as fallback)
+   * @param {string} season - Season (used as fallback)
+   * @returns {Array} - New 24-hour forecast starting from advanced time
+   */
+  extendForecast(currentForecast, hours, climate, season) {
+    console.log(`[MeteorologicalWeatherService] STATELESS extend forecast by ${hours} hours`);
     
-    // Generate weather for this new hour, continuing from the previous hour
-    const previousHour = i === 1 ? lastHour : extendedForecast[extendedForecast.length - 1];
-    const newHourWeather = this.generateContinuousWeatherHour(newHourTime, previousHour);
+    if (!currentForecast || currentForecast.length === 0) {
+      console.error("[MeteorologicalWeatherService] No current forecast provided to extend");
+      return [];
+    }
     
-    extendedForecast.push(newHourWeather);
+    // Make a copy of the current forecast to avoid mutating the original
+    const extendedForecast = [...currentForecast];
     
-    console.log(`[MeteorologicalWeatherService] Generated hour ${i}/${hours}: ${newHourTime.toISOString()} - ${newHourWeather.condition}`);
-  }
-  
-  console.log(`[MeteorologicalWeatherService] After extension: ${extendedForecast.length} hours`);
-  
-  // STEP 2: Remove the first N hours to shift the forecast forward
-  const finalForecast = extendedForecast.slice(hours);
-  
-  console.log(`[MeteorologicalWeatherService] After removing first ${hours} hours: ${finalForecast.length} hours`);
-  console.log(`[MeteorologicalWeatherService] New forecast starts at: ${finalForecast[0]?.date.toISOString()}`);
-  console.log(`[MeteorologicalWeatherService] New forecast ends at: ${finalForecast[finalForecast.length - 1]?.date.toISOString()}`);
-  
-  // Update internal forecast state
-  this.forecast = finalForecast;
-  
-  return finalForecast;
-}
-
-// Add this helper method for generating continuous weather hours
-generateContinuousWeatherHour(dateTime, previousHour) {
-  console.log(`[MeteorologicalWeatherService] Generating continuous hour for ${dateTime.toISOString()}`);
-  
-  // Use previous hour's meteorological data as baseline for continuity
-  if (previousHour && previousHour._meteoData) {
-    // Set current meteorological state from previous hour
-    this.temperature = previousHour.temperature;
-    this.humidity = previousHour._meteoData.humidity;
-    this.pressure = previousHour._meteoData.pressure;
-    this.cloudCover = previousHour._meteoData.cloudCover;
-    this.precipitationPotential = previousHour._meteoData.precipitationPotential || 0;
-    this.instability = previousHour._meteoData.instability || 0;
+    console.log(`[MeteorologicalWeatherService] Starting with ${extendedForecast.length} existing hours`);
     
-    // Continue wind from previous hour
-    this.currentWind = {
-      speed: previousHour.windSpeed,
-      direction: previousHour.windDirection
+    // STEP 1: Extract all context from the LAST hour in the forecast
+    const lastHour = extendedForecast[extendedForecast.length - 1];
+    const lastHourTime = new Date(lastHour.date);
+    
+    console.log(`[MeteorologicalWeatherService] Extending from: ${lastHourTime.toISOString()}`);
+    console.log(`[MeteorologicalWeatherService] Last hour condition: ${lastHour.condition} at ${lastHour.temperature}°F`);
+    
+    // Extract EVERYTHING we need from the last hour's _meteoData
+    let profile, seasonalBaseline, extractedSeason, extractedBiome;
+    
+    if (lastHour._meteoData && lastHour._meteoData.profile) {
+      // Perfect! We have all the context stored
+      profile = lastHour._meteoData.profile;
+      seasonalBaseline = lastHour._meteoData.seasonalBaseline;
+      extractedSeason = lastHour._meteoData.season || season;
+      extractedBiome = lastHour._meteoData.biome || climate;
+      
+      console.log(`[MeteorologicalWeatherService] Using stored context: ${extractedBiome}, ${extractedSeason}`);
+    } else {
+      // Fallback: reconstruct from parameters
+      console.warn(`[MeteorologicalWeatherService] No stored context, reconstructing from ${climate}, ${season}`);
+      extractedBiome = climate || "temperate-deciduous";
+      extractedSeason = season || "spring";
+      profile = this.regionProfileService.getRegionProfile(extractedBiome);
+      seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, extractedSeason);
+    }
+    
+    // STEP 2: Set up atmospheric state from last hour
+    let atmosphericState = {
+      temperature: lastHour.temperature,
+      humidity: lastHour._meteoData?.humidity || 50,
+      pressure: lastHour._meteoData?.pressure || 1013.25,
+      cloudCover: lastHour._meteoData?.cloudCover || 30,
+      precipitationPotential: lastHour._meteoData?.precipitationPotential || 0,
+      instability: lastHour._meteoData?.instability || 3,
+      weatherSystems: lastHour._meteoData?.weatherSystems ? [...lastHour._meteoData.weatherSystems] : [],
+      wind: {
+        speed: lastHour.windSpeed,
+        direction: lastHour.windDirection
+      }
     };
     
-    // Update weather systems (advance them by 1 hour)
-    this.weatherSystemService.updateWeatherSystems(1, previousHour.condition);
-  }
-  
-  const hour = dateTime.getHours();
-  
-  // Calculate new meteorological parameters with continuity
-  const temperature = this.temperatureService.calculateTemperature(
-    this.regionProfile,
-    this.seasonalBaseline,
-    dateTime,
-    hour,
-    this.temperature, // Use previous temperature for inertia
-    this.cloudCover,
-    this.weatherSystemService.getWeatherSystems(),
-    () => this.precipitationService.getRecentPrecipitation(),
-    (date) => this.getDayOfYear(date)
-  );
-  
-  const humidity = this.atmosphericService.calculateHumidity(
-    this.regionProfile,
-    this.seasonalBaseline,
-    dateTime,
-    hour,
-    this.humidity, // Use previous humidity for inertia
-    temperature,
-    this.weatherSystemService.getWeatherSystems(),
-    () => this.precipitationService.getRecentPrecipitation(),
-    (date) => this.getDayOfYear(date)
-  );
-  
-  const pressure = this.atmosphericService.calculatePressure(
-    this.regionProfile,
-    dateTime,
-    hour,
-    this.pressure, // Use previous pressure for inertia
-    this.weatherSystemService.getWeatherSystems()
-  );
-  
-  // Update cloud cover
-  this.cloudCover = this.atmosphericService.calculateCloudCover(
-    this.regionProfile,
-    this.seasonalBaseline,
-    dateTime,
-    hour,
-    this.cloudCover, // Use previous cloud cover for inertia
-    humidity,
-    this.weatherSystemService.getWeatherSystems()
-  );
-  
-  // Calculate precipitation potential
-  this.precipitationPotential = this.atmosphericService.calculatePrecipitationPotential(
-    humidity,
-    temperature,
-    pressure,
-    this.cloudCover,
-    this.instability,
-    this.weatherSystemService.getWeatherSystems(),
-    () => this.precipitationService.getRecentPrecipitation()
-  );
-  
-  // Update wind
-  this.currentWind = this.windService.updateWindFactors(
-    this.currentWind,
-    hour,
-    temperature,
-    this.temperature, // Previous temperature
-    this.atmosphericService.getPressureTrend(),
-    this.weatherSystemService.getWeatherSystems()
-  );
-  
-  // Calculate atmospheric instability
-  this.instability = this.weatherConditionService.calculateAtmosphericInstability(
-    temperature,
-    pressure,
-    this.atmosphericService.getPressureTrend(),
-    this.precipitationService.getRecentPrecipitation()
-  );
-  
-  // Determine weather condition
-  const condition = this.weatherConditionService.determineWeatherCondition(
-    temperature,
-    humidity,
-    pressure,
-    this.cloudCover,
-    this.precipitationPotential,
-    this.currentWind.speed,
-    this.instability
-  );
-  
-  // Update internal state for next iteration
-  this.temperature = temperature;
-  this.humidity = humidity;
-  this.pressure = pressure;
-  
-  // Update precipitation tracking
-  const precipAmount = this.atmosphericService.calculatePrecipitationAmount(condition, this.precipitationPotential);
-  if (precipAmount > 0) {
-    this.precipitationService.updatePrecipitation(precipAmount, condition.includes("Snow") ? "snow" : "rain");
-  } else {
-    this.precipitationService.updatePrecipitation(0, null);
-  }
-  
-  console.log(`[MeteorologicalWeatherService] Generated: ${condition} at ${temperature}°F`);
-  
-  return {
-    date: new Date(dateTime),
-    temperature,
-    condition,
-    windSpeed: this.currentWind.speed,
-    windDirection: this.currentWind.direction,
-    windIntensity: this.windService.getWindIntensity(this.currentWind.speed).level,
-    effects: this.weatherConditionService.getWeatherEffects(condition),
-    _meteoData: {
-      humidity,
-      pressure,
-      cloudCover: this.cloudCover,
-      precipAmount,
-      instability: this.instability,
-      weatherSystems: [...this.weatherSystemService.getWeatherSystems()],
-      precipitationPotential: this.precipitationPotential,
-      pressureTrend: this.atmosphericService.getPressureTrend()
+    // STEP 3: Create temporary service instances for stateless calculation
+    const tempAtmosphericService = new AtmosphericService();
+    const tempTemperatureService = new TemperatureService();
+    const tempWindService = new WindService();
+    const tempWeatherSystemService = new WeatherSystemService();
+    const tempWeatherConditionService = new WeatherConditionService();
+    const tempPrecipitationService = new PrecipitationService();
+    
+    // Initialize pressure history in temp service
+    tempAtmosphericService.resetPressureHistory(atmosphericState.pressure);
+    
+    // Set weather systems in temp service
+    tempWeatherSystemService.weatherSystems = atmosphericState.weatherSystems;
+    
+    // If no weather systems, add defaults
+    if (tempWeatherSystemService.weatherSystems.length === 0) {
+      console.log("[MeteorologicalWeatherService] No weather systems found, adding defaults");
+      tempWeatherSystemService.addDefaultSystems();
     }
-  };
-}
+    
+    console.log(`[MeteorologicalWeatherService] Starting atmospheric state:`, {
+      temp: atmosphericState.temperature,
+      humidity: atmosphericState.humidity,
+      pressure: atmosphericState.pressure,
+      cloudCover: atmosphericState.cloudCover,
+      windSpeed: atmosphericState.wind.speed,
+      systems: atmosphericState.weatherSystems.length
+    });
+    
+    // STEP 4: Generate new hours using sophisticated meteorological modeling
+    for (let i = 1; i <= hours; i++) {
+      const newHourTime = new Date(lastHourTime);
+      newHourTime.setHours(newHourTime.getHours() + i);
+      const hour = newHourTime.getHours();
+      
+      // Update weather systems for this hour (they evolve!)
+      tempWeatherSystemService.updateWeatherSystems(1, atmosphericState.lastCondition);
+      const currentWeatherSystems = tempWeatherSystemService.getWeatherSystems();
+      
+      // Calculate pressure trend
+      const pressureTrend = tempAtmosphericService.calculatePressureTrend(atmosphericState.pressure);
+      
+      // Calculate new temperature using sophisticated physics model
+      const newTemperature = tempTemperatureService.calculateTemperature(
+        profile,
+        seasonalBaseline,
+        newHourTime,
+        hour,
+        atmosphericState.temperature, // Previous temperature for inertia
+        atmosphericState.cloudCover,
+        currentWeatherSystems,
+        () => 0, // Simplified for stateless operation
+        (date) => this.getDayOfYear(date)
+      );
+      
+      // Calculate new humidity
+      const newHumidity = tempAtmosphericService.calculateHumidity(
+        profile,
+        seasonalBaseline,
+        newHourTime,
+        hour,
+        atmosphericState.humidity, // Previous humidity for inertia
+        newTemperature,
+        currentWeatherSystems,
+        () => 0, // Simplified for stateless operation
+        (date) => this.getDayOfYear(date)
+      );
+      
+      // Calculate new pressure
+      const newPressure = tempAtmosphericService.calculatePressure(
+        profile,
+        newHourTime,
+        hour,
+        atmosphericState.pressure, // Previous pressure for inertia
+        currentWeatherSystems
+      );
+      
+      // Calculate new cloud cover
+      const newCloudCover = tempAtmosphericService.calculateCloudCover(
+        profile,
+        seasonalBaseline,
+        newHourTime,
+        hour,
+        atmosphericState.cloudCover, // Previous cloud cover for inertia
+        newHumidity,
+        currentWeatherSystems
+      );
+      
+      // Calculate atmospheric instability
+      const newInstability = tempWeatherConditionService.calculateAtmosphericInstability(
+        newTemperature,
+        newPressure,
+        pressureTrend,
+        0 // Simplified precipitation for stateless operation
+      );
+      
+      // Calculate precipitation potential
+      const newPrecipitationPotential = tempAtmosphericService.calculatePrecipitationPotential(
+        newHumidity,
+        newTemperature,
+        newPressure,
+        newCloudCover,
+        newInstability,
+        currentWeatherSystems,
+        () => 0, // Simplified for stateless operation
+        atmosphericState.lastCondition
+      );
+      
+      // Update wind
+      const newWind = tempWindService.updateWindFactors(
+        atmosphericState.wind,
+        hour,
+        newTemperature,
+        atmosphericState.temperature, // Previous temperature
+        pressureTrend,
+        currentWeatherSystems,
+        atmosphericState.lastCondition
+      );
+      
+      // Determine weather condition
+      const newCondition = tempWeatherConditionService.determineWeatherCondition(
+        newTemperature,
+        newHumidity,
+        newPressure,
+        newCloudCover,
+        newPrecipitationPotential,
+        newWind.speed,
+        newInstability
+      );
+      
+      // Validate temperature for condition
+      const validatedTemp = tempTemperatureService.validateTemperatureForCondition(newTemperature, newCondition);
+      
+      // Calculate precipitation amount
+      const precipAmount = tempAtmosphericService.calculatePrecipitationAmount(newCondition, newPrecipitationPotential);
+      
+      // Get wind intensity
+      const windIntensity = tempWindService.getWindIntensity(newWind.speed);
+      
+      // Get weather effects
+      const effects = tempWeatherConditionService.getWeatherEffects(newCondition);
+      
+      // Create the new hour with complete meteorological data
+      const newHourWeather = {
+        date: new Date(newHourTime),
+        hour,
+        condition: newCondition,
+        temperature: Math.round(validatedTemp),
+        feelsLikeTemperature: Math.round(tempTemperatureService.calculateFeelsLikeTemperature(validatedTemp, newHumidity, newWind.speed)),
+        windDirection: newWind.direction,
+        windSpeed: Math.round(newWind.speed),
+        windIntensity: windIntensity.level,
+        effects,
+        hasShootingStar: false, // Simplified for stateless operation
+        hasMeteorImpact: false,
+        
+        _meteoData: {
+          humidity: newHumidity,
+          pressure: newPressure,
+          cloudCover: newCloudCover,
+          instability: newInstability,
+          precipitationPotential: newPrecipitationPotential,
+          precipAmount,
+          pressureTrend,
+          weatherSystems: [...currentWeatherSystems], // Current state of weather systems
+          
+          // Store context for next extension
+          profile: JSON.parse(JSON.stringify(profile)),
+          season: extractedSeason,
+          biome: extractedBiome,
+          seasonalBaseline: JSON.parse(JSON.stringify(seasonalBaseline))
+        }
+      };
+      
+      // Add to extended forecast
+      extendedForecast.push(newHourWeather);
+      
+      // Update atmospheric state for next iteration
+      atmosphericState = {
+        temperature: validatedTemp,
+        humidity: newHumidity,
+        pressure: newPressure,
+        cloudCover: newCloudCover,
+        precipitationPotential: newPrecipitationPotential,
+        instability: newInstability,
+        weatherSystems: [...currentWeatherSystems],
+        wind: newWind,
+        lastCondition: newCondition
+      };
+      
+      console.log(`[MeteorologicalWeatherService] Generated hour ${i}/${hours}: ${newHourTime.toISOString()} - ${newCondition} at ${Math.round(validatedTemp)}°F`);
+    }
+    
+    console.log(`[MeteorologicalWeatherService] After extension: ${extendedForecast.length} hours`);
+    
+    // STEP 5: Remove the first N hours to shift the forecast forward
+    const finalForecast = extendedForecast.slice(hours);
+    
+    console.log(`[MeteorologicalWeatherService] After removing first ${hours} hours: ${finalForecast.length} hours`);
+    console.log(`[MeteorologicalWeatherService] New forecast starts at: ${finalForecast[0]?.date.toISOString()}`);
+    console.log(`[MeteorologicalWeatherService] New forecast ends at: ${finalForecast[finalForecast.length - 1]?.date.toISOString()}`);
+    
+    return finalForecast;
+  }
 
   /**
    * Get the current weather (first item in the forecast)
@@ -664,5 +747,5 @@ generateContinuousWeatherHour(dateTime, previousHour) {
 }
 
 // At the very end of the MeteorologicalWeatherService.js file, after the class closing bracket
-console.log("METEO SERVICE FILE LOADED COMPLETELY - VERSION 2.0");
+console.log("METEO SERVICE FILE LOADED COMPLETELY - FIXED VERSION 3.0");
 console.log("Methods available:", Object.getOwnPropertyNames(MeteorologicalWeatherService.prototype));

@@ -1,4 +1,4 @@
-// src/services/weatherManager.js
+// src/services/weatherManager.js - DEBUG VERSION
 // Singleton manager for weather services across regions
 
 import WeatherFactory from './WeatherFactory';
@@ -14,7 +14,7 @@ class WeatherManager {
   
   // Initialize weather for a region
   initializeWeather(regionId, climate, season, date, type = null) {
-    console.log(`WeatherManager initializing weather for region ${regionId}`);
+    console.log(`[WeatherManager] initializeWeather for region ${regionId}`);
     
     // ALWAYS check global preferences first - with detailed logging
     let globalPref = null;
@@ -51,8 +51,9 @@ class WeatherManager {
     // Store forecast
     this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     
-    console.log(`Weather initialized for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
-    console.log(`Weather type for region ${regionId} is now: ${this.weatherServiceTypes[regionId]}`);
+    console.log(`[WeatherManager] Weather initialized for region ${regionId}`);
+    console.log(`[WeatherManager] Forecast length: ${this.forecasts[regionId].length}`);
+    console.log(`[WeatherManager] Forecast timespan: ${this.forecasts[regionId][0]?.date.toISOString()} to ${this.forecasts[regionId][this.forecasts[regionId].length - 1]?.date.toISOString()}`);
     
     return this.forecasts[regionId];
   }
@@ -64,7 +65,7 @@ class WeatherManager {
   
   // Original advanceTime method (keep for compatibility)
   advanceTime(regionId, hours, climate, season, currentDate) {
-    console.log(`WeatherManager advancing time for region ${regionId} by ${hours} hours`);
+    console.log(`[WeatherManager] ⏰ advanceTime called for region ${regionId} by ${hours} hours`);
     
     // Ensure a WeatherService instance exists
     if (!this.weatherServices[regionId]) {
@@ -89,31 +90,41 @@ class WeatherManager {
       }
     }
     
+    console.log(`[WeatherManager] 📊 Before advanceTime: forecast length = ${this.forecasts[regionId]?.length}`);
+    console.log(`[WeatherManager] 📊 Current forecast span: ${this.forecasts[regionId]?.[0]?.date.toISOString()} to ${this.forecasts[regionId]?.[this.forecasts[regionId].length - 1]?.date.toISOString()}`);
+    
     // Always advance time normally here
     this.weatherServices[regionId].advanceTime(hours, climate, season, currentDate);
     
     // Update forecast
     this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     
+    console.log(`[WeatherManager] 📊 After advanceTime: forecast length = ${this.forecasts[regionId]?.length}`);
+    console.log(`[WeatherManager] 📊 New forecast span: ${this.forecasts[regionId]?.[0]?.date.toISOString()} to ${this.forecasts[regionId]?.[this.forecasts[regionId].length - 1]?.date.toISOString()}`);
+    
     // ADDED: Validate forecast continuity
     const forecast = this.forecasts[regionId];
     if (!forecast || forecast.length === 0) {
-      console.error(`Empty forecast after advancing time for region ${regionId}, regenerating`);
+      console.error(`[WeatherManager] ❌ Empty forecast after advancing time for region ${regionId}, regenerating`);
       // Fallback: regenerate from scratch
       this.initializeWeather(regionId, climate, season, currentDate);
       this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     } else if (forecast.length < 24) {
-      console.warn(`Incomplete forecast (${forecast.length}/24 hours) for region ${regionId}`);
-      // Could add logic here to fill in missing hours if needed
+      console.warn(`[WeatherManager] ⚠️ Incomplete forecast (${forecast.length}/24 hours) for region ${regionId}`);
     }
     
-    console.log(`Weather advanced for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
+    // CRITICAL: Check for time gaps in forecast
+    this._validateForecastContinuity(regionId, forecast, 'advanceTime');
+    
+    console.log(`[WeatherManager] ✅ Weather advanced for region ${regionId}, forecast length: ${this.forecasts[regionId].length}`);
     return this.forecasts[regionId];
   }
 
-  // NEW: Extend forecast method with fallback
+  // NEW: Extend forecast method with fallback - ENHANCED DEBUG VERSION
   extendForecast(regionId, hours, climate, season, currentForecast) {
-    console.log(`WeatherManager extending forecast for region ${regionId} by ${hours} hours`);
+    console.log(`[WeatherManager] 🔄 extendForecast called for region ${regionId} by ${hours} hours`);
+    console.log(`[WeatherManager] 📊 Input forecast length: ${currentForecast?.length}`);
+    console.log(`[WeatherManager] 📊 Input forecast span: ${currentForecast?.[0]?.date.toISOString()} to ${currentForecast?.[currentForecast.length - 1]?.date.toISOString()}`);
     
     // Ensure weather service exists
     if (!this.weatherServices[regionId]) {
@@ -131,7 +142,7 @@ class WeatherManager {
     
     // Validate current forecast
     if (!currentForecast || currentForecast.length === 0) {
-      console.warn(`No current forecast provided for region ${regionId}, generating fresh forecast`);
+      console.warn(`[WeatherManager] ⚠️ No current forecast provided for region ${regionId}, generating fresh forecast`);
       const currentDate = new Date();
       currentDate.setHours(currentDate.getHours() + hours);
       return this.initializeWeather(regionId, climate, season, currentDate);
@@ -139,7 +150,7 @@ class WeatherManager {
     
     // Check if the weather service has the extendForecast method
     if (typeof this.weatherServices[regionId].extendForecast === 'function') {
-      console.log(`Using weather service extendForecast method for region ${regionId}`);
+      console.log(`[WeatherManager] 🎯 Using weather service extendForecast method for region ${regionId}`);
       
       // Use the weather service to extend the forecast
       const extendedForecast = this.weatherServices[regionId].extendForecast(
@@ -149,31 +160,80 @@ class WeatherManager {
         season
       );
       
+      console.log(`[WeatherManager] 📊 Extended forecast length: ${extendedForecast?.length}`);
+      console.log(`[WeatherManager] 📊 Extended forecast span: ${extendedForecast?.[0]?.date.toISOString()} to ${extendedForecast?.[extendedForecast.length - 1]?.date.toISOString()}`);
+      
       // Update stored forecast
       this.forecasts[regionId] = extendedForecast;
       
       // Validate result
       if (!extendedForecast || extendedForecast.length !== 24) {
-        console.error(`Invalid extended forecast for region ${regionId} (length: ${extendedForecast?.length}), regenerating`);
+        console.error(`[WeatherManager] ❌ Invalid extended forecast for region ${regionId} (length: ${extendedForecast?.length}), regenerating`);
         const currentDate = new Date();
         currentDate.setHours(currentDate.getHours() + hours);
         return this.initializeWeather(regionId, climate, season, currentDate);
       }
       
-      console.log(`Forecast extended for region ${regionId}: ${extendedForecast.length} hours from ${extendedForecast[0]?.date.toISOString()}`);
+      // CRITICAL: Check for time gaps in extended forecast
+      this._validateForecastContinuity(regionId, extendedForecast, 'extendForecast');
+      
+      console.log(`[WeatherManager] ✅ Forecast extended for region ${regionId}: ${extendedForecast.length} hours from ${extendedForecast[0]?.date.toISOString()}`);
       return extendedForecast;
       
     } else {
       // FALLBACK: Manual forecast extension when service doesn't have the method
-      console.warn(`Weather service for region ${regionId} doesn't have extendForecast method, using fallback`);
+      console.warn(`[WeatherManager] ⚠️ Weather service for region ${regionId} doesn't have extendForecast method, using fallback`);
       
       return this.extendForecastManually(regionId, currentForecast, hours, climate, season);
     }
   }
+  
+  // Add this helper method to validate forecast continuity
+  _validateForecastContinuity(regionId, forecast, context) {
+    if (!forecast || forecast.length === 0) {
+      console.error(`[WeatherManager] ❌ ${context}: EMPTY FORECAST for region ${regionId}!`);
+      return;
+    }
+
+    console.log(`[WeatherManager] 🔍 ${context}: Validating forecast continuity for region ${regionId}`);
+    console.log(`[WeatherManager] 📊 Forecast length: ${forecast.length}`);
+    console.log(`[WeatherManager] 📊 Time span: ${forecast[0].date.toISOString()} to ${forecast[forecast.length - 1].date.toISOString()}`);
+
+    // Check for time gaps
+    const gaps = [];
+    for (let i = 1; i < forecast.length; i++) {
+      const prevTime = new Date(forecast[i - 1].date).getTime();
+      const currTime = new Date(forecast[i].date).getTime();
+      const hourDiff = (currTime - prevTime) / (1000 * 60 * 60);
+
+      if (Math.abs(hourDiff - 1) > 0.1) { // Allow small floating point differences
+        gaps.push({
+          index: i,
+          gap: hourDiff,
+          from: forecast[i - 1].date.toISOString(),
+          to: forecast[i].date.toISOString()
+        });
+      }
+    }
+
+    if (gaps.length > 0) {
+      console.error(`[WeatherManager] ❌ ${context}: TIME GAPS FOUND in region ${regionId}:`, gaps);
+      gaps.forEach(gap => {
+        console.error(`[WeatherManager] 💥 Gap ${gap.index}: ${gap.gap.toFixed(1)}h between ${gap.from} and ${gap.to}`);
+      });
+    } else {
+      console.log(`[WeatherManager] ✅ ${context}: No time gaps found in region ${regionId}`);
+    }
+    
+    // Show first few hours for debugging
+    console.log(`[WeatherManager] 🕐 ${context}: First 6 hours:`, 
+      forecast.slice(0, 6).map(h => `${h.date.getHours()}:00=${h.condition}`)
+    );
+  }
 
   // Fallback method for forecast extension
   extendForecastManually(regionId, currentForecast, hours, climate, season) {
-    console.log(`[WeatherManager] Manual forecast extension for region ${regionId}`);
+    console.log(`[WeatherManager] 🔧 Manual forecast extension for region ${regionId}`);
     
     // Make a copy of the current forecast
     const extendedForecast = [...currentForecast];
@@ -182,7 +242,7 @@ class WeatherManager {
     const lastHour = extendedForecast[extendedForecast.length - 1];
     const lastHourTime = new Date(lastHour.date);
     
-    console.log(`[WeatherManager] Extending from: ${lastHourTime.toISOString()}`);
+    console.log(`[WeatherManager] 🔧 Extending from: ${lastHourTime.toISOString()}`);
     
     // Simple approach: duplicate the last hour's pattern and modify slightly
     for (let i = 1; i <= hours; i++) {
@@ -212,16 +272,16 @@ class WeatherManager {
       
       extendedForecast.push(newHour);
       
-      console.log(`[WeatherManager] Generated hour ${i}/${hours}: ${newHourTime.toISOString()} - ${newHour.condition}`);
+      console.log(`[WeatherManager] 🔧 Generated hour ${i}/${hours}: ${newHourTime.toISOString()} - ${newHour.condition}`);
     }
     
-    console.log(`[WeatherManager] After extension: ${extendedForecast.length} hours`);
+    console.log(`[WeatherManager] 🔧 After extension: ${extendedForecast.length} hours`);
     
     // STEP 2: Remove the first N hours to shift the forecast forward
     const finalForecast = extendedForecast.slice(hours);
     
-    console.log(`[WeatherManager] After removing first ${hours} hours: ${finalForecast.length} hours`);
-    console.log(`[WeatherManager] New forecast starts at: ${finalForecast[0]?.date.toISOString()}`);
+    console.log(`[WeatherManager] 🔧 After removing first ${hours} hours: ${finalForecast.length} hours`);
+    console.log(`[WeatherManager] 🔧 New forecast starts at: ${finalForecast[0]?.date.toISOString()}`);
     
     // Update stored forecast
     this.forecasts[regionId] = finalForecast;
