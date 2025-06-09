@@ -170,7 +170,7 @@ const RegionDetails = ({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
-            <span className="text-gray-400">Biome:</span> {getBiome()}
+            <span className="text-gray-400">Fallback Biome:</span> {getBiome()}
           </div>
           <div>
             <span className="text-gray-400">Season:</span> {currentSeason}

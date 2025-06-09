@@ -119,11 +119,11 @@ const ForecastDisplay = ({
           const hourHasSunset = isSunset(hour.date);
 
           // Special classes for sunrise/sunset hours
-          const specialClasses = hourHasSunrise
-            ? "sunrise-hour"
-            : hourHasSunset
-            ? "sunset-hour"
-            : "";
+          // const specialClasses = hourHasSunrise
+          //   ? "sunrise-hour"
+          //   : hourHasSunset
+          //   ? "sunset-hour"
+          //   : "";
 
           // Background based on time of day
           const timeClass = hourIsDawnDusk 
@@ -135,16 +135,16 @@ const ForecastDisplay = ({
           return (
             <div
               key={index}
-              className={`forecast-item ${timeClass} ${specialClasses}`}
+              className={`forecast-item ${timeClass}`}
             >
               <div className="forecast-time">
                 {formatHour(hour.date)}
-                {hourHasSunrise && (
+                {/* {hourHasSunrise && (
                   <div className="celestial-marker sunrise-marker">↑</div>
                 )}
                 {hourHasSunset && (
                   <div className="celestial-marker sunset-marker">↓</div>
-                )}
+                )} */}
               </div>
 
               <div className="forecast-icon">
