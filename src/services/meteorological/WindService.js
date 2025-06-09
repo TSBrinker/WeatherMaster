@@ -1,18 +1,44 @@
 // src/services/meteorological/WindService.js
 // Service for wind-related calculations and patterns
+// Meteorologically correct: Wind drives conditions, not the reverse
 
 import { windIntensityEffects } from '../../data-tables/weather-effects';
-import { windParameters, baseWindSpeedRanges } from '../../data-tables/temperature-ranges';
 
 class WindService {
   constructor() {
     // Wind directions
     this.windDirections = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     
-    // Wind parameters (from config)
-    this.parameters = { 
-      ...windParameters,
-      baseWindSpeedRanges: baseWindSpeedRanges // Store this for condition-based limits
+    // Wind change parameters
+    this.parameters = {
+      maxSpeedChange: 15,       // Maximum mph change per hour
+      changeFrequency: 0.3,     // Probability of wind changing direction in an hour
+      directionVariability: 1,  // How many steps in the wind rose winds can change at once
+      
+      // METEOROLOGICAL APPROACH: These are SUGGESTED ranges for typical conditions,
+      // not hard limits. Wind can exceed these if atmospheric conditions warrant it.
+      typicalWindRanges: {
+        "Clear Skies": { min: 0, max: 15 },        // Can be calm OR windy with clear skies
+        "Light Clouds": { min: 2, max: 20 },
+        "Heavy Clouds": { min: 5, max: 25 },
+        "Rain": { min: 5, max: 30 },
+        "Heavy Rain": { min: 8, max: 35 },
+        "Freezing Cold": { min: 0, max: 25 },      // Can be calm and cold
+        "Snow": { min: 5, max: 30 },
+        "Scorching Heat": { min: 0, max: 20 },     // Desert heat can be calm
+        "Cold Winds": { min: 20, max: 45 },        // By definition, windy
+        "Thunderstorm": { min: 15, max: 55 },
+        "Blizzard": { min: 25, max: 70 },          // By definition, very windy
+        "High Humidity Haze": { min: 0, max: 8 },  // Usually calm conditions
+        "Cold Snap": { min: 5, max: 30 },
+        
+        // Additional conditions
+        "Fog": { min: 0, max: 5 },                 // Fog needs calm conditions
+        "Heavy Fog": { min: 0, max: 3 },
+        "Hail": { min: 15, max: 45 },              // Requires strong updrafts
+        "Sleet": { min: 8, max: 35 },
+        "Freezing Rain": { min: 5, max: 25 }
+      }
     };
   }
 
@@ -23,7 +49,7 @@ class WindService {
   initializeWind() {
     return {
       direction: this.getRandomWindDirection(),
-      speed: 5 // Default starting wind speed (mph)
+      speed: 8 // More realistic starting wind speed
     };
   }
 
@@ -50,13 +76,54 @@ class WindService {
   }
 
   /**
-   * Generate a random wind speed for a condition
-   * @param {string} condition - Weather condition
+   * Generate wind speed based on atmospheric conditions (METEOROLOGICAL APPROACH)
+   * Wind is calculated from pressure gradients, then conditions are determined
+   * @param {number} pressureGradient - Pressure gradient strength
+   * @param {Array} weatherSystems - Active weather systems
+   * @param {number} temperature - Current temperature
+   * @param {number} previousTemp - Previous temperature
+   * @param {number} hour - Hour of day (0-23)
    * @returns {number} - Wind speed in mph
    */
-  getRandomWindSpeed(condition) {
-    const range = this.parameters.baseWindSpeedRanges[condition] || { min: 0, max: 10 };
-    return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+  calculateWindFromAtmosphere(pressureGradient, weatherSystems, temperature, previousTemp, hour) {
+    // BASE WIND: Start with pressure gradient effects
+    let windSpeed = Math.abs(pressureGradient) * 3; // Strong pressure gradients = wind
+    
+    // WEATHER SYSTEM EFFECTS: Low pressure = more wind, high pressure = less wind
+    if (weatherSystems && Array.isArray(weatherSystems)) {
+      for (const system of weatherSystems) {
+        const centralEffect = Math.max(0, 1 - Math.abs(system.position - 0.5));
+        
+        if (system.type === "low-pressure") {
+          // Low pressure creates wind through pressure gradients
+          windSpeed += system.intensity * centralEffect * 12;
+        } else if (system.type === "high-pressure") {
+          // High pressure generally calms winds
+          windSpeed -= system.intensity * centralEffect * 6;
+        } else if (system.type === "cold-front" || system.type === "warm-front") {
+          // Fronts create significant wind as they pass
+          if (system.age < 12) {
+            windSpeed += system.intensity * centralEffect * 15;
+          }
+        }
+      }
+    }
+    
+    // TEMPERATURE DIFFERENTIAL: Temperature differences drive wind
+    const tempDifferential = Math.abs(temperature - previousTemp);
+    windSpeed += tempDifferential * 0.8;
+    
+    // DIURNAL EFFECTS: Natural daily wind patterns
+    const hourAngle = (2 * Math.PI * hour) / 24;
+    const diurnalEffect = Math.sin(hourAngle + Math.PI) * 3; // Peak in afternoon
+    windSpeed += diurnalEffect;
+    
+    // RANDOM ATMOSPHERIC TURBULENCE
+    const randomEffect = (Math.random() * 2 - 1) * 4; // ±4 mph
+    windSpeed += randomEffect;
+    
+    // ENSURE REASONABLE BOUNDS: Wind can't be negative, rarely exceeds 80 mph
+    return Math.max(0, Math.min(80, Math.round(windSpeed)));
   }
 
   /**
@@ -67,7 +134,6 @@ class WindService {
   getNextWindDirection(currentDirection) {
     const currentIndex = this.windDirections.indexOf(currentDirection);
     if (currentIndex === -1) {
-      // Invalid direction, just pick a random one
       return this.getRandomWindDirection();
     }
     
@@ -76,220 +142,146 @@ class WindService {
       return currentDirection;
     }
     
-    // Roll to determine direction change
+    // Gradual direction changes
     const directionChange = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
     const variability = this.parameters.directionVariability;
     const shift = directionChange * variability;
     
-    // Calculate new index with wrap-around
     const newIndex = (currentIndex + shift + this.windDirections.length) % this.windDirections.length;
     
     return this.windDirections[newIndex];
   }
 
   /**
-   * Get next wind speed (allowing for more significant changes)
+   * Get next wind speed (allowing for gradual changes)
    * @param {number} currentSpeed - Current wind speed
-   * @param {number} targetSpeed - Target wind speed
+   * @param {number} targetSpeed - Target wind speed from atmospheric calculations
    * @returns {number} - Next wind speed
    */
   getNextWindSpeed(currentSpeed, targetSpeed) {
-    // Determine how much the wind speed should change
     let speedDifference = targetSpeed - currentSpeed;
     
-    // Add some randomness to the speed change - REDUCED from 5 to 3
-    const randomFactor = (Math.random() * 2 - 1) * 3; // -3 to +3
+    // Add some atmospheric turbulence
+    const randomFactor = (Math.random() * 2 - 1) * 3; // ±3 mph
     speedDifference += randomFactor;
     
-    // Limit the change to the max allowed per hour
+    // Limit the change to prevent unrealistic jumps
     if (Math.abs(speedDifference) > this.parameters.maxSpeedChange) {
       speedDifference = Math.sign(speedDifference) * this.parameters.maxSpeedChange;
     }
     
-    // Ensure wind speed doesn't go negative
     return Math.max(0, Math.round(currentSpeed + speedDifference));
   }
   
   /**
-   * Get condition-specific wind speed range
+   * Check if wind speed is typical for a weather condition
+   * This is for validation/warning purposes, not hard limits
    * @param {string} condition - Weather condition
-   * @returns {object} - Min/max wind speed range
+   * @param {number} windSpeed - Wind speed in mph
+   * @returns {object} - {isTypical: boolean, message: string}
    */
-  getConditionWindRange(condition) {
-    // Default range for unknown conditions
-    const defaultRange = { min: 0, max: 10 };
+  validateWindForCondition(condition, windSpeed) {
+    const range = this.parameters.typicalWindRanges[condition];
+    if (!range) {
+      return { isTypical: true, message: "" };
+    }
     
-    // Get range from baseWindSpeedRanges
-    return this.parameters.baseWindSpeedRanges[condition] || defaultRange;
+    if (windSpeed < range.min) {
+      return { 
+        isTypical: false, 
+        message: `Unusually calm for ${condition} (${windSpeed} mph, typical: ${range.min}-${range.max} mph)` 
+      };
+    } else if (windSpeed > range.max) {
+      return { 
+        isTypical: false, 
+        message: `Unusually windy for ${condition} (${windSpeed} mph, typical: ${range.min}-${range.max} mph)` 
+      };
+    }
+    
+    return { isTypical: true, message: "" };
   }
   
   /**
-   * Update wind factors based on meteorological conditions
+   * MAIN METHOD: Update wind factors based on meteorological conditions
+   * This follows the meteorological principle: atmospheric conditions → wind → weather conditions
    * @param {object} currentWind - Current wind state {direction, speed}
    * @param {number} hour - Hour of the day (0-23)
    * @param {number} temperature - Temperature in °F
-   * @param {number} currentTemperature - Previous hour's temperature for differential
+   * @param {number} previousTemperature - Previous hour's temperature
    * @param {number} pressureTrend - Pressure trend in hPa/hour
    * @param {Array} weatherSystems - Active weather systems
-   * @param {string} currentWeatherCondition - Current weather condition
-   * @returns {object} - Updated wind state {direction, speed}
+   * @param {string} currentWeatherCondition - Current weather condition (for validation only)
+   * @returns {object} - Updated wind state {direction, speed, validation}
    */
   updateWindFactors(
     currentWind,
     hour,
     temperature,
-    currentTemperature,
+    previousTemperature,
     pressureTrend,
     weatherSystems,
-    currentWeatherCondition = "Clear Skies" // Default to clear if not provided
+    currentWeatherCondition = "Clear Skies"
   ) {
-    // Log inputs for debugging
-    console.log(`Wind update for condition: ${currentWeatherCondition}`);
-    console.log(`Current wind: ${currentWind.speed} mph ${currentWind.direction}`);
-    console.log(`Weather systems: ${weatherSystems ? weatherSystems.length : 0}`);
+    // Ensure we have valid current wind
+    if (!currentWind || typeof currentWind.speed !== 'number') {
+      currentWind = this.initializeWind();
+    }
+
+    // STEP 1: Calculate target wind speed from atmospheric conditions
+    const targetSpeed = this.calculateWindFromAtmosphere(
+      pressureTrend,
+      weatherSystems,
+      temperature,
+      previousTemperature,
+      hour
+    );
+
+    // STEP 2: Apply gradual change to current wind speed
+    const nextSpeed = this.getNextWindSpeed(currentWind.speed, targetSpeed);
+
+    // STEP 3: Update wind direction based on systems and gradual change
+    let nextDirection = currentWind.direction;
     
-    // Calculate pressure gradient effect on wind speed - REDUCED from 8 to 5
-    const pressureGradientEffect = Math.abs(pressureTrend) * 5;
-
-    // Diurnal effect - winds often stronger in afternoon, calmer at night
-    const hourFactor = Math.sin(2 * Math.PI * ((hour - 14) / 24)); // Peak at 2PM
-    const diurnalEffect = hourFactor * 3; // Reduced from 5 to 3
-
-    // Weather system effects
-    let systemEffect = 0;
+    // Check for system-driven direction changes
     let systemDirectionChange = false;
-    let newDirection = currentWind.direction;
-
-    // Check all weather systems
-    if (Array.isArray(weatherSystems) && weatherSystems.length > 0) {
+    if (weatherSystems && Array.isArray(weatherSystems)) {
       for (const system of weatherSystems) {
-        // Skip invalid systems
-        if (!system) continue;
+        const centralEffect = Math.max(0, 1 - Math.abs(system.position - 0.5));
         
-        // How close is this system to the center of our region?
-        const distanceFromCenter = Math.abs(system.position - 0.5) * 2; // 0-1
-        const centralEffect = 1 - distanceFromCenter; // Stronger in center
-
-        if (system.type === "high-pressure" || system.type === "low-pressure") {
-          // Both pressure systems affect wind speed - REDUCED from 8 to 5
-          systemEffect += system.intensity * centralEffect * 5;
-
-          // High pressure systems: winds blow clockwise and outward
-          // Low pressure systems: winds blow counterclockwise and inward
-          if (centralEffect > 0.5) {
+        if ((system.type === "low-pressure" && centralEffect > 0.5) ||
+            ((system.type === "cold-front" || system.type === "warm-front") && centralEffect > 0.6)) {
+          if (Math.random() < 0.4) {
             systemDirectionChange = true;
-
-            // Wind direction depends on system position relative to center
             const directionIndex = this.windDirections.indexOf(currentWind.direction);
             if (directionIndex !== -1) {
-              // Direction change depends on system type and relative position
-              const isHighPressure = system.type === "high-pressure";
-              const isRightSide = system.position > 0.5;
-
-              // Calculate wind shift
-              let shift = 0;
-              if (isHighPressure && isRightSide) shift = 1;
-              else if (isHighPressure && !isRightSide) shift = -1;
-              else if (!isHighPressure && isRightSide) shift = -1;
-              else shift = 1;
-
-              // Apply the shift
-              const newIndex =
-                (directionIndex + shift + this.windDirections.length) %
-                this.windDirections.length;
-              newDirection = this.windDirections[newIndex];
+              const shift = system.movementDirection > 0 ? 1 : -1;
+              const newIndex = (directionIndex + shift + this.windDirections.length) % this.windDirections.length;
+              nextDirection = this.windDirections[newIndex];
             }
-          }
-        } else if (system.type === "cold-front" || system.type === "warm-front") {
-          // Fronts temporarily increase wind speed as they pass - REDUCED from 12 to 8
-          if (system.age < 12) {
-            systemEffect += system.intensity * centralEffect * 8;
-
-            // Fronts also affect wind direction
-            if (centralEffect > 0.6) {
-              systemDirectionChange = true;
-
-              // Front's movement direction influences wind direction
-              const directionIndex = this.windDirections.indexOf(currentWind.direction);
-              if (directionIndex !== -1) {
-                const movementFactor = system.movementDirection;
-                const newIndex =
-                  (directionIndex + movementFactor + this.windDirections.length) %
-                  this.windDirections.length;
-                newDirection = this.windDirections[newIndex];
-              }
-            }
+            break; // Only one system affects direction per hour
           }
         }
       }
-    } else {
-      console.log("No weather systems available for wind calculation");
     }
-
-    // Temperature differences drive wind - REDUCED from 1 to 0.5
-    const tempDifferential = Math.abs(temperature - currentTemperature) * 0.5;
-
-    // Random variation - REDUCED from -1.5/+1.5 to -1/+1
-    const randomEffect = Math.random() * 2 - 1;
-
-    // Calculate target wind speed - REDUCED base from 3 to 2
-    const targetSpeed =
-      2 +
-      pressureGradientEffect +
-      diurnalEffect +
-      systemEffect +
-      tempDifferential +
-      randomEffect;
-
-    // Wind speed changes gradually
-    const nextSpeed = this.getNextWindSpeed(currentWind.speed, targetSpeed);
-
-    // Check for wind direction change
-    let nextDirection;
-    if (systemDirectionChange) {
-      // System-driven change
-      nextDirection = newDirection;
-    } else if (Math.random() < 0.3) {
-      // Random direction change (30% chance per hour)
+    
+    // If no system change, apply normal gradual change
+    if (!systemDirectionChange) {
       nextDirection = this.getNextWindDirection(currentWind.direction);
-    } else {
-      nextDirection = currentWind.direction;
     }
 
-    // Get condition-specific wind range
-    const conditionWindRange = this.getConditionWindRange(currentWeatherCondition);
-    
-    // Calculate max allowed wind for this condition
-    // Allow up to 30% higher than normal max if weather systems are active (reduced from 50%)
-    const hasActiveSystems = systemEffect > 5;
-    const conditionMaxWind = conditionWindRange.max * (hasActiveSystems ? 1.3 : 1.0);
-    
-    // Identify extreme weather conditions that allow higher winds
-    const extremeWeatherTypes = ["Thunderstorm", "Blizzard", "High Winds", "Storm Force", "Gale Force"];
-    const isExtremeWeather = extremeWeatherTypes.includes(currentWeatherCondition);
-    
-    // Determine max cap based on weather type - REDUCED normal cap from 50 to 40 mph
-    const maxAllowedWind = isExtremeWeather 
-      ? Math.min(80, conditionMaxWind) // Extreme weather can still reach 80 mph
-      : Math.min(40, conditionMaxWind); // Normal weather capped at 40 mph
-    
-    const finalWindSpeed = Math.max(0, Math.min(maxAllowedWind, nextSpeed));
-    
-    // Log the calculation components for debugging
-    console.log(`Wind calculation components:
-      Base: 2
-      Pressure gradient: ${pressureGradientEffect.toFixed(1)}
-      Diurnal effect: ${diurnalEffect.toFixed(1)}
-      System effect: ${systemEffect.toFixed(1)}
-      Temp differential: ${tempDifferential.toFixed(1)}
-      Random effect: ${randomEffect.toFixed(1)}
-      Target speed: ${targetSpeed.toFixed(1)}
-      Condition max: ${conditionMaxWind}
-      Final wind speed: ${finalWindSpeed}`);
-    
+    // STEP 4: Validate against typical ranges (informational only)
+    const validation = this.validateWindForCondition(currentWeatherCondition, nextSpeed);
+
     return {
       direction: nextDirection,
-      speed: finalWindSpeed
+      speed: nextSpeed,
+      validation: validation,
+      atmosphericData: {
+        targetSpeed: targetSpeed,
+        pressureEffect: Math.abs(pressureTrend) * 3,
+        systemEffect: weatherSystems ? weatherSystems.length * 5 : 0,
+        tempEffect: Math.abs(temperature - previousTemperature) * 0.8
+      }
     };
   }
 }
