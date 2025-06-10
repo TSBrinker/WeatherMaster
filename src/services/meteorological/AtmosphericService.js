@@ -1,4 +1,4 @@
-// src/services/meteorological/AtmosphericService.js - FIXED VERSION
+// src/services/meteorological/AtmosphericService.js - ENHANCED FOR POLAR REGIONS
 // Service for atmospheric conditions like humidity, pressure, and cloud cover
 
 class AtmosphericService {
@@ -40,7 +40,7 @@ class AtmosphericService {
   }
 
   /**
-   * Calculate humidity based on all factors
+   * Calculate humidity based on all factors - ENHANCED FOR POLAR REGIONS
    * @param {object} profile - Region profile
    * @param {object} seasonalBaseline - Seasonal baseline data
    * @param {Date} date - Current date
@@ -98,9 +98,20 @@ class AtmosphericService {
     const diurnalVariation = humidityVariance * 0.3 * Math.sin(hourAngle);
 
     // Temperature effect - higher temperatures generally lower relative humidity
-    // This is a simplified model - in reality, it depends on absolute humidity
-    const tempEffect =
-      (currentTemperature - (seasonalBaseline.temperature?.mean || 70)) * -0.5;
+    // ENHANCED: Cold air physics - cold air holds much less moisture
+    let tempEffect = 0;
+    const baseTemp = seasonalBaseline.temperature?.mean || 70;
+    
+    if (currentTemperature < 32) {
+      // Below freezing: air holds very little moisture
+      tempEffect = (32 - currentTemperature) * -1.5; // Strong humidity reduction
+    } else if (currentTemperature < 50) {
+      // Cold air: reduced moisture capacity
+      tempEffect = (currentTemperature - baseTemp) * -0.8;
+    } else {
+      // Normal temperature effect
+      tempEffect = (currentTemperature - baseTemp) * -0.5;
+    }
 
     // Maritime influence increases humidity
     const maritimeEffect = (profile.maritimeInfluence || 0.5) * 10;
@@ -182,6 +193,16 @@ class AtmosphericService {
       this.stormCooldownPeriod--;
     }
 
+    // POLAR REGION ADJUSTMENTS - Cold air holds less moisture
+    const latitudeBand = profile.latitudeBand || "temperate";
+    if (latitudeBand === "polar" && currentTemperature < 20) {
+      // Polar regions with very cold air have naturally low humidity
+      humidity = Math.min(humidity, 70); // Cap at 70% for very cold polar air
+    } else if (latitudeBand === "subarctic" && currentTemperature < 10) {
+      // Subarctic regions with cold air
+      humidity = Math.min(humidity, 80); // Cap at 80% for very cold subarctic air
+    }
+
     // Ensure value is within valid range
     return Math.max(0, Math.min(100, humidity));
   }
@@ -219,6 +240,13 @@ class AtmosphericService {
     else {
       if (month >= 11 || month <= 1) seasonalOffset = -5; // Summer
       else if (month >= 5 && month <= 7) seasonalOffset = 5; // Winter
+    }
+
+    // POLAR PRESSURE ADJUSTMENTS
+    const latitudeBand = profile.latitudeBand || "temperate";
+    if (latitudeBand === "polar") {
+      // Polar regions tend to have higher pressure systems in winter
+      if (seasonalOffset > 0) seasonalOffset *= 1.5; // Enhance winter high pressure
     }
 
     // Random initial variation (+/- 10 hPa)
@@ -368,7 +396,7 @@ class AtmosphericService {
   }
 
   /**
-   * Calculate cloud cover based on all factors
+   * Calculate cloud cover based on all factors - ENHANCED FOR POLAR REGIONS
    * @param {object} profile - Region profile
    * @param {object} seasonalBaseline - Seasonal baseline data
    * @param {Date} date - Current date
@@ -392,8 +420,17 @@ class AtmosphericService {
     currentCloudCover = Number(currentCloudCover) || 30;
     hour = Number(hour) || 12;
     
-    // Clouds are strongly related to humidity
-    const humidityFactor = humidity * 0.6;
+    // Clouds are strongly related to humidity, but with latitude adjustments
+    let humidityFactor = humidity * 0.6;
+    
+    // POLAR REGION ADJUSTMENTS - Cold air affects cloud formation
+    const latitudeBand = profile.latitudeBand || "temperate";
+    if (latitudeBand === "polar") {
+      // In polar regions, even high humidity doesn't always mean clouds due to cold air
+      humidityFactor = humidity * 0.4; // Reduced cloud formation from humidity
+    } else if (latitudeBand === "subarctic") {
+      humidityFactor = humidity * 0.5; // Moderately reduced
+    }
 
     // Pressure effect - falling pressure increases cloud formation
     const pressureTrend = this.getPressureTrend();
@@ -432,8 +469,15 @@ class AtmosphericService {
     }
 
     // Diurnal effects - slight tendency for more clouds in afternoon due to convection
+    // REDUCED in polar regions due to limited solar heating
     const hourFactor = Math.sin(2 * Math.PI * ((hour - 14) / 24)); // Peak at 2PM
-    const diurnalEffect = hourFactor * 5;
+    let diurnalEffect = hourFactor * 5;
+    
+    if (latitudeBand === "polar") {
+      diurnalEffect *= 0.3; // Much reduced diurnal variation
+    } else if (latitudeBand === "subarctic") {
+      diurnalEffect *= 0.6; // Moderately reduced
+    }
 
     // Random variation
     const randomVariation = Math.random() * 10 - 5;
@@ -465,6 +509,7 @@ class AtmosphericService {
 
   /**
    * Calculate precipitation potential based on meteorological factors
+   * ENHANCED FOR POLAR REGIONS
    * @param {number} humidity - Relative humidity (0-100)
    * @param {number} temperature - Temperature in °F
    * @param {number} pressure - Atmospheric pressure in hPa
@@ -472,6 +517,8 @@ class AtmosphericService {
    * @param {number} atmosphericInstability - Atmospheric instability (0-10)
    * @param {Array} weatherSystems - Active weather systems
    * @param {Function} getRecentPrecipitation - Function to get recent precipitation
+   * @param {string} currentCondition - Current weather condition
+   * @param {string} latitudeBand - Latitude band for polar adjustments
    * @returns {number} - Precipitation potential (0-100)
    */
   calculatePrecipitationPotential(
@@ -482,7 +529,8 @@ class AtmosphericService {
     atmosphericInstability,
     weatherSystems,
     getRecentPrecipitation,
-    currentCondition
+    currentCondition,
+    latitudeBand = "temperate"
   ) {
     // Ensure all inputs are valid numbers
     humidity = Number(humidity) || 50;
@@ -499,11 +547,39 @@ class AtmosphericService {
     // Both high humidity and cloud cover are needed for precipitation
     const base = Math.pow(humiditySaturation * (cloudCover / 100), 0.8) * 70;
 
+    // POLAR MODIFICATIONS - Cold air holds much less moisture
+    let polarModifier = 1.0;
+    if (latitudeBand === "polar") {
+      if (temperature < 10) {
+        polarModifier = 0.3; // Drastically reduce precipitation potential
+      } else if (temperature < 32) {
+        polarModifier = 0.6; // Moderate reduction
+      }
+      
+      // But if conditions are right, can still get significant snow
+      if (humidity > 90 && cloudCover > 70 && temperature < 32) {
+        polarModifier *= 1.5; // Boost snow potential
+      }
+    } else if (latitudeBand === "subarctic") {
+      if (temperature < 20) {
+        polarModifier = 0.5; // Cold air holds less moisture
+      }
+    }
+
+    // Apply polar modifier to base potential
+    const adjustedBase = base * polarModifier;
+
     // Falling pressure increases precipitation chance
     const pressureEffect = pressureTrend < 0 ? Math.abs(pressureTrend) * 20 : 0;
 
     // Atmospheric instability increases precipitation chance
-    const instabilityEffect = atmosphericInstability * 8;
+    // REDUCED in polar regions (less convective activity)
+    let instabilityEffect = atmosphericInstability * 8;
+    if (latitudeBand === "polar") {
+      instabilityEffect *= 0.5; // Much less convective activity
+    } else if (latitudeBand === "subarctic") {
+      instabilityEffect *= 0.7; // Moderately reduced
+    }
 
     // Weather system effects
     let systemEffect = 0;
@@ -580,12 +656,17 @@ class AtmosphericService {
 
     // Calculate final potential
     let potential =
-      base +
+      adjustedBase +
       pressureEffect +
       instabilityEffect +
       systemEffect +
       precipEffect +
       randomEffect;
+
+    // Log polar adjustments for debugging
+    if (latitudeBand === "polar" || latitudeBand === "subarctic") {
+      console.log(`${latitudeBand} precipitation potential: base=${base.toFixed(1)}, adjusted=${adjustedBase.toFixed(1)}, final=${potential.toFixed(1)} (temp=${temperature}°F)`);
+    }
 
     // Clamp to 0-100
     return Math.max(0, Math.min(100, potential));

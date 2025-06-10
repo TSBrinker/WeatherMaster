@@ -11,7 +11,10 @@ class TemperatureService {
       "Blizzard": { max: 30 }, // Blizzards are typically colder
       "Freezing Cold": { max: 32 }, // Freezing is defined by temperature
       "Scorching Heat": { min: 90 }, // Scorching heat should be hot
-      "Cold Snap": { max: 40 } // Cold snaps are... cold
+      "Cold Snap": { max: 40 }, // Cold snaps are... cold
+      "Heavy Rain": { min: 35 }, // Heavy rain unlikely in near-freezing temps
+      "Rain": { min: 33 },       // Light rain possible just above freezing
+      "Thunderstorm": { min: 50 } // Thunderstorms need warmer temperatures
     };
     
     // Biome temperature profiles for determining realistic temperature ranges
@@ -26,13 +29,13 @@ class TemperatureService {
       "tundra": { min: -30, max: 60, amplitude: 40 }
     };
     
-    // Temperature adjustments based on latitude bands - IMPROVED
+    // Enhanced temperature adjustments based on latitude bands
     this.latitudeBandAdjustments = {
       "equatorial": { minMod: +15, maxMod: +10, amplitude: 0.6, seasonal: 0.3 },
       "tropical": { minMod: +10, maxMod: +8, amplitude: 0.8, seasonal: 0.5 },
       "temperate": { minMod: 0, maxMod: 0, amplitude: 1.0, seasonal: 1.0 },
-      "subarctic": { minMod: -10, maxMod: -5, amplitude: 1.2, seasonal: 1.3 },
-      "polar": { minMod: -20, maxMod: -12, amplitude: 1.5, seasonal: 1.4 }
+      "subarctic": { minMod: -15, maxMod: -10, amplitude: 1.2, seasonal: 1.3 },
+      "polar": { minMod: -35, maxMod: -25, amplitude: 1.8, seasonal: 1.6 } // Much stronger cooling
     };
   }
 
@@ -109,7 +112,7 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
 }
   
   /**
-   * Adjust biome temperature range based on latitude
+   * Adjust biome temperature range based on latitude - ENHANCED FOR POLAR REGIONS
    * @param {object} biomeRange - Base temperature range for biome
    * @param {number} latitude - Latitude in degrees
    * @param {string} latitudeBand - Latitude band
@@ -128,6 +131,27 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
     adjustedRange.max += bandAdjustments.maxMod;
     adjustedRange.amplitude *= bandAdjustments.amplitude;
     
+    // SPECIAL POLAR CORRECTIONS
+    if (latitudeBand === "polar") {
+      // Polar regions should never exceed 45°F in summer
+      adjustedRange.max = Math.min(45, adjustedRange.max);
+      // Winter should be much colder
+      adjustedRange.min = Math.min(-40, adjustedRange.min);
+      // Reduce amplitude - polar regions have less seasonal variation
+      adjustedRange.amplitude *= 0.7;
+      
+      console.log(`Polar temperature range adjusted: ${adjustedRange.min}°F to ${adjustedRange.max}°F`);
+    }
+    
+    // SUBARCTIC CORRECTIONS
+    if (latitudeBand === "subarctic") {
+      // Cap summer temperatures
+      adjustedRange.max = Math.min(65, adjustedRange.max);
+      adjustedRange.min = Math.min(-20, adjustedRange.min);
+      
+      console.log(`Subarctic temperature range adjusted: ${adjustedRange.min}°F to ${adjustedRange.max}°F`);
+    }
+    
     // Additional adjustment based on actual latitude
     // Apply more extreme temperature range for continental regions
     if (latitude > 40 && latitude < 60) {
@@ -141,7 +165,7 @@ calculateBaseTemperature(profile, seasonalBaseline, date, hour) {
   }
 
   /**
-   * Calculate temperature based on all physical factors
+   * Calculate temperature based on all physical factors - ENHANCED FOR POLAR REGIONS
    * @param {object} profile - Region profile
    * @param {object} seasonalBaseline - Seasonal baseline data (used for variance values)
    * @param {Date} date - Current date
@@ -206,12 +230,13 @@ calculateTemperature(
   const seasonalPosition = Math.sin(2 * Math.PI * ((dayOfYear - 172) / 365));
   const maritimeEffect = profile.maritimeInfluence * 5 * (1 - Math.abs(seasonalPosition));
   
-  // 3. Special factor temperature effects
+  // 3. Enhanced special factor temperature effects (including polar factors)
   const specialFactorEffects = this.calculateSpecialFactorTemperatureEffects(
     profile.specialFactors || {}, 
     hour, 
     isDaytime, 
-    seasonalPosition
+    seasonalPosition,
+    latitudeBand // Pass latitude band for polar-specific logic
   );
   
   // 4. Weather system effects on temperature
@@ -222,9 +247,39 @@ calculateTemperature(
   
   // 6. Recent precipitation cooling effect
   const recentPrecip = getRecentPrecipitation ? getRecentPrecipitation() : 0;
-  const precipEffect = recentPrecip * -5;
+  let precipEffect = recentPrecip * -5;
   
-  // 7. Random variation
+  // POLAR PRECIPITATION EFFECTS - liquid precipitation cools more in polar regions
+  if (latitudeBand === "polar" && currentTemperature > 32) {
+    precipEffect *= 2; // Double cooling effect for liquid precip in polar regions
+  }
+  
+  // 7. POLAR WIND CHILL SIMULATION
+  let windChillEffect = 0;
+  if ((latitudeBand === "polar" || latitudeBand === "subarctic") && weatherSystems) {
+    // Calculate average wind speed from weather systems
+    let avgWindSpeed = 0;
+    let systemCount = 0;
+    
+    for (const system of weatherSystems) {
+      if (system && system.intensity) {
+        avgWindSpeed += system.intensity * 10; // Rough wind speed estimate
+        systemCount++;
+      }
+    }
+    
+    if (systemCount > 0) {
+      avgWindSpeed /= systemCount;
+      
+      // Apply wind chill if conditions are right
+      if (avgWindSpeed > 5 && solarTemp < 32) {
+        windChillEffect = -Math.min(15, avgWindSpeed * 0.3);
+        console.log(`Polar wind chill effect: ${windChillEffect.toFixed(1)}°F (wind: ${avgWindSpeed.toFixed(1)} mph)`);
+      }
+    }
+  }
+  
+  // 8. Random variation
   const randomVariation = (Math.random() * 2 - 1) * 2;
   
   // Calculate final temperature
@@ -235,6 +290,7 @@ calculateTemperature(
              systemEffect + 
              cloudEffect + 
              precipEffect + 
+             windChillEffect + 
              randomVariation;
   
   // Apply temperature inertia
@@ -242,49 +298,93 @@ calculateTemperature(
     temp = temp * 0.7 + currentTemperature * 0.3;
   }
   
-  return Math.max(-60, Math.min(130, temp));
+  // Enhanced bounds for polar regions
+  if (latitudeBand === "polar") {
+    temp = Math.max(-60, Math.min(50, temp)); // Polar regions cap at 50°F
+  } else if (latitudeBand === "subarctic") {
+    temp = Math.max(-50, Math.min(80, temp)); // Subarctic regions cap at 80°F
+  } else {
+    temp = Math.max(-60, Math.min(130, temp)); // General bounds
+  }
+  
+  return temp;
 }
 
   /**
-   * Calculate temperature effects from special factors
+   * Calculate temperature effects from special factors - ENHANCED FOR POLAR REGIONS
    * @param {object} specialFactors - Region's special factors
    * @param {number} hour - Current hour (0-23)
    * @param {boolean} isDaytime - Whether it's currently daytime
    * @param {number} seasonalPosition - Seasonal position (-1 to 1, where 1 is summer)
+   * @param {string} latitudeBand - Latitude band for polar-specific effects
    * @returns {number} - Combined temperature effect in °F
    */
-  calculateSpecialFactorTemperatureEffects(specialFactors, hour, isDaytime, seasonalPosition) {
+  calculateSpecialFactorTemperatureEffects(specialFactors, hour, isDaytime, seasonalPosition, latitudeBand = "temperate") {
     let totalEffect = 0;
     
-    // Ice and permafrost effects - create significant cooling
-    if (specialFactors.permanentIce) {
-      // Permanent ice creates strong cooling through albedo effect
-      totalEffect += specialFactors.permanentIce * -15;
+    // ENHANCED PERMAFROST EFFECTS
+    if (specialFactors.permafrost) {
+      const permafrostLevel = specialFactors.permafrost; // 0-1 scale
+      
+      // Base cooling effect from permafrost
+      let permafrostEffect = permafrostLevel * -8; // Base cooling
+      
+      // ENHANCED: Permafrost prevents summer warming
+      if (seasonalPosition > 0) { // Summer
+        // Stronger cooling in summer when permafrost prevents ground warming
+        const summerCooling = permafrostLevel * seasonalPosition * -15;
+        permafrostEffect += summerCooling;
+        
+        console.log(`Permafrost summer cooling: ${summerCooling.toFixed(1)}°F (level: ${permafrostLevel}, season: ${seasonalPosition.toFixed(2)})`);
+      } else { // Winter
+        // Permafrost can actually moderate extreme winter cold slightly
+        // (acts as thermal mass)
+        const winterModeration = permafrostLevel * Math.abs(seasonalPosition) * 2;
+        permafrostEffect += winterModeration;
+      }
+      
+      totalEffect += permafrostEffect;
+      console.log(`Total permafrost effect: ${permafrostEffect.toFixed(1)}°F`);
     }
     
+    // ENHANCED PERMANENT ICE EFFECTS
+    if (specialFactors.permanentIce) {
+      const iceLevel = specialFactors.permanentIce;
+      
+      // Permanent ice creates massive cooling through albedo effect
+      let iceEffect = iceLevel * -20; // Base cooling
+      
+      // Ice reflects solar energy, especially strong in summer
+      if (seasonalPosition > 0 && isDaytime) {
+        const albedoEffect = iceLevel * seasonalPosition * -10;
+        iceEffect += albedoEffect;
+        console.log(`Ice albedo effect: ${albedoEffect.toFixed(1)}°F`);
+      }
+      
+      totalEffect += iceEffect;
+      console.log(`Total permanent ice effect: ${iceEffect.toFixed(1)}°F (level: ${iceLevel})`);
+    }
+    
+    // Sea ice effects - create significant cooling
     if (specialFactors.seaIce) {
       // Sea ice has cooling effect, but varies seasonally
       const seasonalIceEffect = specialFactors.seaIce * (0.7 + 0.3 * Math.abs(seasonalPosition));
-      totalEffect += seasonalIceEffect * -8;
-    }
-    
-    if (specialFactors.permafrost) {
-      // Permafrost keeps ground frozen, reducing heat absorption
-      // Effect is strongest in summer when contrast is greatest
-      const permafrostCooling = specialFactors.permafrost * -5;
-      const seasonalMultiplier = 1 + (seasonalPosition * 0.5); // Stronger cooling in summer
-      totalEffect += permafrostCooling * seasonalMultiplier;
+      const seaIceCooling = seasonalIceEffect * -8;
+      totalEffect += seaIceCooling;
+      console.log(`Sea ice cooling: ${seaIceCooling.toFixed(1)}°F`);
     }
     
     // High diurnal variation - increases temperature swings between day and night
     if (specialFactors.highDiurnalVariation) {
       const diurnalIntensity = specialFactors.highDiurnalVariation;
       if (isDaytime) {
-        // Hotter days
-        totalEffect += diurnalIntensity * 8;
+        // Hotter days (but reduced in polar regions)
+        const dayHeating = latitudeBand === "polar" ? diurnalIntensity * 4 : diurnalIntensity * 8;
+        totalEffect += dayHeating;
       } else {
-        // Colder nights
-        totalEffect += diurnalIntensity * -10;
+        // Colder nights (enhanced in polar regions)
+        const nightCooling = latitudeBand === "polar" ? diurnalIntensity * -15 : diurnalIntensity * -10;
+        totalEffect += nightCooling;
       }
     }
     
@@ -339,7 +439,7 @@ calculateTemperature(
   }
   
 /**
- * Calculate temperature based on solar angle and day of year
+ * Calculate temperature based on solar angle and day of year - ENHANCED FOR HIGH LATITUDES
  * UPDATED to use region's temperatureProfile data instead of generic biome ranges
  * @param {number} latitude - Latitude in degrees
  * @param {number} dayOfYear - Day of year (0-365)
@@ -434,11 +534,31 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
   const bandAdjustment = this.latitudeBandAdjustments[latitudeBand] || this.latitudeBandAdjustments["temperate"];
   const seasonalIntensity = bandAdjustment.seasonal || 1.0;
   
-  // 5. Calculate diurnal oscillation based on day length
+  // 5. HIGH LATITUDE SOLAR CORRECTIONS
+  if (latitude > 60) {
+    // High latitude corrections for limited solar angle
+    const highLatitudeFactor = (latitude - 60) / 30; // 0-1 scale for 60-90°
+    
+    // Reduce peak solar heating in summer
+    if (adjustedSeasonalFactor > 0) {
+      const solarReduction = highLatitudeFactor * adjustedSeasonalFactor * -10;
+      meanAnnualTemp += solarReduction;
+      console.log(`High latitude solar reduction: ${solarReduction.toFixed(1)}°F`);
+    }
+    
+    // Enhance winter cooling from low sun angle
+    if (adjustedSeasonalFactor < 0) {
+      const winterEnhancement = highLatitudeFactor * Math.abs(adjustedSeasonalFactor) * -5;
+      meanAnnualTemp += winterEnhancement;
+      console.log(`High latitude winter enhancement: ${winterEnhancement.toFixed(1)}°F`);
+    }
+  }
+  
+  // 6. Calculate diurnal oscillation based on day length
   const normalDayLength = 12;
   const dayLengthFactor = Math.min(1.3, Math.max(0.7, dayLengthHours / normalDayLength));
   
-  // 6. Calculate diurnal factor based on solar position
+  // 7. Calculate diurnal factor based on solar position
   let diurnalFactor;
   
   if (solarPosition >= 0.25 && solarPosition < 0.75) {
@@ -453,11 +573,19 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
     }
   }
   
-  // 7. Scale the diurnal oscillation
-  const diurnalAmplitude = seasonalAmplitude * 0.4 * dayLengthFactor;
+  // 8. Scale the diurnal oscillation (reduced for polar regions)
+  let diurnalAmplitude = seasonalAmplitude * 0.4 * dayLengthFactor;
+  
+  // Reduce diurnal swings in polar regions (they have less solar heating variation)
+  if (latitudeBand === "polar") {
+    diurnalAmplitude *= 0.6;
+  } else if (latitudeBand === "subarctic") {
+    diurnalAmplitude *= 0.8;
+  }
+  
   const diurnalOscillation = diurnalAmplitude * diurnalFactor;
   
-  // 8. Apply Continental Effect
+  // 9. Apply Continental Effect
   let continentalEffect = 0;
   if (latitude > 30 && latitude < 70) {
     const continentalFactor = (1 - (profile?.maritimeInfluence || 0.5)) * 0.7;
@@ -468,7 +596,7 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
     }
   }
   
-  // 9. Final temperature: base mean + daily variation + continental effect
+  // 10. Final temperature: base mean + daily variation + continental effect
   // Note: We're not adding seasonal oscillation here since meanAnnualTemp is already seasonal
   return meanAnnualTemp + diurnalOscillation + continentalEffect;
 }
@@ -498,11 +626,29 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
     if (isDay) {
       // During day, clouds block solar heating
       // Reduce temperature up to 10 degrees based on cloud cover
-      return -10 * (cloudCover / 100);
+      let cooling = -10 * (cloudCover / 100);
+      
+      // In polar regions, clouds have less impact due to weaker solar heating
+      if (latitudeBand === "polar") {
+        cooling *= 0.5;
+      } else if (latitudeBand === "subarctic") {
+        cooling *= 0.7;
+      }
+      
+      return cooling;
     } else {
       // At night, clouds trap heat
       // Increase temperature up to 5 degrees based on cloud cover
-      return 5 * (cloudCover / 100);
+      let warming = 5 * (cloudCover / 100);
+      
+      // In polar regions, cloud warming effect is enhanced due to lower base temperatures
+      if (latitudeBand === "polar") {
+        warming *= 1.5;
+      } else if (latitudeBand === "subarctic") {
+        warming *= 1.2;
+      }
+      
+      return warming;
     }
   }
 
@@ -575,6 +721,10 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
         return temperature < min ? "Clear Skies" : condition;
       } else if (condition === "Cold Snap") {
         return temperature > max ? "Cold Winds" : condition;
+      } else if (condition === "Heavy Rain" || condition === "Rain") {
+        return temperature < min ? "Snow" : condition;
+      } else if (condition === "Thunderstorm") {
+        return temperature < min ? (temperature < 32 ? "Snow" : "Rain") : condition;
       }
     }
 
@@ -666,6 +816,19 @@ calculateSolarBasedTemperature(latitude, dayOfYear, hour, biomeRange, date, lati
     const diff = date - start;
     const oneDay = 1000 * 60 * 60 * 24;
     return Math.floor(diff / oneDay);
+  }
+
+  /**
+   * Get current season from date
+   * @param {Date} date - Date to calculate season for
+   * @returns {string} - Season name
+   */
+  getCurrentSeason(date) {
+    const month = date.getMonth();
+    if (month >= 2 && month <= 4) return "spring";
+    if (month >= 5 && month <= 7) return "summer";
+    if (month >= 8 && month <= 10) return "fall";
+    return "winter";
   }
 }
 

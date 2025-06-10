@@ -1,4 +1,4 @@
-// src/services/meteorological/WeatherConditionService.js - FIXED VERSION
+// src/services/meteorological/WeatherConditionService.js - ENHANCED FOR POLAR REGIONS
 // Service for determining weather conditions from meteorological parameters
 
 import { weatherEffects } from '../../data-tables/weather-effects';
@@ -14,6 +14,7 @@ class WeatherConditionService {
 
   /**
    * Calculate atmospheric instability - key for thunderstorm formation
+   * ENHANCED with polar region considerations
    * @param {number} temperature - Temperature in °F
    * @param {number} pressure - Atmospheric pressure in hPa
    * @param {number} pressureTrend - Pressure trend in hPa/hour
@@ -35,9 +36,14 @@ class WeatherConditionService {
     let instability = 0;
 
     // Temperature contribution - warmer air is more unstable
+    // BUT in polar regions, even "warm" temperatures don't create much instability
     if (temperature > 70) {
       instability += (temperature - 70) * 0.1; // Up to 3-4 points for very hot temps
+    } else if (temperature > 50) {
+      // Moderate temperatures contribute less
+      instability += (temperature - 50) * 0.05;
     }
+    // Temperatures below 50°F contribute minimal instability
 
     // Low pressure increases instability
     if (pressure < 1013) {
@@ -71,6 +77,7 @@ class WeatherConditionService {
 
   /**
    * Determine weather condition from meteorological factors
+   * ENHANCED with latitude band awareness for polar regions
    * @param {number} temperature - Temperature in °F
    * @param {number} humidity - Relative humidity (0-100)
    * @param {number} pressure - Atmospheric pressure in hPa
@@ -78,6 +85,7 @@ class WeatherConditionService {
    * @param {number} precipPotential - Precipitation potential (0-100)
    * @param {number} windSpeed - Wind speed in mph
    * @param {number} instability - Atmospheric instability (0-10)
+   * @param {string} latitudeBand - Latitude band for region-specific logic
    * @returns {string} - Weather condition
    */
   determineWeatherCondition(
@@ -87,7 +95,8 @@ class WeatherConditionService {
     cloudCover,
     precipPotential,
     windSpeed,
-    instability
+    instability,
+    latitudeBand = "temperate"
   ) {
     // Ensure all parameters are valid numbers to prevent errors
     temperature = Number(temperature) || 70;
@@ -102,6 +111,7 @@ class WeatherConditionService {
     console.log("Weather determination inputs:", {
       temperature, humidity, pressure, cloudCover, 
       precipPotential, windSpeed, instability,
+      latitudeBand,
       stormCycleStage: this.stormCycleStage
     });
 
@@ -114,29 +124,46 @@ class WeatherConditionService {
       
       // Storm cycle progression stages
       if (this.stormCycleStage >= 6) {
-        return "Heavy Rain";
+        return temperature <= 32 ? "Snow" : "Heavy Rain";
       } else if (this.stormCycleStage >= 3) {
-        return "Rain";
+        return temperature <= 32 ? "Snow" : "Rain";
       } else if (this.stormCycleStage >= 1) {
         return "Light Clouds";
       }
       // When stormCycleStage reaches 0, we exit the cycle and calculate normally
     }
 
+    // ENHANCED PRECIPITATION LOGIC WITH LATITUDE AWARENESS
     if (precipPotential > 75) {
-      // High precipitation potential means precipitation
-      if (temperature <= 32) {
+      // POLAR/SUBARCTIC: Almost always snow if below freezing
+      if ((latitudeBand === "polar" || latitudeBand === "subarctic") && temperature <= 35) {
+        if (windSpeed > 25) {
+          condition = "Blizzard";
+        } else {
+          condition = "Snow";
+        }
+      }
+      // GENERAL: Temperature-based precipitation type
+      else if (temperature <= 32) {
         if (windSpeed > 20) {
           condition = "Blizzard";
         } else {
           condition = "Snow";
         }
-      } else if (precipPotential > 90) {
+      } 
+      // WARM PRECIPITATION: But check minimums for liquid precipitation
+      else if (temperature >= 35 && precipPotential > 90) {
         condition = "Heavy Rain";
-      } else {
+      } else if (temperature >= 33) {
         condition = "Rain";
       }
-    } else if (cloudCover > 80) {
+      // EDGE CASE: 32-35°F range - could be sleet/freezing rain, default to snow
+      else {
+        condition = "Snow";
+      }
+    } 
+    // CLOUD CONDITIONS
+    else if (cloudCover > 80) {
       condition = "Heavy Clouds";
     } else if (cloudCover > 30) {
       condition = "Light Clouds";
@@ -144,8 +171,24 @@ class WeatherConditionService {
       condition = "Clear Skies";
     }
 
-    // Check for thunderstorm conditions - requires warmth, humidity and instability
-    const thunderstormConditionsMet = precipPotential > 65 && temperature > 60 && instability > 7;
+    // ENHANCED THUNDERSTORM CONDITIONS WITH LATITUDE RESTRICTIONS
+    // Polar regions rarely get thunderstorms, subarctic only in warm summer conditions
+    const baseThunderstormConditions = precipPotential > 65 && 
+                                      temperature > 50 && 
+                                      instability > 7;
+    
+    let thunderstormConditionsMet = false;
+    
+    if (latitudeBand === "polar") {
+      // Polar regions: no thunderstorms
+      thunderstormConditionsMet = false;
+    } else if (latitudeBand === "subarctic") {
+      // Subarctic: only allow thunderstorms in quite warm conditions
+      thunderstormConditionsMet = baseThunderstormConditions && temperature > 65;
+    } else {
+      // All other regions: normal thunderstorm conditions
+      thunderstormConditionsMet = baseThunderstormConditions;
+    }
     
     if (thunderstormConditionsMet) {
       // Check if we're already in a thunderstorm and track duration
@@ -165,7 +208,7 @@ class WeatherConditionService {
             this.stormCycleStage = 8 + Math.floor(Math.random() * 4); // 8-12 hour cycle
             this.thunderstormDuration = 0;
             this.thunderstormEnergy = 0;
-            return "Heavy Rain"; // First stage of storm cycle
+            return temperature <= 32 ? "Snow" : "Heavy Rain"; // First stage of storm cycle
           }
         }
         
@@ -174,7 +217,7 @@ class WeatherConditionService {
           this.stormCycleStage = 6 + Math.floor(Math.random() * 3); // 6-9 hour cycle
           this.thunderstormDuration = 0;
           this.thunderstormEnergy = 0;
-          return "Heavy Rain";
+          return temperature <= 32 ? "Snow" : "Heavy Rain";
         }
         
         condition = "Thunderstorm";
@@ -195,32 +238,76 @@ class WeatherConditionService {
       this.stormCycleStage = 6 + Math.floor(Math.random() * 3); // 6-9 hour cycle
       this.thunderstormDuration = 0;
       this.thunderstormEnergy = 0;
-      condition = "Heavy Rain"; // First stage of the cycle
+      condition = temperature <= 32 ? "Snow" : "Heavy Rain"; // First stage of the cycle
     }
 
-    // Check for extreme temperature conditions
-    if (temperature > 95 && cloudCover < 40) {
-      condition = "Scorching Heat";
-    } else if (temperature < 20) {
-      condition = "Freezing Cold";
+    // ENHANCED EXTREME TEMPERATURE CONDITIONS WITH LATITUDE AWARENESS
+    if (latitudeBand === "polar") {
+      // Polar regions: much lower thresholds for "extreme" conditions
+      if (temperature > 45 && cloudCover < 40) {
+        // Don't call it "scorching" in polar regions, just clear skies
+        condition = "Clear Skies";
+      } else if (temperature < -10) {
+        condition = "Freezing Cold";
+      }
+    } else if (latitudeBand === "subarctic") {
+      // Subarctic regions: moderate thresholds
+      if (temperature > 75 && cloudCover < 40) {
+        condition = "Scorching Heat";
+      } else if (temperature < 0) {
+        condition = "Freezing Cold";
+      }
+    } else {
+      // Temperate and warmer regions: original thresholds
+      if (temperature > 95 && cloudCover < 40) {
+        condition = "Scorching Heat";
+      } else if (temperature < 20) {
+        condition = "Freezing Cold";
+      }
     }
 
-    // Special conditions check for high winds
-    if (windSpeed > 30 && temperature < 40) {
-      condition = "Cold Winds";
-    } else if (temperature > 80 && humidity > 85 && cloudCover < 40) {
-      condition = "High Humidity Haze";
+    // ENHANCED HIGH WINDS WITH LATITUDE CONSIDERATIONS
+    if (windSpeed > 30) {
+      if (latitudeBand === "polar" || latitudeBand === "subarctic") {
+        // Cold regions: high winds with low temps = dangerous wind chill
+        if (temperature < 32) {
+          condition = "Blizzard"; // Even without precipitation, dangerous conditions
+        } else {
+          condition = "Cold Winds";
+        }
+      } else if (temperature < 40) {
+        condition = "Cold Winds";
+      }
     }
-    
-    // Add fog conditions
-    if (humidity > 90 && cloudCover > 20 && temperature < 60 && windSpeed < 8) {
-      condition = "Fog";
-    } else if (humidity > 95 && cloudCover > 40 && temperature < 45 && windSpeed < 5) {
-      condition = "Heavy Fog";
+
+    // ENHANCED FOG CONDITIONS WITH LATITUDE SPECIFICITY
+    if (latitudeBand === "polar") {
+      // Polar fog often forms when relatively warm air moves over cold surfaces
+      if (humidity > 85 && temperature > 28 && temperature < 40 && windSpeed < 8) {
+        condition = "Fog";
+      }
+    } else if (latitudeBand === "subarctic") {
+      // Subarctic fog conditions
+      if (humidity > 88 && temperature < 50 && windSpeed < 8) {
+        condition = "Fog";
+      }
+    } else {
+      // Standard fog conditions for other regions
+      if (humidity > 90 && cloudCover > 20 && temperature < 60 && windSpeed < 8) {
+        condition = "Fog";
+      } else if (humidity > 95 && cloudCover > 40 && temperature < 45 && windSpeed < 5) {
+        condition = "Heavy Fog";
+      }
+    }
+
+    // SPECIAL ARCTIC CONDITIONS
+    if (latitudeBand === "polar" && windSpeed > 15 && temperature < 0) {
+      // Arctic conditions with dangerous wind chill
+      condition = "Blizzard";
     }
 
     // Log result for debugging
-    console.log("Weather determination result:", condition);
+    console.log("Weather determination result:", condition, `for ${latitudeBand} region at ${temperature}°F`);
 
     // Update last condition for next iteration
     this.lastCondition = condition;
@@ -256,18 +343,30 @@ class WeatherConditionService {
 
   /**
    * Generate celestial events (shooting stars, meteor impacts)
-   * @returns {object} - Celestial events {shootingStar, meteorImpact}
+   * Enhanced to consider latitude band for aurora activity
+   * @param {string} latitudeBand - Latitude band for aurora considerations
+   * @returns {object} - Celestial events {shootingStar, meteorImpact, aurora}
    */
-  generateCelestialEvents() {
+  generateCelestialEvents(latitudeBand = "temperate") {
     // Base chance for shooting star: 1%
     const hasShootingStar = Math.random() < 0.01;
     
     // If shooting star occurs, 5% chance of meteor impact
     const hasMeteorImpact = hasShootingStar && Math.random() < 0.05;
     
+    // Aurora chances based on latitude
+    let hasAurora = false;
+    if (latitudeBand === "polar") {
+      hasAurora = Math.random() < 0.15; // 15% chance in polar regions
+    } else if (latitudeBand === "subarctic") {
+      hasAurora = Math.random() < 0.05; // 5% chance in subarctic regions
+    }
+    // No aurora in lower latitudes under normal conditions
+    
     return {
       shootingStar: hasShootingStar,
-      meteorImpact: hasMeteorImpact
+      meteorImpact: hasMeteorImpact,
+      aurora: hasAurora
     };
   }
   
