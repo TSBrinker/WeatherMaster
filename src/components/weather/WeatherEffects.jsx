@@ -290,15 +290,15 @@ const WeatherEffects = ({
 
         {!isCollapsed && (
           <div className="mt-4">
-            {/* Weather description */}
+            {/* Weather description
             <div className="p-3 rounded bg-surface-light mb-4">
               <h3 className="text-lg font-semibold mb-2">Description</h3>
               <p className="italic text-gray-100">{weatherDescription}</p>
-            </div>
+            </div> */}
 
             {/* Weather effects */}
             <div className="weather-effects-content mb-4">
-              <h3 className="text-lg font-semibold mb-2">Game Effects</h3>
+              {/* <h3 className="text-lg font-semibold mb-2">Game Effects</h3> */}
               <div className="p-3 rounded bg-surface-light">
                 {structuredEffects
                   ? renderStructuredEffects()
