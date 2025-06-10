@@ -1,8 +1,15 @@
-// src/components/weather/WeatherEffects.jsx
-import React, { useState, useEffect } from "react";
+// src/components/weather/WeatherEffects.jsx - FIXED VERSION
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import moonService from "../../services/MoonService";
 import sunriseSunsetService from "../../services/SunriseSunsetService";
 import weatherDescriptionService from "../../services/WeatherDescriptionService";
+import { weatherEffects as staticWeatherEffects } from "../../data-tables/weather-effects";
 import {
   AlertTriangle,
   Wind,
@@ -23,6 +30,7 @@ const WeatherEffects = ({
   regionId = null,
   cachedDescription = null,
 }) => {
+  // State variables
   const [moonInfo, setMoonInfo] = useState(null);
   const [isNighttime, setIsNighttime] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -31,31 +39,70 @@ const WeatherEffects = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Generate weather description first, using cache when available
+  // Refs to prevent unnecessary re-renders
+  const lastWeatherCondition = useRef(null);
+  const lastDescriptionGenerated = useRef(null);
+
+  // Memoize stable values to prevent infinite loops
+  const stableCurrentWeather = useMemo(() => {
+    if (!currentWeather) return null;
+    return {
+      condition: currentWeather.condition,
+      temperature: currentWeather.temperature,
+      windSpeed: currentWeather.windSpeed,
+      windDirection: currentWeather.windDirection,
+      windIntensity: currentWeather.windIntensity,
+    };
+  }, [
+    currentWeather?.condition,
+    currentWeather?.temperature,
+    currentWeather?.windSpeed,
+    currentWeather?.windDirection,
+    currentWeather?.windIntensity,
+  ]);
+
+  // Memoize current date as timestamp to prevent object comparison issues
+  const currentDateTimestamp = useMemo(() => {
+    return currentDate ? currentDate.getTime() : null;
+  }, [currentDate]);
+
+  // Generate weather description with proper dependency tracking
   useEffect(() => {
-    if (!currentWeather || !currentDate) return;
+    if (!stableCurrentWeather || !currentDate) {
+      setWeatherDescription("");
+      return;
+    }
+
+    const condition = stableCurrentWeather.condition;
+    const cacheKey = `${regionId}-${condition}-${currentDateTimestamp}`;
+
+    // Skip if we've already generated this exact description
+    if (lastDescriptionGenerated.current === cacheKey) {
+      return;
+    }
 
     try {
-      // Check if we have a cached description either from props or localStorage
+      let description = "";
+
+      // Check cached description first
       if (cachedDescription) {
-        setWeatherDescription(cachedDescription);
+        description = cachedDescription;
       } else if (regionId) {
         const storedDescription = localStorage.getItem(
           `weather_description_${regionId}`
         );
         if (storedDescription) {
-          setWeatherDescription(storedDescription);
+          description = storedDescription;
         } else {
-          // Generate a new description only if no cached ones exist
-          const description = weatherDescriptionService.generateDescription(
-            currentWeather,
+          // Generate new description
+          description = weatherDescriptionService.generateDescription(
+            stableCurrentWeather,
             biome,
             currentDate,
             regionId
           );
-          setWeatherDescription(description);
 
-          // Store the description for future use
+          // Store in localStorage
           try {
             localStorage.setItem(
               `weather_description_${regionId}`,
@@ -66,41 +113,61 @@ const WeatherEffects = ({
           }
         }
       } else {
-        // No region ID or cache, generate on demand but won't be cached
-        const description = weatherDescriptionService.generateDescription(
-          currentWeather,
+        // Generate without caching
+        description = weatherDescriptionService.generateDescription(
+          stableCurrentWeather,
           biome,
           currentDate
         );
-        setWeatherDescription(description);
       }
 
-      // Parse structured effects if available (using imported object directly)
-      if (typeof weatherEffects === "object" && weatherEffects !== null) {
-        // Already have structured effects
-        setStructuredEffects(weatherEffects);
-      } else if (currentWeather && currentWeather.condition) {
-        // Try to find the structured effects for this condition
-        // Import directly from the module
-        import("../../data-tables/weather-effects").then((module) => {
-          const effects = module.weatherEffects[currentWeather.condition];
-          setStructuredEffects(effects || null);
-        });
-      }
+      setWeatherDescription(description);
+      lastDescriptionGenerated.current = cacheKey;
     } catch (error) {
       console.error("Error generating weather description:", error);
       setError("Failed to generate weather description");
     }
   }, [
-    currentWeather,
-    weatherEffects,
+    stableCurrentWeather,
+    currentDateTimestamp,
     biome,
-    currentDate,
     regionId,
     cachedDescription,
   ]);
 
-  // Get moon information in a separate effect to prevent circular dependencies
+  // Handle structured effects with proper dependency tracking
+  useEffect(() => {
+    if (!stableCurrentWeather) {
+      setStructuredEffects(null);
+      return;
+    }
+
+    const condition = stableCurrentWeather.condition;
+
+    // Skip if condition hasn't changed
+    if (lastWeatherCondition.current === condition) {
+      return;
+    }
+
+    try {
+      // Check if weatherEffects prop contains structured data
+      if (typeof weatherEffects === "object" && weatherEffects !== null) {
+        setStructuredEffects(weatherEffects);
+      } else if (condition && staticWeatherEffects[condition]) {
+        // Use statically imported weather effects
+        setStructuredEffects(staticWeatherEffects[condition]);
+      } else {
+        setStructuredEffects(null);
+      }
+
+      lastWeatherCondition.current = condition;
+    } catch (error) {
+      console.error("Error setting structured effects:", error);
+      setStructuredEffects(null);
+    }
+  }, [stableCurrentWeather, weatherEffects]);
+
+  // Handle celestial information (moon/sun) with proper dependency tracking
   useEffect(() => {
     if (!currentDate) {
       setIsLoading(false);
@@ -111,17 +178,16 @@ const WeatherEffects = ({
     setError(null);
 
     try {
-      // Safely get moon phase with error handling
+      // Get moon phase safely
       let phase = null;
       try {
         phase = moonService.getMoonPhase(currentDate);
       } catch (error) {
         console.error("Error getting moon phase:", error);
-        // Continue without moon phase
       }
 
-      // Safely get daytime info with error handling
-      let isDaytime = true; // Default to daytime if error
+      // Get daytime info safely
+      let isDaytime = true;
       try {
         const sunInfo = sunriseSunsetService.getFormattedSunriseSunset(
           latitudeBand,
@@ -130,27 +196,26 @@ const WeatherEffects = ({
         isDaytime = sunInfo.isDaytime;
       } catch (error) {
         console.error("Error getting sunrise/sunset info:", error);
-        // Continue with default daytime value
       }
 
       setMoonInfo(phase);
       setIsNighttime(!isDaytime);
       setIsLoading(false);
     } catch (error) {
-      console.error("Error in moon/sun calculations:", error);
+      console.error("Error in celestial calculations:", error);
       setError("Error calculating celestial data");
       setIsLoading(false);
     }
-  }, [currentDate, latitudeBand]);
+  }, [currentDateTimestamp, latitudeBand]);
 
-  // Render a loading state if weather effects are not available
-  if (!weatherEffects && !currentWeather) return null;
+  // Early return if no data available
+  if (!weatherEffects && !stableCurrentWeather) return null;
 
   // Get condition name for display
-  const conditionName = currentWeather?.condition || "Unknown";
+  const conditionName = stableCurrentWeather?.condition || "Unknown";
 
-  // Helper to render structured effects
-  const renderStructuredEffects = () => {
+  // Memoized render functions to prevent unnecessary re-renders
+  const renderStructuredEffects = useCallback(() => {
     if (!structuredEffects) {
       return (
         <div className="text-center p-4 text-gray-400">
@@ -246,24 +311,24 @@ const WeatherEffects = ({
         )}
 
         {/* Wind Effects if applicable */}
-        {currentWeather && currentWeather.windSpeed > 15 && (
+        {stableCurrentWeather && stableCurrentWeather.windSpeed > 15 && (
           <div className="effect-section mt-2 p-3 bg-surface-light rounded">
             <div className="effect-header">
               <Wind size={18} className="mr-2" />
               <h4 className="font-medium">Wind Effects</h4>
             </div>
             <div className="effect-content">
-              {currentWeather.windIntensity}: {currentWeather.windSpeed} mph{" "}
-              {currentWeather.windDirection}
+              {stableCurrentWeather.windIntensity}:{" "}
+              {stableCurrentWeather.windSpeed} mph{" "}
+              {stableCurrentWeather.windDirection}
             </div>
           </div>
         )}
       </div>
     );
-  };
+  }, [structuredEffects, conditionName, stableCurrentWeather]);
 
-  // Fallback to render classic text-based effects if structured effects aren't available
-  const renderClassicEffects = () => {
+  const renderClassicEffects = useCallback(() => {
     if (typeof weatherEffects === "string") {
       return <div className="whitespace-pre-line">{weatherEffects}</div>;
     }
@@ -273,7 +338,30 @@ const WeatherEffects = ({
         No game effects available for this weather condition.
       </div>
     );
-  };
+  }, [weatherEffects]);
+
+  const renderMoonInfo = useCallback(() => {
+    if (!moonInfo) return null;
+
+    return (
+      <div className="p-3 rounded bg-surface-light">
+        <div className="flex items-center mb-2">
+          <Moon size={18} className="mr-2" />
+          <h4 className="font-medium">Moon Phase</h4>
+        </div>
+        <div className="text-gray-300">
+          <div>Phase: {moonInfo.phase}</div>
+          <div>Illumination: {moonInfo.illumination}%</div>
+          {moonInfo.moonrise && (
+            <div>Moonrise: {moonInfo.moonrise.toLocaleTimeString()}</div>
+          )}
+          {moonInfo.moonset && (
+            <div>Moonset: {moonInfo.moonset.toLocaleTimeString()}</div>
+          )}
+        </div>
+      </div>
+    );
+  }, [moonInfo]);
 
   return (
     <div className="weather-effects-section">
@@ -290,15 +378,16 @@ const WeatherEffects = ({
 
         {!isCollapsed && (
           <div className="mt-4">
-            {/* Weather description
+            {/* Weather description - commented out in original */}
+            {/*
             <div className="p-3 rounded bg-surface-light mb-4">
               <h3 className="text-lg font-semibold mb-2">Description</h3>
               <p className="italic text-gray-100">{weatherDescription}</p>
-            </div> */}
+            </div>
+            */}
 
             {/* Weather effects */}
             <div className="weather-effects-content mb-4">
-              {/* <h3 className="text-lg font-semibold mb-2">Game Effects</h3> */}
               <div className="p-3 rounded bg-surface-light">
                 {structuredEffects
                   ? renderStructuredEffects()
@@ -306,61 +395,13 @@ const WeatherEffects = ({
               </div>
             </div>
 
-            {/* Moon info section */}
+            {/* Celestial info section */}
             {isLoading ? (
               <div className="text-center p-4">Loading celestial data...</div>
             ) : error ? (
-              <div className="text-red-500 p-4">{error}</div>
+              <div className="text-center p-4 text-red-400">Error: {error}</div>
             ) : (
-              moonInfo && (
-                <div className="moon-effects-content mt-4 border-t border-gray-700 pt-4">
-                  <h3 className="text-lg font-semibold mb-2">Moon Phase</h3>
-                  <div className="flex items-center mb-2">
-                    <span className="text-3xl mr-3">{moonInfo.icon}</span>
-                    <div>
-                      <div className="font-semibold">{moonInfo.name}</div>
-                      <div className="text-sm text-gray-400">
-                        {moonInfo.exactPercentage}% illuminated •{" "}
-                        {moonInfo.isWaxing ? "Waxing" : "Waning"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* D&D 5E Light Level - Only show at night */}
-                  {isNighttime && (
-                    <div className="mt-3 p-3 rounded bg-surface-light">
-                      {moonInfo.name === "Full Moon" ||
-                      moonInfo.name === "Waxing Gibbous" ||
-                      moonInfo.name === "Waning Gibbous" ? (
-                        <p>
-                          <span className="font-semibold">Light Level:</span>{" "}
-                          Dim Light in open areas <br />
-                          <span className="text-sm block mt-1 text-gray-400">
-                            Characters without darkvision can see up to 60 feet
-                            but have disadvantage on Perception checks.
-                          </span>
-                        </p>
-                      ) : (
-                        <p>
-                          <span className="font-semibold">Light Level:</span>{" "}
-                          Darkness <br />
-                          <span className="text-sm block mt-1 text-gray-400">
-                            Characters without darkvision cannot see.
-                          </span>
-                        </p>
-                      )}
-
-                      {/* Lycanthropy note only on full moon */}
-                      {moonInfo.name === "Full Moon" && (
-                        <p className="mt-2 text-amber-300">
-                          <span className="font-semibold">Lycanthropy:</span>{" "}
-                          Lycanthropes are forced to transform.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
+              <>{isNighttime && renderMoonInfo()}</>
             )}
           </div>
         )}
