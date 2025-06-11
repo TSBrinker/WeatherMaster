@@ -1,11 +1,5 @@
-// src/services/SunriseSunsetService.js
-// Enhanced sunrise/sunset service with solar angle-based season support
-
+// src/services/SunriseSunsetService.js - Fixed
 class SunriseSunsetService {
-    constructor() {
-      console.log("SunriseSunsetService initialized with solar season support");
-    }
-    
     // Calculate day length based on latitude and day of year
     calculateDayLength(latitudeBand, date) {
       // Get day of year (0-365)
@@ -70,22 +64,38 @@ class SunriseSunsetService {
       return dayLength;
     }
     
-    // Convert latitude band to actual latitude for calculations
+    // Convert latitude band to actual latitude value for calculations
     getLatitudeFromBand(latitudeBand) {
-      const bandMap = {
-        "tropical": 15,        // 0-30°
-        "subtropical": 35,     // 30-40°
-        "temperate": 45,       // 40-60°
-        "subarctic": 65,       // 60-70°
-        "polar": 75            // 70-90°
+      // Handle null or undefined input
+      if (!latitudeBand) {
+        console.warn('[SunriseSunset] No latitude band provided, defaulting to temperate (45°)');
+        return 45; // Default to temperate
+      }
+      
+      console.log(`[SunriseSunset] Converting latitude band: "${latitudeBand}"`);
+      
+      // Center point of each latitude band
+      const latitudeMap = {
+        "equatorial": 5,   // 0° - 10°
+        "tropical": 20,    // 10° - 30°
+        "temperate": 45,   // 30° - 60°
+        "subarctic": 65,   // 60° - 75°
+        "polar": 80        // 75° - 90°
       };
       
-      return bandMap[latitudeBand] || 45; // Default to temperate
+      // Check if the latitude band is valid
+      if (!latitudeMap[latitudeBand]) {
+        console.warn(`[SunriseSunset] Unknown latitude band: "${latitudeBand}", defaulting to temperate (45°)`);
+        return 45; // Default to temperate
+      }
+      
+      console.log(`[SunriseSunset] Resolved latitude: ${latitudeMap[latitudeBand]}° for band: ${latitudeBand}`);
+      return latitudeMap[latitudeBand];
     }
     
-    // Get precise sunrise and sunset times
+    // Get sunrise and sunset times
     getSunriseSunset(latitudeBand, date) {
-      // Validate inputs
+      // Handle invalid date
       if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
         console.error("Invalid date in getSunriseSunset:", date);
         return {
@@ -223,103 +233,67 @@ class SunriseSunsetService {
       if (!(currentTime instanceof Date) || 
           !(sunrise instanceof Date) || 
           !(sunset instanceof Date)) {
-        console.error("Invalid date objects in getSolarPosition");
-        return 0;
+        return 0.5; // Default to noon if invalid inputs
       }
       
-      const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
-      const sunriseHour = sunrise.getHours() + sunrise.getMinutes() / 60;
-      const sunsetHour = sunset.getHours() + sunset.getMinutes() / 60;
+      const current = currentTime.getTime();
+      const riseTime = sunrise.getTime();
+      const setTime = sunset.getTime();
       
-      if (currentHour < sunriseHour || currentHour > sunsetHour) {
-        // Nighttime
-        if (currentHour <= 12) {
-          // Early morning before sunrise
-          return currentHour / 24;
-        } else {
-          // Evening after sunset
-          return currentHour / 24;
-        }
-      } else {
-        // Daytime - calculate position between sunrise and sunset
-        const dayProgress = (currentHour - sunriseHour) / (sunsetHour - sunriseHour);
-        // Map to 0.25 (sunrise) to 0.75 (sunset) range
-        return 0.25 + (dayProgress * 0.5);
+      // Night before sunrise
+      if (current < riseTime) {
+        // Calculate position between previous sunset and sunrise
+        // Assuming previous sunset was ~12 hours before
+        const prevSunset = new Date(riseTime);
+        prevSunset.setHours(prevSunset.getHours() - 12);
+        
+        const nightLength = riseTime - prevSunset.getTime();
+        const timeFromPrevSunset = current - prevSunset.getTime();
+        
+        // Ensure we don't divide by zero
+        if (nightLength <= 0) return 0.1;
+        
+        return (timeFromPrevSunset / nightLength) * 0.25; // 0-0.25 range for night before sunrise
+      }
+      // Daytime
+      else if (current >= riseTime && current <= setTime) {
+        const dayLength = setTime - riseTime;
+        const timeFromSunrise = current - riseTime;
+        
+        // Ensure we don't divide by zero
+        if (dayLength <= 0) return 0.5;
+        
+        return 0.25 + (timeFromSunrise / dayLength) * 0.5; // 0.25-0.75 range for daytime
+      }
+      // Night after sunset
+      else {
+        // Calculate position between sunset and next sunrise
+        // Assuming next sunrise is ~12 hours after
+        const nextSunrise = new Date(setTime);
+        nextSunrise.setHours(nextSunrise.getHours() + 12);
+        
+        const nightLength = nextSunrise.getTime() - setTime;
+        const timeFromSunset = current - setTime;
+        
+        // Ensure we don't divide by zero
+        if (nightLength <= 0) return 0.8;
+        
+        return 0.75 + (timeFromSunset / nightLength) * 0.25; // 0.75-1 range for night after sunset
       }
     }
     
-    // NEW: Get current season based on solar angle and latitude
-    getSeasonFromSolarAngle(date, latitudeBand) {
+    // Special case handling for extreme latitudes and dates
+    handleExtremeLatitudes(latitudeBand, dayOfYear) {
+      // Get numerical latitude
       const latitude = this.getLatitudeFromBand(latitudeBand);
-      const dayOfYear = this.getDayOfYear(date);
-      const daylightHours = this.getDaylightHours(latitudeBand, dayOfYear);
+      
+      // Calculate declination for this day
       const declination = 23.45 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
       
-      // Use solar-angle approach for season determination
-      const adjustedDeclination = latitude < 0 ? -declination : declination;
+      console.log(`[SunriseSunset] Extreme latitude check: ${latitude}°, declination: ${declination.toFixed(2)}°`);
       
-      console.log(`[Season Solar] Lat: ${latitude}°, Daylight: ${daylightHours.toFixed(1)}h, Declination: ${adjustedDeclination.toFixed(1)}°`);
-      
-      // POLAR REGIONS - Season based on sun presence
-      if (Math.abs(latitude) >= 66.5) {
-        if (daylightHours >= 23) return "summer";   // Polar day
-        if (daylightHours <= 1) return "winter";    // Polar night
-        return declination > 0 ? "spring" : "fall"; // Transition periods
-      }
-      
-      // SUBPOLAR REGIONS - Mixed approach
-      if (Math.abs(latitude) >= 60) {
-        if (daylightHours >= 18) return "summer";
-        if (daylightHours <= 6) return "winter";
-        return adjustedDeclination > 0 ? "spring" : "fall";
-      }
-      
-      // TEMPERATE REGIONS - Solar angle approach
-      if (Math.abs(latitude) >= 30) {
-        if (adjustedDeclination >= 20) return "summer";
-        if (adjustedDeclination <= -20) return "winter";
-        return adjustedDeclination > 0 ? "spring" : "fall";
-      }
-      
-      // TROPICAL REGIONS - Simplified wet/dry season
-      return Math.abs(adjustedDeclination) < 10 ? "summer" : "winter";
-    }
-    
-    // NEW: Get detailed season information for a region
-    getSeasonInfo(date, latitudeBand) {
-      const latitude = this.getLatitudeFromBand(latitudeBand);
-      const season = this.getSeasonFromSolarAngle(date, latitudeBand);
-      const dayOfYear = this.getDayOfYear(date);
-      const daylightHours = this.getDaylightHours(latitudeBand, dayOfYear);
-      const declination = 23.45 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
-      
-      return {
-        season,
-        latitude,
-        latitudeBand,
-        dayOfYear,
-        daylightHours: Math.round(daylightHours * 10) / 10,
-        solarDeclination: Math.round(declination * 10) / 10,
-        seasonalMethod: this.getSeasonalMethod(latitude)
-      };
-    }
-    
-    // Get the method used for season determination at this latitude
-    getSeasonalMethod(latitude) {
-      if (Math.abs(latitude) >= 66.5) return "polar-daylight";
-      if (Math.abs(latitude) >= 60) return "subpolar-mixed";
-      if (Math.abs(latitude) >= 30) return "temperate-solar";
-      return "tropical-minimal";
-    }
-    
-    // Check if we're in polar day or polar night
-    checkPolarConditions(latitudeBand, date) {
-      const latitude = this.getLatitudeFromBand(latitudeBand);
-      const dayOfYear = this.getDayOfYear(date);
-      const declination = 23.45 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
-      
-      // Check for polar conditions (simplified)
-      if (latitude > 66.5 && declination > 0 && latitude < (90 - declination)) {
+      // Check for polar day/night
+      if (latitude > 66.5 && declination > 0 && latitude > (90 - declination)) {
         // Polar day in northern summer
         console.log(`[SunriseSunset] Detected Northern Polar Day`);
         return { isPolarDay: true, isPolarNight: false };

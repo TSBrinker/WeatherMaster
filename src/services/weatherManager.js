@@ -1,205 +1,128 @@
 // src/services/weatherManager.js
-// Enhanced Weather Manager with solar-angle based season support
+// Singleton manager for weather services across regions
+// Clean version with meteorological-only support
 
-import MeteorologicalWeatherService from './MeteorologicalWeatherService.js';
-import WeatherUtils from '../utils/weatherUtils.js';
+import MeteorologicalWeatherService from './MeteorologicalWeatherService';
 
-/**
- * Weather Manager - Centralized weather service management with solar seasons
- * Handles multiple regions and their weather services
- */
 class WeatherManager {
   constructor() {
-    this.weatherServices = {}; // regionId -> WeatherService instance
-    this.forecasts = {}; // regionId -> forecast array
-    console.log("WeatherManager initialized with solar season support");
+    this.weatherServices = {}; // WeatherService instance per region
+    this.forecasts = {}; // Forecast data per region
   }
-
+  
   /**
-   * Initialize weather for a region with solar-based season calculation
+   * Initialize weather for a region
    * @param {string} regionId - Unique region identifier
-   * @param {string} biome - Region biome/climate type
-   * @param {string} season - Season or 'auto' for solar calculation
-   * @param {Date} currentDate - Current date/time
-   * @param {object} regionProfile - Optional region profile with latitude data
-   * @returns {Array} - 24-hour forecast
+   * @param {string} climate - Climate type (e.g., 'temperate-deciduous')
+   * @param {string} season - Season ('spring', 'summer', 'fall', 'winter', or 'auto')
+   * @param {Date} date - Starting date for weather generation
+   * @returns {Array} - The 24-hour forecast
    */
-  initializeWeather(regionId, biome, season, currentDate = new Date(), regionProfile = null) {
-    console.log(`WeatherManager initializing weather for region ${regionId}: ${biome}, ${season}`);
+  initializeWeather(regionId, climate, season, date) {
+    // Create new meteorological weather service
+    this.weatherServices[regionId] = new MeteorologicalWeatherService();
     
-    // Create a new meteorological weather service for this region
-    const weatherService = new MeteorologicalWeatherService();
-    this.weatherServices[regionId] = weatherService;
-
-    // Enhanced season determination using solar angles
-    let actualSeason = season;
-    if (season === "auto" && regionProfile) {
-      // Use solar-angle based season calculation with region's latitude
-      actualSeason = WeatherUtils.getSeasonFromDate(currentDate, regionProfile.latitude || 40);
-      console.log(`[Solar Season] Auto-determined season for region ${regionId}: ${actualSeason} ` +
-                  `(lat: ${regionProfile.latitude || 40}°)`);
-    } else if (season === "auto") {
-      // Fallback to default latitude if no profile provided
-      actualSeason = WeatherUtils.getSeasonFromDate(currentDate, 40);
-      console.log(`[Solar Season] Auto-determined season for region ${regionId}: ${actualSeason} (default lat: 40°)`);
-    }
-
-    // Initialize weather with the determined season
-    const forecast = weatherService.initializeWeather(biome, actualSeason, currentDate);
+    // Ensure climate is valid
+    const safeClimate = climate || "temperate-deciduous";
     
-    // Store the forecast
-    this.forecasts[regionId] = forecast;
+    // Initialize weather
+    this.weatherServices[regionId].initializeWeather(safeClimate, season, date);
     
-    console.log(`Weather initialized for region ${regionId} with ${forecast.length} hours of forecast`);
-    return forecast;
+    // Store forecast
+    this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
+    
+    return this.forecasts[regionId];
   }
-
+  
   /**
-   * Advance time for a specific region with solar season updates
+   * Get forecast for a region
+   * @param {string} regionId - Region identifier
+   * @returns {Array|null} - Current forecast or null if not found
+   */
+  getForecast(regionId) {
+    return this.forecasts[regionId] || null;
+  }
+  
+  /**
+   * Advance time for a region
    * @param {string} regionId - Region identifier
    * @param {number} hours - Hours to advance
-   * @param {Date} currentDate - Current date/time
+   * @param {string} climate - Climate type
+   * @param {string} season - Current season
+   * @param {Date} currentDate - Current date
    * @returns {Array} - Updated forecast
    */
-  advanceTime(regionId, hours, currentDate) {
-    console.log(`WeatherManager advancing time for region ${regionId} by ${hours} hours`);
-    
-    const weatherService = this.weatherServices[regionId];
-    if (!weatherService) {
-      console.error(`No weather service found for region ${regionId}`);
-      return [];
+  advanceTime(regionId, hours, climate, season, currentDate) {
+    // Ensure a weather service exists
+    if (!this.weatherServices[regionId]) {
+      this.weatherServices[regionId] = new MeteorologicalWeatherService();
+      this.initializeWeather(regionId, climate, season, currentDate);
     }
-
-    // Advance time using the service's enhanced solar season support
-    const updatedForecast = weatherService.advanceTime(hours, currentDate);
+    
+    // Advance time in the service
+    this.weatherServices[regionId].advanceTime(hours, climate, season, currentDate);
     
     // Update stored forecast
-    this.forecasts[regionId] = updatedForecast;
+    this.forecasts[regionId] = this.weatherServices[regionId].get24HourForecast();
     
-    // Log any season changes that occurred
-    const currentSeasonInfo = weatherService.getCurrentSeasonInfo(currentDate);
-    if (currentSeasonInfo.isTransitioning) {
-      console.log(`[Solar Season] Region ${regionId} is transitioning: ${currentSeasonInfo.fromSeason || currentSeasonInfo.currentSeason} -> ${currentSeasonInfo.toSeason || currentSeasonInfo.currentSeason}`);
+    return this.forecasts[regionId];
+  }
+  
+  /**
+   * Extend forecast using stateless generation (preferred method)
+   * @param {string} regionId - Region identifier
+   * @param {Array} currentForecast - Current 24-hour forecast
+   * @param {number} hours - Hours to advance
+   * @param {string} climate - Climate type
+   * @param {string} season - Current season
+   * @returns {Array} - Extended forecast
+   */
+  extendForecast(regionId, currentForecast, hours, climate, season) {
+    // Validate current forecast
+    if (!currentForecast || currentForecast.length === 0) {
+      const currentDate = new Date();
+      currentDate.setHours(currentDate.getHours() + hours);
+      return this.initializeWeather(regionId, climate, season, currentDate);
     }
     
-    return updatedForecast;
+    // Ensure weather service exists
+    if (!this.weatherServices[regionId]) {
+      this.weatherServices[regionId] = new MeteorologicalWeatherService();
+    }
+    
+    // Use the weather service's extend forecast method if available
+    if (typeof this.weatherServices[regionId].extendForecast === 'function') {
+      const extendedForecast = this.weatherServices[regionId].extendForecast(
+        currentForecast,
+        hours,
+        climate,
+        season
+      );
+      
+      // Update stored forecast
+      this.forecasts[regionId] = extendedForecast;
+      
+      return extendedForecast;
+    }
+    
+    // Fallback to regular advance time
+    const lastHour = currentForecast[currentForecast.length - 1];
+    const newDate = new Date(lastHour.date);
+    newDate.setHours(newDate.getHours() + hours);
+    
+    return this.advanceTime(regionId, hours, climate, season, newDate);
   }
-
+  
   /**
-   * Get current weather for a region
+   * Get current weather for a region (first hour of forecast)
    * @param {string} regionId - Region identifier
-   * @returns {object|null} - Current weather data
+   * @returns {object|null} - Current weather or null
    */
   getCurrentWeather(regionId) {
     const forecast = this.forecasts[regionId];
     return forecast && forecast.length > 0 ? forecast[0] : null;
   }
-
-  /**
-   * Get 24-hour forecast for a region
-   * @param {string} regionId - Region identifier
-   * @returns {Array} - 24-hour forecast array
-   */
-  get24HourForecast(regionId) {
-    return this.forecasts[regionId] || [];
-  }
-
-  /**
-   * Get season from date using solar angle calculation
-   * @param {Date} date - Date to check
-   * @param {number} latitude - Latitude for solar calculations (optional)
-   * @returns {string} - Season name
-   */
-  getSeasonFromDate(date, latitude = 40) {
-    return WeatherUtils.getSeasonFromDate(date, latitude);
-  }
-
-  /**
-   * Get detailed season information for a region
-   * @param {string} regionId - Region identifier
-   * @param {Date} date - Date to check (optional, defaults to current)
-   * @returns {object} - Detailed season information
-   */
-  getSeasonInfo(regionId, date = new Date()) {
-    const weatherService = this.weatherServices[regionId];
-    if (!weatherService) {
-      console.error(`No weather service found for region ${regionId}`);
-      return { error: "No weather service available" };
-    }
-
-    return weatherService.getCurrentSeasonInfo(date);
-  }
-
-  /**
-   * Check if a region is experiencing a season transition
-   * @param {string} regionId - Region identifier
-   * @param {Date} date - Date to check (optional)
-   * @returns {object} - Transition information
-   */
-  checkSeasonTransition(regionId, date = new Date()) {
-    const weatherService = this.weatherServices[regionId];
-    if (!weatherService) {
-      return { isTransitioning: false, error: "No weather service available" };
-    }
-
-    return weatherService.checkSeasonTransition(date, weatherService.currentProfile);
-  }
-
-  /**
-   * Get seasonal boundaries for a given latitude (informational)
-   * @param {number} latitude - Latitude in degrees
-   * @returns {object} - Season boundary information
-   */
-  getSeasonalBoundaries(latitude) {
-    return WeatherUtils.getSeasonBoundaries(latitude);
-  }
-
-  /**
-   * Update weather generation for all regions when date changes significantly
-   * @param {Date} newDate - New date
-   * @returns {object} - Update results for all regions
-   */
-  updateAllRegionsForDate(newDate) {
-    const results = {};
-    
-    Object.keys(this.weatherServices).forEach(regionId => {
-      const weatherService = this.weatherServices[regionId];
-      if (weatherService && weatherService.currentProfile) {
-        // Check if season has changed
-        const oldSeason = weatherService.currentSeason;
-        const newSeason = this.getSeasonFromDate(newDate, weatherService.currentProfile.latitude);
-        
-        if (oldSeason !== newSeason) {
-          console.log(`[Solar Season] Region ${regionId} season changed: ${oldSeason} -> ${newSeason}`);
-          
-          // Reinitialize weather for the new season
-          const newForecast = this.initializeWeather(
-            regionId,
-            weatherService.currentBiome,
-            newSeason,
-            newDate,
-            weatherService.currentProfile
-          );
-          
-          results[regionId] = {
-            seasonChanged: true,
-            oldSeason,
-            newSeason,
-            forecastUpdated: true,
-            forecastLength: newForecast.length
-          };
-        } else {
-          results[regionId] = {
-            seasonChanged: false,
-            currentSeason: newSeason
-          };
-        }
-      }
-    });
-    
-    return results;
-  }
-
+  
   /**
    * Clear weather data for a region
    * @param {string} regionId - Region identifier
@@ -207,30 +130,46 @@ class WeatherManager {
   clearRegionWeather(regionId) {
     delete this.weatherServices[regionId];
     delete this.forecasts[regionId];
-    console.log(`Cleared weather data for region ${regionId}`);
   }
-
+  
   /**
    * Clear all weather data
    */
   clearAllWeather() {
     this.weatherServices = {};
     this.forecasts = {};
-    console.log("Cleared all weather data");
   }
-
+  
+  /**
+   * Get season from date
+   * @param {Date} date - Date to check
+   * @returns {string} - Season name
+   */
+  getSeasonFromDate(date) {
+    if (this.weatherServices && Object.keys(this.weatherServices).length > 0) {
+      // Use existing service if available
+      const firstService = Object.values(this.weatherServices)[0];
+      return firstService.getSeasonFromDate(date);
+    }
+    
+    // Fallback season calculation
+    const month = date.getMonth();
+    if (month >= 2 && month <= 4) return 'spring';
+    if (month >= 5 && month <= 7) return 'summer';
+    if (month >= 8 && month <= 10) return 'fall';
+    return 'winter';
+  }
+  
   /**
    * Export weather state for persistence
    * @returns {object} - Serializable weather state
    */
   exportState() {
     return {
-      forecasts: this.forecasts,
-      // Note: Services are not exported as they contain complex state
-      // They will be recreated when needed
+      forecasts: this.forecasts
     };
   }
-
+  
   /**
    * Import weather state from persistence
    * @param {object} state - Previously exported state
@@ -248,11 +187,9 @@ class WeatherManager {
           }));
         }
       });
-      
-      console.log("Imported weather state for", Object.keys(this.forecasts).length, "regions");
     }
   }
-
+  
   /**
    * Check if a region has active weather data
    * @param {string} regionId - Region identifier
@@ -261,7 +198,7 @@ class WeatherManager {
   hasWeatherData(regionId) {
     return !!(this.forecasts[regionId] && this.forecasts[regionId].length > 0);
   }
-
+  
   /**
    * Get weather service instance for a region (for debugging/advanced use)
    * @param {string} regionId - Region identifier
@@ -269,124 +206,6 @@ class WeatherManager {
    */
   getWeatherService(regionId) {
     return this.weatherServices[regionId] || null;
-  }
-
-  /**
-   * Get debug information for all regions
-   * @returns {object} - Debug information
-   */
-  getDebugInfo() {
-    const info = {
-      totalRegions: Object.keys(this.weatherServices).length,
-      activeForecasts: Object.keys(this.forecasts).length,
-      regions: {}
-    };
-
-    Object.keys(this.weatherServices).forEach(regionId => {
-      const service = this.weatherServices[regionId];
-      const forecast = this.forecasts[regionId];
-      
-      info.regions[regionId] = {
-        hasService: !!service,
-        hasForecast: !!forecast,
-        forecastLength: forecast ? forecast.length : 0,
-        currentBiome: service?.currentBiome || 'unknown',
-        currentSeason: service?.currentSeason || 'unknown',
-        latitude: service?.currentProfile?.latitude || 'unknown',
-        latitudeBand: service?.currentProfile?.latitudeBand || 'unknown'
-      };
-      
-      // Add season info if available
-      if (service) {
-        try {
-          const seasonInfo = service.getCurrentSeasonInfo();
-          info.regions[regionId].seasonInfo = {
-            season: seasonInfo.season,
-            isTransitioning: seasonInfo.isTransitioning,
-            method: seasonInfo.seasonalMethod,
-            daylightHours: seasonInfo.daylightHours
-          };
-        } catch (e) {
-          info.regions[regionId].seasonInfo = { error: e.message };
-        }
-      }
-    });
-
-    return info;
-  }
-
-  /**
-   * Validate that all regions have consistent solar season data
-   * @returns {object} - Validation results
-   */
-  validateSolarSeasons() {
-    const validation = {
-      valid: true,
-      issues: [],
-      regions: {}
-    };
-
-    Object.keys(this.weatherServices).forEach(regionId => {
-      const service = this.weatherServices[regionId];
-      const regionValidation = {
-        hasProfile: !!service?.currentProfile,
-        hasLatitude: !!(service?.currentProfile?.latitude),
-        hasLatitudeBand: !!(service?.currentProfile?.latitudeBand),
-        seasonMethod: 'unknown'
-      };
-
-      if (service?.currentProfile?.latitude) {
-        const latitude = service.currentProfile.latitude;
-        regionValidation.seasonMethod = this.getSeasonalMethod(latitude);
-        
-        // Check for reasonable latitude values
-        if (Math.abs(latitude) > 90) {
-          validation.valid = false;
-          validation.issues.push(`Region ${regionId} has invalid latitude: ${latitude}`);
-        }
-        
-        // Check for latitude/band consistency
-        const expectedBand = this.getLatitudeBandFromDegrees(latitude);
-        const actualBand = service.currentProfile.latitudeBand;
-        if (actualBand && actualBand !== expectedBand) {
-          validation.issues.push(`Region ${regionId} latitude band mismatch: expected ${expectedBand}, got ${actualBand}`);
-        }
-      } else {
-        validation.valid = false;
-        validation.issues.push(`Region ${regionId} missing latitude data`);
-      }
-
-      validation.regions[regionId] = regionValidation;
-    });
-
-    return validation;
-  }
-
-  /**
-   * Get the seasonal method used for a given latitude
-   * @param {number} latitude - Latitude in degrees
-   * @returns {string} - Seasonal method name
-   */
-  getSeasonalMethod(latitude) {
-    const absLat = Math.abs(latitude);
-    if (absLat >= 66.5) return "polar-daylight";
-    if (absLat >= 60) return "subpolar-mixed";
-    if (absLat >= 30) return "temperate-solar";
-    return "tropical-minimal";
-  }
-
-  /**
-   * Convert latitude degrees to latitude band
-   * @param {number} latitude - Latitude in degrees
-   * @returns {string} - Latitude band name
-   */
-  getLatitudeBandFromDegrees(latitude) {
-    const absLat = Math.abs(latitude);
-    if (absLat >= 70) return "polar";
-    if (absLat >= 60) return "subarctic";
-    if (absLat >= 40) return "temperate";
-    if (absLat >= 30) return "subtropical";
-    return "tropical";
   }
 }
 
