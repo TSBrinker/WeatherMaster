@@ -86,6 +86,46 @@ class WeatherManager {
   }
 
   /**
+   * Extend forecast using stateless generation (for backward compatibility)
+   * @param {string} regionId - Region identifier
+   * @param {Array} currentForecast - Current 24-hour forecast
+   * @param {number} hours - Hours to advance
+   * @param {string} climate - Climate type
+   * @param {string} season - Current season
+   * @returns {Array} - Extended forecast
+   */
+  extendForecast(regionId, currentForecast, hours, climate, season) {
+    console.log(`WeatherManager extending forecast for region ${regionId} by ${hours} hours`);
+    
+    if (!currentForecast || currentForecast.length === 0) {
+      console.error(`No current forecast available for region ${regionId}`);
+      return [];
+    }
+
+    // Get the weather service for this region
+    let weatherService = this.weatherServices[regionId];
+    
+    if (!weatherService) {
+      // Create a new service if one doesn't exist
+      weatherService = new MeteorologicalWeatherService();
+      this.weatherServices[regionId] = weatherService;
+    }
+
+    // Get the last forecast item to continue from
+    const lastForecastItem = currentForecast[currentForecast.length - 1];
+    const lastDate = new Date(lastForecastItem.date);
+    
+    // Calculate new start date (after the last forecast item)
+    const newStartDate = new Date(lastDate);
+    newStartDate.setHours(newStartDate.getHours() + 1);
+
+    // Use advance time method
+    const updatedForecast = this.advanceTime(regionId, hours, newStartDate);
+    
+    return updatedForecast;
+  }
+
+  /**
    * Get current weather for a region
    * @param {string} regionId - Region identifier
    * @returns {object|null} - Current weather data

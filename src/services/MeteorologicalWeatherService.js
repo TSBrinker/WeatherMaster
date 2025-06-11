@@ -105,7 +105,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
                 `Cloud=${Math.round(this.cloudCover)}%`);
 
     // Initialize wind conditions
-    this.currentWind = this.windService.generateWind(profile, actualSeason);
+    this.currentWind = this.windService.initializeWind();
 
     // Generate 24-hour forecast starting from current time
     return this.generate24HourForecast(currentDate, profile, actualSeason);
@@ -120,6 +120,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
    */
   generate24HourForecast(startDate, profile, season) {
     console.log("GENERATING 24-HOUR FORECAST WITH SOLAR SEASONS");
+    console.log("Start date:", startDate.toISOString());
     
     // Clear existing forecast
     this.forecast = [];
@@ -128,9 +129,11 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     for (let hour = 0; hour < 24; hour++) {
       const currentHour = (startDate.getHours() + hour) % 24;
       
-      // Create date object for this specific hour
+      // Create date object for this specific hour - FIXED: Use startDate properly
       const hourDate = new Date(startDate);
       hourDate.setHours(startDate.getHours() + hour);
+      
+      console.log(`Hour ${hour}: ${hourDate.toISOString()}`);
       
       // Check if we've crossed into a new day and need to recalculate season
       if (hour > 0 && currentHour === 0) {
@@ -238,12 +241,15 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       this.currentWind.speed
     );
 
-    // Update wind (with some persistence)
-    this.currentWind = this.windService.updateWind(
+    // Update wind (with some persistence) - FIXED: Pass a default condition since condition isn't calculated yet
+    this.currentWind = this.windService.updateWindFactors(
       this.currentWind,
-      profile,
-      season,
-      weatherSystems
+      hour,
+      validatedTemp,
+      this.temperature, // Previous temperature
+      pressureTrend,
+      weatherSystems,
+      "Clear Skies" // Default condition since we haven't calculated the actual condition yet
     );
 
     // Calculate precipitation and weather condition
@@ -440,3 +446,5 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     };
   }
 }
+
+// export default MeteorologicalWeatherService;
