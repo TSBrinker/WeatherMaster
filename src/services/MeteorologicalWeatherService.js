@@ -1,26 +1,26 @@
-// src/services/MeteorologicalWeatherService.js - ENHANCED FOR POLAR REGIONS
-// Main coordinator service for meteorological weather generation
-
-import WeatherServiceBase from "./WeatherServiceBase";
-import TemperatureService from "./meteorological/TemperatureService";
-import AtmosphericService from "./meteorological/AtmosphericService";
-import WindService from "./meteorological/WindService";
-import WeatherSystemService from "./meteorological/WeatherSystemService";
-import WeatherConditionService from "./meteorological/WeatherConditionService";
-import RegionProfileService from "./meteorological/RegionProfileService";
-import PrecipitationService from "./meteorological/PrecipitationService";
-import ExtremeWeatherService from "./meteorological/ExtremeWeatherService";
+// src/services/MeteorologicalWeatherService.js
+import WeatherServiceBase from './WeatherServiceBase.js';
+import TemperatureService from './meteorological/TemperatureService.js';
+import AtmosphericService from './meteorological/AtmosphericService.js';
+import WindService from './meteorological/WindService.js';
+import WeatherSystemService from './meteorological/WeatherSystemService.js';
+import WeatherConditionService from './meteorological/WeatherConditionService.js';
+import RegionProfileService from './meteorological/RegionProfileService.js';
+import PrecipitationService from './meteorological/PrecipitationService.js';
+import ExtremeWeatherService from './meteorological/ExtremeWeatherService.js';
+import sunriseSunsetService from './SunriseSunsetService.js';
+import WeatherUtils from '../utils/weatherUtils.js';
 
 /**
- * Weather service that generates realistic weather patterns using meteorological principles.
+ * Meteorological Weather Service
  * This service extends the base weather service but produces more realistic hour-by-hour
  * weather instead of using dice tables.
- * ENHANCED VERSION with proper polar region support.
+ * ENHANCED VERSION with solar-angle based seasons and proper polar region support.
  */
 export default class MeteorologicalWeatherService extends WeatherServiceBase {
   constructor() {
     super();
-    console.log("METEO SERVICE CREATED - POLAR ENHANCED VERSION 4.0");
+    console.log("METEO SERVICE CREATED - SOLAR SEASON ENHANCED VERSION 5.0");
 
     // Initialize specialized services
     this.temperatureService = new TemperatureService();
@@ -50,7 +50,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
   }
 
   /**
-   * Initialize weather for a region
+   * Initialize weather for a region - ENHANCED WITH SOLAR SEASONS
    * @param {string} biome - The biome type
    * @param {string} season - The season, or 'auto' to determine from date
    * @param {Date} currentDate - The current date
@@ -62,136 +62,85 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     // Clear any existing forecast
     this.forecast = [];
 
-    // If season is 'auto', determine from the date
-    if (season === "auto") {
-      season = this.getSeasonFromDate(currentDate);
-    }
-
     // Get the region profile based on biome
     const profile = this.regionProfileService.getRegionProfile(biome);
+    this.currentProfile = profile;
+
+    // SOLAR-BASED SEASON DETERMINATION
+    let actualSeason = season;
+    if (season === "auto") {
+      // Use the new solar-angle based season calculation
+      actualSeason = this.getSeasonFromDate(currentDate, profile);
+      console.log(`[Solar Season] Auto-determined season: ${actualSeason} for lat ${profile.latitude}°`);
+    }
+
+    // Get enhanced seasonal baseline with solar blending
+    const seasonalBaseline = this.getEnhancedSeasonalBaseline(profile, actualSeason, currentDate);
+    
+    console.log(`[Solar Season] Using baseline for ${seasonalBaseline._solarData?.primarySeason || actualSeason}` +
+                (seasonalBaseline._solarData?.isTransitioning ? 
+                 ` (transitioning to ${seasonalBaseline._solarData.secondarySeason}, blend: ${(seasonalBaseline._solarData.blendFactor * 100).toFixed(1)}%)` : 
+                 ''));
 
     // Store these for later use (needed for initialization)
     this.currentProfile = profile;
-    this.currentSeason = season;
+    this.currentSeason = actualSeason;
     this.currentBiome = biome;
+    this.currentDate = new Date(currentDate);
 
-    // Log polar region initialization
-    if (profile.latitudeBand === "polar" || profile.latitudeBand === "subarctic") {
-      console.log(`POLAR/SUBARCTIC REGION DETECTED: ${profile.latitudeBand} at ${profile.latitude}°`);
-      console.log(`Permafrost level: ${profile.specialFactors?.permafrost || 0}`);
-      console.log(`Permanent ice: ${profile.specialFactors?.permanentIce || 0}`);
-    }
+    // Initialize starting weather conditions from seasonal baseline
+    this.temperature = seasonalBaseline.temperature.mean + 
+                      (Math.random() - 0.5) * seasonalBaseline.temperature.variance;
+    this.humidity = Math.max(10, Math.min(95, 
+                    seasonalBaseline.humidity.mean + 
+                    (Math.random() - 0.5) * seasonalBaseline.humidity.variance));
+    this.pressure = seasonalBaseline.pressure.mean + 
+                   (Math.random() - 0.5) * seasonalBaseline.pressure.variance;
+    this.cloudCover = Math.max(0, Math.min(100, 
+                      seasonalBaseline.cloudCover?.mean || 50 + 
+                      (Math.random() - 0.5) * (seasonalBaseline.cloudCover?.variance || 40)));
 
-    // Initialize base meteorological parameters
-    this.initializeBaseParameters(profile, season, currentDate);
+    console.log(`Starting conditions: T=${Math.round(this.temperature)}°F, ` +
+                `H=${Math.round(this.humidity)}%, P=${Math.round(this.pressure)}hPa, ` +
+                `Cloud=${Math.round(this.cloudCover)}%`);
 
-    // Initialize weather systems - CRITICAL STEP
-    console.log("About to initialize weather systems");
-    this.weatherSystemService.initializeWeatherSystems(profile, season, currentDate);
-    
-    // EMERGENCY CHECK - Make sure systems were created
-    if (!this.weatherSystemService.weatherSystems || 
-        this.weatherSystemService.weatherSystems.length === 0) {
-      console.error("EMERGENCY: No weather systems created during initialization, adding defaults");
-      this.weatherSystemService.addDefaultSystems();
-    }
-    
-    console.log(`After initialization: ${this.weatherSystemService.weatherSystems.length} weather systems`);
+    // Initialize wind conditions
+    this.currentWind = this.windService.generateWind(profile, actualSeason);
 
-    // Initialize precipitation tracking
-    this.precipitationService.initializePrecipitation();
-
-    // Generate the weather forecast - at least 24 hours
-    this.generateWeatherForecast(biome, season, currentDate);
-
-    return this.getCurrentWeather();
+    // Generate 24-hour forecast starting from current time
+    return this.generate24HourForecast(currentDate, profile, actualSeason);
   }
 
   /**
-   * Initialize the base meteorological parameters for the region
-   * @param {object} profile - The region profile
-   * @param {string} season - The current season
-   * @param {Date} date - The current date
+   * Generate 24-hour forecast using solar seasons
+   * @param {Date} startDate - Starting date/time
+   * @param {object} profile - Region profile
+   * @param {string} season - Current season
+   * @returns {Array} - 24-hour forecast array
    */
-  initializeBaseParameters(profile, season, date) {
-    // Get the hour of the day
-    const hour = date.getHours();
-
-    // Get seasonal baseline values
-    const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
-
-    // Initialize core state with realistic starting values using physics-based approach
-    console.log("Initializing temperature with physics-based model");
-    this.temperature = this.temperatureService.calculateBaseTemperature(
-      profile,
-      seasonalBaseline,
-      date, // Pass full date object
-      hour
-    );
+  generate24HourForecast(startDate, profile, season) {
+    console.log("GENERATING 24-HOUR FORECAST WITH SOLAR SEASONS");
     
-    this.humidity = this.atmosphericService.calculateBaseHumidity(
-      profile,
-      seasonalBaseline,
-      date,
-      hour
-    );
-    
-    this.pressure = this.atmosphericService.calculateBasePressure(profile, date);
-    
-    this.cloudCover = this.atmosphericService.calculateBaseCloudCover(
-      profile,
-      seasonalBaseline,
-      date,
-      hour
-    );
+    // Clear existing forecast
+    this.forecast = [];
 
-    // Initialize pressure history
-    this.atmosphericService.resetPressureHistory(this.pressure);
-
-    // Initialize wind
-    this.currentWind = this.windService.initializeWind();
-
-    console.log(`Initialized meteorological parameters for ${profile.name || "unnamed region"}`);
-    console.log(
-      `Base temperature: ${this.temperature}°F, Humidity: ${this.humidity}%, Pressure: ${this.pressure} hPa`
-    );
-    
-    // Log polar-specific initializations
-    if (profile.latitudeBand === "polar" || profile.latitudeBand === "subarctic") {
-      console.log(`POLAR INITIALIZATION: Temp=${this.temperature}°F (should be cold), Humidity=${this.humidity}%`);
-    }
-  }
-
-  /**
-   * Generate a 24+ hour forecast with hour-by-hour meteorological evolution
-   * @param {string} biome - The biome type
-   * @param {string} season - The current season
-   * @param {Date} currentDate - The starting date
-   * @returns {Array} - The 24-hour forecast
-   */
-  generateWeatherForecast(biome, season, currentDate) {
-    // Get profile for the region
-    const profile = this.regionProfileService.getRegionProfile(biome);
-
-    // Generate initial 24+ hours individually (not in chunks like dice tables)
-    for (let i = 0; i < 24; i++) {
-      // Calculate hour of day
-      const startHour = currentDate.getHours();
-      const currentHour = (startHour + i) % 24;
-
-      // Calculate date for this hour
-      const hourDate = new Date(currentDate);
-      hourDate.setHours(hourDate.getHours() + i);
-
-      // Before generating each hour, update weather systems
-      // EMERGENCY CHECK - Force systems to exist
-      if (!this.weatherSystemService.weatherSystems || 
-          this.weatherSystemService.weatherSystems.length === 0) {
-        console.error(`EMERGENCY: No weather systems before hour ${i}, adding defaults`);
-        this.weatherSystemService.addDefaultSystems();
-      }
+    // Generate weather for each hour
+    for (let hour = 0; hour < 24; hour++) {
+      const currentHour = (startDate.getHours() + hour) % 24;
       
-      this.weatherSystemService.updateWeatherSystems(1); // Update for 1 hour
+      // Create date object for this specific hour
+      const hourDate = new Date(startDate);
+      hourDate.setHours(startDate.getHours() + hour);
+      
+      // Check if we've crossed into a new day and need to recalculate season
+      if (hour > 0 && currentHour === 0) {
+        // We've moved to the next day - check if season changed
+        const newSeason = this.getSeasonFromDate(hourDate, profile);
+        if (newSeason !== season) {
+          console.log(`[Solar Season] Season changed from ${season} to ${newSeason} at day boundary`);
+          season = newSeason;
+        }
+      }
 
       // Generate weather for this specific hour
       const hourlyWeather = this.generateHourlyWeather(
@@ -209,18 +158,18 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
   }
 
   /**
-   * Generate weather for a specific hour - ENHANCED FOR POLAR REGIONS
+   * Generate weather for a specific hour - ENHANCED WITH SOLAR SEASONS
    * @param {number} hour - Hour of the day (0-23)
    * @param {Date} date - Date object for this hour
    * @param {object} profile - Region profile
-   * @param {string} season - Current season
+   * @param {string} season - Current season (may change during forecast)
    * @returns {object} - Weather data for this hour
    */
   generateHourlyWeather(hour, date, profile, season) {
-    console.log("PHYSICS-BASED WEATHER GENERATION RUNNING FOR POLAR-ENHANCED VERSION");
+    console.log(`SOLAR-ENHANCED WEATHER GENERATION for hour ${hour}, season: ${season}`);
     
-    // Get seasonal baseline
-    const seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, season);
+    // Get enhanced seasonal baseline with potential blending
+    const seasonalBaseline = this.getEnhancedSeasonalBaseline(profile, season, date);
 
     // Get active weather systems
     const weatherSystems = this.weatherSystemService.getWeatherSystems();
@@ -229,7 +178,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
     const pressureTrend = this.atmosphericService.calculatePressureTrend(this.pressure);
 
     // Update weather parameters based on time, weather systems, and profile
-    // KEY CHANGE - USING THE PHYSICS-BASED TEMPERATURE CALCULATION WITH POLAR ENHANCEMENTS
+    // KEY CHANGE - USING THE PHYSICS-BASED TEMPERATURE CALCULATION WITH SOLAR ENHANCEMENTS
     const hourTemp = this.temperatureService.calculateTemperature(
       profile,
       seasonalBaseline,
@@ -242,7 +191,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       (d) => this.getDayOfYear(d)
     );
 
-    // Update humidity with polar considerations
+    // Update humidity with solar season considerations
     const hourHumidity = this.atmosphericService.calculateHumidity(
       profile,
       seasonalBaseline,
@@ -264,7 +213,7 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       weatherSystems
     );
 
-    // Update cloud cover with polar considerations
+    // Update cloud cover with solar season considerations
     const hourCloudCover = this.atmosphericService.calculateCloudCover(
       profile,
       seasonalBaseline,
@@ -272,76 +221,66 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       hour,
       this.cloudCover,
       hourHumidity,
+      hourPressure,
       weatherSystems
     );
 
-    // Calculate atmospheric instability (thunderstorm potential)
-    const instability = this.weatherConditionService.calculateAtmosphericInstability(
-      hourTemp,
-      hourPressure,
-      pressureTrend,
-      this.precipitationService.getRecentPrecipitation()
-    );
+    // Validate and constrain values
+    const validatedTemp = Math.max(-80, Math.min(130, hourTemp));
+    const validatedHumidity = Math.max(0, Math.min(100, hourHumidity));
+    const validatedPressure = Math.max(900, Math.min(1080, hourPressure));
+    const validatedCloudCover = Math.max(0, Math.min(100, hourCloudCover));
 
-    // Calculate precipitation potential with polar adjustments
-    const precipitationPotential = this.atmosphericService.calculatePrecipitationPotential(
-      hourHumidity,
-      hourTemp,
-      hourPressure,
-      hourCloudCover,
-      instability,
-      weatherSystems,
-      () => this.precipitationService.getRecentPrecipitation(),
-      this.lastCondition,
-      profile.latitudeBand // PASS LATITUDE BAND FOR POLAR ADJUSTMENTS
-    );
-
-    // Update wind factors
-    this.currentWind = this.windService.updateWindFactors(
-      this.currentWind,
-      hour,
-      hourTemp,
-      this.temperature || hourTemp,
-      pressureTrend,
-      weatherSystems,
-      this.lastCondition
-    );
-
-    // Determine weather condition WITH LATITUDE BAND
-    const condition = this.weatherConditionService.determineWeatherCondition(
-      hourTemp,
-      hourHumidity,
-      hourPressure,
-      hourCloudCover,
-      precipitationPotential,
-      this.currentWind.speed,
-      instability,
-      profile.latitudeBand // PASS LATITUDE BAND FOR POLAR-SPECIFIC LOGIC
-    );
-
-    // Track the condition for next time
-    this.lastCondition = condition;
-
-    // Validate temperature for the condition
-    const validatedTemp = this.temperatureService.validateTemperatureForCondition(hourTemp, condition);
-
-    // Calculate "feels like" temperature
+    // Calculate feels-like temperature
     const feelsLikeTemp = this.temperatureService.calculateFeelsLikeTemperature(
       validatedTemp,
-      hourHumidity,
+      validatedHumidity,
       this.currentWind.speed
     );
 
-    // Calculate precipitation amount if precipitating
-    const precipAmount = this.atmosphericService.calculatePrecipitationAmount(
-      condition,
-      precipitationPotential
+    // Update wind (with some persistence)
+    this.currentWind = this.windService.updateWind(
+      this.currentWind,
+      profile,
+      season,
+      weatherSystems
     );
 
-    // Update precipitation tracker
-    this.precipitationService.updatePrecipitation(
-      precipAmount,
-      condition.includes("Snow") ? "snow" : "rain"
+    // Calculate precipitation and weather condition
+    const precipitationPotential = this.precipitationService.calculatePrecipitationPotential(
+      validatedHumidity,
+      validatedCloudCover,
+      hourPressure,
+      validatedTemp,
+      this.currentWind.speed
+    );
+
+    const precipAmount = this.precipitationService.calculatePrecipitationAmount(
+      precipitationPotential,
+      validatedTemp,
+      seasonalBaseline
+    );
+
+    // Store precipitation for future calculations
+    this.precipitationService.addPrecipitation(precipAmount);
+
+    // Calculate atmospheric instability
+    const instability = this.atmosphericService.calculateInstability(
+      validatedTemp,
+      validatedHumidity,
+      hourPressure,
+      this.currentWind.speed
+    );
+
+    // Determine weather condition
+    const condition = this.weatherConditionService.determineCondition(
+      validatedTemp,
+      validatedHumidity,
+      validatedCloudCover,
+      precipitationPotential,
+      this.currentWind.speed,
+      instability,
+      validatedTemp < 32 ? "snow" : "rain"
     );
 
     // Check for celestial events (shooting stars, meteor impacts, aurora)
@@ -354,13 +293,14 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
 
     // Update internal state for next hour
     this.temperature = validatedTemp;
-    this.humidity = hourHumidity;
-    this.pressure = hourPressure;
-    this.cloudCover = hourCloudCover;
+    this.humidity = validatedHumidity;
+    this.pressure = validatedPressure;
+    this.cloudCover = validatedCloudCover;
 
-    // Log polar weather generation for debugging
-    if (profile.latitudeBand === "polar" || profile.latitudeBand === "subarctic") {
-      console.log(`POLAR WEATHER: ${condition} at ${Math.round(validatedTemp)}°F, humidity=${Math.round(hourHumidity)}%, precip=${precipitationPotential.toFixed(1)}%`);
+    // Log solar season information for debugging
+    if (seasonalBaseline._solarData?.isTransitioning) {
+      console.log(`SOLAR TRANSITION: ${seasonalBaseline._solarData.primarySeason} -> ${seasonalBaseline._solarData.secondarySeason} ` +
+                  `(${(seasonalBaseline._solarData.blendFactor * 100).toFixed(1)}% blend)`);
     }
 
     // Build the weather object for this hour
@@ -376,25 +316,28 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       effects,
       hasShootingStar: celestialEvents.shootingStar,
       hasMeteorImpact: celestialEvents.meteorImpact,
-      hasAurora: celestialEvents.aurora, // NEW: Aurora for polar regions
+      hasAurora: celestialEvents.aurora, // Aurora for polar regions
       
-      // Meteological details stored in a sub-object
+      // Meteorological details stored in a sub-object
       _meteoData: {
-        humidity: hourHumidity,
-        pressure: hourPressure,
-        cloudCover: hourCloudCover,
+        humidity: validatedHumidity,
+        pressure: validatedPressure,
+        cloudCover: validatedCloudCover,
         instability,
         precipitationPotential,
         precipAmount,
         pressureTrend,
         weatherSystems: [...weatherSystems], // Clone the array to avoid reference issues
         
-        // CRITICAL: Store all the context needed for stateless generation
+        // ENHANCED: Store solar season context
         profile: JSON.parse(JSON.stringify(profile)), // Deep clone
         season,
+        seasonalBaseline: JSON.parse(JSON.stringify(seasonalBaseline)), // Include solar blend data
         biome: this.currentBiome || "temperate-deciduous",
-        seasonalBaseline: JSON.parse(JSON.stringify(this.regionProfileService.getSeasonalBaseline(profile, season))),
-        latitudeBand: profile.latitudeBand // Store latitude band for extensions
+        latitudeBand: profile.latitudeBand,
+        
+        // NEW: Solar season metadata
+        solarSeasonData: seasonalBaseline._solarData || null
       }
     };
 
@@ -402,7 +345,64 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
   }
 
   /**
-   * Calculate the day of year (0-365)
+   * Advance time by a number of hours - ENHANCED WITH SOLAR SEASONS
+   * @param {number} hours - Number of hours to advance
+   * @param {Date} currentDate - Current date/time
+   * @returns {Array} - Updated forecast
+   */
+  advanceTime(hours, currentDate) {
+    console.log(`ADVANCING TIME by ${hours} hours with solar season support`);
+    
+    if (!this.currentProfile) {
+      console.error("No current profile - cannot advance time");
+      return [];
+    }
+
+    // Calculate new date
+    const newDate = new Date(currentDate);
+    newDate.setHours(newDate.getHours() + hours);
+
+    // Check if the season has changed due to solar angle changes
+    const newSeason = this.getSeasonFromDate(newDate, this.currentProfile);
+    if (newSeason !== this.currentSeason) {
+      console.log(`[Solar Season] Season changed from ${this.currentSeason} to ${newSeason} during time advance`);
+      this.currentSeason = newSeason;
+    }
+
+    // Remove the hours we're advancing from the beginning of the forecast
+    this.forecast.splice(0, hours);
+
+    // Generate new hours at the end to maintain 24-hour forecast
+    const startHour = this.forecast.length > 0 ? 
+      (this.forecast[this.forecast.length - 1].hour + 1) % 24 : 
+      newDate.getHours();
+
+    for (let i = 0; i < hours; i++) {
+      const futureHour = (startHour + i) % 24;
+      const futureDate = new Date(newDate);
+      futureDate.setHours(newDate.getHours() + this.forecast.length + i);
+      
+      // Check for season changes during the extended forecast
+      const hourSeason = this.getSeasonFromDate(futureDate, this.currentProfile);
+      
+      const hourlyWeather = this.generateHourlyWeather(
+        futureHour,
+        futureDate,
+        this.currentProfile,
+        hourSeason
+      );
+      
+      this.forecast.push(hourlyWeather);
+    }
+
+    // Keep only 24 hours of forecast
+    this.forecast = this.forecast.slice(0, 24);
+
+    return this.get24HourForecast();
+  }
+
+  /**
+   * Calculate the day of year (0-365) - moved here from utils for consistency
    * @param {Date} date - Date to calculate for
    * @returns {number} - Day of year
    */
@@ -413,384 +413,30 @@ export default class MeteorologicalWeatherService extends WeatherServiceBase {
       return 0;
     }
     
-    const start = new Date(date.getFullYear(), 0, 0);
-    const diff = date - start;
-    const oneDay = 1000 * 60 * 60 * 24;
-    return Math.floor(diff / oneDay);
+    return WeatherUtils.getDayOfYear(date);
   }
 
   /**
-   * Advance time and update the forecast
-   * @param {number} hours - Hours to advance
-   * @param {string} biome - The biome type
-   * @param {string} season - The season
-   * @param {Date} currentDate - The current date
-   * @returns {object} - Updated current weather
+   * Get detailed season information for current state
+   * @param {Date} date - Date to check
+   * @returns {object} - Detailed season information
    */
-  advanceTime(hours, biome, season, currentDate) {
-    console.log(`MeteoWeatherService advancing time: ${hours} hours`);
-    
-    // If season is 'auto', determine from the date
-    if (season === "auto") {
-      const newDate = new Date(currentDate.getTime() + hours * 3600000);
-      season = this.getSeasonFromDate(newDate);
-    }
-
-    // Remove the hours we're advancing
-    this.forecast = this.forecast.slice(hours);
-
-    // Get profile for region
-    const profile = this.regionProfileService.getRegionProfile(biome);
-
-    // Calculate new date for continued forecast
-    const newStartDate = new Date(currentDate.getTime() + hours * 3600000);
-
-    // EMERGENCY CHECK - Ensure weather systems exist
-    if (!this.weatherSystemService.weatherSystems || 
-        this.weatherSystemService.weatherSystems.length === 0) {
-      console.error("EMERGENCY: No weather systems before advanceTime, adding defaults");
-      this.weatherSystemService.addDefaultSystems();
+  getCurrentSeasonInfo(date = new Date()) {
+    if (!this.currentProfile) {
+      return { error: "No profile available" };
     }
     
-    // Update weather systems for elapsed time
-    this.weatherSystemService.updateWeatherSystems(hours);
-
-    // Generate additional hours to maintain 24+ hour forecast
-    for (let i = 0; i < hours; i++) {
-      // Calculate hour and date for this new forecast entry
-      const hourToAdd = 24 + i; // Add to end of existing forecast
-      const currentHour = (newStartDate.getHours() + hourToAdd) % 24;
-
-      const hourDate = new Date(newStartDate);
-      hourDate.setHours(hourDate.getHours() + hourToAdd);
-
-      // Update systems for each hour
-      this.weatherSystemService.updateWeatherSystems(1);
-
-      // Generate weather for this hour
-      const hourlyWeather = this.generateHourlyWeather(
-        currentHour,
-        hourDate,
-        profile,
-        season
-      );
-
-      // Add to forecast
-      this.forecast.push(hourlyWeather);
-    }
-
-    return this.getCurrentWeather();
-  }
-
-  /**
-   * ENHANCED: Extend forecast using ONLY previous hour's meteorological data (stateless)
-   * WITH POLAR REGION SUPPORT
-   * @param {Array} currentForecast - The current 24-hour forecast array
-   * @param {number} hours - Hours to advance and extend
-   * @param {string} climate - Climate type (used as fallback)
-   * @param {string} season - Season (used as fallback)
-   * @returns {Array} - New 24-hour forecast starting from advanced time
-   */
-  extendForecast(currentForecast, hours, climate, season) {
-    console.log(`[MeteorologicalWeatherService] POLAR-ENHANCED extend forecast by ${hours} hours`);
+    const seasonInfo = this.getSeasonInfo(date, this.currentProfile);
+    const transitionInfo = this.checkSeasonTransition(date, this.currentProfile);
     
-    if (!currentForecast || currentForecast.length === 0) {
-      console.error("[MeteorologicalWeatherService] No current forecast provided to extend");
-      return [];
-    }
-    
-    // Make a copy of the current forecast to avoid mutating the original
-    const extendedForecast = [...currentForecast];
-    
-    console.log(`[MeteorologicalWeatherService] Starting with ${extendedForecast.length} existing hours`);
-    
-    // STEP 1: Extract all context from the LAST hour in the forecast
-    const lastHour = extendedForecast[extendedForecast.length - 1];
-    const lastHourTime = new Date(lastHour.date);
-    
-    console.log(`[MeteorologicalWeatherService] Extending from: ${lastHourTime.toISOString()}`);
-    console.log(`[MeteorologicalWeatherService] Last hour condition: ${lastHour.condition} at ${lastHour.temperature}°F`);
-    
-    // Extract EVERYTHING we need from the last hour's _meteoData
-    let profile, seasonalBaseline, extractedSeason, extractedBiome, latitudeBand;
-    
-    if (lastHour._meteoData && lastHour._meteoData.profile) {
-      // Perfect! We have all the context stored
-      profile = lastHour._meteoData.profile;
-      seasonalBaseline = lastHour._meteoData.seasonalBaseline;
-      extractedSeason = lastHour._meteoData.season || season;
-      extractedBiome = lastHour._meteoData.biome || climate;
-      latitudeBand = lastHour._meteoData.latitudeBand || profile.latitudeBand || "temperate";
-      
-      console.log(`[MeteorologicalWeatherService] Using stored context: ${extractedBiome}, ${extractedSeason}, ${latitudeBand}`);
-      
-      // Log polar region detection
-      if (latitudeBand === "polar" || latitudeBand === "subarctic") {
-        console.log(`[MeteorologicalWeatherService] POLAR REGION DETECTED: ${latitudeBand} extension`);
-      }
-    } else {
-      // Fallback: reconstruct from parameters
-      console.warn(`[MeteorologicalWeatherService] No stored context, reconstructing from ${climate}, ${season}`);
-      extractedBiome = climate || "temperate-deciduous";
-      extractedSeason = season || "spring";
-      latitudeBand = "temperate"; // Default fallback
-      profile = this.regionProfileService.getRegionProfile(extractedBiome);
-      seasonalBaseline = this.regionProfileService.getSeasonalBaseline(profile, extractedSeason);
-    }
-    
-    // STEP 2: Set up atmospheric state from last hour
-    let atmosphericState = {
-      temperature: lastHour.temperature,
-      humidity: lastHour._meteoData?.humidity || 50,
-      pressure: lastHour._meteoData?.pressure || 1013.25,
-      cloudCover: lastHour._meteoData?.cloudCover || 30,
-      precipitationPotential: lastHour._meteoData?.precipitationPotential || 0,
-      instability: lastHour._meteoData?.instability || 3,
-      weatherSystems: lastHour._meteoData?.weatherSystems ? [...lastHour._meteoData.weatherSystems] : [],
-      wind: {
-        speed: lastHour.windSpeed,
-        direction: lastHour.windDirection
+    return {
+      ...seasonInfo,
+      ...transitionInfo,
+      profile: {
+        biome: this.currentBiome,
+        latitude: this.currentProfile.latitude,
+        latitudeBand: this.currentProfile.latitudeBand
       }
     };
-    
-    // STEP 3: Create temporary service instances for stateless calculation
-    const tempAtmosphericService = new AtmosphericService();
-    const tempTemperatureService = new TemperatureService();
-    const tempWindService = new WindService();
-    const tempWeatherSystemService = new WeatherSystemService();
-    const tempWeatherConditionService = new WeatherConditionService();
-    const tempPrecipitationService = new PrecipitationService();
-    
-    // Initialize pressure history in temp service
-    tempAtmosphericService.resetPressureHistory(atmosphericState.pressure);
-    
-    // Set weather systems in temp service
-    tempWeatherSystemService.weatherSystems = atmosphericState.weatherSystems;
-    
-    // If no weather systems, add defaults
-    if (tempWeatherSystemService.weatherSystems.length === 0) {
-      console.log("[MeteorologicalWeatherService] No weather systems found, adding defaults");
-      tempWeatherSystemService.addDefaultSystems();
-    }
-    
-    console.log(`[MeteorologicalWeatherService] Starting atmospheric state:`, {
-      temp: atmosphericState.temperature,
-      humidity: atmosphericState.humidity,
-      pressure: atmosphericState.pressure,
-      cloudCover: atmosphericState.cloudCover,
-      windSpeed: atmosphericState.wind.speed,
-      systems: atmosphericState.weatherSystems.length,
-      latitudeBand
-    });
-    
-    // STEP 4: Generate new hours using sophisticated meteorological modeling WITH POLAR SUPPORT
-    for (let i = 1; i <= hours; i++) {
-      const newHourTime = new Date(lastHourTime);
-      newHourTime.setHours(newHourTime.getHours() + i);
-      const hour = newHourTime.getHours();
-      
-      // Update weather systems for this hour (they evolve!)
-      tempWeatherSystemService.updateWeatherSystems(1, atmosphericState.lastCondition);
-      const currentWeatherSystems = tempWeatherSystemService.getWeatherSystems();
-      
-      // Calculate pressure trend
-      const pressureTrend = tempAtmosphericService.calculatePressureTrend(atmosphericState.pressure);
-      
-      // Calculate new temperature using sophisticated physics model WITH POLAR SUPPORT
-      const newTemperature = tempTemperatureService.calculateTemperature(
-        profile,
-        seasonalBaseline,
-        newHourTime,
-        hour,
-        atmosphericState.temperature, // Previous temperature for inertia
-        atmosphericState.cloudCover,
-        currentWeatherSystems,
-        () => 0, // Simplified for stateless operation
-        (date) => this.getDayOfYear(date)
-      );
-      
-      // Calculate new humidity WITH POLAR CONSIDERATIONS
-      const newHumidity = tempAtmosphericService.calculateHumidity(
-        profile,
-        seasonalBaseline,
-        newHourTime,
-        hour,
-        atmosphericState.humidity, // Previous humidity for inertia
-        newTemperature,
-        currentWeatherSystems,
-        () => 0, // Simplified for stateless operation
-        (date) => this.getDayOfYear(date)
-      );
-      
-      // Calculate new pressure
-      const newPressure = tempAtmosphericService.calculatePressure(
-        profile,
-        newHourTime,
-        hour,
-        atmosphericState.pressure, // Previous pressure for inertia
-        currentWeatherSystems
-      );
-      
-      // Calculate new cloud cover WITH POLAR CONSIDERATIONS
-      const newCloudCover = tempAtmosphericService.calculateCloudCover(
-        profile,
-        seasonalBaseline,
-        newHourTime,
-        hour,
-        atmosphericState.cloudCover, // Previous cloud cover for inertia
-        newHumidity,
-        currentWeatherSystems
-      );
-      
-      // Calculate atmospheric instability
-      const newInstability = tempWeatherConditionService.calculateAtmosphericInstability(
-        newTemperature,
-        newPressure,
-        pressureTrend,
-        0 // Simplified precipitation for stateless operation
-      );
-      
-      // Calculate precipitation potential WITH POLAR ADJUSTMENTS
-      const newPrecipitationPotential = tempAtmosphericService.calculatePrecipitationPotential(
-        newHumidity,
-        newTemperature,
-        newPressure,
-        newCloudCover,
-        newInstability,
-        currentWeatherSystems,
-        () => 0, // Simplified for stateless operation
-        atmosphericState.lastCondition,
-        latitudeBand // PASS LATITUDE BAND FOR POLAR ADJUSTMENTS
-      );
-      
-      // Update wind
-      const newWind = tempWindService.updateWindFactors(
-        atmosphericState.wind,
-        hour,
-        newTemperature,
-        atmosphericState.temperature, // Previous temperature
-        pressureTrend,
-        currentWeatherSystems,
-        atmosphericState.lastCondition
-      );
-      
-      // Determine weather condition WITH LATITUDE BAND
-      const newCondition = tempWeatherConditionService.determineWeatherCondition(
-        newTemperature,
-        newHumidity,
-        newPressure,
-        newCloudCover,
-        newPrecipitationPotential,
-        newWind.speed,
-        newInstability,
-        latitudeBand // PASS LATITUDE BAND FOR POLAR-SPECIFIC LOGIC
-      );
-      
-      // Validate temperature for condition
-      const validatedTemp = tempTemperatureService.validateTemperatureForCondition(newTemperature, newCondition);
-      
-      // Calculate precipitation amount
-      const precipAmount = tempAtmosphericService.calculatePrecipitationAmount(newCondition, newPrecipitationPotential);
-      
-      // Get wind intensity
-      const windIntensity = tempWindService.getWindIntensity(newWind.speed);
-      
-      // Get weather effects
-      const effects = tempWeatherConditionService.getWeatherEffects(newCondition);
-      
-      // Generate celestial events WITH POLAR AURORA SUPPORT
-      const celestialEvents = tempWeatherConditionService.generateCelestialEvents(latitudeBand);
-      
-      // Create the new hour with complete meteorological data
-      const newHourWeather = {
-        date: new Date(newHourTime),
-        hour,
-        condition: newCondition,
-        temperature: Math.round(validatedTemp),
-        feelsLikeTemperature: Math.round(tempTemperatureService.calculateFeelsLikeTemperature(validatedTemp, newHumidity, newWind.speed)),
-        windDirection: newWind.direction,
-        windSpeed: Math.round(newWind.speed),
-        windIntensity: windIntensity.level,
-        effects,
-        hasShootingStar: celestialEvents.shootingStar,
-        hasMeteorImpact: celestialEvents.meteorImpact,
-        hasAurora: celestialEvents.aurora, // NEW: Aurora support
-        
-        _meteoData: {
-          humidity: newHumidity,
-          pressure: newPressure,
-          cloudCover: newCloudCover,
-          instability: newInstability,
-          precipitationPotential: newPrecipitationPotential,
-          precipAmount,
-          pressureTrend,
-          weatherSystems: [...currentWeatherSystems], // Current state of weather systems
-          
-          // Store context for next extension
-          profile: JSON.parse(JSON.stringify(profile)),
-          season: extractedSeason,
-          biome: extractedBiome,
-          seasonalBaseline: JSON.parse(JSON.stringify(seasonalBaseline)),
-          latitudeBand // STORE LATITUDE BAND
-        }
-      };
-      
-      // Add to extended forecast
-      extendedForecast.push(newHourWeather);
-      
-      // Update atmospheric state for next iteration
-      atmosphericState = {
-        temperature: validatedTemp,
-        humidity: newHumidity,
-        pressure: newPressure,
-        cloudCover: newCloudCover,
-        precipitationPotential: newPrecipitationPotential,
-        instability: newInstability,
-        weatherSystems: [...currentWeatherSystems],
-        wind: newWind,
-        lastCondition: newCondition
-      };
-      
-      console.log(`[MeteorologicalWeatherService] Generated hour ${i}/${hours}: ${newHourTime.toISOString()} - ${newCondition} at ${Math.round(validatedTemp)}°F`);
-      
-      // Log polar weather generation
-      if (latitudeBand === "polar" || latitudeBand === "subarctic") {
-        console.log(`[POLAR EXTENSION] ${latitudeBand}: ${newCondition} at ${Math.round(validatedTemp)}°F, precip=${newPrecipitationPotential.toFixed(1)}%`);
-      }
-    }
-    
-    console.log(`[MeteorologicalWeatherService] After extension: ${extendedForecast.length} hours`);
-    
-    // STEP 5: Remove the first N hours to shift the forecast forward
-    const finalForecast = extendedForecast.slice(hours);
-    
-    console.log(`[MeteorologicalWeatherService] After removing first ${hours} hours: ${finalForecast.length} hours`);
-    console.log(`[MeteorologicalWeatherService] New forecast starts at: ${finalForecast[0]?.date.toISOString()}`);
-    console.log(`[MeteorologicalWeatherService] New forecast ends at: ${finalForecast[finalForecast.length - 1]?.date.toISOString()}`);
-    
-    return finalForecast;
-  }
-
-  /**
-   * Get the current weather (first item in the forecast)
-   * @returns {object|null} - Current weather or null if forecast is empty
-   */
-  getCurrentWeather() {
-    if (this.forecast.length === 0) {
-      return null;
-    }
-    return this.forecast[0];
-  }
-
-  /**
-   * Get the 24-hour forecast
-   * @returns {Array} - 24-hour forecast
-   */
-  get24HourForecast() {
-    return this.forecast.slice(0, 24);
   }
 }
-
-// At the very end of the MeteorologicalWeatherService.js file, after the class closing bracket
-console.log("METEO SERVICE FILE LOADED COMPLETELY - POLAR ENHANCED VERSION 4.0");
-console.log("Methods available:", Object.getOwnPropertyNames(MeteorologicalWeatherService.prototype));
