@@ -77,7 +77,7 @@ export class WeatherGenerator {
     const precipitation = this.generatePrecipitation(region, date, pattern, temperature);
 
     // Determine sky condition and final weather condition
-    const condition = this.determineCondition(pattern, precipitation, temperature, humidity, date);
+    const condition = this.determineCondition(region, pattern, precipitation, temperature, humidity, date);
 
     // Generate any weather effects
     const effects = this.generateEffects(condition, wind, temperature, precipitation);
@@ -228,6 +228,7 @@ export class WeatherGenerator {
 
   /**
    * Determine final weather condition string
+   * @param {Object} region - Region data
    * @param {Object} pattern - Weather pattern
    * @param {Object} precipitation - Precipitation data
    * @param {number} temperature - Temperature
@@ -235,7 +236,7 @@ export class WeatherGenerator {
    * @param {Object} date - Game date
    * @returns {string} Weather condition
    */
-  determineCondition(pattern, precipitation, temperature, humidity, date) {
+  determineCondition(region, pattern, precipitation, temperature, humidity, date) {
     // Precipitation conditions take precedence
     if (precipitation.isOccurring) {
       const { type, intensity } = precipitation;
