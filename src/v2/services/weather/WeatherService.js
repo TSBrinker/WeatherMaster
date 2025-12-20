@@ -15,8 +15,8 @@ import MoonService from '../celestial/MoonService';
 export class WeatherService {
   constructor() {
     this.weatherGenerator = new WeatherGenerator();
-    this.sunService = new SunriseSunsetService();
-    this.moonService = new MoonService();
+    this.sunService = SunriseSunsetService;
+    this.moonService = MoonService;
   }
 
   /**
@@ -51,14 +51,13 @@ export class WeatherService {
    * @returns {Object} Celestial data
    */
   getCelestialData(region, date) {
-    const params = region.parameters || region.climateProfile;
-    const latitude = params.latitude || 45;
+    const latitudeBand = region.latitudeBand || 'temperate';
 
     // Get sun data
-    const sunData = this.sunService.getSunData(date, latitude);
+    const sunData = this.sunService.getFormattedTimes(latitudeBand, date, false);
 
     // Get moon data
-    const moonData = this.moonService.getMoonData(date);
+    const moonData = this.moonService.getFormattedMoonInfo(date, 0, false);
 
     return {
       // Sun data
@@ -76,7 +75,7 @@ export class WeatherService {
       isWaxing: moonData.isWaxing,
       moonriseTime: moonData.moonriseTime,
       moonsetTime: moonData.moonsetTime,
-      isMoonVisible: moonData.isVisible,
+      isMoonVisible: moonData.isMoonVisible,
       phaseAngle: moonData.phaseAngle
     };
   }
@@ -180,5 +179,6 @@ export class WeatherService {
   }
 }
 
-// Export singleton instance
-export default new WeatherService();
+// Create and export singleton instance
+const weatherService = new WeatherService();
+export default weatherService;

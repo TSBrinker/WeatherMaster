@@ -65,7 +65,7 @@ export class TemperatureService {
       return this.cache.get(cacheKey);
     }
 
-    const params = region.parameters || region.climateProfile;
+    const params = region.climate || region.parameters || {};
     const tempProfile = params.temperatureProfile;
 
     if (!tempProfile) {

@@ -114,7 +114,7 @@ export class WeatherGenerator {
    * @returns {Object} Wind data {speed, direction}
    */
   generateWind(region, date, pattern) {
-    const params = region.parameters || region.climateProfile;
+    const params = region.climate || region.parameters || {};
     const seed = generateSeed(region.id, date, 'wind');
     const rng = new SeededRandom(seed);
 
@@ -146,7 +146,7 @@ export class WeatherGenerator {
    * @returns {number} Humidity percentage
    */
   generateHumidity(region, date, pattern) {
-    const params = region.parameters || region.climateProfile;
+    const params = region.climate || region.parameters || {};
     const humidityProfile = params.humidityProfile;
 
     if (!humidityProfile) {
