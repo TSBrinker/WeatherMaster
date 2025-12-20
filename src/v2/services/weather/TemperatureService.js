@@ -3,8 +3,12 @@
  * Generates realistic temperatures with smooth daily and seasonal transitions
  */
 
-import { DAYS_PER_MONTH, MONTHS_PER_YEAR, HOURS_PER_DAY } from '../../models/constants';
+import { HOURS_PER_DAY } from '../../models/constants';
 import { generateSeed, SeededRandom } from '../../utils/seedGenerator';
+
+// Calendar constants for the game world
+const DAYS_PER_MONTH = 30;
+const MONTHS_PER_YEAR = 12;
 
 /**
  * Get the current season based on month

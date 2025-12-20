@@ -5,8 +5,8 @@
  */
 
 import { WeatherGenerator } from './WeatherGenerator';
-import { SunriseSunsetService } from '../celestial/SunriseSunsetService';
-import { MoonService } from '../celestial/MoonService';
+import SunriseSunsetService from '../celestial/SunriseSunsetService';
+import MoonService from '../celestial/MoonService';
 
 /**
  * Weather Service - Main Interface
