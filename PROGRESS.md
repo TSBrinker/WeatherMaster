@@ -638,6 +638,9 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] Accessibility enhancements
 - [ ] Mobile optimization
 - [ ] Theme customization options
+- [ ] Weather seed regeneration feature (allow users to reroll weather for a given date/region)
+  - User request: "If I'm starting my game and don't want to start in the rain, can the seed be re-rolled?"
+  - Possible solutions: Weather variance setting, "Reroll Weather" button, or time-skip to preferred conditions
 - [ ] Code cleanup: Review and archive old large files to improve conversation memory limits
 
 **Estimated Effort**: 2-3 days
