@@ -113,6 +113,19 @@ export const WorldProvider = ({ children }) => {
     return newDate;
   }, [activeWorldId, updateWorldTime]);
 
+  const jumpToDate = useCallback((month, day) => {
+    if (!activeWorld) return;
+
+    const newDate = {
+      year: activeWorld.currentDate.year,
+      month,
+      day,
+      hour: 0
+    };
+    updateWorldTime(newDate);
+    return newDate;
+  }, [activeWorld, updateWorldTime]);
+
   // ===== REGION MANAGEMENT =====
 
   const createRegion = useCallback((regionData) => {
@@ -261,6 +274,7 @@ export const WorldProvider = ({ children }) => {
     updateWorldTime,
     advanceTime,
     setSpecificTime,
+    jumpToDate,
 
     // Region methods
     createRegion,

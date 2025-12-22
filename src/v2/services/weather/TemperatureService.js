@@ -99,32 +99,54 @@ export class TemperatureService {
     const daysPerYear = DAYS_PER_MONTH * MONTHS_PER_YEAR;
 
     // Define season centers (middle of each season)
-    const seasonCenters = {
-      winter: 15,  // Mid-January (month 1, day 15)
-      spring: 105, // Mid-April (month 4, day 15)
-      summer: 195, // Mid-July (month 7, day 15)
-      fall: 285    // Mid-October (month 10, day 15)
-    };
+    // Winter: Month 1, Day 15 (day 15 of year)
+    // Spring: Month 4, Day 15 (day 105 of year)
+    // Summer: Month 7, Day 15 (day 195 of year)
+    // Fall: Month 10, Day 15 (day 285 of year)
+    const seasonKeyPoints = [
+      { day: 15, temp: tempProfile.winter.mean },    // Mid-winter
+      { day: 105, temp: tempProfile.spring.mean },   // Mid-spring
+      { day: 195, temp: tempProfile.summer.mean },   // Mid-summer
+      { day: 285, temp: tempProfile.fall.mean },     // Mid-fall
+      { day: 375, temp: tempProfile.winter.mean }    // Next winter (for wraparound)
+    ];
 
-    const seasonTemps = {
-      winter: tempProfile.winter.mean,
-      spring: tempProfile.spring.mean,
-      summer: tempProfile.summer.mean,
-      fall: tempProfile.fall.mean
-    };
+    // Handle year wraparound for days near end/start of year
+    let adjustedDayOfYear = dayOfYear;
+    if (dayOfYear < 60) {
+      // Early in year, might be interpolating from previous winter
+      adjustedDayOfYear = dayOfYear;
+    }
 
-    // Create smooth annual temperature curve
-    // Use cosine wave with peak in summer, trough in winter
-    const yearProgress = (dayOfYear / daysPerYear) * 2 * Math.PI;
+    // Find which two key points we're between
+    let lowerPoint, upperPoint;
+    for (let i = 0; i < seasonKeyPoints.length - 1; i++) {
+      if (adjustedDayOfYear >= seasonKeyPoints[i].day && adjustedDayOfYear <= seasonKeyPoints[i + 1].day) {
+        lowerPoint = seasonKeyPoints[i];
+        upperPoint = seasonKeyPoints[i + 1];
+        break;
+      }
+    }
 
-    // Calculate distance from winter (coldest) and summer (warmest)
-    const winterTemp = seasonTemps.winter;
-    const summerTemp = seasonTemps.summer;
-    const tempRange = summerTemp - winterTemp;
+    // If we're in late fall/early winter (day 285-375), wrap around
+    if (!lowerPoint) {
+      if (adjustedDayOfYear >= 285) {
+        lowerPoint = seasonKeyPoints[3]; // Mid-fall
+        upperPoint = seasonKeyPoints[4]; // Next winter
+      } else {
+        // Fallback to winter-spring
+        lowerPoint = seasonKeyPoints[0];
+        upperPoint = seasonKeyPoints[1];
+      }
+    }
 
-    // Shift so winter is at yearProgress = 0 (and 360)
-    // Peak (summer) at yearProgress = π
-    const seasonalTemp = winterTemp + (tempRange / 2) * (1 + Math.cos(yearProgress + Math.PI));
+    // Calculate interpolation factor (0 to 1)
+    const dayRange = upperPoint.day - lowerPoint.day;
+    const dayOffset = adjustedDayOfYear - lowerPoint.day;
+    const t = dayOffset / dayRange;
+
+    // Use smooth cosine interpolation
+    const seasonalTemp = smoothInterpolate(lowerPoint.temp, upperPoint.temp, t);
 
     return seasonalTemp;
   }
@@ -160,17 +182,25 @@ export class TemperatureService {
   /**
    * Get temperature influence from weather patterns
    * This provides smooth day-to-day variation (not just hourly)
+   * Continental climates get much larger swings
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @returns {number} Temperature adjustment from weather patterns
    */
   getPatternInfluence(region, date) {
+    const params = region.climate || region.parameters || {};
+    const specialFactors = params.specialFactors || {};
+
     // Create a slowly changing influence using multi-day seed
     const seed = generateSeed(region.id, date, 'temp-pattern');
     const rng = new SeededRandom(seed);
 
-    // Temperature can vary ±5°F from the base due to weather systems
-    const influence = rng.range(-5, 5);
+    // Continental/high diurnal variation climates get bigger day-to-day swings
+    // This simulates rapid weather system changes (cold fronts, warm fronts, etc.)
+    const baseRange = specialFactors.highDiurnalVariation ? 15 : 5;
+
+    // Temperature can vary based on climate volatility
+    const influence = rng.range(-baseRange, baseRange);
 
     // Smooth this over multiple days by blending with yesterday's influence
     const yesterdayDate = {
@@ -179,10 +209,11 @@ export class TemperatureService {
     };
     const yesterdaySeed = generateSeed(region.id, yesterdayDate, 'temp-pattern');
     const yesterdayRng = new SeededRandom(yesterdaySeed);
-    const yesterdayInfluence = yesterdayRng.range(-5, 5);
+    const yesterdayInfluence = yesterdayRng.range(-baseRange, baseRange);
 
-    // Blend 70% today, 30% yesterday for smooth transition
-    return influence * 0.7 + yesterdayInfluence * 0.3;
+    // Less smoothing for volatile climates (allows bigger jumps)
+    const smoothingFactor = specialFactors.highDiurnalVariation ? 0.85 : 0.7;
+    return influence * smoothingFactor + yesterdayInfluence * (1 - smoothingFactor);
   }
 
   /**
@@ -221,6 +252,43 @@ export class TemperatureService {
 
     // Otherwise, feels like = actual temperature
     return Math.round(temperature);
+  }
+
+  /**
+   * Get detailed temperature breakdown for debugging
+   * @param {Object} region - Region with climate parameters
+   * @param {Object} date - Game date {year, month, day, hour}
+   * @returns {Object} Temperature breakdown
+   */
+  getTemperatureDebug(region, date) {
+    const params = region.climate || region.parameters || {};
+    const tempProfile = params.temperatureProfile;
+
+    if (!tempProfile) {
+      return null;
+    }
+
+    const baseTemp = this.getSeasonalBaseTemperature(tempProfile, date);
+    const dailyVariation = this.getDailyTemperatureVariation(region, date, tempProfile);
+    const patternInfluence = this.getPatternInfluence(region, date);
+
+    // Determine current season
+    const month = date.month;
+    let season;
+    if (month >= 1 && month <= 3) season = 'winter';
+    else if (month >= 4 && month <= 6) season = 'spring';
+    else if (month >= 7 && month <= 9) season = 'summer';
+    else season = 'fall';
+
+    return {
+      season,
+      expectedSeasonMean: tempProfile[season].mean,
+      expectedSeasonRange: `${tempProfile[season].mean - tempProfile[season].variance}°F to ${tempProfile[season].mean + tempProfile[season].variance}°F`,
+      seasonalBase: Math.round(baseTemp * 10) / 10,
+      dailyVariation: Math.round(dailyVariation * 10) / 10,
+      patternInfluence: Math.round(patternInfluence * 10) / 10,
+      finalTemp: Math.round((baseTemp + dailyVariation + patternInfluence) * 10) / 10
+    };
   }
 
   /**

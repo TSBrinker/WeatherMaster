@@ -7,6 +7,7 @@
 import { WeatherGenerator } from './WeatherGenerator';
 import SunriseSunsetService from '../celestial/SunriseSunsetService';
 import MoonService from '../celestial/MoonService';
+import { advanceDate, getMonthName } from '../../utils/dateUtils';
 
 /**
  * Weather Service - Main Interface
@@ -91,7 +92,7 @@ export class WeatherService {
     const forecast = [];
 
     for (let i = 0; i < hours; i++) {
-      const forecastDate = this.addHours(currentDate, i);
+      const forecastDate = advanceDate(currentDate, i);
       const weather = this.getCurrentWeather(region, forecastDate);
 
       forecast.push({
@@ -105,48 +106,13 @@ export class WeatherService {
   }
 
   /**
-   * Add hours to a date
-   * @param {Object} date - Game date
-   * @param {number} hours - Hours to add
-   * @returns {Object} New date
-   */
-  addHours(date, hours) {
-    let newHour = date.hour + hours;
-    let newDay = date.day;
-    let newMonth = date.month;
-    let newYear = date.year;
-
-    // Handle hour overflow
-    while (newHour >= 24) {
-      newHour -= 24;
-      newDay += 1;
-
-      if (newDay > 30) {
-        newDay = 1;
-        newMonth += 1;
-
-        if (newMonth > 12) {
-          newMonth = 1;
-          newYear += 1;
-        }
-      }
-    }
-
-    return {
-      year: newYear,
-      month: newMonth,
-      day: newDay,
-      hour: newHour
-    };
-  }
-
-  /**
    * Get timestamp string for weather data
    * @param {Object} date - Game date
    * @returns {string} Timestamp
    */
   getTimestamp(date) {
-    return `Year ${date.year}, Month ${date.month}, Day ${date.day}, Hour ${date.hour}`;
+    const monthName = getMonthName(date.month);
+    return `${monthName} ${date.day}, Year ${date.year}, Hour ${date.hour}`;
   }
 
   /**
@@ -169,6 +135,105 @@ export class WeatherService {
       celestial: null,
       timestamp: 'Unknown'
     };
+  }
+
+  /**
+   * Group consecutive hours with similar weather into periods
+   * Used for Druidcraft cantrip display
+   * @param {Array} forecast - Array of hourly weather data
+   * @returns {Array} Array of weather periods
+   */
+  groupIntoPeriods(forecast) {
+    if (!forecast || forecast.length === 0) return [];
+
+    const periods = [];
+    let currentPeriod = {
+      condition: forecast[0].condition,
+      precipitationType: forecast[0].precipitationType,
+      hours: 1,
+      tempMin: forecast[0].temperature,
+      tempMax: forecast[0].temperature,
+      startHour: forecast[0].hour
+    };
+
+    for (let i = 1; i < forecast.length; i++) {
+      const current = forecast[i];
+
+      // Check if weather is similar enough to group
+      const isSameCondition = current.condition === currentPeriod.condition;
+      const isSamePrecip = current.precipitationType === currentPeriod.precipitationType;
+
+      if (isSameCondition && isSamePrecip) {
+        // Extend current period
+        currentPeriod.hours += 1;
+        currentPeriod.tempMin = Math.min(currentPeriod.tempMin, current.temperature);
+        currentPeriod.tempMax = Math.max(currentPeriod.tempMax, current.temperature);
+      } else {
+        // Start new period
+        periods.push(currentPeriod);
+        currentPeriod = {
+          condition: current.condition,
+          precipitationType: current.precipitationType,
+          hours: 1,
+          tempMin: current.temperature,
+          tempMax: current.temperature,
+          startHour: current.hour
+        };
+      }
+    }
+
+    // Add the last period
+    periods.push(currentPeriod);
+
+    return periods;
+  }
+
+  /**
+   * Get daily forecast summary for DM planning
+   * @param {Object} region - Region data
+   * @param {Object} currentDate - Current game date
+   * @param {number} days - Number of days to forecast (default: 7)
+   * @returns {Array} Array of daily summaries
+   */
+  getDailyForecast(region, currentDate, days = 7) {
+    const dailyForecast = [];
+
+    for (let i = 0; i < days; i++) {
+      const startDate = advanceDate(currentDate, i * 24);
+      const dayWeather = [];
+
+      // Get weather for each hour of the day
+      for (let hour = 0; hour < 24; hour++) {
+        const hourDate = { ...startDate, hour };
+        const weather = this.weatherGenerator.generateWeather(region, hourDate);
+        dayWeather.push(weather);
+      }
+
+      // Calculate daily summary
+      const temps = dayWeather.map(w => w.temperature);
+      const conditions = dayWeather.map(w => w.condition);
+      const precipTypes = dayWeather.filter(w => w.precipitation).map(w => w.precipitationType);
+
+      // Find most common condition
+      const conditionCounts = {};
+      conditions.forEach(c => conditionCounts[c] = (conditionCounts[c] || 0) + 1);
+      const dominantCondition = Object.keys(conditionCounts).reduce((a, b) =>
+        conditionCounts[a] > conditionCounts[b] ? a : b
+      );
+
+      dailyForecast.push({
+        day: i,
+        date: startDate,
+        high: Math.max(...temps),
+        low: Math.min(...temps),
+        condition: dominantCondition,
+        precipitation: precipTypes.length > 0,
+        precipitationType: precipTypes[0] || null,
+        pattern: dayWeather[12].pattern // Noon pattern
+      });
+    }
+
+    return dailyForecast;
   }
 
   /**

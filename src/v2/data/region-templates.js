@@ -29,7 +29,7 @@ export const regionTemplates = {
   "central": {
     "tundra-plain": {
       name: "Tundra Plain",
-      description: "Treeless plains with permanently frozen subsoil. Brief summer growing season with 24-hour daylight, followed by a long winter with extended darkness.",
+      description: "Treeless plains with permanently frozen subsoil. Brief summer growing season with 24-hour daylight, followed by a long winter with extended darkness. Real-world examples: Utqiaġvik (Barrow) Alaska, Resolute Canada, Tiksi Russia.",
       gameplayImpact: "24-hour daylight disrupts sleep in summer. Extended darkness in winter affects psychology. Challenging winter survival. Spring/fall bring rapidly changing daylight hours.",
       parameters: {
         latitude: 78,
@@ -44,10 +44,10 @@ export const regionTemplates = {
           permanentIce: 0.3,
         },
         temperatureProfile: {
-          annual: { mean: 15, variance: 40 },
-          winter: { mean: -20, variance: 20 },
+          annual: { mean: 14, variance: 40 },
+          winter: { mean: -12, variance: 20 },
           spring: { mean: 15, variance: 15 },
-          summer: { mean: 45, variance: 10 },
+          summer: { mean: 42, variance: 10 },
           fall: { mean: 10, variance: 15 }
         },
         humidityProfile: {
@@ -257,7 +257,7 @@ export const regionTemplates = {
     },
     "tropical-desert": {
       name: "Tropical Desert",
-      description: "Hot, arid regions with extreme daily temperature variations. Can be scorching during the day but cool at night. Rainfall is rare and often occurs as brief, intense storms.",
+      description: "Hot, arid regions with extreme daily temperature variations. Can be scorching during the day but cool at night. Rainfall is rare and often occurs as brief, intense storms. Real-world examples: Phoenix Arizona, Riyadh Saudi Arabia, Alice Springs Australia.",
       gameplayImpact: "Heat exhaustion risk during day. Hypothermia risk at night. Water scarcity. Flash floods in wadis. Dust storms reduce visibility. Sun exposure concerns.",
       parameters: {
         latitude: 23,
@@ -270,11 +270,11 @@ export const regionTemplates = {
           dustStorms: 0.7
         },
         temperatureProfile: {
-          annual: { mean: 85, variance: 30 },
-          winter: { mean: 70, variance: 20 },
-          spring: { mean: 85, variance: 20 },
-          summer: { mean: 100, variance: 15 },
-          fall: { mean: 85, variance: 20 }
+          annual: { mean: 74, variance: 35 },
+          winter: { mean: 56, variance: 12 },
+          spring: { mean: 75, variance: 20 },
+          summer: { mean: 95, variance: 18 },
+          fall: { mean: 78, variance: 20 }
         },
         humidityProfile: {
           annual: { mean: 20, variance: 15 },
@@ -288,7 +288,7 @@ export const regionTemplates = {
     },
     "tropical-highland": {
       name: "Tropical Highland",
-      description: "Mountain environments in tropical latitudes, often featuring cloud forests and pleasant temperatures year-round. Often called \"cities of eternal spring.\"",
+      description: "Mountain environments in tropical latitudes, often featuring cloud forests and pleasant temperatures year-round. Often called \"cities of eternal spring.\" Real-world examples: Quito Ecuador, Addis Ababa Ethiopia, Bogotá Colombia.",
       gameplayImpact: "Steep terrain affects travel. Morning fog affects visibility. Afternoon rain/thunderstorms predictable. UV intensity high despite comfortable temperatures.",
       parameters: {
         latitude: 20,
@@ -301,11 +301,11 @@ export const regionTemplates = {
           volcanicActivity: 0.2
         },
         temperatureProfile: {
-          annual: { mean: 65, variance: 10 },
-          winter: { mean: 62, variance: 10 },
-          spring: { mean: 65, variance: 8 },
-          summer: { mean: 68, variance: 8 },
-          fall: { mean: 65, variance: 10 }
+          annual: { mean: 58, variance: 10 },
+          winter: { mean: 58, variance: 8 },
+          spring: { mean: 58, variance: 8 },
+          summer: { mean: 59, variance: 8 },
+          fall: { mean: 58, variance: 8 }
         },
         humidityProfile: {
           annual: { mean: 70, variance: 15 },
@@ -418,7 +418,7 @@ export const regionTemplates = {
   "temperate": {
     "maritime-forest": {
       name: "Maritime Forest",
-      description: "Coastal forest regions with moderated temperatures due to ocean influence. Rainfall is common year-round with foggy conditions, especially in mornings.",
+      description: "Coastal forest regions with moderated temperatures due to ocean influence. Rainfall is common year-round with foggy conditions, especially in mornings. Real-world examples: Seattle, Portland Oregon, Vancouver BC.",
       gameplayImpact: "Snow in winter is typically wet and heavy but melts quickly. Fog reduces visibility. Steady rainfall creates lush vegetation. Wind storms possible in fall/winter.",
       parameters: {
         latitude: 45,
@@ -431,11 +431,11 @@ export const regionTemplates = {
           hasFog: true
         },
         temperatureProfile: {
-          annual: { mean: 55, variance: 20 },
-          winter: { mean: 40, variance: 10 },
-          spring: { mean: 52, variance: 12 },
-          summer: { mean: 70, variance: 10 },
-          fall: { mean: 58, variance: 12 }
+          annual: { mean: 52, variance: 20 },
+          winter: { mean: 41, variance: 10 },
+          spring: { mean: 50, variance: 12 },
+          summer: { mean: 66, variance: 10 },
+          fall: { mean: 55, variance: 12 }
         },
         humidityProfile: {
           annual: { mean: 75, variance: 15 },
@@ -449,7 +449,7 @@ export const regionTemplates = {
     },
     "mediterranean-coast": {
       name: "Mediterranean Coast",
-      description: "Distinctive climate with dry, warm summers and mild, rainy winters. Classic \"endless summer\" feeling with pleasant temperatures most of the year.",
+      description: "Distinctive climate with dry, warm summers and mild, rainy winters. Classic \"endless summer\" feeling with pleasant temperatures most of the year. Real-world examples: Los Angeles, Barcelona, Athens, Perth Australia.",
       gameplayImpact: "Summer drought increases wildfire risk. Winter rainfall can cause flash floods. Grape/olive growing climate. Light winter freezes possible but rare.",
       parameters: {
         latitude: 35,
@@ -463,9 +463,9 @@ export const regionTemplates = {
         },
         temperatureProfile: {
           annual: { mean: 65, variance: 15 },
-          winter: { mean: 50, variance: 10 }, // Wet season
-          spring: { mean: 60, variance: 10 },
-          summer: { mean: 80, variance: 8 },  // Dry season
+          winter: { mean: 58, variance: 10 }, // Wet season
+          spring: { mean: 62, variance: 10 },
+          summer: { mean: 75, variance: 10 },  // Dry season
           fall: { mean: 70, variance: 10 }
         },
         humidityProfile: {
@@ -480,7 +480,7 @@ export const regionTemplates = {
     },
     "continental-prairie": {
       name: "Continental Prairie",
-      description: "Vast grasslands with extreme temperature variations between summer and winter, and between day and night. Prone to severe thunderstorms and tornadoes.",
+      description: "Vast grasslands with extreme temperature variations between summer and winter, and between day and night. Prone to severe thunderstorms and tornadoes. Real-world examples: Des Moines Iowa, Winnipeg Manitoba, Kansas City Missouri, Omaha Nebraska.",
       gameplayImpact: "Blizzards in winter with wind-driven snow. Severe thunderstorms with tornado risk in spring/summer. Limited shelter from elements. Grass fires in dry periods.",
       parameters: {
         latitude: 45,
@@ -494,11 +494,11 @@ export const regionTemplates = {
           tornadoRisk: 0.5
         },
         temperatureProfile: {
-          annual: { mean: 55, variance: 40 },
-          winter: { mean: 25, variance: 20 },
-          spring: { mean: 55, variance: 20 },
-          summer: { mean: 85, variance: 15 },
-          fall: { mean: 55, variance: 20 }
+          annual: { mean: 51, variance: 40 },
+          winter: { mean: 20, variance: 20 },
+          spring: { mean: 52, variance: 20 },
+          summer: { mean: 77, variance: 18 },
+          fall: { mean: 52, variance: 20 }
         },
         humidityProfile: {
           annual: { mean: 60, variance: 20 },
@@ -736,7 +736,7 @@ export const regionTemplates = {
     },
     "continental-taiga": {
       name: "Continental Taiga",
-      description: "Vast inland northern forests with extreme seasonal temperature variations. Brutally cold winters and surprisingly warm summers with long daylight hours.",
+      description: "Vast inland northern forests with extreme seasonal temperature variations. Brutally cold winters and surprisingly warm summers with long daylight hours. Real-world examples: Fairbanks Alaska, Yellowknife Canada, Yakutsk Russia.",
       gameplayImpact: "Extreme winter cold requires specialized gear. Short days in winter, long days in summer. Mosquito swarms in summer. Forest fires risk in dry summers.",
       parameters: {
         latitude: 65,
@@ -750,10 +750,10 @@ export const regionTemplates = {
           permafrost: 0.3
         },
         temperatureProfile: {
-          annual: { mean: 25, variance: 60 },
-          winter: { mean: -20, variance: 25 },
+          annual: { mean: 28, variance: 60 },
+          winter: { mean: -15, variance: 25 },
           spring: { mean: 30, variance: 20 },
-          summer: { mean: 65, variance: 15 },
+          summer: { mean: 63, variance: 15 },
           fall: { mean: 25, variance: 25 }
         },
         humidityProfile: {
@@ -897,7 +897,7 @@ export const regionTemplates = {
   "rim": {
     "rainforest-basin": {
       name: "Rainforest Basin",
-      description: "Dense, humid rainforests with consistent temperatures and rainfall throughout the year. Daily afternoon thunderstorms are common.",
+      description: "Dense, humid rainforests with consistent temperatures and rainfall throughout the year. Daily afternoon thunderstorms are common. Real-world examples: Singapore, Manaus Brazil, Iquitos Peru.",
       gameplayImpact: "Dense foliage limits visibility. Heavy rainfall makes rivers swell and can flood low areas. High humidity can cause equipment to deteriorate. Heat exhaustion is a constant risk.",
       parameters: {
         latitude: 5,
@@ -911,11 +911,11 @@ export const regionTemplates = {
           highBiodiversity: true
         },
         temperatureProfile: {
-          annual: { mean: 82, variance: 4 },
-          winter: { mean: 81, variance: 4 },
-          spring: { mean: 82, variance: 4 },
-          summer: { mean: 83, variance: 4 },
-          fall: { mean: 82, variance: 4 }
+          annual: { mean: 80, variance: 4 },
+          winter: { mean: 80, variance: 4 },
+          spring: { mean: 80, variance: 4 },
+          summer: { mean: 81, variance: 4 },
+          fall: { mean: 80, variance: 4 }
         },
         humidityProfile: {
           annual: { mean: 85, variance: 10 },

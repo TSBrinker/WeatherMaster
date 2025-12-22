@@ -98,7 +98,8 @@ export class WeatherGenerator {
         pattern: pattern.type,
         dayOfPattern: pattern.dayOfPattern,
         baseTemp,
-        patternTempMod
+        patternTempMod,
+        temperatureBreakdown: this.tempService.getTemperatureDebug(region, date)
       }
     };
 
@@ -196,14 +197,21 @@ export class WeatherGenerator {
 
     // Determine type based on temperature
     let type;
-    if (temperature <= 32) {
-      type = 'snow';
+    if (temperature <= 28) {
+      type = 'snow'; // Below 28°F = snow
+    } else if (temperature <= 32) {
+      // 28-32°F = mixed precipitation or freezing rain
+      // Use weather pattern to determine which
+      const rng = new SeededRandom(seed + 999);
+      if (rng.next() < 0.5) {
+        type = 'freezing-rain'; // Rain freezes on contact with cold surface
+      } else {
+        type = 'sleet'; // Mixed frozen/liquid
+      }
     } else if (temperature <= 35) {
-      type = 'sleet'; // Mixed
-    } else if (temperature <= 38 && temperature > 32) {
-      type = 'freezing-rain'; // Rain that freezes on contact
+      type = 'sleet'; // 32-35°F = sleet (mostly frozen but some liquid)
     } else {
-      type = 'rain';
+      type = 'rain'; // Above 35°F = rain
     }
 
     // Determine intensity

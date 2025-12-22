@@ -1,18 +1,20 @@
 import React from 'react';
-import { Card, Row, Col, Badge } from 'react-bootstrap';
+import { Card, Row, Col } from 'react-bootstrap';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { formatTemperature, formatWindSpeed } from '../../utils/unitConversions';
+import { getWeatherBackground, getTextColor, getWeatherIcon } from '../../utils/weatherTheme';
+import './CurrentWeather.css';
 
 /**
- * Current Weather Display
- * Shows current temperature, condition, wind, and celestial info
+ * Current Weather Display - Hero Component
+ * Large, beautiful weather card with dynamic backgrounds
  */
 const CurrentWeather = ({ weather, celestial }) => {
-  const { temperatureUnit, windSpeedUnit, showFeelsLike, debugMode } = usePreferences();
+  const { temperatureUnit, windSpeedUnit, showFeelsLike } = usePreferences();
 
   if (!weather) {
     return (
-      <Card>
+      <Card className="current-weather-card">
         <Card.Body>
           <p className="text-muted">No weather data available</p>
         </Card.Body>
@@ -25,122 +27,109 @@ const CurrentWeather = ({ weather, celestial }) => {
     feelsLike,
     condition,
     windSpeed,
-    windDirection
+    windDirection,
+    humidity,
+    precipitation,
+    precipitationType,
+    precipitationIntensity
   } = weather;
 
-  // Get twilight badge color
-  const getTwilightBadgeColor = (twilightLevel) => {
-    switch (twilightLevel) {
-      case 'daylight': return 'warning';
-      case 'civil': return 'info';
-      case 'nautical': return 'primary';
-      case 'astronomical': return 'secondary';
-      case 'night': return 'dark';
-      default: return 'secondary';
-    }
-  };
+  // Determine if it's daytime and twilight level
+  const isDaytime = celestial?.twilightLevel === 'daylight';
+  const twilightLevel = celestial?.twilightLevel !== 'daylight' && celestial?.twilightLevel !== 'night'
+    ? celestial?.twilightLevel
+    : 'none';
 
-  // Format twilight level for display
-  const formatTwilight = (twilightLevel) => {
-    if (!twilightLevel) return 'Unknown';
-    if (twilightLevel === 'daylight') return 'Daylight';
-    if (twilightLevel === 'night') return 'Night';
-    return `${twilightLevel.charAt(0).toUpperCase() + twilightLevel.slice(1)} Twilight`;
-  };
+  // Get dynamic background and text color
+  const backgroundGradient = getWeatherBackground(condition, twilightLevel, isDaytime);
+  const textColorClass = getTextColor(condition, twilightLevel, isDaytime);
+  const weatherIcon = getWeatherIcon(condition, isDaytime);
 
   return (
-    <Card className="mb-3">
-      <Card.Body>
-        <Row>
-          {/* Temperature Section */}
-          <Col md={6} className="border-end">
-            <div className="text-center">
-              <h1 className="display-1 mb-0">
-                {formatTemperature(temperature, temperatureUnit)}
-              </h1>
-              {showFeelsLike && feelsLike !== temperature && (
-                <p className="text-muted">
-                  Feels like {formatTemperature(feelsLike, temperatureUnit)}
-                </p>
-              )}
-              <h4 className="mt-3">{condition}</h4>
+    <Card
+      className={`current-weather-hero mb-3 text-${textColorClass}`}
+      style={{ background: backgroundGradient }}
+    >
+      <Card.Body className="p-4">
+        {/* Main temperature display */}
+        <div className="text-center mb-4">
+          <div className="weather-icon-large mb-2">
+            {weatherIcon}
+          </div>
+          <div className="temperature-display">
+            {formatTemperature(temperature, temperatureUnit)}
+          </div>
+          <div className="condition-display mb-2">
+            {condition}
+          </div>
+          {showFeelsLike && feelsLike !== temperature && (
+            <div className="feels-like-display">
+              Feels like {formatTemperature(feelsLike, temperatureUnit)}
+            </div>
+          )}
+        </div>
 
-              {/* Twilight State Badge */}
-              {celestial?.twilightLevel && (
-                <div className="mt-2">
-                  <Badge bg={getTwilightBadgeColor(celestial.twilightLevel)}>
-                    {formatTwilight(celestial.twilightLevel)}
-                  </Badge>
-                </div>
-              )}
+        {/* Key details in compact grid */}
+        <Row className="weather-details g-3">
+          <Col xs={6} md={3}>
+            <div className="detail-item">
+              <div className="detail-icon">💨</div>
+              <div className="detail-label">Wind</div>
+              <div className="detail-value">
+                {formatWindSpeed(windSpeed, windSpeedUnit)} {windDirection}
+              </div>
             </div>
           </Col>
 
-          {/* Details Section */}
-          <Col md={6}>
-            <div className="mt-3 mt-md-0">
-              <h5>Conditions</h5>
-              <p className="mb-2">
-                <strong>Wind:</strong> {formatWindSpeed(windSpeed, windSpeedUnit)} {windDirection}
-              </p>
+          <Col xs={6} md={3}>
+            <div className="detail-item">
+              <div className="detail-icon">💧</div>
+              <div className="detail-label">Humidity</div>
+              <div className="detail-value">{humidity}%</div>
+            </div>
+          </Col>
 
-              {celestial && (
-                <>
-                  <hr />
-                  <h5>Sun</h5>
-                  {celestial.isPermanentNight ? (
-                    <p className="text-muted">
-                      <em>Disc center - no sunlight reaches this location</em>
-                    </p>
-                  ) : (
-                    <>
-                      <p className="mb-1">
-                        <strong>Sunrise:</strong> {celestial.sunriseTime}
-                      </p>
-                      <p className="mb-1">
-                        <strong>Sunset:</strong> {celestial.sunsetTime}
-                      </p>
-                      <p className="mb-1">
-                        <strong>Day Length:</strong> {celestial.dayLength}
-                      </p>
-                    </>
-                  )}
+          <Col xs={6} md={3}>
+            <div className="detail-item">
+              <div className="detail-icon">☀️</div>
+              <div className="detail-label">Sunrise</div>
+              <div className="detail-value">{celestial?.sunriseTime || '--'}</div>
+            </div>
+          </Col>
 
-                  {debugMode && (
-                    <p className="mb-0 small text-muted">
-                      Distance to sun: {celestial.distanceToSun.toLocaleString()} mi
-                    </p>
-                  )}
-
-                  <hr />
-                  <h5>Moon</h5>
-                  <p className="mb-1">
-                    <strong>Phase:</strong> {celestial.moonIcon} {celestial.moonPhase}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Illumination:</strong> {celestial.moonIllumination}%
-                    {celestial.isWaxing ? ' (Waxing)' : ' (Waning)'}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Moonrise:</strong> {celestial.moonriseTime}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Moonset:</strong> {celestial.moonsetTime}
-                  </p>
-                  <p className="mb-0">
-                    <strong>Visible:</strong> {celestial.isMoonVisible ? 'Yes' : 'No'}
-                  </p>
-
-                  {debugMode && celestial.phaseAngle !== undefined && (
-                    <p className="mb-0 small text-muted">
-                      Phase angle: {celestial.phaseAngle}°
-                    </p>
-                  )}
-                </>
-              )}
+          <Col xs={6} md={3}>
+            <div className="detail-item">
+              <div className="detail-icon">🌙</div>
+              <div className="detail-label">Sunset</div>
+              <div className="detail-value">{celestial?.sunsetTime || '--'}</div>
             </div>
           </Col>
         </Row>
+
+        {/* Precipitation info if active */}
+        {precipitation && (
+          <div className="precipitation-banner mt-3">
+            <strong>💧 {precipitationIntensity} {precipitationType}</strong>
+          </div>
+        )}
+
+        {/* Celestial compact info */}
+        {celestial && (
+          <div className="celestial-compact mt-3">
+            <Row className="g-2">
+              <Col xs={6}>
+                <small>
+                  <strong>Day Length:</strong> {celestial.dayLength || '--'}
+                </small>
+              </Col>
+              <Col xs={6}>
+                <small>
+                  <strong>Moon:</strong> {celestial.moonPhase || '--'} {celestial.moonIcon || ''}
+                </small>
+              </Col>
+            </Row>
+          </div>
+        )}
       </Card.Body>
     </Card>
   );

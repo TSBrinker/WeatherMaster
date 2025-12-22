@@ -6,7 +6,8 @@
       "Bash(npm start)",
       "Bash(git push)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix import errors in weather services\n\n- Added DAYS_PER_MONTH and MONTHS_PER_YEAR constants locally to TemperatureService\n- Fixed SunriseSunsetService and MoonService imports \\(default exports\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix import errors in weather services\n\n- Added DAYS_PER_MONTH and MONTHS_PER_YEAR constants locally to TemperatureService\n- Fixed SunriseSunsetService and MoonService imports \\(default exports\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm install:*)"
     ]
   }
 }

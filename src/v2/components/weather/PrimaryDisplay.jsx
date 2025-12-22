@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button } from 'react-bootstrap';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy } from 'react-icons/wi';
 import { BsInfoCircle } from 'react-icons/bs';
+import { regionTemplates } from '../../data/region-templates';
 import './PrimaryDisplay.css';
 
 /**
@@ -20,7 +21,10 @@ const PrimaryDisplay = ({ region, weather, world }) => {
     );
   }
 
-  const template = region.regionalTemplate || region.climate;
+  // Get the full template object from the templateId and latitudeBand
+  const template = (region.templateId && region.latitudeBand)
+    ? regionTemplates[region.latitudeBand]?.[region.templateId]
+    : null;
 
   // Weather data is flat, not nested under 'current'
   const temperature = weather.temperature;
@@ -113,13 +117,11 @@ const PrimaryDisplay = ({ region, weather, world }) => {
           {region.name}
         </div>
 
-        {/* Regional Template with info icon */}
+        {/* Biome name below location, with info icon on same line */}
         <div className="template-info">
+          <span className="template-name-text">{template?.name || region.climate || 'Unknown Climate'}</span>
           <OverlayTrigger placement="bottom" overlay={templateTooltip}>
-            <span className="template-name" onClick={() => setShowTemplateModal(true)}>
-              {template?.name || world.climate}
-              <BsInfoCircle className="info-icon" />
-            </span>
+            <BsInfoCircle className="info-icon clickable" onClick={() => setShowTemplateModal(true)} />
           </OverlayTrigger>
         </div>
 
@@ -171,14 +173,8 @@ const PrimaryDisplay = ({ region, weather, world }) => {
           {template ? (
             <>
               <p><strong>Description:</strong> {template.description}</p>
-              {template.avgTemp && (
-                <p><strong>Average Temperature:</strong> {template.avgTemp}</p>
-              )}
-              {template.precipitation && (
-                <p><strong>Precipitation:</strong> {template.precipitation}</p>
-              )}
-              {template.seasonalVariation && (
-                <p><strong>Seasonal Variation:</strong> {template.seasonalVariation}</p>
+              {template.gameplayImpact && (
+                <p><strong>Gameplay Impact:</strong> {template.gameplayImpact}</p>
               )}
             </>
           ) : (

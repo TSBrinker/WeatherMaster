@@ -196,6 +196,75 @@
   border-color: var(--bg-accent);
 }
 
+/* Bootstrap Modal Styling for Dark Theme */
+.modal-content {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: var(--text-primary) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  color: var(--text-primary) !important;
+}
+
+.modal-title {
+  color: var(--text-primary) !important;
+  font-weight: 400;
+}
+
+.modal-body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary) !important;
+  padding: 1.5rem;
+}
+
+.modal-body p {
+  color: var(--text-primary) !important;
+  margin-bottom: 0.75rem;
+}
+
+.modal-body strong {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+}
+
+.modal-body h6 {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.modal-body ul {
+  color: var(--text-primary) !important;
+}
+
+.modal-body li {
+  color: var(--text-primary) !important;
+  margin-bottom: 0.375rem;
+}
+
+.modal-footer {
+  background-color: var(--bg-tertiary);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.modal-header .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 0.6;
+}
+
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
 /* Mobile responsive header */
 @media (max-width: 576px) {
   .app-header .container-fluid {

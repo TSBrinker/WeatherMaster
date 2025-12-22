@@ -504,3 +504,8 @@ After thorough discussion, we've decided on **Option C (Hybrid)** with the follo
 Additional issues logged:
 - Weather temperature may be inaccurage. Temperate, Temperate Grassland, mid January - February, consistently 35-40 degrees F. 
 - Additionally, freezing rain at 38 degrees. May need to establish parameters for weather events that need to be below freezing? Or am I mistaken how freezing rain works.
+
+Question: If everything is logged and 'controlledly random' based on the seed, how difficult would it be to track precipitation accumulation? Depth of snow on ground, when it melts, how long it remains muddy after a rain, etc.
+
+Issue: In the new region form, the placeholder text is black text against a dark background and is illegible
+

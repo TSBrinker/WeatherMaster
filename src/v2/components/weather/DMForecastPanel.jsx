@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Collapse } from 'react-bootstrap';
 import { GiScrollQuill } from 'react-icons/gi';
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiRaindrop, WiStrongWind } from 'react-icons/wi';
 import weatherService from '../../services/weather/WeatherService';
 import { getMonthName } from '../../utils/dateUtils';
 import './DMForecastPanel.css';
@@ -42,6 +43,18 @@ const DMForecastPanel = ({ region, currentDate }) => {
     if (day === 0) return 'Today';
     if (day === 1) return 'Tomorrow';
     return `Day ${day + 1}`;
+  };
+
+  const getWeatherIcon = (condition) => {
+    const conditionLower = condition?.toLowerCase() || '';
+    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) return <WiDaySunny />;
+    if (conditionLower.includes('partly')) return <WiDayCloudy />;
+    if (conditionLower.includes('cloud')) return <WiCloudy />;
+    if (conditionLower.includes('rain')) return <WiRain />;
+    if (conditionLower.includes('storm') || conditionLower.includes('thunder')) return <WiThunderstorm />;
+    if (conditionLower.includes('snow')) return <WiSnow />;
+    if (conditionLower.includes('fog') || conditionLower.includes('mist')) return <WiFog />;
+    return <WiDayCloudy />;
   };
 
   return (
@@ -108,9 +121,13 @@ const DMForecastPanel = ({ region, currentDate }) => {
                         <span className="temp-low">{day.low}°</span>
                       </div>
                       <div className="col-condition">
-                        {day.condition}
+                        <span className="condition-with-icon">
+                          <span className="condition-icon">{getWeatherIcon(day.condition)}</span>
+                          <span>{day.condition}</span>
+                        </span>
                       </div>
                       <div className="col-precip">
+                        {day.precipitation && <WiRaindrop className="precip-icon" />}
                         {formatPrecipitation(day.precipitation, day.precipitationType)}
                       </div>
                       <div className="col-pattern">
