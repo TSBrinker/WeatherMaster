@@ -545,7 +545,7 @@ PROGRESS.md                    # This file (master tracker)
 
 ## Roadmap: Next Sprints
 
-### Sprint 5: Enhanced Wind & Weather Systems (Not Started)
+### Sprint 6: Enhanced Wind & Weather Systems (Not Started)
 **Goal**: Sophisticated wind patterns and frontal systems
 
 **Features**:
@@ -556,39 +556,21 @@ PROGRESS.md                    # This file (master tracker)
 
 **Estimated Effort**: 2-3 days
 
-### Sprint 6: Extreme Weather & Snow Accumulation (Not Started)
+### Sprint 7: Extreme Weather & Snow Accumulation (Not Started)
 **Goal**: Add extreme events and snow tracking
 
 **Features**:
-- [ ] Extreme weather events (hurricanes, blizzards, heat waves)
+- [ ] Extreme weather events (hurricanes, blizzards, heat waves, **flooding**)
 - [ ] Snow accumulation tracking (user requested)
+- [ ] **Precipitation duration tuning** (user reported issue)
+  - Issue: "2-3 straight days of rain/heavy rain in continental grassland seems too common"
+  - "Every hour with little to no breaks" - should have more dry periods during rain patterns
+  - Need to reduce precipitation probability or add breaks within rainy patterns
 - [ ] Weather effects refinement
 - [ ] Fine-tuning temperature calculations
 - [ ] Performance optimization
 
 **Estimated Effort**: 2-3 days
-
-### Sprint 7: Educational Modals & Documentation (COMPLETE ✅)
-**Goal**: Help users understand weather mechanics and D&D impacts
-
-**Features**:
-- [x] Weather Primer Modal - Explain atmospheric conditions (pressure, fronts, humidity, etc.)
-  - What high/low/neutral values mean
-  - Definitions of weather patterns (cold front, warm front, high pressure, etc.)
-  - How conditions interact and affect weather
-- [x] Gameplay Mechanics Modal - D&D mechanical impacts of weather
-  - Display existing weather effects from original implementation (src folder)
-  - Show mechanical impacts on gameplay (visibility, movement, combat, etc.)
-  - Reference existing definitions and rules
-- [ ] Expand weather-effects.js to remove cross-references (e.g., "As per Heavy Rain")
-- [ ] Surface gameplay mechanics on main display when relevant conditions apply
-- [ ] Help/Tutorial system
-  - First-time user guidance
-  - Feature explanations
-
-**Status**: Core modals complete (Sprint 5: Sage), enhancements identified for future sprint
-
-**Completed**: Sprint 5 (Sage) - 2025-12-21
 
 ### Sprint 8: Wanderers (Falling Stars) (Not Started)
 **Goal**: Implement Wanderer celestial events for the world of Marai
@@ -633,6 +615,11 @@ PROGRESS.md                    # This file (master tracker)
 **Goal**: Refine user experience and add quality-of-life features
 
 **Features**:
+- [ ] **Export/Import Worlds** (user requested)
+  - Download worlds/regions as JSON file
+  - Import from JSON file
+  - Enables cross-device usage, backups, and sharing with other DMs
+  - ~2 hours of work (add download/upload buttons to settings menu)
 - [ ] Loading states and transitions
 - [ ] Error handling improvements
 - [ ] Accessibility enhancements
