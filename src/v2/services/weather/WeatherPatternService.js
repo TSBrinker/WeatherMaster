@@ -162,23 +162,121 @@ export class WeatherPatternService {
   /**
    * Check if precipitation should occur given current pattern
    * @param {Object} pattern - Current weather pattern
-   * @param {Object} date - Game date (for hourly variation)
+   * @param {Object} region - Region with climate data
+   * @param {Object} date - Game date (for hourly and seasonal variation)
    * @param {number} seed - Random seed
    * @returns {boolean} True if precipitation should occur
    */
-  shouldPrecipitate(pattern, date, seed) {
+  shouldPrecipitate(pattern, region, date, seed) {
     const rng = new SeededRandom(seed);
     const roll = rng.next();
 
     // Base chance from pattern
     let chance = pattern.characteristics.precipitation;
 
-    // Afternoon/evening more likely for precipitation
-    if (date.hour >= 14 && date.hour <= 20) {
-      chance *= 1.3;
+    // Get climate parameters
+    const climate = region.climate || region.parameters || {};
+    const specialFactors = climate.specialFactors || {};
+    const humidity = climate.humidityProfile || {};
+
+    // Determine current season (1-12 months)
+    const season = this.getSeason(date.month);
+
+    // === ARIDITY MODIFIERS (Deserts and Polar Deserts) ===
+    // Polar deserts and dry climates get much less precipitation
+    if (specialFactors.dryAir) {
+      chance *= (1 - specialFactors.dryAir * 0.8); // Up to 80% reduction
     }
 
+    // Ice sheets and permanent ice are extremely dry
+    if (specialFactors.permanentIce && specialFactors.permanentIce > 0.7) {
+      chance *= 0.15; // 85% reduction - ice sheets are deserts
+    }
+
+    // === HUMIDITY-BASED MODIFIERS ===
+    // Low humidity regions get less precipitation
+    const seasonalHumidity = humidity[season];
+    if (seasonalHumidity) {
+      const humidityMean = seasonalHumidity.mean;
+      if (humidityMean < 40) {
+        chance *= 0.5; // Dry climates: 50% reduction
+      } else if (humidityMean < 50) {
+        chance *= 0.7; // Semi-arid: 30% reduction
+      } else if (humidityMean > 75) {
+        chance *= 1.4; // Very humid: 40% increase
+      } else if (humidityMean > 65) {
+        chance *= 1.2; // Humid: 20% increase
+      }
+    }
+
+    // === WET CLIMATE MODIFIERS ===
+    // Rainforests, wetlands, and high-rainfall zones
+    if (specialFactors.highRainfall) {
+      chance *= 1.6; // 60% increase
+    }
+
+    // Maritime/coastal influence increases precipitation
+    if (climate.maritimeInfluence && climate.maritimeInfluence > 0.6) {
+      chance *= 1.2; // Coastal areas: 20% increase
+    }
+
+    // === SEASONAL VARIATIONS ===
+    // Monsoon season (summer = wet, winter = dry)
+    if (specialFactors.hasMonsoonSeason) {
+      if (season === 'summer') {
+        chance *= 2.5; // Monsoon season: massive increase
+      } else if (season === 'winter') {
+        chance *= 0.3; // Dry season: significant decrease
+      }
+    }
+
+    // Mediterranean climate (winter wet, summer dry)
+    if (climate.latitude && climate.latitude >= 30 && climate.latitude <= 45) {
+      const maritimeFactor = climate.maritimeInfluence || 0;
+      // Check if this is a Mediterranean-style climate (moderate maritime influence)
+      if (maritimeFactor > 0.4 && maritimeFactor < 0.8) {
+        if (season === 'summer') {
+          chance *= 0.4; // Dry summers
+        } else if (season === 'winter') {
+          chance *= 1.5; // Wet winters
+        }
+      }
+    }
+
+    // Dry season modifier (tropical savannas, etc.)
+    if (specialFactors.hasDrySeason && season === 'winter') {
+      chance *= 0.4; // Dry season: 60% reduction
+    }
+
+    // === TIME OF DAY MODIFIERS ===
+    // Afternoon/evening more likely for precipitation (convective storms)
+    if (date.hour >= 14 && date.hour <= 20) {
+      chance *= 1.2; // Reduced from 1.3 to balance with biome modifiers
+    }
+
+    // Early morning precipitation less likely (except in monsoons/maritime climates)
+    if (date.hour >= 2 && date.hour <= 6) {
+      if (!specialFactors.hasMonsoonSeason && climate.maritimeInfluence < 0.5) {
+        chance *= 0.8;
+      }
+    }
+
+    // Clamp chance to valid range [0, 1]
+    chance = Math.max(0, Math.min(1, chance));
+
     return roll < chance;
+  }
+
+  /**
+   * Get season from month
+   * @param {number} month - Month (1-12)
+   * @returns {string} Season name
+   */
+  getSeason(month) {
+    if (month >= 3 && month <= 5) return 'spring';
+    if (month >= 6 && month <= 8) return 'summer';
+    if (month >= 9 && month <= 11) return 'fall';
+    return 'winter';
   }
 
   /**
@@ -214,12 +312,75 @@ export class WeatherPatternService {
   }
 
   /**
-   * Get temperature modifier from pattern
+   * Get temperature modifier from pattern with smooth transitions
    * @param {Object} pattern - Current weather pattern
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
    * @returns {number} Temperature adjustment in °F
    */
-  getTemperatureModifier(pattern) {
-    return pattern.characteristics.tempModifier;
+  getTemperatureModifier(pattern, region, date) {
+    const currentMod = pattern.characteristics.tempModifier;
+    const transitionHours = 12;
+
+    // Calculate absolute time since year 1
+    const currentDay = (date.year - 1) * 360 + (date.month - 1) * 30 + (date.day - 1);
+    const absoluteHour = currentDay * 24 + date.hour;
+
+    // Patterns change every 4 days (96 hours)
+    const patternCycleHours = 96;
+    const hourInCycle = absoluteHour % patternCycleHours;
+
+    // Fade in from previous pattern (first 12 hours of cycle)
+    if (hourInCycle < transitionHours) {
+      const previousPattern = this.getPreviousPattern(region, date);
+      const previousMod = previousPattern.characteristics.tempModifier;
+      const blendFactor = hourInCycle / transitionHours;
+      return previousMod + (currentMod - previousMod) * blendFactor;
+    }
+
+    // Fade out to next pattern (last 12 hours of cycle)
+    if (hourInCycle >= patternCycleHours - transitionHours) {
+      const nextPattern = this.getNextPattern(region, date);
+      const nextMod = nextPattern.characteristics.tempModifier;
+      const hoursUntilEnd = patternCycleHours - hourInCycle;
+      const blendFactor = hoursUntilEnd / transitionHours;
+      return currentMod + (nextMod - currentMod) * (1 - blendFactor);
+    }
+
+    return currentMod;
+  }
+
+  /**
+   * Get the day number when the current pattern started
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @returns {number} Day number (absolute from year 1)
+   */
+  getPatternStartDay(region, date) {
+    const currentDay = (date.year - 1) * 360 + (date.month - 1) * 30 + (date.day - 1);
+    const patternCycle = Math.floor(currentDay / 4);
+    const dayInCycle = currentDay % 4;
+    return currentDay - dayInCycle;
+  }
+
+  /**
+   * Get the previous pattern that preceded the current one
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @returns {Object} Previous pattern
+   */
+  getPreviousPattern(region, date) {
+    // Calculate the start of the current pattern, then go back one day
+    const patternStartDay = this.getPatternStartDay(region, date);
+    const previousDay = patternStartDay - 1;
+
+    // Convert back to date format
+    const year = Math.floor(previousDay / 360) + 1;
+    const month = Math.floor((previousDay % 360) / 30) + 1;
+    const day = (previousDay % 30) + 1;
+
+    const previousDate = { year, month, day, hour: 12 };
+    return this.getCurrentPattern(region, previousDate);
   }
 
   /**

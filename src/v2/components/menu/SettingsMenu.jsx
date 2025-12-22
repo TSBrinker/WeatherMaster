@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Dropdown, Modal, Button } from 'react-bootstrap';
 import { FaTrash, FaBomb } from 'react-icons/fa';
-import { Cloud, Shield, BookOpen } from 'lucide-react';
+import { Cloud, Shield, BookOpen, RefreshCw } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
 import WeatherPrimerModal from '../modals/WeatherPrimerModal';
 import GameplayMechanicsModal from '../modals/GameplayMechanicsModal';
+import weatherService from '../../services/weather/WeatherService';
 
 /**
  * Settings Menu - Dangerous operations + educational resources
@@ -41,6 +42,13 @@ const SettingsMenu = ({ inline = false }) => {
     window.location.reload();
   };
 
+  const handleClearWeatherCache = () => {
+    weatherService.clearCache();
+    alert('Weather cache cleared! Weather will regenerate on next view.');
+    // Force a page reload to ensure fresh weather data
+    window.location.reload();
+  };
+
   // If inline (used in hamburger menu), show menu items directly
   if (inline) {
     return (
@@ -65,6 +73,17 @@ const SettingsMenu = ({ inline = false }) => {
           </div>
 
           <h6 className="mb-3 mt-4">Settings</h6>
+          <div className="d-grid gap-2 mb-3">
+            <Button
+              variant="outline-secondary"
+              onClick={handleClearWeatherCache}
+            >
+              <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+              Clear Weather Cache
+            </Button>
+          </div>
+
+          <h6 className="mb-3 mt-4">Danger Zone</h6>
           <div className="d-grid gap-2">
             <Button
               variant="outline-warning"
@@ -159,6 +178,12 @@ const SettingsMenu = ({ inline = false }) => {
           <Dropdown.Item onClick={() => setShowGameplayMechanics(true)}>
             <Shield size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Gameplay Mechanics
+          </Dropdown.Item>
+          <Dropdown.Divider />
+          <Dropdown.Header>Settings</Dropdown.Header>
+          <Dropdown.Item onClick={handleClearWeatherCache}>
+            <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Clear Weather Cache
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Header>Danger Zone</Dropdown.Header>

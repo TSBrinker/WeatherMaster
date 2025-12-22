@@ -1,7 +1,7 @@
 # WeatherMaster v2 - Master Progress Document
 
-**Last Updated**: 2025-12-21
-**Current Status**: Sprint 3 Complete (Modal Legibility & UI Polish) ✅
+**Last Updated**: 2025-12-22
+**Current Status**: Sprint 8 Complete (Weather Generation Validation & Biome-Accurate Precipitation) ✅
 
 ---
 
@@ -65,12 +65,15 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Sprint 2**: iOS Weather UI Redesign "Elderwood" (COMPLETE)
 - **Sprint 3**: Modal Legibility & UI Polish "Willow" (COMPLETE)
 - **Sprint 4**: Atmospheric Depth "Cedar" (COMPLETE)
+- **Sprint 5**: Educational Modals "Sage" (COMPLETE)
+- **Sprint 6**: README Update & Deployment Fix "Rowan" (COMPLETE)
+- **Sprint 7**: UI Quick Wins & Dynamic Celestial Integration "Ash" (COMPLETE)
+- **Sprint 8**: Weather Generation Validation & Biome-Accurate Precipitation "Birch" (COMPLETE)
 
 ### 🔜 Next Sprint
-- **Sprint 5**: Enhanced Wind & Weather Systems
-- **Sprint 6**: Extreme Weather & Snow Accumulation
-- **Sprint 7**: Educational Modals & Documentation (user requested)
-- Or: Additional features based on user feedback
+- **Sprint 9**: Enhanced Wind Systems & Frontal Mechanics
+- **Sprint 10**: Extreme Weather & Snow Accumulation
+- **Sprint 11**: Additional features based on user feedback
 
 ---
 
@@ -471,6 +474,141 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
   - Validation testing notes
 - ✅ Updated PROGRESS.md with Phase 9
 - ✅ Updated roadmap with future sprint plans
+
+### Phase 10: Weather Generation Validation & Biome-Accurate Precipitation (Sprint 8: Birch)
+**Status**: COMPLETE ✅
+
+**Sprint Goal**: Diagnose and fix critical weather generation bugs through comprehensive test harness validation, ensuring biome-accurate temperatures and precipitation across all 20+ climate zones
+
+**Critical Bugs Fixed**:
+1. ✅ **Test Harness Temperature Bug** - All biomes showing uniform 65-74°F
+   - Root cause: Test harness passing entire template object instead of extracted climate profile
+   - Fix: Updated to use `extractClimateProfile()` helper function
+   - Result: All 20 biomes now show realistic temperature ranges
+
+2. ✅ **Missing Biome-Specific Precipitation** - All biomes precipitating 43-51% regardless of climate
+   - Root cause: Precipitation only based on weather patterns, ignored biome climate factors
+   - Fix: Enhanced `shouldPrecipitate()` with comprehensive biome modifiers
+   - Result: Precipitation now ranges from 6% (ice sheets) to 86% (rainforests)
+
+3. ✅ **Test Validation False Positives** - Freezing rain and sleet flagged as anomalous
+   - Root cause: Test validation didn't distinguish precipitation types
+   - Fix: Enhanced validation to recognize freezing-rain and sleet as valid at 28-35°F
+   - Result: Test success rate improved from 98.8% to 99.9%
+
+**Precipitation Enhancement Details**:
+- ✅ Aridity modifiers for deserts and polar regions (50-85% reduction)
+- ✅ Humidity-based precipitation scaling (low humidity = less rain)
+- ✅ Wet climate bonuses for rainforests and wetlands (40-60% increase)
+- ✅ Maritime influence for coastal regions (20% increase)
+- ✅ Monsoon seasonal patterns (dry winter: -70%, wet summer: +150%)
+- ✅ Mediterranean seasonal patterns (dry summer: -60%, wet winter: +50%)
+- ✅ Dry season modifiers for savanna climates
+- ✅ Time of day precipitation patterns (afternoon peak, morning lull)
+
+**Test Results - Before Sprint 8**:
+```
+Temperatures: ALL biomes 65-74°F (BROKEN!)
+Precipitation: ALL biomes 43-51% (UNREALISTIC!)
+Ice Sheet: 48% precipitation (should be ~10%)
+Polar Desert: 43% precipitation (should be ~8%)
+Temperate Rainforest: 50% precipitation (should be 60-75%+)
+Test Success: 98.8%
+Anomalies: 317 (mostly false positives)
+```
+
+**Test Results - After Sprint 8**:
+```
+Temperatures: REALISTIC across all biomes ✅
+  Ice Sheet: -54°F to 23°F
+  Polar Desert: -46°F to 37°F
+  Continental Prairie: 0°F to 102°F
+  Temperate Rainforest: 27°F to 78°F
+  Mediterranean Coast: 46°F to 87°F
+
+Precipitation: BIOME-APPROPRIATE ✅
+  Ice Sheet: 6.4% (cold desert)
+  Polar Desert: 8.3% (extreme aridity)
+  Temperate Desert: 19.8% (semi-arid)
+  Temperate Rainforest: 86.3% (very wet!)
+  Seasonal Wetland: 58.6% (humid lowlands)
+
+Test Success: 99.9% ✅
+Anomalies: <10 (actual edge cases only)
+Total Tests: 29,200 validations across 20 biomes
+```
+
+**Files Modified**:
+- src/v2/services/weather/WeatherPatternService.js
+  - Enhanced `shouldPrecipitate()` with region parameter
+  - Added comprehensive biome-specific precipitation modifiers
+  - Added seasonal precipitation variation logic
+  - Added `getSeason()` helper method
+
+- src/v2/services/weather/WeatherGenerator.js
+  - Updated `generatePrecipitation()` to pass region to `shouldPrecipitate()`
+
+- src/v2/components/testing/WeatherTestHarness.jsx
+  - Fixed region climate extraction using `extractClimateProfile()`
+  - Enhanced precipitation type validation (rain vs freezing-rain vs sleet)
+  - Improved anomaly detection accuracy
+
+**Impact**:
+- ✅ All 20 biomes generate meteorologically accurate weather
+- ✅ Deserts are properly dry (6-20% precipitation)
+- ✅ Rainforests are properly wet (60-86% precipitation)
+- ✅ Seasonal climates (Mediterranean, Monsoon) work correctly
+- ✅ Temperature ranges realistic for each climate zone
+- ✅ Comprehensive test validation with 99.9% success rate
+
+**Session 2 Enhancement - Temperature Transition Smoothing**:
+4. ✅ **Unrealistic Temperature Jumps Fixed** - 19°F drop in 1 hour at midnight
+   - Root cause: Pattern influence used day-based smoothing, both values changed at midnight
+   - Fix: Rewrote `getPatternInfluence()` to use 6-hour blocks with hourly interpolation
+   - Result: Gradual 5-6°F/hour temperature changes (realistic cold front passage)
+
+5. ✅ **Weather Pattern Transitions Smoothed** - Abrupt pattern changes at 4-day boundaries
+   - Added 12-hour fade in/out periods for pattern temperature modifiers
+   - First 12 hours: Gradual blend from previous pattern
+   - Last 12 hours: Gradual blend to next pattern
+
+6. ✅ **Precipitation Transition Logic** - Smooth rain↔snow transitions
+   - Added 32-38°F transition zone for sleet
+   - Prevents abrupt rain→snow switches
+   - Checks previous hour temperature for trend detection
+
+7. ✅ **Test Harness Transition Validation** - Catch unrealistic temperature jumps
+   - Added temperature transition anomaly detection
+   - Threshold: 15°F per hour maximum change
+   - New "Temperature Transition Anomalies" results section
+
+8. ✅ **Clear Weather Cache Button** - Developer tool for testing
+   - Added to settings menu
+   - Clears cache and reloads page for fresh weather generation
+
+**Additional Files Modified (Session 2)**:
+- src/v2/services/weather/TemperatureService.js
+  - Rewrote `getPatternInfluence()` with 6-hour block smoothing
+  - Eliminated midnight discontinuity
+
+- src/v2/services/weather/WeatherPatternService.js
+  - Enhanced `getTemperatureModifier()` with 12-hour fade transitions
+  - Added pattern cycle boundary detection
+
+- src/v2/components/menu/SettingsMenu.jsx
+  - Added "Clear Weather Cache" button
+
+- src/v2/components/testing/WeatherTestHarness.jsx
+  - Added transition anomaly detection and results section
+
+**Documentation**:
+- ✅ Sprint 8 log ([SPRINT_8_BIRCH.md](docs/sprint-logs/SPRINT_8_BIRCH.md))
+  - Session 1: Test harness fixes and biome-accurate precipitation
+  - Session 2: Temperature transition smoothing and cache clearing
+  - Complete diagnostic and fix documentation
+  - Test methodology and results
+  - Meteorological accuracy analysis
+  - Technical implementation details
 
 ---
 

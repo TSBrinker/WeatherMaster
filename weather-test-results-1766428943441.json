@@ -1,0 +1,147 @@
+{
+  "totalTests": 29200,
+  "successfulTests": 29200,
+  "anomalies": [],
+  "biomeStats": {
+    "Tundra Plain": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101976,
+      "count": 1460,
+      "precipCount": 721
+    },
+    "Polar Coast": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 100772,
+      "count": 1460,
+      "precipCount": 740
+    },
+    "Ice Sheet": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102380,
+      "count": 1460,
+      "precipCount": 701
+    },
+    "Polar Desert": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101756,
+      "count": 1460,
+      "precipCount": 630
+    },
+    "Polar Highland": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102628,
+      "count": 1460,
+      "precipCount": 703
+    },
+    "Maritime Forest": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101756,
+      "count": 1460,
+      "precipCount": 724
+    },
+    "Mediterranean Coast": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102228,
+      "count": 1460,
+      "precipCount": 669
+    },
+    "Continental Prairie": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102308,
+      "count": 1460,
+      "precipCount": 678
+    },
+    "Temperate Highland": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102040,
+      "count": 1460,
+      "precipCount": 612
+    },
+    "Temperate Desert": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102252,
+      "count": 1460,
+      "precipCount": 663
+    },
+    "Temperate Rainforest": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102484,
+      "count": 1460,
+      "precipCount": 736
+    },
+    "River Valley": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101784,
+      "count": 1460,
+      "precipCount": 740
+    },
+    "Seasonal Wetland": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101408,
+      "count": 1460,
+      "precipCount": 750
+    },
+    "Maritime Islands": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102604,
+      "count": 1460,
+      "precipCount": 702
+    },
+    "Coastal Taiga": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101688,
+      "count": 1460,
+      "precipCount": 692
+    },
+    "Continental Taiga": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101280,
+      "count": 1460,
+      "precipCount": 685
+    },
+    "Subarctic Highland": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101528,
+      "count": 1460,
+      "precipCount": 702
+    },
+    "Northern Grassland": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 102100,
+      "count": 1460,
+      "precipCount": 774
+    },
+    "Subarctic Maritime": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101204,
+      "count": 1460,
+      "precipCount": 688
+    },
+    "Peatland/Muskeg": {
+      "tempMin": 65,
+      "tempMax": 74,
+      "tempSum": 101740,
+      "count": 1460,
+      "precipCount": 640
+    }
+  }
+}

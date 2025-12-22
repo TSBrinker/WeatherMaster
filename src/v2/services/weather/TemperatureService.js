@@ -191,29 +191,44 @@ export class TemperatureService {
     const params = region.climate || region.parameters || {};
     const specialFactors = params.specialFactors || {};
 
-    // Create a slowly changing influence using multi-day seed
-    const seed = generateSeed(region.id, date, 'temp-pattern');
-    const rng = new SeededRandom(seed);
-
     // Continental/high diurnal variation climates get bigger day-to-day swings
     // This simulates rapid weather system changes (cold fronts, warm fronts, etc.)
     const baseRange = specialFactors.highDiurnalVariation ? 15 : 5;
 
-    // Temperature can vary based on climate volatility
-    const influence = rng.range(-baseRange, baseRange);
+    // Use a multi-day seed that changes slowly over time
+    // We'll use 6-hour blocks to create smooth transitions
+    const currentDay = (date.year - 1) * 360 + (date.month - 1) * 30 + (date.day - 1);
+    const absoluteHour = currentDay * 24 + date.hour;
 
-    // Smooth this over multiple days by blending with yesterday's influence
-    const yesterdayDate = {
-      ...date,
-      day: date.day - 1 > 0 ? date.day - 1 : DAYS_PER_MONTH
-    };
-    const yesterdaySeed = generateSeed(region.id, yesterdayDate, 'temp-pattern');
-    const yesterdayRng = new SeededRandom(yesterdaySeed);
-    const yesterdayInfluence = yesterdayRng.range(-baseRange, baseRange);
+    // Create 6-hour blocks for smoother transitions
+    const blockSize = 6;
+    const currentBlock = Math.floor(absoluteHour / blockSize);
+    const hourInBlock = absoluteHour % blockSize;
 
-    // Less smoothing for volatile climates (allows bigger jumps)
-    const smoothingFactor = specialFactors.highDiurnalVariation ? 0.85 : 0.7;
-    return influence * smoothingFactor + yesterdayInfluence * (1 - smoothingFactor);
+    // Get influence for current 6-hour block
+    const blockSeed = generateSeed(region.id, {
+      year: Math.floor(currentBlock / (360 * 24 / blockSize)) + 1,
+      month: Math.floor((currentBlock % (360 * 24 / blockSize)) / (30 * 24 / blockSize)) + 1,
+      day: Math.floor((currentBlock % (30 * 24 / blockSize)) / (24 / blockSize)) + 1,
+      hour: 0
+    }, 'temp-pattern');
+    const blockRng = new SeededRandom(blockSeed);
+    const currentInfluence = blockRng.range(-baseRange, baseRange);
+
+    // Get influence for next 6-hour block
+    const nextBlock = currentBlock + 1;
+    const nextBlockSeed = generateSeed(region.id, {
+      year: Math.floor(nextBlock / (360 * 24 / blockSize)) + 1,
+      month: Math.floor((nextBlock % (360 * 24 / blockSize)) / (30 * 24 / blockSize)) + 1,
+      day: Math.floor((nextBlock % (30 * 24 / blockSize)) / (24 / blockSize)) + 1,
+      hour: 0
+    }, 'temp-pattern');
+    const nextBlockRng = new SeededRandom(nextBlockSeed);
+    const nextInfluence = nextBlockRng.range(-baseRange, baseRange);
+
+    // Smoothly interpolate between blocks
+    const blendFactor = hourInBlock / blockSize;
+    return currentInfluence + (nextInfluence - currentInfluence) * blendFactor;
   }
 
   /**

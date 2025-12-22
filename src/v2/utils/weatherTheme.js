@@ -98,7 +98,7 @@ export const getTextColor = (condition, twilightLevel, isDaytime) => {
   }
 
   if (normalizedCondition.includes('heavy snow') || normalizedCondition.includes('snow')) {
-    return 'dark'; // Snow is light background
+    return 'dark'; // Snow is light background during daytime
   }
 
   if (normalizedCondition.includes('overcast') || normalizedCondition.includes('cloudy')) {

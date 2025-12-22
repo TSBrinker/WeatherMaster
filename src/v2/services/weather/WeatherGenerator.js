@@ -64,9 +64,9 @@ export class WeatherGenerator {
     // Get atmospheric pressure
     const pressure = this.atmosphericService.getPressure(region, date, pattern);
 
-    // Generate temperature
+    // Generate temperature with smooth pattern transitions
     const baseTemp = this.tempService.getTemperature(region, date);
-    const patternTempMod = this.patternService.getTemperatureModifier(pattern);
+    const patternTempMod = this.patternService.getTemperatureModifier(pattern, region, date);
     const temperature = Math.round(baseTemp + patternTempMod);
 
     // Generate wind
@@ -210,7 +210,7 @@ export class WeatherGenerator {
   }
 
   /**
-   * Generate precipitation data
+   * Generate precipitation data with smooth transitions
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @param {Object} pattern - Current weather pattern
@@ -219,7 +219,7 @@ export class WeatherGenerator {
    */
   generatePrecipitation(region, date, pattern, temperature) {
     const seed = generateSeed(region.id, date, 'precipitation');
-    const isOccurring = this.patternService.shouldPrecipitate(pattern, date, seed);
+    const isOccurring = this.patternService.shouldPrecipitate(pattern, region, date, seed);
 
     if (!isOccurring) {
       return {
@@ -229,7 +229,17 @@ export class WeatherGenerator {
       };
     }
 
-    // Determine type based on temperature
+    // Get previous hour's temperature to detect rapid changes
+    const previousHourDate = { ...date, hour: date.hour - 1 >= 0 ? date.hour - 1 : 23 };
+    const previousTemp = this.tempService.getTemperature(region, previousHourDate);
+    const previousPatternMod = this.patternService.getTemperatureModifier(
+      this.patternService.getCurrentPattern(region, previousHourDate),
+      region,
+      previousHourDate
+    );
+    const prevTemperature = Math.round(previousTemp + previousPatternMod);
+
+    // Determine type based on temperature with smooth transitions
     let type;
     if (temperature <= 28) {
       type = 'snow'; // Below 28°F = snow
@@ -242,10 +252,20 @@ export class WeatherGenerator {
       } else {
         type = 'sleet'; // Mixed frozen/liquid
       }
-    } else if (temperature <= 35) {
-      type = 'sleet'; // 32-35°F = sleet (mostly frozen but some liquid)
+    } else if (temperature <= 38) {
+      // 32-38°F = transition zone
+      // If temperature was warmer before and is dropping, favor sleet
+      // If temperature was colder before and is rising, favor sleet
+      // This creates smoother rain↔snow transitions
+      if (prevTemperature > 38) {
+        type = 'sleet'; // Transitioning from rain
+      } else if (prevTemperature <= 32) {
+        type = 'sleet'; // Transitioning from snow
+      } else {
+        type = 'sleet'; // In the transition zone
+      }
     } else {
-      type = 'rain'; // Above 35°F = rain
+      type = 'rain'; // Above 38°F = rain
     }
 
     // Determine intensity

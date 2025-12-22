@@ -1,0 +1,2213 @@
+{
+  "totalTests": 29200,
+  "successfulTests": 28942,
+  "anomalies": [
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "4/5 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "5/10 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "5/29 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/10 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/10 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/18 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/19 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/21 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/22 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/23 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/24 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "7/30 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "7/31 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "7/31 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "9/12 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/17 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/19 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/20 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/21 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/27 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/30 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/16 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/16 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/19 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/19 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/27 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/8 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/16 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/24 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/31 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/4 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/8 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/17 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/25 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/25 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/5 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/12 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/13 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/13 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/16 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/23 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/23 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "11/8 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "11/15 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "11/16 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/12 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "6/30 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/6 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "1/26 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "1/29 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "1/30 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "2/12 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "2/12 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/13 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/20 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/25 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "2/24 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "5/3 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "11/15 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/4 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/6 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/8 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/17 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/29 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/1 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/2 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/4 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/14 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/20 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/21 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/22 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "3/5 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "3/7 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/2 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/8 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "11/4 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "11/7 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/12 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "1/28 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/6 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "3/1 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "3/1 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "12/8 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/15 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/16 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/17 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/30 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/8 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/8 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/9 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "12/28 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/6 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/7 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/14 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/15 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/25 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/31 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/1 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/2 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/7 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/10 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/10 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/24 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/27 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/28 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/17 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/23 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "1/25 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "2/4 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "12/19 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "1/9 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/15 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/18 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/7 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/17 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/27 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/1 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/2 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/2 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/4 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/20 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/23 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/3 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/7 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/7 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/20 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/24 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/6 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/12 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/21 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/23 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/25 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "12/12 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "12/15 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "12/15 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/22 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/24 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/10 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/13 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/22 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/27 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/1 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/7 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/9 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/11 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/18 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/25 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/27 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/30 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "8/27 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/16 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/8 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/11 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/12 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/14 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/27 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/7 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/8 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/10 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "4/23 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "4/30 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/5 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/9 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/16 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/26 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "6/1 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "6/4 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "6/17 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "8/28 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "8/29 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/26 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/3 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/9 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/20 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/12 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/21 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/22 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/1 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/1 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/15 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "9/30 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/16 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/21 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/25 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/30 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "11/3 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/5 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/6 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/6 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/11 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/17 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/19 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/19 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/22 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/23 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/25 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/30 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/31 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "2/1 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "2/6 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "2/11 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/1 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/1 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/3 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/16 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/16 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/17 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/19 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/27 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/28 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/30 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/5 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/1 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/1 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/2 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/3 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/5 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/7 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/11 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/12 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/20 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/19 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/19 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/26 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/28 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/2 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/5 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/10 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/14 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/16 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/18 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/27 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/27 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/29 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/1 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/3 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/12 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/13 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/14 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/18 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/26 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/29 6:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "3/18 12:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "3/26 6:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "4/1 12:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "4/8 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "4/9 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "4/26 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "5/11 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/10 0:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/19 18:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/30 0:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/2 0:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/14 18:00",
+      "issues": [
+        "Sleet at 31°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/16 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/31 18:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "11/3 6:00",
+      "issues": [
+        "Sleet at 30°F (should be 32-38°F)"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "12/1 12:00",
+      "issues": [
+        "Sleet at 29°F (should be 32-38°F)"
+      ]
+    }
+  ],
+  "transitionAnomalies": [],
+  "biomeStats": {
+    "Tundra Plain": {
+      "tempMin": -27,
+      "tempMax": 54,
+      "tempSum": 19662,
+      "count": 1460,
+      "precipCount": 747
+    },
+    "Polar Coast": {
+      "tempMin": -22,
+      "tempMax": 54,
+      "tempSum": 27701,
+      "count": 1460,
+      "precipCount": 1057
+    },
+    "Ice Sheet": {
+      "tempMin": -56,
+      "tempMax": 23,
+      "tempSum": -21335,
+      "count": 1460,
+      "precipCount": 94
+    },
+    "Polar Desert": {
+      "tempMin": -48,
+      "tempMax": 37,
+      "tempSum": -4195,
+      "count": 1460,
+      "precipCount": 121
+    },
+    "Polar Highland": {
+      "tempMin": -50,
+      "tempMax": 38,
+      "tempSum": -8672,
+      "count": 1460,
+      "precipCount": 603
+    },
+    "Maritime Forest": {
+      "tempMin": 29,
+      "tempMax": 77,
+      "tempSum": 76893,
+      "count": 1460,
+      "precipCount": 1211
+    },
+    "Mediterranean Coast": {
+      "tempMin": 45,
+      "tempMax": 88,
+      "tempSum": 96973,
+      "count": 1460,
+      "precipCount": 592
+    },
+    "Continental Prairie": {
+      "tempMin": -1,
+      "tempMax": 103,
+      "tempSum": 74671,
+      "count": 1460,
+      "precipCount": 635
+    },
+    "Temperate Highland": {
+      "tempMin": 5,
+      "tempMax": 88,
+      "tempSum": 67360,
+      "count": 1460,
+      "precipCount": 485
+    },
+    "Temperate Desert": {
+      "tempMin": 14,
+      "tempMax": 110,
+      "tempSum": 86734,
+      "count": 1460,
+      "precipCount": 289
+    },
+    "Temperate Rainforest": {
+      "tempMin": 27,
+      "tempMax": 78,
+      "tempSum": 75223,
+      "count": 1460,
+      "precipCount": 1260
+    },
+    "River Valley": {
+      "tempMin": 15,
+      "tempMax": 94,
+      "tempSum": 79826,
+      "count": 1460,
+      "precipCount": 750
+    },
+    "Seasonal Wetland": {
+      "tempMin": 27,
+      "tempMax": 92,
+      "tempSum": 87413,
+      "count": 1460,
+      "precipCount": 856
+    },
+    "Maritime Islands": {
+      "tempMin": 33,
+      "tempMax": 75,
+      "tempSum": 80624,
+      "count": 1460,
+      "precipCount": 889
+    },
+    "Coastal Taiga": {
+      "tempMin": 8,
+      "tempMax": 72,
+      "tempSum": 56143,
+      "count": 1460,
+      "precipCount": 1006
+    },
+    "Continental Taiga": {
+      "tempMin": -36,
+      "tempMax": 78,
+      "tempSum": 36882,
+      "count": 1460,
+      "precipCount": 744
+    },
+    "Subarctic Highland": {
+      "tempMin": -30,
+      "tempMax": 69,
+      "tempSum": 28668,
+      "count": 1460,
+      "precipCount": 692
+    },
+    "Northern Grassland": {
+      "tempMin": -35,
+      "tempMax": 93,
+      "tempSum": 45637,
+      "count": 1460,
+      "precipCount": 726
+    },
+    "Subarctic Maritime": {
+      "tempMin": 10,
+      "tempMax": 67,
+      "tempSum": 57735,
+      "count": 1460,
+      "precipCount": 1043
+    },
+    "Peatland/Muskeg": {
+      "tempMin": -24,
+      "tempMax": 80,
+      "tempSum": 43458,
+      "count": 1460,
+      "precipCount": 787
+    }
+  }
+}
