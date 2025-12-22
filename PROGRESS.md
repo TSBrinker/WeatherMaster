@@ -1,7 +1,7 @@
 # WeatherMaster v2 - Master Progress Document
 
 **Last Updated**: 2025-12-21
-**Current Status**: Sprint 2 Complete (iOS Weather UI Redesign) ✅
+**Current Status**: Sprint 3 Complete (Modal Legibility & UI Polish) ✅
 
 ---
 
@@ -63,10 +63,11 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Sprint 1**: Basic Weather Generation (COMPLETE)
 - **Sprint 1.5**: Weather Forecast Display (COMPLETE)
 - **Sprint 2**: iOS Weather UI Redesign "Elderwood" (COMPLETE)
+- **Sprint 3**: Modal Legibility & UI Polish "Willow" (COMPLETE)
 
 ### 🔜 Next Sprint
-- **Sprint 3**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
-- Or: Polish & bug fixes based on user testing
+- **Sprint 4**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
+- Or: Additional features based on user feedback
 
 ---
 
@@ -323,6 +324,57 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Professional icons** - Line-art SVG icons instead of emojis
 - **Responsive scaling** - Graceful degradation on smaller screens
 
+### Phase 8: Modal Legibility & UI Polish (Sprint 3: Willow)
+**Status**: COMPLETE ✅
+
+**Sprint Goal**: Fix modal legibility issues and polish UI elements for better user experience
+
+**Modal Styling Fixes**:
+- ✅ Added comprehensive dark theme styling for all Bootstrap modals ([app.css](src/v2/styles/app.css))
+- ✅ Modal backgrounds: `var(--bg-secondary)` (#1a1f2e) and `var(--bg-tertiary)` (#242b3d)
+- ✅ All modal text: `var(--text-primary)` (#e6edf3) - bright white for excellent contrast
+- ✅ Fixed close button visibility with inverted colors
+- ✅ Applied consistent styling to header, body, footer, and all content elements (p, strong, h6, ul, li)
+
+**Regional Template Modal Content**:
+- ✅ Fixed empty modal body - was looking for non-existent properties
+- ✅ Now displays `template.description` and `template.gameplayImpact`
+- ✅ Shows rich biome information with real-world examples and D&D gameplay impact
+
+**Biome Name Display Fix**:
+- ✅ Fixed missing biome name below region name
+- ✅ Added `regionTemplates` import for direct template lookup
+- ✅ Template retrieved using `region.latitudeBand` and `region.templateId`
+- ✅ Biome name now displays correctly (e.g., "Tundra Plain", "Continental Prairie")
+- ✅ Centered layout with info icon on same line
+
+**DM Forecast Icons**:
+- ✅ Added weather icons to condition column (WiDaySunny, WiCloudy, WiRain, WiSnow, etc.)
+- ✅ Added precipitation raindrop icon (WiRaindrop)
+- ✅ Created `getWeatherIcon()` function matching PrimaryDisplay logic
+- ✅ Consistent icon usage across entire app
+- ✅ Enhanced visual clarity with 1.5rem icons
+
+**UI Polish**:
+- ✅ Repositioned biome name for better visual hierarchy
+- ✅ Improved template info layout with flexbox centering
+- ✅ Enhanced forecast readability with icons
+- ✅ Fixed template lookup logic (was looking for wrong function)
+
+**Bugs Fixed**:
+1. Modal text invisible (gray on gray)
+2. Regional Template modal empty (wrong property names)
+3. Biome name not displaying (template lookup issue)
+4. DM forecast missing icons (no icon implementation)
+5. Import error (getTemplateById doesn't exist)
+
+**Documentation**:
+- ✅ Sprint 3 log ([SPRINT_3_WILLOW.md](docs/sprint-logs/SPRINT_3_WILLOW.md))
+  - Complete session documentation
+  - All fixes tracked with before/after code
+  - Root cause analysis for each issue
+- ✅ Updated PROGRESS.md with Phase 8
+
 ---
 
 ## Project Structure
@@ -384,7 +436,8 @@ docs/
 ├── climate-research/          # Real-world climate data
 └── sprint-logs/               # Individual agent sprint logs
     ├── SPRINT_1_COMPLETE.md   # Sprint 1 + 1.5 documentation
-    └── SPRINT_2_ELDERWOOD.md  # Sprint 2 iOS UI redesign
+    ├── SPRINT_2_ELDERWOOD.md  # Sprint 2 iOS UI redesign
+    └── SPRINT_3_WILLOW.md     # Sprint 3 modal legibility & polish
 
 QUESTIONS_FOR_USER.md          # Architectural decisions
 FLAT_DISC_WORLD.md             # Celestial mechanics specification
