@@ -3,7 +3,8 @@
 **Sprint Name**: Willow (for clarity and visibility)
 **Agent**: Claude Sonnet 4.5
 **Start Date**: 2025-12-21
-**Status**: In Progress 🔄
+**End Date**: 2025-12-21
+**Status**: Complete ✅
 
 ## Sprint Goal
 Fix modal legibility issues (gray-on-gray text) and polish UI elements for better user experience.
@@ -180,4 +181,34 @@ Added comprehensive modal styling to app.css:
    ```
 
 **Result**: Biome name now displays correctly below region name (e.g., "Tundra Plain", "Continental Prairie", etc.).
+
+---
+
+## Summary
+
+**Sprint 3 Complete!** ✅
+
+All modal legibility issues resolved and UI polish applied:
+- ✅ Dark theme modals with excellent text contrast
+- ✅ Regional Template modal displaying rich content
+- ✅ Biome names showing correctly below region names
+- ✅ Weather icons throughout DM forecast panel
+- ✅ Improved visual hierarchy and layout
+
+**Files Modified**: 6 files
+- src/v2/styles/app.css (68 lines added - modal styling)
+- src/v2/components/weather/PrimaryDisplay.jsx (template lookup fix)
+- src/v2/components/weather/PrimaryDisplay.css (layout improvements)
+- src/v2/components/weather/DMForecastPanel.jsx (icon integration)
+- src/v2/components/weather/DMForecastPanel.css (icon styling)
+- docs/sprint-logs/SPRINT_3_WILLOW.md (this file)
+
+**Bugs Fixed**: 5
+1. Modal text invisible (gray on gray background)
+2. Regional Template modal empty body
+3. Biome name not displaying
+4. DM forecast missing weather icons
+5. Import error (wrong function name)
+
+**Ready for Handoff**: Project is ready for next agent to continue with Sprint 4 or additional features.
 
