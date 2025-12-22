@@ -499,3 +499,8 @@ After thorough discussion, we've decided on **Option C (Hybrid)** with the follo
 2. Test continuity and smoothness
 3. Iterate through remaining sprints
 4. Add extreme weather as final enhancement
+
+
+Additional issues logged:
+- Weather temperature may be inaccurage. Temperate, Temperate Grassland, mid January - February, consistently 35-40 degrees F. 
+- Additionally, freezing rain at 38 degrees. May need to establish parameters for weather events that need to be below freezing? Or am I mistaken how freezing rain works.

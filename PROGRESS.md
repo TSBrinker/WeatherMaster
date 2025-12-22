@@ -1,429 +1,524 @@
-# WeatherMaster v2 - Development Progress
+# WeatherMaster v2 - Master Progress Document
+
+**Last Updated**: 2025-12-20
+**Current Status**: Sprint 1.5 Complete (Forecast Display) ✅
+
+---
+
+## 📖 Instructions for Future AI Agents
+
+**START HERE when continuing this project:**
+
+1. **Read this PROGRESS.md file** - This is the master document tracking all completed work and architectural decisions
+2. **Read [`QUESTIONS_FOR_USER.md`](QUESTIONS_FOR_USER.md)** - Contains all architectural decisions and implementation strategy
+3. **Create your own sprint log** in `docs/sprint-logs/` - Name it `SPRINT_[NUMBER]_[TOPIC].md` (e.g., `SPRINT_2_ATMOSPHERIC_DEPTH.md`)
+4. **Document your work** in your sprint log as you go (files created, bugs fixed, features added)
+5. **Update this PROGRESS.md** when you complete major milestones
+6. **Commit regularly** with proper attribution (see commit message format below)
+
+### Sprint Log Format
+Each agent should create a dedicated sprint log file documenting:
+- Sprint goal and scope
+- Features implemented
+- Files created/modified
+- Bugs fixed
+- Testing notes
+- Session summaries (if multiple sessions)
+
+See [`docs/sprint-logs/SPRINT_1_COMPLETE.md`](docs/sprint-logs/SPRINT_1_COMPLETE.md) as an example.
+
+### Commit Message Format
+```
+Brief description of change
+
+- Detailed point 1
+- Detailed point 2
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
+---
 
 ## Project Overview
-Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, while keeping original implementation in `src/` for reference. Implementing flat disc world model with deterministic celestial mechanics.
+
+Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
+- **Deterministic weather generation** using seed-based randomness
+- **Flat disc world model** with custom celestial mechanics
+- **Isolated regions** with temporal weather patterns (no spatial relationships)
+- **Real-world climate accuracy** based on actual meteorological data
+
+### Key Architectural Decisions
+- **Seed-based weather**: Same region + same date = same weather (enables instant time travel)
+- **Isolated regions**: Each region generates weather independently, no spatial propagation
+- **Temporal continuity**: 3-5 day weather patterns using Perlin noise for smooth transitions
+- **Gregorian calendar**: Real month lengths (July=31 days), no leap years (Feb=28 days)
+- **Flat disc geometry**: Sun distance-based illumination, moon angular separation phases
+
+---
+
+## Current Status Summary
+
+### ✅ Completed Sprints
+- **Sprint 1**: Basic Weather Generation (COMPLETE)
+- **Sprint 1.5**: Weather Forecast Display (COMPLETE)
+
+### 🔄 Current Work
+- Testing and refinement
+- Climate accuracy validation
+
+### 🔜 Next Sprint
+- **Sprint 2**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
 
 ---
 
 ## Completed Work ✅
 
-### Core Architecture (v2)
-- ✅ Created clean data models and type definitions ([src/v2/models/types.js](src/v2/models/types.js))
-- ✅ Built localStorage utilities ([src/v2/services/storage/localStorage.js](src/v2/services/storage/localStorage.js))
-- ✅ Created PreferencesContext provider ([src/v2/contexts/PreferencesContext.jsx](src/v2/contexts/PreferencesContext.jsx))
-- ✅ Created WorldContext provider ([src/v2/contexts/WorldContext.jsx](src/v2/contexts/WorldContext.jsx))
+### Phase 1: Core Architecture
+**Status**: COMPLETE ✅
 
-### UI Components (v2)
-- ✅ Built WorldSetup component ([src/v2/components/world/WorldSetup.jsx](src/v2/components/world/WorldSetup.jsx))
-- ✅ Built RegionCreator with template selection ([src/v2/components/region/RegionCreator.jsx](src/v2/components/region/RegionCreator.jsx))
-- ✅ Built time display and controls ([src/v2/components/time/](src/v2/components/time/))
-- ✅ Built CurrentWeather display with fake data ([src/v2/components/weather/CurrentWeather.jsx](src/v2/components/weather/CurrentWeather.jsx))
+**Components Built**:
+- ✅ Data models and type definitions ([types.js](src/v2/models/types.js))
+- ✅ Constants file ([constants.js](src/v2/models/constants.js)) - Flat disc world parameters
+- ✅ Date utilities ([dateUtils.js](src/v2/utils/dateUtils.js)) - Gregorian calendar with proper month lengths
+- ✅ Seed generator ([seedGenerator.js](src/v2/utils/seedGenerator.js)) - Deterministic randomness
+- ✅ LocalStorage utilities ([localStorage.js](src/v2/services/storage/localStorage.js))
+- ✅ PreferencesContext provider ([PreferencesContext.jsx](src/v2/contexts/PreferencesContext.jsx))
+- ✅ WorldContext provider ([WorldContext.jsx](src/v2/contexts/WorldContext.jsx))
 
-### Services (Partial)
-- ✅ Ported SunriseSunsetService (Earth-like calculations - needs rewrite for disc)
-- ⚠️ Old MoonService exists in src/ but uses Earth-like calculations
+### Phase 2: Celestial Mechanics (Flat Disc Model)
+**Status**: COMPLETE ✅
 
-### Documentation
-- ✅ Created authoritative flat disc world specification ([FLAT_DISC_WORLD.md](FLAT_DISC_WORLD.md))
-- ✅ Created progress tracking document (this file)
+**Services Built**:
+- ✅ Geometry utilities ([geometry.js](src/v2/services/celestial/geometry.js)) - Law of cosines, angular calculations
+- ✅ SunriseSunsetService (rewritten for flat disc) - Distance-based illumination
+- ✅ MoonService (new) - Angular separation lunar phases
+- ✅ Twilight calculations (civil/nautical/astronomical)
+
+**Key Features**:
+- Distance-based sun illumination (d ≤ 10,000 miles = daylight)
+- Seasonal sun orbital radius variation (winter closer, summer farther)
+- Moon phases based on angular separation from sun (not Earth shadow)
+- Observer-relative moonrise/moonset times
+- Disc center (central latitude) has shortest days
+- Disc edge (rim latitude) has longest days
+
+**Bugs Fixed**:
+1. Latitude band naming (equatorial→central, polar→rim)
+2. AM/PM times switched (sun phase offset correction)
+3. Old regions incompatible (added SettingsMenu with nuke options)
+4. Identical moonrise/moonset (changed to ±90° arc)
+5. Time formatting (9:60 PM bug fixed)
+6. Lunar phase angle calculation corrected
+
+### Phase 3: Weather Generation System
+**Status**: COMPLETE ✅ (Sprint 1)
+
+**Services Built**:
+- ✅ TemperatureService ([TemperatureService.js](src/v2/services/weather/TemperatureService.js))
+  - Smooth seasonal transitions using cosine curves
+  - Daily temperature variation (peak 3 PM, low 5 AM)
+  - Pattern influence for day-to-day variation
+  - Heat index and wind chill calculations
+  - Uses 4 season keypoints (not just winter/summer)
+
+- ✅ WeatherPatternService ([WeatherPatternService.js](src/v2/services/weather/WeatherPatternService.js))
+  - 5 pattern types: High Pressure, Low Pressure, Warm Front, Cold Front, Stable
+  - Multi-day cycles (3-5 days per pattern)
+  - Realistic pattern transitions
+  - Pattern-based precipitation probability
+
+- ✅ WeatherGenerator ([WeatherGenerator.js](src/v2/services/weather/WeatherGenerator.js))
+  - Integrates temperature, patterns, and conditions
+  - Wind generation based on terrain and maritime influence
+  - Humidity from seasonal profiles
+  - Precipitation type based on temperature (rain/snow/sleet/freezing rain)
+  - Precipitation intensity (light/moderate/heavy)
+  - Fog/mist generation
+  - Weather effects for gameplay
+
+- ✅ WeatherService ([WeatherService.js](src/v2/services/weather/WeatherService.js))
+  - Main coordinator for weather + celestial data
+  - Forecast generation (24-hour, 7-day)
+  - Period grouping for Druidcraft display
+  - Daily summaries for DM planning
+  - Caching for performance
+
+**Weather Features**:
+- Deterministic generation (reproducible weather)
+- Smooth day-to-day transitions (no random jumps)
+- Multi-day weather patterns
+- Temperature warnings (extreme heat/cold)
+- Wind warnings (high winds)
+- Precipitation warnings (visibility, slippery surfaces)
+- Fog warnings (visibility reduction)
+
+**Bugs Fixed**:
+1. Freezing rain at 38°F (fixed to ≤32°F only)
+2. Winter temperatures too warm (fixed seasonal interpolation to use all 4 seasons)
+3. Continental Prairie summer temps (90°F → 77°F correction)
+4. Date calculation bug (fixed July 30 → August 1 with proper Gregorian calendar)
+5. Date formatting ("Month X" → "July 31")
+
+### Phase 4: Climate Data Accuracy
+**Status**: COMPLETE ✅
+
+**Real-World Climate Updates**:
+- ✅ Researched 8 major biomes using Weather Spark, Climates to Travel, official data
+- ✅ Updated all climate templates with accurate temperature data (±3°F of real-world)
+- ✅ Added example cities to each biome description
+
+**Updated Biomes**:
+1. **Tundra Plain** (Barrow, Alaska) - Annual 14°F, Winter -12°F, Summer 42°F
+2. **Continental Prairie** (Des Moines, Iowa) - Annual 51°F, Winter 20°F, Summer 77°F (13°F correction!)
+3. **Tropical Desert** (Phoenix, Arizona) - Annual 74°F, Winter 56°F, Summer 95°F
+4. **Tropical Highland** (Quito, Ecuador) - Annual 58°F (extremely stable year-round)
+5. **Mediterranean Coast** (Los Angeles) - Annual 65°F, Winter 58°F, Summer 75°F
+6. **Maritime Forest** (Seattle) - Annual 52°F, Winter 41°F, Summer 66°F
+7. **Continental Taiga** (Fairbanks, Alaska) - Annual 28°F, Winter -15°F, Summer 63°F
+8. **Equatorial Rainforest** (Singapore) - Annual 80°F (stable, low variance)
+
+**Documentation**:
+- ✅ Climate research files in `docs/climate-research/`
+- ✅ Real-world data sources documented
+- ✅ Variance philosophy explained (small for stable climates, large for continental)
+
+### Phase 5: Forecast Display (Sprint 1.5)
+**Status**: COMPLETE ✅
+
+**Components Built**:
+- ✅ DruidcraftForecast ([DruidcraftForecast.jsx/.css](src/v2/components/weather/DruidcraftForecast.jsx))
+  - D&D Druidcraft cantrip - 24-hour weather prediction
+  - Period-based grouping (e.g., "3 hrs - Light Snow, 20-24°F")
+  - Shows current conditions, pattern, warnings
+  - Green nature-themed styling
+  - "Cast Druidcraft" button interface
+
+- ✅ DMForecastPanel ([DMForecastPanel.jsx/.css](src/v2/components/weather/DMForecastPanel.jsx))
+  - 7-day forecast for DM narrative planning
+  - Daily high/low temperatures
+  - Dominant weather conditions
+  - Precipitation information
+  - Weather pattern tracking
+  - Pattern analysis summary
+  - Auto-refreshes when time changes
+  - Collapsible panel design
+  - Professional blue/purple DM theme
+
+**Forecast Features**:
+- Period grouping algorithm (consecutive similar hours combined)
+- Daily summary calculation (high/low temps, dominant condition)
+- Auto-refresh on time advance
+- Proper Gregorian calendar formatting (month names)
+- Pattern progression analysis
+
+### Phase 6: UI Components
+**Status**: COMPLETE ✅
+
+**Components Built**:
+- ✅ WorldSetup ([WorldSetup.jsx](src/v2/components/world/WorldSetup.jsx))
+- ✅ RegionCreator ([RegionCreator.jsx](src/v2/components/region/RegionCreator.jsx)) - With 30+ climate templates
+- ✅ TimeDisplay ([TimeDisplay.jsx](src/v2/components/time/TimeDisplay.jsx))
+- ✅ TimeControls ([TimeControls.jsx](src/v2/components/time/TimeControls.jsx)) - Includes jump-to-date feature
+- ✅ CurrentWeather ([CurrentWeather.jsx](src/v2/components/weather/CurrentWeather.jsx)) - Full weather + celestial display
+- ✅ WeatherDebug ([WeatherDebug.jsx/.css](src/v2/components/weather/WeatherDebug.jsx)) - Collapsible debug console
+- ✅ SettingsMenu ([SettingsMenu.jsx](src/v2/components/menu/SettingsMenu.jsx)) - Data management
+- ✅ DruidcraftForecast (see Phase 5)
+- ✅ DMForecastPanel (see Phase 5)
 
 ---
 
-## Current Session Work 🔄
+## Project Structure
 
-### Session Goal
-Implement flat disc world celestial mechanics (solar, lunar, seasonal, twilight)
-
-### Tasks Completed This Session ✅
-- ✅ Created [FLAT_DISC_WORLD.md](FLAT_DISC_WORLD.md) - Complete technical specification
-- ✅ Created [PROGRESS.md](PROGRESS.md) - Progress tracking
-- ✅ Created [V2_IMPLEMENTATION_CHECKLIST.md](V2_IMPLEMENTATION_CHECKLIST.md) - Complete feature checklist
-- ✅ Created [QUESTIONS_FOR_USER.md](QUESTIONS_FOR_USER.md) - Gathered user decisions
-- ✅ Created [src/v2/models/constants.js](src/v2/models/constants.js) - All flat disc constants
-- ✅ Created [src/v2/services/celestial/geometry.js](src/v2/services/celestial/geometry.js) - Core geometric calculations
-- ✅ Rewrote [src/v2/services/celestial/SunriseSunsetService.js](src/v2/services/celestial/SunriseSunsetService.js) - Flat disc sun calculations
-- ✅ Created [src/v2/services/celestial/MoonService.js](src/v2/services/celestial/MoonService.js) - Lunar phase calculations
-- ✅ Updated [src/v2/models/types.js](src/v2/models/types.js) - Added twilight and moon fields to CelestialData
-- ✅ Wired celestial services into [src/v2/App.jsx](src/v2/App.jsx) - Real calculations
-- ✅ Updated [src/v2/components/weather/CurrentWeather.jsx](src/v2/components/weather/CurrentWeather.jsx) - Display all celestial data
-
-### Ready to Commit 📦
-**Phase 2: Flat Disc Celestial Mechanics - COMPLETE** (with 6 bugfixes)
-
-Files ready to commit:
-- `src/v2/models/constants.js` (new, 157 lines) - Flat disc constants with corrected naming and phase offset
-- `src/v2/services/celestial/geometry.js` (new, 194 lines) - Core geometric calculations
-- `src/v2/services/celestial/SunriseSunsetService.js` (rewritten, 305 lines) - Sun calculations with debug logging
-- `src/v2/services/celestial/MoonService.js` (new, 355 lines) - Lunar calculations with debug logging
-- `src/v2/models/types.js` (modified) - Updated CelestialData type and latitude band names
-- `src/v2/data/region-templates.js` (modified) - All templates renamed (equatorial→central, polar→rim)
-- `src/v2/components/menu/SettingsMenu.jsx` (new, 120 lines) - Settings menu with nuke options
-- `src/v2/App.jsx` (modified) - Wired real celestial data + SettingsMenu
-- `src/v2/components/weather/CurrentWeather.jsx` (modified) - Display all celestial info
-- `FLAT_DISC_WORLD.md` (updated) - Corrected moon mechanics and latitude band naming
-- `PROGRESS.md` (updated) - Documented all bugfixes
-- `V2_IMPLEMENTATION_CHECKLIST.md` (updated) - Bug tracking
-
-**Six Bugfixes Applied**:
-1. **Latitude band naming**: Renamed equatorial→central, polar→rim for flat disc geometry
-2. **AM/PM switching**: Fixed sun phase offset (0° → 180°) so sunrise is AM, sunset is PM
-3. **Old regions incompatible**: Added SettingsMenu with nuke options for cleanup
-4. **Moon orbital period**: Changed from 29.53 days to 24.8 hours (moon rises/sets daily)
-5. **Time formatting**: Fixed 9:60 PM bug with minute/hour rollover in both services
-6. **Rise/set geometry**: Changed from ±180° to ±90° (fixes identical moonrise/moonset)
-
-Total: ~1,000 lines of new/modified code
-
-### Bug Fix #1: Latitude Band Naming Inversion ✅
-**Issue**: Naming was backwards for flat disc world
-
-**Root Cause**: Used Earth naming conventions (equatorial=0°, polar=90°) instead of flat disc geometry (center to edge)
-
-**Fix Applied**:
-- Renamed "equatorial" → **"central"** (disc center, 0-20% radius)
-- Renamed "polar" → **"rim"** (disc edge, 80-100% radius)
-- Updated LATITUDE_BAND_RADIUS in constants.js
-- Updated all region templates in region-templates.js
-- Updated type definitions in types.js
-- Updated documentation in FLAT_DISC_WORLD.md
-
-**Result**:
-- Central regions (disc center) now correctly have shortest days
-- Rim regions (disc edge) now correctly have longest days
-
-### Bug Fix #2: AM/PM Times Switched ✅
-**Issue**: Sunrise showing as PM, sunset as AM - completely backwards
-
-**Root Cause**: Sun phase offset was 0°, making sun closest to observer at midnight (hour 0)
-
-**Explanation**:
-- At hour 0 (midnight): θ_sun = 0° → sun at closest position → DAYTIME ❌
-- At hour 12 (noon): θ_sun = 180° → sun at farthest position → NIGHTTIME ❌
-- This made all AM/PM labels backwards
-
-**Fix Applied**:
-- Changed DEFAULT_SUN_PHASE_OFFSET from **0°** to **180°**
-- Now at hour 0 (midnight): θ_sun = 180° → sun far away → NIGHTTIME ✓
-- Now at hour 12 (noon): θ_sun = 0° → sun close → DAYTIME ✓
-
-### Bug Fix #3: Old Regions Not Working ✅
-**Issue**: Regions created before rename showed default temperate calculations
-
-**Root Cause**: Old regions had latitudeBand="equatorial" or "polar", but LATITUDE_BAND_RADIUS mapping now uses "central" and "rim"
-
-**Fix Applied**:
-- Created [SettingsMenu component](src/v2/components/menu/SettingsMenu.jsx)
-- Added gear icon (⚙️) in top-right corner
-- Menu options:
-  - 🗑️ Nuke All Regions (delete all regions with confirmation)
-  - 💣 Nuke All Data (delete everything + reload page)
-- Users can now clean up old incompatible regions and recreate with new naming
-
-### Bug Fix #4: Identical Moonrise/Moonset Times ✅
-**Issue**: Moonrise and moonset showing identical times
-
-**Root Cause**: When θ_obs = 0°, formulas θ_obs ± 180° both calculated to 180°
-
-**Fix Applied**:
-- Changed moonrise formula from θ_obs - 180° to **θ_obs - 90°**
-- Changed moonset formula from θ_obs + 180° to **θ_obs + 90°**
-- Updated isMoonVisible() to check ±90° arc instead of ±180°
-- Updated FLAT_DISC_WORLD.md with corrected geometry
-
-**New Model**:
-- Observer can see 180° arc centered on their position
-- Moonrise: Moon enters visible hemisphere at θ_obs - 90°
-- Moonset: Moon exits visible hemisphere at θ_obs + 90°
-- Moon visible for ~12.4 hours (half of 24.8h orbital period)
-
-### Next Steps (Phase 3: Weather Services)
-1. ~~FIX MOONRISE/MOONSET GEOMETRY~~ ✅ COMPLETE
-2. Test celestial calculations in browser (verify all three bugfixes work)
-3. Decide on weather generation strategy (Hybrid approach selected)
-4. Begin porting core weather services (Temperature, Atmospheric, Wind, Precipitation)
-
----
-
-## Implementation Plan 📋
-
-### Phase 1: Foundation (NEXT)
-**Goal**: Create core utilities and constants
-
-#### 1.1 Create Constants File
-**File**: `src/v2/models/constants.js`
-
-**Contents**:
-```javascript
-// Disc world geometry
-export const DISC_RADIUS = 7000; // miles
-
-// Sun constants
-export const SUN_ILLUMINATION_RADIUS = 10000; // miles
-export const SUN_ORBITAL_PERIOD_HOURS = 24;
-export const SUN_ORBITAL_RADIUS_MEAN = 9500; // miles
-export const SUN_ORBITAL_RADIUS_AMPLITUDE = 1500; // miles
-
-// Moon constants
-export const LUNAR_CYCLE_DAYS = 29.53059;
-export const MOON_ORBITAL_RADIUS = 7000; // miles (minimum)
-
-// Time constants
-export const YEAR_LENGTH_DAYS = 365.2422;
-
-// Twilight distance thresholds (miles)
-export const TWILIGHT_CIVIL = 11000;
-export const TWILIGHT_NAUTICAL = 12000;
-export const TWILIGHT_ASTRONOMICAL = 13000;
-
-// Latitude band to radius mapping
-export const LATITUDE_BAND_RADIUS = {
-  equatorial: 700,   // 10% of disc radius
-  tropical:   2100,  // 30%
-  temperate:  3500,  // 50%
-  subarctic:  4900,  // 70%
-  polar:      6300   // 90%
-};
 ```
+src/v2/
+├── models/
+│   ├── types.js              # Type definitions
+│   └── constants.js          # Flat disc world constants
+├── utils/
+│   ├── dateUtils.js          # Gregorian calendar utilities
+│   └── seedGenerator.js      # Deterministic randomness
+├── contexts/
+│   ├── PreferencesContext.jsx
+│   └── WorldContext.jsx
+├── services/
+│   ├── storage/
+│   │   └── localStorage.js
+│   ├── celestial/
+│   │   ├── geometry.js       # Flat disc geometry
+│   │   ├── SunriseSunsetService.js
+│   │   └── MoonService.js
+│   └── weather/
+│       ├── TemperatureService.js
+│       ├── WeatherPatternService.js
+│       ├── WeatherGenerator.js
+│       └── WeatherService.js
+├── components/
+│   ├── world/
+│   │   └── WorldSetup.jsx
+│   ├── region/
+│   │   └── RegionCreator.jsx
+│   ├── time/
+│   │   ├── TimeDisplay.jsx
+│   │   └── TimeControls.jsx
+│   ├── weather/
+│   │   ├── CurrentWeather.jsx
+│   │   ├── WeatherDebug.jsx
+│   │   ├── DruidcraftForecast.jsx
+│   │   └── DMForecastPanel.jsx
+│   └── menu/
+│       └── SettingsMenu.jsx
+├── data/
+│   └── region-templates.js   # 30+ climate templates
+└── App.jsx                    # Main app with weather + celestial integration
 
-**Commit Message**:
-```
-Add flat disc world constants
+docs/
+├── climate-research/          # Real-world climate data
+└── sprint-logs/               # Individual agent sprint logs
+    └── SPRINT_1_COMPLETE.md   # Sprint 1 + 1.5 documentation
 
-- Add disc geometry constants (radius, latitude bands)
-- Add sun orbital parameters (illumination, orbital radius)
-- Add moon orbital parameters
-- Add twilight distance thresholds
-- Add time constants (year length, lunar cycle)
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
-
-#### 1.2 Create Geometry Utilities
-**File**: `src/v2/services/celestial/geometry.js`
-
-**Functions**:
-- `normalizeAngle(angle)` - Normalize to [0, 360)
-- `distanceToSun(R_obs, θ_obs, θ_sun, R_sun)` - Law of cosines
-- `getSunOrbitalRadius(dayOfYear)` - Seasonal variation
-- `getSunAngle(hour, φ_sun)` - Sun angular position
-- `getMoonAngle(daysSinceEpoch, φ_moon)` - Moon angular position
-- `getLunarPhaseAngle(θ_moon, θ_sun)` - Angular separation
-
-**Commit Message**:
-```
-Add flat disc geometry utilities
-
-- Implement angle normalization
-- Implement distance-to-sun calculation (law of cosines)
-- Implement sun orbital radius with seasonal variation
-- Implement sun/moon angular position calculations
-- Implement lunar phase angle calculation
-
-All formulas per FLAT_DISC_WORLD.md specification
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+QUESTIONS_FOR_USER.md          # Architectural decisions
+FLAT_DISC_WORLD.md             # Celestial mechanics specification
+PROGRESS.md                    # This file (master tracker)
 ```
 
 ---
 
-### Phase 2: Sun Service Rewrite
-**Goal**: Replace spherical Earth calculations with flat disc geometry
+## Roadmap: Next Sprints
 
-#### 2.1 Rewrite SunriseSunsetService
-**File**: `src/v2/services/celestial/SunriseSunsetService.js`
+### Sprint 2: Atmospheric Depth (Not Started)
+**Goal**: Add pressure systems, enhanced humidity, cloud cover
 
-**Changes**:
-- Remove spherical astronomy (declination, hour angle)
-- Add disc geometry imports from `geometry.js`
-- Add `getIlluminationState(R_obs, θ_obs, gameDate)` - Returns daylight/twilight/night
-- Add `getTwilightLevel(distance)` - Returns twilight type
-- Rewrite `getDaylightHours()` to solve for sunrise/sunset using distance threshold
-- Add `getSunrise()` and `getSunset()` that solve `d = 10,000`
-- Update return types to include twilight state
+**Features**:
+- [ ] Pressure systems driving weather changes
+- [ ] Enhanced humidity calculations
+- [ ] Cloud cover percentage modeling
+- [ ] Atmospheric effects on "feels like" temperature
 
-**Commit Message**:
-```
-Rewrite SunriseSunsetService for flat disc geometry
+**Estimated Effort**: 2-3 days
 
-BREAKING CHANGE: Replace spherical Earth calculations with flat disc model
+### Sprint 3: Wind & Weather Systems (Not Started)
+**Goal**: Sophisticated wind patterns and frontal systems
 
-- Remove latitude-based solar declination calculations
-- Implement distance-based illumination (d ≤ 10,000 = daylight)
-- Add twilight level determination (civil/nautical/astronomical)
-- Calculate sunrise/sunset by solving distance threshold
-- Add seasonal variation via sun orbital radius
-- Edge regions now have longest days (inverse of Earth)
+**Features**:
+- [ ] More sophisticated wind patterns
+- [ ] Enhanced frontal system simulation (warm/cold fronts)
+- [ ] Better pattern transitions
+- [ ] Multi-day pattern cycle refinement
 
-Per FLAT_DISC_WORLD.md specification
+**Estimated Effort**: 2-3 days
 
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
+### Sprint 4: Polish & Extreme Weather (Not Started)
+**Goal**: Add extreme events and refine existing features
 
----
+**Features**:
+- [ ] Extreme weather events (hurricanes, blizzards, heat waves)
+- [ ] Snow accumulation tracking (user requested)
+- [ ] Weather effects refinement
+- [ ] Fine-tuning temperature calculations
+- [ ] Performance optimization
 
-### Phase 3: Moon Service Creation
-**Goal**: Create new moon service using angular separation model
-
-#### 3.1 Create MoonService
-**File**: `src/v2/services/celestial/MoonService.js`
-
-**Methods**:
-- `constructor()` - Initialize with φ_moon offset
-- `getMoonAngle(gameDate)` - Current moon angular position
-- `getMoonrise(θ_obs, gameDate)` - When θ_moon = θ_obs - 180°
-- `getMoonset(θ_obs, gameDate)` - When θ_moon = θ_obs + 180°
-- `getLunarPhase(gameDate, sunAngle)` - Calculate phase from angular separation
-- `getPhaseName(phaseAngle)` - Map angle to phase name
-- `getIlluminationPercentage(phaseAngle)` - Calculate illumination %
-- `isWaxing(phaseAngle)` - Determine if waxing or waning
-- `isMoonVisible(θ_obs, gameDate)` - Check if moon is up
-- `getFormattedMoonInfo(θ_obs, gameDate, sunAngle)` - Complete moon data
-
-**Commit Message**:
-```
-Create MoonService for flat disc geometry
-
-- Implement angular position calculation (360° / 29.53 days)
-- Implement observer-relative moonrise/moonset
-- Implement lunar phase from angular separation (θ_moon - θ_sun)
-- Add phase name mapping (New, First Quarter, Full, Last Quarter)
-- Add illumination percentage calculation
-- Add waxing/waning determination
-
-Moon phase now fully decoupled from seasons
-Each observer has unique moonrise/moonset times
-
-Per FLAT_DISC_WORLD.md specification
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
+**Estimated Effort**: 2-3 days
 
 ---
 
-### Phase 4: Type Updates
-**Goal**: Update data models to support new celestial features
+## Key Technical Details
 
-#### 4.1 Update CelestialData Type
-**File**: `src/v2/models/types.js`
+### Deterministic Weather System
+**How it works**:
+- Seed = `hash(regionID + year + month + day + hour + context)`
+- Same inputs always produce same outputs
+- Enables "time travel" - jump to any date and get consistent weather
+- Jumping to Year 1000 is instant (no sequential generation needed)
 
-**Changes**:
-```javascript
-/**
- * Celestial Data - Sun and moon information
- * @typedef {Object} CelestialData
- * @property {string} sunriseTime - Sunrise time (formatted)
- * @property {string} sunsetTime - Sunset time (formatted)
- * @property {boolean} isDaytime - Is it currently daytime?
- * @property {string} twilightLevel - 'none' | 'civil' | 'nautical' | 'astronomical'
- * @property {number} distanceToSun - Distance from observer to sun (miles)
- * @property {string} moonPhase - Moon phase name
- * @property {number} moonIllumination - Moon illumination percentage (0-100)
- * @property {boolean} isMoonVisible - Is moon currently above horizon?
- * @property {string} moonriseTime - Moonrise time (formatted)
- * @property {string} moonsetTime - Moonset time (formatted)
- */
-```
+**Pattern Cycles**:
+- Weather patterns last 3-5 days
+- Pattern seed changes every 4 days
+- Creates multi-day weather systems without spatial simulation
+- Smooth transitions prevent random "dice roll" weather jumps
 
-**Commit Message**:
-```
-Update CelestialData type for flat disc model
+### Temperature Calculations
+**Seasonal Component**:
+- Uses all 4 season keypoints (winter, spring, summer, fall)
+- Cosine interpolation between season centers
+- Respects configured seasonal means from climate templates
 
-- Add twilightLevel field (civil/nautical/astronomical)
-- Add distanceToSun field for debugging/UI
-- Add isMoonVisible field
-- Add moonriseTime and moonsetTime fields
-- Update JSDoc comments
+**Daily Component**:
+- Peak at 3 PM (hour 15)
+- Low at 5 AM (hour 5)
+- Amplitude varies by climate (10-15°F typical)
 
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
+**Pattern Influence**:
+- High pressure: +5°F
+- Low pressure: -5°F
+- Warm front: +8°F
+- Cold front: -10°F
+- Day-to-day variation: ±15°F for continental climates
 
----
+**Feels Like**:
+- Heat index when temp ≥ 80°F and humidity ≥ 40%
+- Wind chill when temp ≤ 50°F and wind ≥ 3 mph
 
-### Phase 5: UI Integration
-**Goal**: Wire celestial services into UI components
+### Precipitation Logic
+**Temperature-Based Type**:
+- Snow: ≤ 28°F
+- Freezing Rain/Sleet: 28-32°F (meteorologically accurate - must be ≤32°F)
+- Sleet: 32-35°F
+- Rain: > 35°F
 
-#### 5.1 Update App.jsx to Use Real Celestial Data
-**File**: `src/v2/App.jsx`
+**Pattern-Based Probability**:
+- High Pressure: 5% chance
+- Stable: 15% chance
+- Warm Front: 50% chance
+- Cold Front: 60% chance
+- Low Pressure: 70% chance
 
-**Changes**:
-- Import new SunriseSunsetService and MoonService
-- Remove fake weather celestial data
-- Calculate real sun/moon data in useEffect
-- Pass celestial data to CurrentWeather component
-- Add observer position (θ_obs) - default to 0° for now
+**Intensity**:
+- Light: 33% of precipitation events
+- Moderate: 50% of precipitation events
+- Heavy: 17% of precipitation events
 
-#### 5.2 Update CurrentWeather Component
-**File**: `src/v2/components/weather/CurrentWeather.jsx`
+### Flat Disc Celestial Mechanics
 
-**Changes**:
-- Add twilight level display
-- Add moon phase display with icon
-- Add moonrise/moonset times
-- Add distance to sun (for debugging)
-- Style twilight states differently
+**Sun Illumination**:
+- Distance ≤ 10,000 miles = Daylight
+- Distance 10,000-11,000 miles = Civil twilight
+- Distance 11,000-12,000 miles = Nautical twilight
+- Distance 12,000-13,000 miles = Astronomical twilight
+- Distance > 13,000 miles = Night
 
-**Commit Message**:
-```
-Integrate flat disc celestial calculations into UI
+**Seasonal Variation**:
+- Winter: Sun orbital radius 8,000 miles (closer = shorter days)
+- Summer: Sun orbital radius 11,000 miles (farther = longer days)
 
-- Wire SunriseSunsetService and MoonService into App.jsx
-- Remove fake celestial data from weather display
-- Add twilight level indicator to CurrentWeather
-- Add moon phase display with illumination percentage
-- Add moonrise/moonset times to weather card
-- Add sun distance display (debugging)
+**Moon Phases**:
+- Based on angular separation from sun (not Earth shadow)
+- New Moon: θ_moon = θ_sun (0° separation)
+- First Quarter: 90° separation
+- Full Moon: 180° separation
+- Last Quarter: 270° separation
+- Lunar cycle: 29.53 days
 
-Remove "Test Mode" warning - using real calculations
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
-
----
-
-### Phase 6: Testing & Refinement
-**Goal**: Validate calculations and handle edge cases
-
-#### 6.1 Test Cases to Verify
-- [ ] Disc center (R_obs = 0) never sees daylight
-- [ ] Edge regions (polar) have longest days
-- [ ] Seasonal variation works (winter = shorter days everywhere)
-- [ ] Twilight transitions smoothly
-- [ ] Moon phase progresses correctly over 29.53 days
-- [ ] Moonrise/moonset times differ by observer position
-- [ ] Time advancement updates all celestial data
-
-#### 6.2 Edge Cases to Handle
-- [ ] What if observer θ_obs is needed? Add to Region model?
-- [ ] Should we show "Permanent Night" for disc center?
-- [ ] Display message explaining why center has no daylight?
+**Moonrise/Moonset**:
+- Observer can see 180° arc centered on position
+- Moonrise: Moon enters visible arc at θ_obs - 90°
+- Moonset: Moon exits visible arc at θ_obs + 90°
+- Moon visible ~12.4 hours per day
 
 ---
 
-## Pending Work (Post-Celestial) 🔜
+## Documentation Files
 
-### Weather Service
-- [ ] Port MeteorologicalWeatherService (complex)
-- [ ] Create WeatherContext provider
-- [ ] Wire up real weather to UI
-- [ ] Build WeatherEffects component (D&D mechanics)
+### Primary Documentation
+- **PROGRESS.md** (this file) - Master progress tracker
+- **QUESTIONS_FOR_USER.md** - Architectural decisions and strategy
+- **FLAT_DISC_WORLD.md** - Complete celestial mechanics specification
 
-### Advanced Features
-- [ ] Add advanced time controls
-- [ ] Add Export/Import functionality
-- [ ] Add observer position (θ_obs) selection to Region
-- [ ] Add seasonal calendar display
-- [ ] Add weather history tracking
+### Sprint Logs
+- **docs/sprint-logs/SPRINT_1_COMPLETE.md** - Sprint 1 + 1.5 complete documentation
+
+### Research Documentation
+- **docs/climate-research/CLIMATE_ANALYSIS.md** - Initial research framework
+- **docs/climate-research/CLIMATE_CORRECTIONS_NEEDED.md** - Analysis of needed updates
+- **docs/climate-research/CLIMATE_UPDATES_APPLIED.md** - All climate corrections documented
 
 ---
 
-## Notes
-- All work in `src/v2/` - original code in `src/` preserved for reference
-- CAPSTONE folder is unrelated (past project for design reference)
-- Follow commit message format with Claude Code attribution
-- Update this file after each completed phase
+## Testing Status
+
+### ✅ What Works
+- Create world → see world dashboard
+- Create region with climate template → see realistic weather
+- Advance time → weather evolves smoothly with multi-day patterns
+- Jump to any date → instant deterministic weather generation
+- Temperature varies by time of day and season
+- Precipitation changes type based on temperature
+- Weather effects warn of dangerous conditions
+- Sun/moon calculations accurate for flat disc geometry
+- Twilight levels transition correctly
+- Moon phases progress over 29.53 day cycle
+- Druidcraft forecast groups periods intelligently
+- DM forecast auto-refreshes when time advances
+- Proper Gregorian calendar (July has 31 days, etc.)
+
+### 🔧 Known Issues / Future Enhancements
+- Temperature tuning may need refinement for some climates
+- No snow accumulation tracking yet
+- No extreme weather events yet (hurricanes, blizzards)
+- No spatial weather propagation (by design)
+- No map view (far future stretch goal)
+
+---
+
+## Version History
+
+### v2.0.0-alpha (Current) - 2025-12-20
+- Sprint 1: Basic Weather Generation (COMPLETE)
+- Sprint 1.5: Weather Forecast Display (COMPLETE)
+- 30+ climate templates with real-world accuracy
+- Flat disc celestial mechanics
+- Deterministic seed-based weather
+- Temporal continuity with multi-day patterns
+
+### v1.0.0 (Legacy)
+- Original implementation in `src/` directory
+- ~4,300 lines of meteorological code
+- Earth-like celestial calculations
+- Dice-based weather generation
+- Preserved for reference only
+
+---
+
+## Success Metrics
+
+### Sprint 1 Success Criteria ✅
+- [x] Weather evolves smoothly (no random jumps)
+- [x] Multi-day patterns create sense of weather systems
+- [x] Temperature feels realistic for climate types
+- [x] Precipitation occurs at appropriate times/temperatures
+- [x] Weather is reproducible (deterministic)
+- [x] Performance is good (caching works)
+- [x] Integration with celestial data works
+
+### Sprint 1.5 Success Criteria ✅
+- [x] Druidcraft forecast groups similar hours into periods
+- [x] DM forecast shows 7-day outlook with daily summaries
+- [x] Forecasts auto-refresh when time changes
+- [x] Proper Gregorian calendar formatting
+- [x] Pattern progression visible in forecasts
+
+### Overall Project Health ✅
+- Clean architecture with clear separation of concerns
+- Well-documented code with JSDoc comments
+- Comprehensive type definitions
+- Real-world climate accuracy
+- User-friendly UI components
+- Solid foundation for future enhancements
+
+---
+
+## Notes for Future Development
+
+### Design Principles
+- **Simplicity over complexity** - Only add features that enhance gameplay
+- **Realism with pragmatism** - Accurate weather without overwhelming simulation
+- **Deterministic behavior** - Same inputs = same outputs (no surprises)
+- **Performance first** - Cache aggressively, calculate efficiently
+- **Clear documentation** - Every decision explained, every formula sourced
+
+### Code Standards
+- Use JSDoc comments for all functions
+- Include example cities in climate descriptions
+- Add debug logging for complex calculations
+- Write clear commit messages with attribution
+- Update PROGRESS.md and sprint logs regularly
+
+### Testing Approach
+- Manual testing in browser (no automated tests yet)
+- Focus on edge cases (disc center, rim, season transitions)
+- Verify deterministic behavior (same date = same weather)
+- Check performance (forecast generation should be <200ms)
+
+---
+
+**Project Status**: Sprint 1.5 Complete - Ready for Sprint 2 🚀

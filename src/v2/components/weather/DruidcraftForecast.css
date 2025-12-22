@@ -1,0 +1,112 @@
+.druidcraft-forecast {
+  background: rgba(36, 43, 61, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.forecast-subtitle {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+
+.druidcraft-forecast .card-body {
+  padding: 1rem;
+}
+
+.forecast-content {
+  margin-top: 1rem;
+}
+
+.current-weather {
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.forecast-title {
+  font-size: 0.9rem;
+  color: var(--accent-success);
+}
+
+.weather-periods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.weather-period {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-success);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 300;
+  transition: background 0.2s;
+}
+
+.weather-period:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.period-duration {
+  font-weight: 500;
+  color: var(--accent-success);
+  min-width: 3rem;
+  font-size: 0.875rem;
+}
+
+.period-separator {
+  color: var(--text-muted);
+}
+
+.period-condition {
+  flex: 1;
+  color: var(--text-primary);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.period-temp {
+  font-weight: 400;
+  color: var(--accent-primary);
+  letter-spacing: -0.01em;
+}
+
+.pattern-info {
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  color: var(--accent-success);
+}
+
+.warnings {
+  border-left: 4px solid var(--accent-warning);
+  background-color: rgba(245, 158, 11, 0.15);
+}
+
+.warnings ul {
+  padding-left: 1.2rem;
+}
+
+.cantrip-note {
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.cantrip-note .text-muted {
+  color: var(--text-secondary) !important;
+}

@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Row, Col } from 'react-bootstrap';
+import { Container, Button } from 'react-bootstrap';
+import { BiError } from 'react-icons/bi';
 import { PreferencesProvider } from './contexts/PreferencesContext';
 import { WorldProvider, useWorld } from './contexts/WorldContext';
 import WorldSetup from './components/world/WorldSetup';
 import RegionCreator from './components/region/RegionCreator';
-import TimeDisplay from './components/time/TimeDisplay';
-import TimeControls from './components/time/TimeControls';
-import CurrentWeather from './components/weather/CurrentWeather';
-import SettingsMenu from './components/menu/SettingsMenu';
+import WeatherHeader from './components/header/WeatherHeader';
+import PrimaryDisplay from './components/weather/PrimaryDisplay';
+import ConditionsCard from './components/weather/ConditionsCard';
+import CelestialCard from './components/weather/CelestialCard';
+import DruidcraftForecast from './components/weather/DruidcraftForecast';
+import DMForecastPanel from './components/weather/DMForecastPanel';
+import WeatherDebug from './components/weather/WeatherDebug';
 import weatherService from './services/weather/WeatherService';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './styles/theme.css';
+import './styles/app.css';
 
 /**
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
 
@@ -59,102 +65,88 @@ const AppContent = () => {
 
   return (
     <>
-      <SettingsMenu />
-      <Container className="mt-4" fluid>
-        <Row>
-        {/* Sidebar: World & Region Management */}
-        <Col md={4} lg={3} className="border-end">
-          <h3>WeatherMaster 2.0</h3>
-          <h5>{activeWorld.name}</h5>
+      {/* New iOS-style header with time controls and hamburger */}
+      <WeatherHeader
+        currentDate={activeWorld.currentDate}
+        onAdvanceTime={advanceTime}
+        regions={activeWorld.regions}
+        activeRegion={activeRegion}
+        onSelectRegion={selectRegion}
+        onAddLocation={() => setShowRegionCreator(true)}
+        worldName={activeWorld.name}
+      />
 
-          <hr />
+      {/* Main Content */}
+      <Container className="mt-3" style={{ maxWidth: '900px' }}>
+        {!activeRegion ? (
+          <div className="text-center mt-5 py-5">
+            <h4 className="text-muted mb-3">No region selected</h4>
+            <Button variant="primary" onClick={() => setShowRegionCreator(true)}>
+              Create Your First Region
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Weather data */}
+            {weatherData && (
+              <>
+                {/* Primary Display - HUGE location and temp */}
+                <PrimaryDisplay
+                  region={activeRegion}
+                  weather={weatherData}
+                  world={activeWorld}
+                />
 
-          <h6>Regions ({activeWorld.regions.length})</h6>
+                {/* Conditions Card - Wind, Humidity, Precip */}
+                <ConditionsCard weather={weatherData} />
 
-          {activeWorld.regions.length === 0 ? (
-            <div className="alert alert-info">
-              <p className="small">Create a region to start tracking weather.</p>
-              <Button size="sm" variant="primary" onClick={() => setShowRegionCreator(true)}>
-                Create Region
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Button size="sm" variant="primary" onClick={() => setShowRegionCreator(true)} className="mb-2 w-100">
-                + New Region
-              </Button>
+                {/* Celestial Card - Sun/Moon info */}
+                <CelestialCard weather={weatherData} />
 
-              <div className="list-group">
-                {activeWorld.regions.map(region => (
-                  <div
-                    key={region.id}
-                    className={`list-group-item list-group-item-action ${activeRegion?.id === region.id ? 'active' : ''}`}
-                    onClick={() => selectRegion(region.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <h6 className="mb-1">{region.name}</h6>
-                    <p className="mb-0 small">
-                      {region.latitudeBand}
-                    </p>
+                {/* Active Weather Effects */}
+                {weatherData.effects && weatherData.effects.length > 0 && (
+                  <div className="alert alert-warning">
+                    <strong><BiError /> Active Weather Effects:</strong>
+                    <ul className="mb-0 mt-2">
+                      {weatherData.effects.map((effect, idx) => (
+                        <li key={idx}>{effect}</li>
+                      ))}
+                    </ul>
                   </div>
-                ))}
+                )}
+
+                {/* Druidcraft Forecast */}
+                <DruidcraftForecast
+                  region={activeRegion}
+                  currentDate={activeWorld.currentDate}
+                  currentWeather={weatherData}
+                />
+
+                {/* DM Forecast Panel */}
+                <DMForecastPanel
+                  region={activeRegion}
+                  currentDate={activeWorld.currentDate}
+                />
+
+                {/* Debug panel */}
+                <WeatherDebug weatherData={weatherData} />
+              </>
+            )}
+
+            {!weatherData && (
+              <div className="alert alert-info">
+                Loading weather data...
               </div>
-            </>
-          )}
-        </Col>
-
-        {/* Main Content: Weather Dashboard */}
-        <Col md={8} lg={9}>
-          {!activeRegion ? (
-            <div className="text-center mt-5">
-              <h4 className="text-muted">Select a region to view weather</h4>
-            </div>
-          ) : (
-            <>
-              <h2>{activeRegion.name}</h2>
-              <p className="text-muted">{activeRegion.climate?.templateDescription}</p>
-
-              <TimeDisplay currentDate={activeWorld.currentDate} />
-
-              <TimeControls onAdvanceTime={(hours) => advanceTime(hours)} />
-
-              {weatherData && (
-                <>
-                  <CurrentWeather weather={weatherData} celestial={weatherData.celestial} />
-
-                  {weatherData.effects && weatherData.effects.length > 0 && (
-                    <div className="alert alert-warning">
-                      <strong>Active Weather Effects:</strong>
-                      <ul className="mb-0 mt-2">
-                        {weatherData.effects.map((effect, idx) => (
-                          <li key={idx}>{effect}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="alert alert-success">
-                    <strong>Real Weather Generation Active!</strong> Weather pattern: {weatherData.pattern} (Day {weatherData._debug?.dayOfPattern})
-                  </div>
-                </>
-              )}
-
-              {!weatherData && (
-                <div className="alert alert-info">
-                  Loading weather data...
-                </div>
-              )}
-            </>
-          )}
-        </Col>
-        </Row>
-
-        {/* Modals */}
-        <RegionCreator
-          show={showRegionCreator}
-          onHide={() => setShowRegionCreator(false)}
-        />
+            )}
+          </>
+        )}
       </Container>
+
+      {/* Modals */}
+      <RegionCreator
+        show={showRegionCreator}
+        onHide={() => setShowRegionCreator(false)}
+      />
     </>
   );
 };

@@ -1,0 +1,127 @@
+.dm-forecast-panel {
+  background: rgba(36, 43, 61, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dm-forecast-panel .card-body {
+  padding: 1rem;
+}
+
+.forecast-table-container {
+  overflow-x: auto;
+}
+
+.dm-note {
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.forecast-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.forecast-header,
+.forecast-row {
+  display: grid;
+  grid-template-columns: 5rem 7rem 6rem 8rem 7rem 1fr;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  align-items: center;
+}
+
+.forecast-header {
+  background: var(--accent-primary);
+  color: white;
+  font-weight: 600;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.forecast-row {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-primary);
+  transition: background 0.2s;
+  font-weight: 300;
+}
+
+.forecast-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.forecast-row:first-of-type {
+  border-left-color: var(--accent-primary);
+  font-weight: 400;
+}
+
+.col-day {
+  min-width: 5rem;
+}
+
+.col-date {
+  min-width: 7rem;
+  color: var(--text-secondary);
+}
+
+.col-temp {
+  min-width: 6rem;
+}
+
+.temp-high {
+  color: #ef5350;
+  font-weight: 400;
+}
+
+.temp-low {
+  color: #42a5f5;
+  font-weight: 400;
+}
+
+.col-condition {
+  min-width: 8rem;
+}
+
+.col-precip {
+  min-width: 7rem;
+  color: #42a5f5;
+}
+
+.col-pattern {
+  color: var(--text-secondary);
+}
+
+.pattern-analysis {
+  padding: 0.5rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .forecast-header,
+  .forecast-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .forecast-header {
+    display: none;
+  }
+
+  .forecast-row > div::before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: inline-block;
+    width: 100px;
+  }
+}

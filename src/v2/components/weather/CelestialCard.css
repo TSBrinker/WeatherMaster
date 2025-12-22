@@ -1,0 +1,79 @@
+/**
+ * CelestialCard - Sun and Moon information
+ * iOS Weather-inspired card styling
+ */
+
+.celestial-card {
+  background: rgba(36, 43, 61, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.celestial-card .card-body {
+  padding: 1.25rem;
+}
+
+.celestial-item {
+  text-align: center;
+  padding: 1rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.2s;
+}
+
+.celestial-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.celestial-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.9;
+}
+
+.celestial-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.celestial-value {
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.celestial-phase {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .celestial-icon {
+    font-size: 1.75rem;
+  }
+
+  .celestial-value {
+    font-size: 1.125rem;
+  }
+
+  .celestial-phase {
+    font-size: 0.875rem;
+  }
+
+  .celestial-label {
+    font-size: 0.65rem;
+  }
+}

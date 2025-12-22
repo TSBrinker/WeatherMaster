@@ -1,0 +1,97 @@
+/**
+ * WeatherHeader - iOS Weather-inspired header
+ * Clean, minimal header with time and controls
+ */
+
+.weather-header {
+  background: linear-gradient(180deg, rgba(26, 31, 46, 0.95) 0%, rgba(26, 31, 46, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 1rem 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Time display - center */
+.time-display-section {
+  text-align: center;
+}
+
+.current-time {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Time controls - center below */
+.time-controls-section {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.time-control-btn {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 0.25rem 0.75rem;
+  line-height: 1;
+  transition: color 0.2s, transform 0.1s;
+}
+
+.time-control-btn:hover {
+  color: var(--accent-primary);
+  transform: scale(1.1);
+}
+
+.time-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Hamburger - RIGHT (absolute positioned) */
+.hamburger-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.hamburger-toggle:hover {
+  color: var(--accent-primary);
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .current-time {
+    font-size: 0.9rem;
+  }
+
+  .time-control-btn {
+    font-size: 1.375rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .hamburger-toggle {
+    font-size: 1.5rem;
+  }
+}
