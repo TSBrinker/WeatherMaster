@@ -11,14 +11,19 @@ import './HamburgerMenu.css';
 const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, onAddLocation, worldName }) => {
   const [showSettings, setShowSettings] = useState(false);
 
+  const handleClose = () => {
+    setShowSettings(false); // Reset settings state when menu closes
+    onHide();
+  };
+
   const handleRegionClick = (regionId) => {
     onSelectRegion(regionId);
-    onHide();
+    handleClose();
   };
 
   return (
     <>
-      <Offcanvas show={show} onHide={onHide} placement="end" className="hamburger-menu-offcanvas">
+      <Offcanvas show={show} onHide={handleClose} placement="end" className="hamburger-menu-offcanvas">
         <Offcanvas.Header closeButton className="hamburger-header">
           <Offcanvas.Title>Locations</Offcanvas.Title>
           <Button
@@ -82,7 +87,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
               className="w-100"
               onClick={() => {
                 onAddLocation();
-                onHide();
+                handleClose();
               }}
             >
               + Add Location

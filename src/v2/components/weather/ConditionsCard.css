@@ -25,6 +25,10 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: background 0.2s;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .condition-item:hover {
@@ -64,6 +68,10 @@
 
 /* Responsive adjustments */
 @media (max-width: 576px) {
+  .condition-item {
+    min-height: 120px;
+  }
+
   .condition-icon {
     font-size: 1.75rem;
   }
