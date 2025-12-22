@@ -568,25 +568,68 @@ PROGRESS.md                    # This file (master tracker)
 
 **Estimated Effort**: 2-3 days
 
-### Sprint 7: Educational Modals & Documentation (Not Started)
+### Sprint 7: Educational Modals & Documentation (COMPLETE ✅)
 **Goal**: Help users understand weather mechanics and D&D impacts
 
 **Features**:
-- [ ] Weather Primer Modal - Explain atmospheric conditions (pressure, fronts, humidity, etc.)
+- [x] Weather Primer Modal - Explain atmospheric conditions (pressure, fronts, humidity, etc.)
   - What high/low/neutral values mean
   - Definitions of weather patterns (cold front, warm front, high pressure, etc.)
   - How conditions interact and affect weather
-- [ ] Gameplay Mechanics Modal - D&D mechanical impacts of weather
+- [x] Gameplay Mechanics Modal - D&D mechanical impacts of weather
   - Display existing weather effects from original implementation (src folder)
   - Show mechanical impacts on gameplay (visibility, movement, combat, etc.)
   - Reference existing definitions and rules
+- [ ] Expand weather-effects.js to remove cross-references (e.g., "As per Heavy Rain")
+- [ ] Surface gameplay mechanics on main display when relevant conditions apply
 - [ ] Help/Tutorial system
   - First-time user guidance
   - Feature explanations
 
+**Status**: Core modals complete (Sprint 5: Sage), enhancements identified for future sprint
+
+**Completed**: Sprint 5 (Sage) - 2025-12-21
+
+### Sprint 8: Wanderers (Falling Stars) (Not Started)
+**Goal**: Implement Wanderer celestial events for the world of Marai
+
+**Features**:
+- [ ] WandererService for rare celestial event calculation
+  - Deterministic seed-based rare event probability (0.5-1% per night)
+  - Size categories: Pebble (softball), Stone (basketball), Boulder (cart), Monolith (house)
+  - Impact probability (~5% actually fall to ground, rest burn up)
+  - Impact location within region (distance from viewer)
+- [ ] Wanderer visibility detection (nighttime only)
+- [ ] Impact event generation with scaled effects
+  - Treasure value scales with size
+  - Area affected scales with size
+  - Rumor spread distance
+- [ ] UI integration
+  - CelestialCard notification for visible Wanderers
+  - Impact event display in weather effects
+  - DM Forecast shows upcoming Wanderer events
+- [ ] Cultural significance for Marai setting
+
 **Estimated Effort**: 1-2 days
 
-### Sprint 8: UI Polish & User Experience (Not Started)
+### Sprint 9: Gameplay Integration & UI Refinements (Not Started)
+**Goal**: Surface gameplay mechanics and polish UI consistency
+
+**Features**:
+- [ ] Expand weather-effects.js to inline all cross-references
+  - Remove "As per Heavy Rain" style references
+  - Each condition should be self-contained
+- [ ] Add gameplay mechanics indicators to main weather display
+  - Badge/icon when current conditions have mechanical impacts
+  - Quick link to relevant mechanics in modal
+- [ ] UI consistency fixes from NOTES_FROM_USER.md
+  - Clear skies icon should show moon during nighttime
+  - Standardize ConditionsCard box heights (precipitation box size mismatch)
+- [ ] Review and process all items in NOTES_FROM_USER.md
+
+**Estimated Effort**: 1-2 days
+
+### Sprint 10: UI Polish & User Experience (Not Started)
 **Goal**: Refine user experience and add quality-of-life features
 
 **Features**:
@@ -595,6 +638,7 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] Accessibility enhancements
 - [ ] Mobile optimization
 - [ ] Theme customization options
+- [ ] Code cleanup: Review and archive old large files to improve conversation memory limits
 
 **Estimated Effort**: 2-3 days
 

@@ -1,6 +1,6 @@
 # AI Agent Instructions for WeatherMaster v2
 
-**Last Updated**: 2025-12-21 (Sprint 4 - Cedar)
+**Last Updated**: 2025-12-21 (Sprint 5 - Sage)
 
 ---
 
@@ -12,13 +12,29 @@ When you're asked to continue work on WeatherMaster v2, follow these steps:
 
 1. **Read PROGRESS.md** - This is the master document tracking all completed work and architectural decisions
 2. **Read QUESTIONS_FOR_USER.md** - Contains all architectural decisions and implementation strategy
-3. **Review recent sprint logs** in `docs/sprint-logs/` - Understand what the previous agents accomplished
-4. **Create your own sprint log** - Name it `SPRINT_[NUMBER]_[TOPIC].md` (e.g., `SPRINT_5_WIND_SYSTEMS.md`)
-5. **Pick a sprint name** - Choose a nature-themed name that represents your work (e.g., Willow, Cedar, Oak)
-6. **Document your work** as you go - Update your sprint log with files created, bugs fixed, features added
-7. **Update PROGRESS.md** when you complete major milestones
-8. **Commit regularly** with proper attribution (see commit message format below)
-9. **Update this file** with anything you learned about Tyler or the project that future agents should know
+3. **Read docs/NOTES_FROM_USER.md** - Tyler's running list of bugs, features, and thoughts (process these!)
+4. **Review recent sprint logs** in `docs/sprint-logs/` - Understand what the previous agents accomplished
+5. **Pick a sprint name** - Choose a name that represents your work. This was originally presented as "whatever name you choose, though a fantasy Lord of the Rings/D&D style name would be thematic." At the time of writing this, all agents have chosen the names of trees (Elderwood, Willow, Cedar, Sage). Feel free to break or continue tradition. Once you've read all of these instructions, feel free to introduce yourself with your chosen name!
+6. **Create your own sprint log** - Name it `SPRINT_[NUMBER]_[NAME].md` where [NAME] is the name you gave yourself
+7. **Document your work** as you go - Update your sprint log with files created, bugs fixed, features added
+8. **Update PROGRESS.md** when you complete major milestones
+9. **Commit regularly** with proper attribution (see commit message format below)
+10. **Update this file** with anything you learned about Tyler or the project that future agents should know
+
+### NOTES_FROM_USER.md Workflow
+
+**IMPORTANT**: Tyler uses `docs/NOTES_FROM_USER.md` as a running scratchpad for thoughts while you're working.
+
+When you start a session:
+1. Read NOTES_FROM_USER.md first
+2. Acknowledge each item with Tyler
+3. Sort items into appropriate places:
+   - **Bugs**: Add to roadmap or create bug tracking doc
+   - **Features**: Add to roadmap under appropriate sprint
+   - **Questions**: Ask Tyler for clarification
+   - **Improvements**: Note in sprint log or roadmap
+4. Once processed and acknowledged, items can be cleared from NOTES_FROM_USER.md
+5. Never ignore or skip this file - it's Tyler's way of communicating without interrupting your workflow
 
 ### Commit Message Format
 
@@ -62,7 +78,7 @@ Each sprint should be named after a tree or plant that represents its character:
 - **Cedar** (Sprint 4) - Strong and resilient, for atmospheric depth foundations
 
 Choose names that reflect the nature of your work!
-
+(This was written by one of your predecessors- as previously mentioned, early iterations chose tree names. Stick to my previous guidelines on naming [I can't do a smiley emoji but insert smiley emoji here])
 ---
 
 ## Project Context
@@ -179,6 +195,40 @@ src/v2/
 - Likes to see progress tracked with TodoWrite
 - Appreciates build validation and testing
 - Wants future agents to have full context
+
+### Session 2 - Sprint 5 (Sage) - 2025-12-21
+
+**Preferences Discovered:**
+- Uses NOTES_FROM_USER.md as a scratchpad for thoughts during development
+- Appreciates being told about dependencies needed for new workstations
+- Wants repo up to date before workstation migration
+- Values searchable/filterable interfaces for complex data
+- Likes when cross-references are resolved inline (doesn't like "As per Heavy Rain" style references)
+
+**Feature Requests:**
+1. **Expand weather-effects.js** - Remove cross-references, make each condition self-contained
+2. **Surface gameplay mechanics on main display** - Badge/indicator when conditions have mechanical impacts, with quick link to modal
+3. **UI consistency fixes from NOTES_FROM_USER.md**:
+   - Clear skies icon should show moon during nighttime hours
+   - Standardize ConditionsCard box heights (precipitation box is shorter than others)
+4. **Code cleanup sprint** - Review and archive old large files to help conversation memory last longer
+
+**Project Status Understanding:**
+- Tyler is migrating workstations - wants smooth pickup
+- Project is becoming more specialized for his Marai setting (flat disc world)
+- Wanderers (falling stars) are significant lore events in his world
+
+**Communication Style:**
+- Gives positive feedback when impressed ("Inspired. Well done!")
+- Apologizes for data quality issues from past work
+- Collaborative approach to planning future work
+- Explicit about memory constraints and handoff needs
+
+**Technical Notes:**
+- Lucide-react icons work well alongside react-icons/wi
+- React Bootstrap Modal is the pattern for overlays
+- Accordion interfaces work well for organizing complex reference data
+- Dark theme requires specific styling for modals (filter: invert(1) for close buttons)
 
 ---
 

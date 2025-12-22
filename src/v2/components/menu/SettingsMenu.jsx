@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Dropdown, Modal, Button } from 'react-bootstrap';
 import { FaTrash, FaBomb } from 'react-icons/fa';
+import { Cloud, Shield, BookOpen } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
+import WeatherPrimerModal from '../modals/WeatherPrimerModal';
+import GameplayMechanicsModal from '../modals/GameplayMechanicsModal';
 
 /**
- * Settings Menu - Dangerous operations
- * Provides access to data deletion functions
+ * Settings Menu - Dangerous operations + educational resources
+ * Provides access to data deletion functions and help modals
  */
 const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteRegion, deleteWorld } = useWorld();
   const [showNukeRegionsConfirm, setShowNukeRegionsConfirm] = useState(false);
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
+  const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
+  const [showGameplayMechanics, setShowGameplayMechanics] = useState(false);
 
   // Get all regions from all worlds
   const allRegions = worlds.flatMap(world => world.regions);
@@ -41,7 +46,25 @@ const SettingsMenu = ({ inline = false }) => {
     return (
       <>
         <div className="settings-inline">
-          <h6 className="mb-3">Settings</h6>
+          <h6 className="mb-3">Help & Resources</h6>
+          <div className="d-grid gap-2 mb-3">
+            <Button
+              variant="outline-info"
+              onClick={() => setShowWeatherPrimer(true)}
+            >
+              <Cloud size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+              Weather Primer
+            </Button>
+            <Button
+              variant="outline-primary"
+              onClick={() => setShowGameplayMechanics(true)}
+            >
+              <Shield size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+              Gameplay Mechanics
+            </Button>
+          </div>
+
+          <h6 className="mb-3 mt-4">Settings</h6>
           <div className="d-grid gap-2">
             <Button
               variant="outline-warning"
@@ -58,7 +81,17 @@ const SettingsMenu = ({ inline = false }) => {
           </div>
         </div>
 
-        {/* Modals */}
+        {/* Educational Modals */}
+        <WeatherPrimerModal
+          show={showWeatherPrimer}
+          onHide={() => setShowWeatherPrimer(false)}
+        />
+        <GameplayMechanicsModal
+          show={showGameplayMechanics}
+          onHide={() => setShowGameplayMechanics(false)}
+        />
+
+        {/* Confirmation Modals */}
         <Modal show={showNukeRegionsConfirm} onHide={() => setShowNukeRegionsConfirm(false)}>
           <Modal.Header closeButton>
             <Modal.Title>Delete All Regions?</Modal.Title>
@@ -118,6 +151,16 @@ const SettingsMenu = ({ inline = false }) => {
         </Dropdown.Toggle>
 
         <Dropdown.Menu className="settings-menu">
+          <Dropdown.Header>Help & Resources</Dropdown.Header>
+          <Dropdown.Item onClick={() => setShowWeatherPrimer(true)}>
+            <Cloud size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Weather Primer
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => setShowGameplayMechanics(true)}>
+            <Shield size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Gameplay Mechanics
+          </Dropdown.Item>
+          <Dropdown.Divider />
           <Dropdown.Header>Danger Zone</Dropdown.Header>
           <Dropdown.Item
             onClick={() => setShowNukeRegionsConfirm(true)}
@@ -133,6 +176,16 @@ const SettingsMenu = ({ inline = false }) => {
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
+
+      {/* Educational Modals */}
+      <WeatherPrimerModal
+        show={showWeatherPrimer}
+        onHide={() => setShowWeatherPrimer(false)}
+      />
+      <GameplayMechanicsModal
+        show={showGameplayMechanics}
+        onHide={() => setShowGameplayMechanics(false)}
+      />
 
       {/* Nuke Regions Confirmation */}
       <Modal show={showNukeRegionsConfirm} onHide={() => setShowNukeRegionsConfirm(false)}>
