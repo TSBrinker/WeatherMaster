@@ -1,7 +1,7 @@
 # WeatherMaster v2 - Master Progress Document
 
-**Last Updated**: 2025-12-20
-**Current Status**: Sprint 1.5 Complete (Forecast Display) ✅
+**Last Updated**: 2025-12-21
+**Current Status**: Sprint 2 Complete (iOS Weather UI Redesign) ✅
 
 ---
 
@@ -62,13 +62,11 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 ### ✅ Completed Sprints
 - **Sprint 1**: Basic Weather Generation (COMPLETE)
 - **Sprint 1.5**: Weather Forecast Display (COMPLETE)
-
-### 🔄 Current Work
-- Testing and refinement
-- Climate accuracy validation
+- **Sprint 2**: iOS Weather UI Redesign "Elderwood" (COMPLETE)
 
 ### 🔜 Next Sprint
-- **Sprint 2**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
+- **Sprint 3**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
+- Or: Polish & bug fixes based on user testing
 
 ---
 
@@ -226,6 +224,105 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - ✅ DruidcraftForecast (see Phase 5)
 - ✅ DMForecastPanel (see Phase 5)
 
+### Phase 7: iOS Weather UI Redesign (Sprint 2: Elderwood)
+**Status**: COMPLETE ✅
+
+**Sprint Goal**: Complete layout restructure with iOS Weather-inspired design - massive typography, ultra-thin fonts, dynamic weather gradients, separated component cards
+
+**New Components Built**:
+- ✅ PrimaryDisplay ([PrimaryDisplay.jsx/.css](src/v2/components/weather/PrimaryDisplay.jsx))
+  - HUGE location name (9rem desktop → 4rem mobile)
+  - Massive temperature display (8rem hero text)
+  - Ultra-thin typography (200-300 font weight)
+  - Dynamic weather gradients (changes with condition + time of day)
+  - iOS-style high/low temperature display
+  - Template/condition info modals
+  - Weather icon integration
+
+- ✅ ConditionsCard ([ConditionsCard.jsx/.css](src/v2/components/weather/ConditionsCard.jsx))
+  - Separated from hero into dedicated card
+  - Wind speed and direction
+  - Humidity percentage
+  - Precipitation type
+  - Professional line-art icons
+
+- ✅ CelestialCard ([CelestialCard.jsx/.css](src/v2/components/weather/CelestialCard.jsx))
+  - Separated from hero into dedicated card
+  - Sun info (sunrise/sunset, day length)
+  - Moon info (phase, moonrise/moonset)
+  - 8 different moon phase icons
+  - Day length calculation
+
+- ✅ WeatherHeader ([WeatherHeader.jsx/.css](src/v2/components/header/WeatherHeader.jsx))
+  - Time display with proper formatting
+  - Time controls (<<, <, >, >> for 4hr, 1hr advance)
+  - Hamburger menu trigger (top right)
+  - Clean minimal design
+
+- ✅ HamburgerMenu ([HamburgerMenu.jsx/.css](src/v2/components/menu/HamburgerMenu.jsx))
+  - Full-screen location list (slides from RIGHT)
+  - Active region indicator (✓)
+  - Integrated settings panel (slides down)
+  - "+ Add Location" button
+  - World name display
+
+**Styling System**:
+- ✅ Dynamic weather gradients ([theme.css](src/v2/styles/theme.css))
+  - 10+ gradient combinations
+  - Changes based on weather condition AND time of day
+  - Sunny: Blue-cyan gradients
+  - Cloudy: Cool gray gradients
+  - Rainy: Blue-gray gradients
+  - Snowy: Light gray-white gradients
+  - Clear night: Deep blue-purple gradients
+
+- ✅ Weather theme utilities ([weatherTheme.js](src/v2/utils/weatherTheme.js))
+  - getWeatherGradient(condition, isDaytime) function
+  - Proper condition matching logic
+
+- ✅ Global app styles ([app.css](src/v2/styles/app.css))
+  - Frosted glass effects (backdrop-filter: blur)
+  - Responsive typography scaling
+  - Component layout structure
+
+**Icon Integration**:
+- ✅ Replaced ALL emojis with professional line-art icons
+- ✅ Installed `react-icons` package
+- ✅ Weather Icons (wi) - weather conditions, celestial
+- ✅ Font Awesome (fa) - settings (trash, bomb)
+- ✅ Game Icons (gi) - forecasts (spellbook, scroll)
+- ✅ Hero Icons (hi) - location marker
+- ✅ Bootstrap Icons (bs) - info, stars
+- ✅ Box Icons (bi) - error icon
+
+**Responsive Design**:
+- ✅ Location name: 9rem → 7rem → 5.5rem → 4rem (4 breakpoints)
+- ✅ Temperature: 8rem → 6rem → 4.5rem → 3.5rem (4 breakpoints)
+- ✅ Mobile-first approach
+- ✅ Touch-friendly button sizing
+
+**Bugs Fixed**:
+1. Weather data structure (flat object, not nested under `current`)
+2. Date formatting (no minute property, display :00)
+3. Celestial property names (sunriseTime not sunrise, moonriseTime not moonrise)
+4. Settings menu inline mode for hamburger integration
+
+**Documentation**:
+- ✅ Sprint 2 log ([SPRINT_2_ELDERWOOD.md](docs/sprint-logs/SPRINT_2_ELDERWOOD.md))
+  - 4 sessions documented
+  - All component creation tracked
+  - Icon replacement session documented
+- ✅ iOS Weather reference images added to repo
+- ✅ Updated PROGRESS.md with complete Sprint 2 summary
+
+**Key Design Philosophy**:
+- **Ultra-massive typography** - Location name dominates the screen
+- **Ultra-thin fonts** - 200-300 weight for modern iOS feel
+- **Dynamic backgrounds** - Weather gradients create immersive experience
+- **Component separation** - Hero, conditions, celestial all independent cards
+- **Professional icons** - Line-art SVG icons instead of emojis
+- **Responsive scaling** - Graceful degradation on smaller screens
+
 ---
 
 ## Project Structure
@@ -261,21 +358,33 @@ src/v2/
 │   ├── time/
 │   │   ├── TimeDisplay.jsx
 │   │   └── TimeControls.jsx
+│   ├── header/
+│   │   └── WeatherHeader.jsx/.css   # Time display + controls + hamburger
 │   ├── weather/
-│   │   ├── CurrentWeather.jsx
-│   │   ├── WeatherDebug.jsx
-│   │   ├── DruidcraftForecast.jsx
-│   │   └── DMForecastPanel.jsx
+│   │   ├── PrimaryDisplay.jsx/.css   # HUGE hero component
+│   │   ├── ConditionsCard.jsx/.css   # Wind/humidity/precip
+│   │   ├── CelestialCard.jsx/.css    # Sun/moon info
+│   │   ├── CurrentWeather.jsx/.css   # Legacy component
+│   │   ├── WeatherDebug.jsx/.css     # Debug panel
+│   │   ├── DruidcraftForecast.jsx/.css
+│   │   └── DMForecastPanel.jsx/.css
 │   └── menu/
-│       └── SettingsMenu.jsx
+│       ├── SettingsMenu.jsx          # Data management
+│       └── HamburgerMenu.jsx/.css    # Full-screen location list
 ├── data/
 │   └── region-templates.js   # 30+ climate templates
+├── utils/
+│   └── weatherTheme.js       # Dynamic weather gradients
+├── styles/
+│   ├── theme.css             # Weather-based background gradients
+│   └── app.css               # Global app styles
 └── App.jsx                    # Main app with weather + celestial integration
 
 docs/
 ├── climate-research/          # Real-world climate data
 └── sprint-logs/               # Individual agent sprint logs
-    └── SPRINT_1_COMPLETE.md   # Sprint 1 + 1.5 documentation
+    ├── SPRINT_1_COMPLETE.md   # Sprint 1 + 1.5 documentation
+    └── SPRINT_2_ELDERWOOD.md  # Sprint 2 iOS UI redesign
 
 QUESTIONS_FOR_USER.md          # Architectural decisions
 FLAT_DISC_WORLD.md             # Celestial mechanics specification
