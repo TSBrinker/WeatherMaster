@@ -36,6 +36,24 @@ When you start a session:
 4. Once processed and acknowledged, items can be cleared from NOTES_FROM_USER.md
 5. Never ignore or skip this file - it's Tyler's way of communicating without interrupting your workflow
 
+### README.md Update Workflow
+
+**IMPORTANT**: Keep README.md current as features are confirmed working.
+
+When to update README.md:
+1. **After completing a sprint** - Update "Completed Sprints" and "Current Status" sections
+2. **When features are confirmed working** - Add to "Completed Features" checklist
+3. **When roadmap changes** - Update "Upcoming Sprints" section
+4. **When major architectural changes occur** - Update "How It Works" or "Technical Details"
+
+What to update:
+- **Version number** and **Last Updated** date at top
+- **Completed Features** checklist - mark new features as ✅
+- **Completed Sprints** list - add finished sprint with name
+- **Upcoming Sprints** - adjust if priorities change
+- **Credits** section - add your sprint agent name
+- Keep it current, accurate, and reflective of actual working features
+
 ### Commit Message Format
 
 ```
