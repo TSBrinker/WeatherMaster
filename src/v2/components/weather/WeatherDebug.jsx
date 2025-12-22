@@ -95,6 +95,38 @@ const WeatherDebug = ({ weatherData }) => {
               <span className="debug-value">{debug.dayOfPattern}</span>
             </div>
           </div>
+
+          {debug.atmospheric && (
+            <>
+              <h5 className="mt-3">Atmospheric Data</h5>
+              <div className="debug-grid">
+                <div className="debug-item">
+                  <span className="debug-label">Pressure:</span>
+                  <span className="debug-value">{weatherData.pressure}" {weatherData.pressureTrend}</span>
+                </div>
+                <div className="debug-item">
+                  <span className="debug-label">Base Humidity:</span>
+                  <span className="debug-value">{debug.atmospheric.baseHumidity}%</span>
+                </div>
+                <div className="debug-item">
+                  <span className="debug-label">Enhanced Humidity:</span>
+                  <span className="debug-value">{debug.atmospheric.enhancedHumidity}%</span>
+                </div>
+                <div className="debug-item">
+                  <span className="debug-label">Cloud Cover:</span>
+                  <span className="debug-value">{weatherData.cloudCover}% ({weatherData.cloudCoverType})</span>
+                </div>
+                <div className="debug-item">
+                  <span className="debug-label">Visibility:</span>
+                  <span className="debug-value">{weatherData.visibility} mi ({weatherData.visibilityDescription})</span>
+                </div>
+                <div className="debug-item">
+                  <span className="debug-label">Atmospheric Feels-Like Contribution:</span>
+                  <span className="debug-value">{debug.atmospheric.atmosphericFeelsLikeContribution > 0 ? '+' : ''}{debug.atmospheric.atmosphericFeelsLikeContribution}°F</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

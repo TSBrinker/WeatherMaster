@@ -64,9 +64,12 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Sprint 1.5**: Weather Forecast Display (COMPLETE)
 - **Sprint 2**: iOS Weather UI Redesign "Elderwood" (COMPLETE)
 - **Sprint 3**: Modal Legibility & UI Polish "Willow" (COMPLETE)
+- **Sprint 4**: Atmospheric Depth "Cedar" (COMPLETE)
 
 ### 🔜 Next Sprint
-- **Sprint 4**: Atmospheric Depth (pressure systems, enhanced humidity, cloud cover)
+- **Sprint 5**: Enhanced Wind & Weather Systems
+- **Sprint 6**: Extreme Weather & Snow Accumulation
+- **Sprint 7**: Educational Modals & Documentation (user requested)
 - Or: Additional features based on user feedback
 
 ---
@@ -377,6 +380,100 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 
 ---
 
+### Phase 9: Atmospheric Depth (Sprint 4: Cedar)
+**Status**: COMPLETE ✅
+
+**Sprint Goal**: Implement atmospheric pressure systems, enhanced humidity modeling, cloud cover percentage, and atmospheric effects on temperature
+
+**AtmosphericService Implementation**:
+- ✅ Created comprehensive atmospheric modeling service ([AtmosphericService.js](src/v2/services/weather/AtmosphericService.js) - 320 lines)
+- ✅ Barometric pressure systems tied to weather patterns (29-31 inHg)
+  - High Pressure: 30.20-30.70 inHg (stable, clear weather)
+  - Low Pressure: 29.20-29.70 inHg (unstable, precipitation likely)
+  - Warm/Cold Fronts: Transitional pressure ranges
+  - Stable: Normal pressure range
+- ✅ Pressure trend calculation (rising ↑, falling ↓, steady →)
+- ✅ Daily pressure variation with hourly sinusoidal pattern
+
+**Cloud Cover Modeling**:
+- ✅ Percentage-based cloud cover (0-100%)
+- ✅ Five classification types: Clear (0-10%), Few (10-25%), Scattered (25-50%), Broken (50-87%), Overcast (87-100%)
+- ✅ Pattern-based cloudiness with realistic variation
+- ✅ Automatic overcast conditions during precipitation
+
+**Enhanced Humidity Calculations**:
+- ✅ Pressure influence on humidity (low pressure = higher humidity)
+- ✅ Pressure trend effects (falling pressure = rising humidity)
+- ✅ Pattern precipitation probability influences humidity
+- ✅ Realistic humidity ranges (10-100%)
+- ✅ Uses relative humidity (RH) - appropriate for D&D gameplay
+
+**Atmospheric Effects on Temperature**:
+- ✅ Enhanced "feels like" calculation with atmospheric contribution
+- ✅ High humidity makes hot weather feel hotter (up to +5°F)
+- ✅ Low pressure makes cold weather feel colder (up to -2°F)
+- ✅ Total atmospheric contribution: up to ±7°F on perceived temperature
+
+**Visibility Modeling**:
+- ✅ Precipitation-based visibility reduction (0.5-10 miles)
+  - Heavy precipitation: 0.5 mi (Very Poor)
+  - Moderate precipitation: 2 mi (Poor)
+  - Light precipitation: 5 mi (Moderate)
+  - No precipitation: 10 mi (Excellent)
+- ✅ Haze effects from high humidity + cloud cover
+- ✅ Clear descriptive text for DM narration
+
+**Weather Generator Integration**:
+- ✅ Integrated AtmosphericService into weather generation flow
+- ✅ Pressure calculated for each weather pattern
+- ✅ Base humidity enhanced with atmospheric effects
+- ✅ Cloud cover calculated with pattern and precipitation influence
+- ✅ Visibility determined by multiple atmospheric factors
+- ✅ All atmospheric data exposed in weather object
+- ✅ Comprehensive debug data for validation
+
+**UI Enhancements**:
+- ✅ Updated ConditionsCard to display 6 conditions (up from 3)
+  - Wind (speed & direction)
+  - Humidity (percentage)
+  - Precipitation (type & intensity)
+  - **NEW**: Pressure (value & trend with arrows)
+  - **NEW**: Cloud Cover (percentage & type)
+  - **NEW**: Visibility (distance & description)
+- ✅ Added weather icons: WiBarometer, WiCloudy, WiFog
+- ✅ Responsive grid layout (2 columns mobile, 3 columns desktop)
+- ✅ Enhanced WeatherDebug with atmospheric data section
+  - Pressure details
+  - Base vs enhanced humidity comparison
+  - Cloud cover breakdown
+  - Visibility calculations
+  - Atmospheric feels-like contribution
+
+**Technical Highlights**:
+- ✅ Modular service design with independent caching
+- ✅ Deterministic seed-based calculations
+- ✅ Based on real meteorological principles
+- ✅ Minimal performance impact (+4.91 KB bundle size)
+- ✅ Comprehensive inline documentation
+
+**Files Created**:
+- src/v2/services/weather/AtmosphericService.js (320 lines)
+
+**Files Modified**:
+- src/v2/services/weather/WeatherGenerator.js (integrated atmospheric calculations)
+- src/v2/components/weather/ConditionsCard.jsx (added 3 new condition displays)
+- src/v2/components/weather/WeatherDebug.jsx (added atmospheric debug section)
+
+**Documentation**:
+- ✅ Sprint 4 log ([SPRINT_4_CEDAR.md](docs/sprint-logs/SPRINT_4_CEDAR.md))
+  - Complete implementation documentation
+  - Technical details and architecture notes
+  - Validation testing notes
+- ✅ Updated PROGRESS.md with Phase 9
+- ✅ Updated roadmap with future sprint plans
+
+---
+
 ## Project Structure
 
 ```
@@ -448,18 +545,7 @@ PROGRESS.md                    # This file (master tracker)
 
 ## Roadmap: Next Sprints
 
-### Sprint 2: Atmospheric Depth (Not Started)
-**Goal**: Add pressure systems, enhanced humidity, cloud cover
-
-**Features**:
-- [ ] Pressure systems driving weather changes
-- [ ] Enhanced humidity calculations
-- [ ] Cloud cover percentage modeling
-- [ ] Atmospheric effects on "feels like" temperature
-
-**Estimated Effort**: 2-3 days
-
-### Sprint 3: Wind & Weather Systems (Not Started)
+### Sprint 5: Enhanced Wind & Weather Systems (Not Started)
 **Goal**: Sophisticated wind patterns and frontal systems
 
 **Features**:
@@ -470,8 +556,8 @@ PROGRESS.md                    # This file (master tracker)
 
 **Estimated Effort**: 2-3 days
 
-### Sprint 4: Polish & Extreme Weather (Not Started)
-**Goal**: Add extreme events and refine existing features
+### Sprint 6: Extreme Weather & Snow Accumulation (Not Started)
+**Goal**: Add extreme events and snow tracking
 
 **Features**:
 - [ ] Extreme weather events (hurricanes, blizzards, heat waves)
@@ -479,6 +565,36 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] Weather effects refinement
 - [ ] Fine-tuning temperature calculations
 - [ ] Performance optimization
+
+**Estimated Effort**: 2-3 days
+
+### Sprint 7: Educational Modals & Documentation (Not Started)
+**Goal**: Help users understand weather mechanics and D&D impacts
+
+**Features**:
+- [ ] Weather Primer Modal - Explain atmospheric conditions (pressure, fronts, humidity, etc.)
+  - What high/low/neutral values mean
+  - Definitions of weather patterns (cold front, warm front, high pressure, etc.)
+  - How conditions interact and affect weather
+- [ ] Gameplay Mechanics Modal - D&D mechanical impacts of weather
+  - Display existing weather effects from original implementation (src folder)
+  - Show mechanical impacts on gameplay (visibility, movement, combat, etc.)
+  - Reference existing definitions and rules
+- [ ] Help/Tutorial system
+  - First-time user guidance
+  - Feature explanations
+
+**Estimated Effort**: 1-2 days
+
+### Sprint 8: UI Polish & User Experience (Not Started)
+**Goal**: Refine user experience and add quality-of-life features
+
+**Features**:
+- [ ] Loading states and transitions
+- [ ] Error handling improvements
+- [ ] Accessibility enhancements
+- [ ] Mobile optimization
+- [ ] Theme customization options
 
 **Estimated Effort**: 2-3 days
 

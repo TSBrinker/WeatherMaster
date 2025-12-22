@@ -6,6 +6,7 @@
 import { generateSeed, SeededRandom } from '../../utils/seedGenerator';
 import { TemperatureService } from './TemperatureService';
 import { WeatherPatternService } from './WeatherPatternService';
+import { AtmosphericService } from './AtmosphericService';
 
 /**
  * Wind directions
@@ -40,6 +41,7 @@ export class WeatherGenerator {
   constructor() {
     this.tempService = new TemperatureService();
     this.patternService = new WeatherPatternService();
+    this.atmosphericService = new AtmosphericService();
     this.weatherCache = new Map();
   }
 
@@ -59,6 +61,9 @@ export class WeatherGenerator {
     // Get current weather pattern
     const pattern = this.patternService.getCurrentPattern(region, date);
 
+    // Get atmospheric pressure
+    const pressure = this.atmosphericService.getPressure(region, date, pattern);
+
     // Generate temperature
     const baseTemp = this.tempService.getTemperature(region, date);
     const patternTempMod = this.patternService.getTemperatureModifier(pattern);
@@ -67,17 +72,32 @@ export class WeatherGenerator {
     // Generate wind
     const wind = this.generateWind(region, date, pattern);
 
-    // Generate humidity
-    const humidity = this.generateHumidity(region, date, pattern);
+    // Generate base humidity
+    const baseHumidity = this.generateHumidity(region, date, pattern);
 
-    // Calculate feels-like temperature
-    const feelsLike = this.tempService.getFeelsLike(temperature, wind.speed, humidity);
+    // Enhance humidity with atmospheric effects
+    const humidity = this.atmosphericService.getEnhancedHumidity(
+      region, date, pattern, pressure, baseHumidity
+    );
 
     // Determine precipitation
     const precipitation = this.generatePrecipitation(region, date, pattern, temperature);
 
+    // Get cloud cover
+    const cloudCover = this.atmosphericService.getCloudCover(region, date, pattern, precipitation);
+
+    // Calculate feels-like temperature (with atmospheric contribution)
+    const baseFeelsLike = this.tempService.getFeelsLike(temperature, wind.speed, humidity);
+    const atmosphericContribution = this.atmosphericService.getAtmosphericFeelsLikeContribution(
+      temperature, humidity, pressure
+    );
+    const feelsLike = Math.round(baseFeelsLike + atmosphericContribution);
+
     // Determine sky condition and final weather condition
     const condition = this.determineCondition(region, pattern, precipitation, temperature, humidity, date);
+
+    // Get visibility
+    const visibility = this.atmosphericService.getVisibility(cloudCover, precipitation, humidity);
 
     // Generate any weather effects
     const effects = this.generateEffects(condition, wind, temperature, precipitation);
@@ -94,12 +114,26 @@ export class WeatherGenerator {
       precipitationIntensity: precipitation.intensity,
       pattern: pattern.name,
       effects,
+      // New atmospheric data
+      pressure: pressure.pressure,
+      pressureTrend: pressure.trend,
+      cloudCover: cloudCover.percentage,
+      cloudCoverType: cloudCover.type,
+      visibility: visibility.distance,
+      visibilityDescription: visibility.description,
       _debug: {
         pattern: pattern.type,
         dayOfPattern: pattern.dayOfPattern,
         baseTemp,
         patternTempMod,
-        temperatureBreakdown: this.tempService.getTemperatureDebug(region, date)
+        temperatureBreakdown: this.tempService.getTemperatureDebug(region, date),
+        atmospheric: {
+          pressure: pressure._debug,
+          baseHumidity,
+          enhancedHumidity: humidity,
+          cloudCover: cloudCover._debug,
+          atmosphericFeelsLikeContribution: atmosphericContribution
+        }
       }
     };
 
@@ -355,5 +389,6 @@ export class WeatherGenerator {
     this.weatherCache.clear();
     this.tempService.clearCache();
     this.patternService.clearCache();
+    this.atmosphericService.clearCache();
   }
 }
