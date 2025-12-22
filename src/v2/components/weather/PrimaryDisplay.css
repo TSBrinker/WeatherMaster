@@ -9,7 +9,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   overflow: hidden;
   transition: none; /* Instant background updates */
-  min-height: 500px;
+  min-height: 600px; /* Larger min-height to prevent cutoff */
   margin-bottom: 1.5rem !important;
   padding: 3rem 2rem;
   text-align: center;
@@ -141,7 +141,7 @@
 @media (max-width: 768px) {
   .primary-display {
     padding: 2.5rem 1.5rem;
-    min-height: 450px;
+    min-height: 550px; /* Larger min-height for tablet */
   }
 
   .location-hero {
@@ -172,7 +172,7 @@
 @media (max-width: 576px) {
   .primary-display {
     padding: 2rem 1rem;
-    min-height: 400px;
+    min-height: 500px; /* Larger min-height for mobile */
   }
 
   .location-hero {

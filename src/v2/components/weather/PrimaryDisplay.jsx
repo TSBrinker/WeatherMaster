@@ -54,23 +54,23 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
     return hour;
   };
 
+  // Shared time-of-day calculations
+  const hour = currentDate?.hour ?? 12; // Use in-game time, default to noon if not available
+  const sunriseHour = parseTimeToHour(weather?.celestial?.sunriseTime);
+  const sunsetHour = parseTimeToHour(weather?.celestial?.sunsetTime);
+
+  // Golden hour detection (the hour of sunrise and the hour of sunset)
+  const isGoldenHour = (sunriseHour !== null && hour === sunriseHour) ||
+                       (sunsetHour !== null && hour === sunsetHour);
+
+  // Night detection: after sunset hour or before sunrise hour
+  const isNight = sunsetHour !== null && sunriseHour !== null
+    ? (hour > sunsetHour || hour < sunriseHour)
+    : (hour < 6 || hour >= 20); // Fallback to static times
+
   // Get weather gradient based on condition and time
   const getWeatherGradient = () => {
     const conditionLower = condition?.toLowerCase() || '';
-    const hour = currentDate?.hour ?? 12; // Use in-game time, default to noon if not available
-
-    // Parse sunrise/sunset hours from celestial data
-    const sunriseHour = parseTimeToHour(weather?.celestial?.sunriseTime);
-    const sunsetHour = parseTimeToHour(weather?.celestial?.sunsetTime);
-
-    // Golden hour detection (the hour of sunrise and the hour of sunset)
-    const isGoldenHour = (sunriseHour !== null && hour === sunriseHour) ||
-                         (sunsetHour !== null && hour === sunsetHour);
-
-    // Night detection: after sunset hour or before sunrise hour
-    const isNight = sunsetHour !== null && sunriseHour !== null
-      ? (hour > sunsetHour || hour < sunriseHour)
-      : (hour < 6 || hour >= 20); // Fallback to static times
 
     // Twilight is deprecated in favor of golden hour
     const isTwilight = false;
@@ -111,16 +111,6 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   // Get weather icon
   const getWeatherIcon = () => {
     const conditionLower = condition?.toLowerCase() || '';
-    const hour = currentDate?.hour ?? 12; // Use in-game time, default to noon if not available
-
-    // Parse sunrise/sunset hours from celestial data
-    const sunriseHour = parseTimeToHour(weather?.celestial?.sunriseTime);
-    const sunsetHour = parseTimeToHour(weather?.celestial?.sunsetTime);
-
-    // Night detection: after sunset hour or before sunrise hour
-    const isNight = sunsetHour !== null && sunriseHour !== null
-      ? (hour > sunsetHour || hour < sunriseHour)
-      : (hour < 6 || hour >= 20); // Fallback to static times
 
     if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
       return isNight ? <WiNightClear /> : <WiDaySunny />;
@@ -135,9 +125,13 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
     return isNight ? <WiNightAltCloudy /> : <WiDayCloudy />;
   };
 
-  // Determine text color based on gradient
+  // Determine text color based on background gradient brightness
   const conditionLower = condition?.toLowerCase() || '';
-  const textClass = conditionLower.includes('snow') || conditionLower.includes('fog') ? 'text-dark' : 'text-light';
+  // Use dark text for light backgrounds (daytime snow/fog), light text otherwise
+  // Night always needs light text, regardless of condition
+  const textClass = !isNight && (conditionLower.includes('snow') || conditionLower.includes('fog'))
+    ? 'text-dark'
+    : 'text-light';
 
   // Template tooltip
   const templateTooltip = (
