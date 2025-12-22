@@ -1,1 +1,3 @@
 Here is where I'll stow some thoughts so I don't interrupt you while you're working. Once you've acknowledged a note, please migrate it to the roadmap and delete it here (do not delete these instructions, please)
+
+- when opening the region menu, the expanded settings menu state persists. So if I open regions, then open the settings, then I close the whole menu, next time I open the regions menu settings are still open. Closing the menu should collapse the settings for next time
