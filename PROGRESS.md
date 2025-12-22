@@ -632,6 +632,43 @@ PROGRESS.md                    # This file (master tracker)
 
 **Estimated Effort**: 2-3 days
 
+### Sprint 11: Spatial Weather (Stretch Goal)
+**Goal**: Add optional spatial relationships between regions for realistic weather propagation
+
+**Features**:
+- [ ] **Adjacent Regions System** (user requested)
+  - 3x3 grid UI for declaring neighbors (N, NE, E, SE, S, SW, W, NW)
+  - Each region can reference up to 8 adjacent regions
+  - Visual selector with dropdown for each direction
+  - Weather blending based on neighbor averages
+- [ ] **Weather Blend Factor**
+  - 0-100% slider controlling neighbor influence
+  - 0% = independent (current behavior)
+  - 50% = moderate blending
+  - 100% = heavily influenced by neighbors
+- [ ] **Blended Weather Generation**
+  - Temperature, pressure, humidity, cloud cover blend with neighbors
+  - Deterministic (same neighbors + date = same weather)
+  - Performance optimized (O(n) where n = neighbors, max 8)
+- [ ] **UI Integration**
+  - Add to RegionCreator component
+  - Visual 3x3 grid layout
+  - Badge/chip display for selected regions
+  - Edit existing region spatial relationships
+- [ ] **Use Cases**
+  - Coastal → inland transitions (maritime influence)
+  - Mountain rain shadows (wet windward, dry leeward)
+  - Continental weather patterns (connected climate zones)
+  - Realistic world-building coherence
+
+**Technical Notes**:
+- Backward compatible (existing regions unaffected)
+- No coordinate system required (adjacency only)
+- Export/import preserves spatial relationships
+- See [docs/SPATIAL_WEATHER_DESIGN.md](docs/SPATIAL_WEATHER_DESIGN.md) for full specification
+
+**Estimated Effort**: 4-6 hours (basic), 1-2 days (polished)
+
 ---
 
 ## Key Technical Details
