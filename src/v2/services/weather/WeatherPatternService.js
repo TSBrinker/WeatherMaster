@@ -64,15 +64,32 @@ export const WEATHER_PATTERNS = {
 };
 
 /**
- * Pattern transition sequence
- * Realistic progression of weather patterns
+ * Pattern transition weights
+ * Maps each pattern to likely successors with relative weights
+ * Higher weight = more likely to be selected
+ *
+ * Meteorological basis:
+ * - High pressure systems tend to persist or give way to fronts
+ * - Low pressure systems are followed by clearing (cold front, then high pressure)
+ * - Fronts are transitional and lead to pressure systems
+ * - Stable conditions can shift to any pattern
  */
 const PATTERN_TRANSITIONS = {
-  HIGH_PRESSURE: ['STABLE', 'WARM_FRONT', 'HIGH_PRESSURE'],
-  LOW_PRESSURE: ['COLD_FRONT', 'STABLE', 'HIGH_PRESSURE'],
-  WARM_FRONT: ['LOW_PRESSURE', 'STABLE', 'HIGH_PRESSURE'],
-  COLD_FRONT: ['HIGH_PRESSURE', 'STABLE', 'COLD_FRONT'],
-  STABLE: ['HIGH_PRESSURE', 'LOW_PRESSURE', 'WARM_FRONT', 'STABLE']
+  HIGH_PRESSURE: { HIGH_PRESSURE: 3, STABLE: 3, WARM_FRONT: 2, LOW_PRESSURE: 1, COLD_FRONT: 1 },
+  LOW_PRESSURE: { COLD_FRONT: 4, HIGH_PRESSURE: 3, STABLE: 2, LOW_PRESSURE: 1, WARM_FRONT: 0 },
+  WARM_FRONT: { LOW_PRESSURE: 4, STABLE: 2, HIGH_PRESSURE: 2, COLD_FRONT: 1, WARM_FRONT: 1 },
+  COLD_FRONT: { HIGH_PRESSURE: 5, STABLE: 3, COLD_FRONT: 1, LOW_PRESSURE: 1, WARM_FRONT: 0 },
+  STABLE: { HIGH_PRESSURE: 3, STABLE: 2, LOW_PRESSURE: 2, WARM_FRONT: 2, COLD_FRONT: 1 }
+};
+
+/**
+ * Pattern fatigue penalties
+ * Reduces probability of same pattern repeating consecutively
+ */
+const PATTERN_FATIGUE = {
+  REPEAT_ONCE: 0.5,    // 50% weight if pattern occurred last cycle
+  REPEAT_TWICE: 0.25,  // 25% weight if pattern occurred 2 cycles in a row
+  REPEAT_THREE: 0.1    // 10% weight if pattern occurred 3+ cycles in a row
 };
 
 /**
@@ -85,6 +102,9 @@ export class WeatherPatternService {
 
   /**
    * Get the current weather pattern for a region and date
+   * Uses transition-based selection with pattern fatigue to prevent
+   * unrealistic streaks of the same weather type.
+   *
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @returns {Object} Current pattern with characteristics
@@ -96,13 +116,16 @@ export class WeatherPatternService {
       return this.patternCache.get(cacheKey);
     }
 
-    // Use a 4-day pattern cycle (patterns change every 3-5 days on average)
+    // Use a 4-day pattern cycle
     const patternSeed = generatePatternSeed(region.id, date, 4, 'weather-pattern');
     const rng = new SeededRandom(patternSeed);
 
-    // Select pattern type
-    const patternKeys = Object.keys(WEATHER_PATTERNS);
-    const patternKey = rng.choice(patternKeys);
+    // Get pattern history for transition-based selection
+    const patternHistory = this.getPatternHistory(region, date, 3);
+
+    // Select pattern using weighted transitions and fatigue
+    const patternKey = this.selectPatternWithTransitions(rng, patternHistory);
+
     const pattern = {
       type: patternKey,
       ...WEATHER_PATTERNS[patternKey]
@@ -121,6 +144,124 @@ export class WeatherPatternService {
   }
 
   /**
+   * Get the pattern types from previous N cycles (for fatigue calculation)
+   * @param {Object} region - Region data
+   * @param {Object} date - Current game date
+   * @param {number} lookback - Number of previous cycles to check
+   * @returns {string[]} Array of pattern type keys, most recent first
+   */
+  getPatternHistory(region, date, lookback = 3) {
+    const history = [];
+    const totalDays = (date.year - 1) * 360 + (date.month - 1) * 30 + (date.day - 1);
+    const currentCycle = Math.floor(totalDays / 4);
+
+    for (let i = 1; i <= lookback; i++) {
+      const previousCycle = currentCycle - i;
+      if (previousCycle < 0) break;
+
+      // Calculate a date in the previous cycle
+      const previousDay = previousCycle * 4 + 1; // Day 1 of that cycle
+      const year = Math.floor(previousDay / 360) + 1;
+      const month = Math.floor((previousDay % 360) / 30) + 1;
+      const day = (previousDay % 30) + 1;
+
+      // Generate the pattern for that cycle directly (avoiding recursion)
+      const prevSeed = generatePatternSeed(region.id, { year, month, day }, 4, 'weather-pattern');
+      const prevRng = new SeededRandom(prevSeed);
+
+      // For historical patterns, we need to select without recursion
+      // Use the previous pattern's history for weighted selection
+      const olderHistory = history.slice(); // Patterns already found
+      const prevPatternKey = this.selectPatternWithTransitions(prevRng, olderHistory);
+      history.push(prevPatternKey);
+    }
+
+    return history;
+  }
+
+  /**
+   * Select a pattern type using transition weights and fatigue penalties
+   * @param {SeededRandom} rng - Random number generator
+   * @param {string[]} history - Recent pattern history (most recent first)
+   * @returns {string} Selected pattern type key
+   */
+  selectPatternWithTransitions(rng, history) {
+    const patternKeys = Object.keys(WEATHER_PATTERNS);
+
+    // If no history, use base weights favoring stable/high pressure
+    // (weather systems don't start from chaos)
+    if (history.length === 0) {
+      const baseWeights = {
+        HIGH_PRESSURE: 3,
+        STABLE: 3,
+        LOW_PRESSURE: 2,
+        WARM_FRONT: 1,
+        COLD_FRONT: 1
+      };
+      return this.weightedChoice(rng, patternKeys, baseWeights);
+    }
+
+    // Get transition weights from previous pattern
+    const previousPattern = history[0];
+    const transitionWeights = { ...PATTERN_TRANSITIONS[previousPattern] };
+
+    // Apply fatigue penalties for repeated patterns
+    for (const key of patternKeys) {
+      let consecutiveCount = 0;
+      for (const histPattern of history) {
+        if (histPattern === key) {
+          consecutiveCount++;
+        } else {
+          break; // Only count consecutive occurrences
+        }
+      }
+
+      // Apply fatigue based on how many times this pattern repeated
+      if (consecutiveCount >= 3) {
+        transitionWeights[key] *= PATTERN_FATIGUE.REPEAT_THREE;
+      } else if (consecutiveCount === 2) {
+        transitionWeights[key] *= PATTERN_FATIGUE.REPEAT_TWICE;
+      } else if (consecutiveCount === 1) {
+        transitionWeights[key] *= PATTERN_FATIGUE.REPEAT_ONCE;
+      }
+    }
+
+    return this.weightedChoice(rng, patternKeys, transitionWeights);
+  }
+
+  /**
+   * Make a weighted random choice from options
+   * @param {SeededRandom} rng - Random number generator
+   * @param {string[]} options - Array of options to choose from
+   * @param {Object} weights - Map of option -> weight
+   * @returns {string} Selected option
+   */
+  weightedChoice(rng, options, weights) {
+    // Calculate total weight
+    let totalWeight = 0;
+    for (const option of options) {
+      totalWeight += weights[option] || 0;
+    }
+
+    // If all weights are 0, fall back to uniform random
+    if (totalWeight === 0) {
+      return rng.choice(options);
+    }
+
+    // Make weighted selection
+    let roll = rng.next() * totalWeight;
+    for (const option of options) {
+      roll -= weights[option] || 0;
+      if (roll <= 0) {
+        return option;
+      }
+    }
+
+    // Fallback (shouldn't happen)
+    return options[options.length - 1];
+  }
+
+  /**
    * Get which day of the current pattern we're on
    * @param {Object} region - Region data
    * @param {Object} date - Game date
@@ -135,28 +276,25 @@ export class WeatherPatternService {
 
   /**
    * Get the next pattern that will follow the current one
+   * Uses the same transition-based selection as getCurrentPattern
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @returns {Object} Next pattern
    */
   getNextPattern(region, date) {
-    const currentPattern = this.getCurrentPattern(region, date);
-    const possibleNext = PATTERN_TRANSITIONS[currentPattern.type];
+    // Calculate the start of the next pattern cycle
+    const totalDays = (date.year - 1) * 360 + (date.month - 1) * 30 + (date.day - 1);
+    const currentCycle = Math.floor(totalDays / 4);
+    const nextCycleStart = (currentCycle + 1) * 4;
 
-    // Get seed for next pattern period
-    const nextDate = {
-      ...date,
-      day: date.day + currentPattern.totalDays
-    };
+    // Convert to date
+    const year = Math.floor(nextCycleStart / 360) + 1;
+    const month = Math.floor((nextCycleStart % 360) / 30) + 1;
+    const day = (nextCycleStart % 30) + 1;
+    const nextDate = { year, month, day, hour: 12 };
 
-    const nextSeed = generatePatternSeed(region.id, nextDate, 4, 'weather-pattern');
-    const rng = new SeededRandom(nextSeed);
-
-    const nextType = rng.choice(possibleNext);
-    return {
-      type: nextType,
-      ...WEATHER_PATTERNS[nextType]
-    };
+    // Use getCurrentPattern for the next cycle (it will use proper transitions)
+    return this.getCurrentPattern(region, nextDate);
   }
 
   /**

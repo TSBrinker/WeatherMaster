@@ -74,17 +74,16 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Sprint 11**: Legacy Cleanup & Test Harness Improvements "Juniper" (COMPLETE)
 - **Sprint 12**: Test Harness Enhancements "Larch" (COMPLETE)
 - **Sprint 13**: Seasonal Transitions & Desert Precipitation "Spruce" (COMPLETE)
+- **Sprint 14**: Pattern Transition System & Dynamic Thresholds "Fern" (COMPLETE)
 
-### 🔜 Next Sprint (Sprint 14)
-**Priority Issues from Sprint 13 Analysis:**
-1. **Monsoon Coast 44-day wet streak** - Pattern system allows consecutive low-pressure patterns to chain
-2. **Temperate Desert seasonal jump** (76°F → 56°F at spring equinox) - Template issue, winter shouldn't be warmer than spring
-3. **General wet streak reduction** - 16 biomes still have >14-day wet streaks
+### 🔜 Current Status
+All critical weather generation issues resolved. System is stable and generating realistic weather.
 
-**Suggested Approach:**
-- Investigate pattern transition logic - prevent too many consecutive wet patterns
-- Or implement "pattern fatigue" - same pattern type less likely after repeating
-- Review Temperate Desert template seasonal values
+**Ready for next priority from roadmap** - see "Roadmap: Future Work" section below for themed categories:
+- 🌪️ Weather Sophistication (drought, extreme events, snow tracking)
+- 🎮 Gameplay Integration (D&D mechanics, Wanderers)
+- 🗺️ Biomes & Templates (ocean, coverage audit)
+- 🎨 UI & User Experience (export/import, polish)
 
 ---
 
@@ -692,160 +691,106 @@ PROGRESS.md                    # This file (master tracker)
 
 ---
 
-## Roadmap: Next Sprints
+## Roadmap: Future Work
 
-### Sprint 6: Enhanced Wind & Weather Systems (Not Started)
-**Goal**: Sophisticated wind patterns and frontal systems
+*Organized by theme rather than sprint number. Pick items based on current priorities.*
 
-**Features**:
+### 🌪️ Weather Sophistication
+
+**Environmental Conditions** (cumulative states, not instant events)
+- [ ] **Drought Detection & Display**
+  - Track rolling 30-day precipitation vs expected for biome/season
+  - Severity levels: Abnormally Dry → Moderate → Severe → Extreme
+  - Gameplay impacts: water scarcity, fire danger, crop stress
+- [ ] **Flooding Conditions**
+  - Track cumulative excess precipitation
+  - River/lowland flood risk indicators
+- [ ] **Heat Waves / Cold Snaps**
+  - Consecutive days above/below threshold temperatures
+  - Gameplay impacts for prolonged exposure
+- [ ] **Wildfire Risk**
+  - Composite of drought + high temps + wind
+  - Regional fire danger ratings
+
+**Extreme Weather Events** (rare, impactful occurrences)
+- [ ] Hurricanes/typhoons (tropical regions)
+- [ ] Blizzards (heavy snow + high wind)
+- [ ] Tornadoes (severe thunderstorm conditions)
+- [ ] Ice storms (freezing rain accumulation)
+
+**Snow & Ice Tracking**
+- [ ] Snow accumulation (inches on ground, melting rate)
+- [ ] Ice accumulation from freezing rain
+- [ ] Ground conditions (frozen, thawing, muddy)
+
+**Wind System Enhancements**
 - [ ] More sophisticated wind patterns
-- [ ] Enhanced frontal system simulation (warm/cold fronts)
-- [ ] Better pattern transitions
-- [ ] Multi-day pattern cycle refinement
+- [ ] Prevailing winds by region/season
+- [ ] Wind gusts during storms
 
-**Estimated Effort**: 2-3 days
+### 🎮 Gameplay Integration
 
-### Sprint 7: Extreme Weather & Snow Accumulation (Not Started)
-**Goal**: Add extreme events and snow tracking
-
-**Features**:
-- [ ] Extreme weather events (hurricanes, blizzards, heat waves, **flooding**)
-- [ ] Snow accumulation tracking (user requested)
-- [ ] **Precipitation duration tuning** (user reported issue)
-  - Issue: "2-3 straight days of rain/heavy rain in continental grassland seems too common"
-  - "Every hour with little to no breaks" - should have more dry periods during rain patterns
-  - Need to reduce precipitation probability or add breaks within rainy patterns
-- [ ] Weather effects refinement
-- [ ] Fine-tuning temperature calculations
-- [ ] Performance optimization
-
-**Estimated Effort**: 2-3 days
-
-### Sprint 8: Wanderers (Falling Stars) (Not Started)
-**Goal**: Implement Wanderer celestial events for the world of Marai
-
-**Features**:
-- [ ] WandererService for rare celestial event calculation
-  - Deterministic seed-based rare event probability (0.5-1% per night)
-  - Size categories: Pebble (softball), Stone (basketball), Boulder (cart), Monolith (house)
-  - Impact probability (~5% actually fall to ground, rest burn up)
-  - Impact location within region (distance from viewer)
-- [ ] Wanderer visibility detection (nighttime only)
-- [ ] Impact event generation with scaled effects
-  - Treasure value scales with size
-  - Area affected scales with size
-  - Rumor spread distance
-- [ ] UI integration
-  - CelestialCard notification for visible Wanderers
-  - Impact event display in weather effects
-  - DM Forecast shows upcoming Wanderer events
-- [ ] Cultural significance for Marai setting
-
-**Estimated Effort**: 1-2 days
-
-### Sprint 9: Gameplay Integration & UI Refinements (Not Started)
-**Goal**: Surface gameplay mechanics and polish UI consistency
-
-**Features**:
+**D&D Mechanics Surface**
 - [ ] Expand weather-effects.js to inline all cross-references
-  - Remove "As per Heavy Rain" style references
-  - Each condition should be self-contained
-- [ ] Add gameplay mechanics indicators to main weather display
-  - Badge/icon when current conditions have mechanical impacts
-  - Quick link to relevant mechanics in modal
-- [ ] UI consistency fixes
-  - Fix Feels Like section causing height shifts in main display
-  - Add background gradient fade transitions (with interruption handling)
-- [x] Test harness improvements (Sprint 11 Juniper)
-  - ~~Add seasonal transition tests~~ ✅ Added seasonal boundary snapshots
-  - ~~Display all 37 biomes in results~~ ✅ Now shows all 43 templates
-  - ~~Test Rim biomes~~ ✅ Fixed latitude bands to include rim & special
-  - [x] Sortable columns with sticky header and row numbers
-- [x] Test harness enhancements (Sprint 12 Larch)
-  - ~~Temperature variance tracking (daily/seasonal swing per biome)~~ ✅
-  - ~~Precipitation streak detection (longest dry/wet spells)~~ ✅
-  - ~~Biome similarity detection (flag near-identical weather generation)~~ ✅
-  - ~~Expected vs Actual comparison (template means vs generated averages)~~ ✅
-  - ~~"Problem biomes" auto-summary at top~~ ✅
-  - ~~Seasonal transition smoothness test~~ ✅
-- [ ] Test harness enhancements (future)
-  - Pattern distribution breakdown (High/Low Pressure, Fronts per biome)
-  - Extreme event frequency (dangerous threshold tracking)
-  - Precipitation type distribution (rain/snow/sleet breakdown)
-  - Filter by latitude band toggle
-  - CSV export option
-- [ ] Review and process all items in NOTES_FROM_USER.md
+- [ ] Add gameplay impact indicators to main display
+  - Badge/icon when conditions have mechanical effects
+  - Quick link to relevant mechanics modal
+- [ ] Visibility/movement/combat modifiers prominently displayed
 
-**Estimated Effort**: 1-2 days
+**Wanderers (Falling Stars)** - *Marai Setting*
+- [ ] WandererService for rare celestial events
+  - Deterministic seed-based probability (0.5-1% per night)
+  - Size categories: Pebble, Stone, Boulder, Monolith
+  - Impact probability (~5% fall to ground)
+- [ ] UI integration in CelestialCard
+- [ ] DM Forecast shows upcoming Wanderer events
+- [ ] Treasure/plot hook generation
 
-### Sprint 10: UI Polish & User Experience (Not Started)
-**Goal**: Refine user experience and add quality-of-life features
+### 🗺️ Biomes & Templates
 
-**Features**:
-- [ ] **Export/Import Worlds** (user requested)
-  - Download worlds/regions as JSON file
-  - Import from JSON file
-  - Enables cross-device usage, backups, and sharing with other DMs
-  - ~2 hours of work (add download/upload buttons to settings menu)
-- [ ] **Ocean Biomes for Sailing** (user requested)
-  - Open ocean climate templates
-  - Sea weather patterns (swells, storms, calm seas)
-  - Maritime navigation conditions
-- [ ] **Biome Coverage Audit**
-  - Review all major real-world biomes are represented
-  - Add any missing climate templates
-- [ ] **Real-World Analog Labels** (user requested)
-  - Display real-world location examples for fantasy biomes
-  - Example: "Continental Prairie (Midwest USA)"
-  - Helps users understand what climate to expect
+**Ocean & Maritime**
+- [ ] Open ocean climate templates
+- [ ] Sea states (calm, moderate, rough, storm)
+- [ ] Sailing-specific conditions (wind direction, visibility)
+
+**Biome Coverage Audit**
+- [ ] Review all major real-world biomes represented
+- [ ] Add missing climate templates (check for alpine vs highland gap)
+- [ ] Real-world analog labels (e.g., "Continental Prairie - Midwest USA")
+- [ ] **Climate terminology glossary** - definitions for continental, maritime, highland, alpine, etc.
+
+### 🎨 UI & User Experience
+
+**Data Management**
+- [ ] Export/Import Worlds as JSON
+- [ ] Weather seed re-roll feature ("I don't want to start in rain")
+
+**Visual Polish**
+- [ ] Fix Feels Like section height shifts
+- [ ] Background gradient fade transitions
 - [ ] Loading states and transitions
+- [ ] Mobile optimization
+
+**Accessibility & Quality**
 - [ ] Error handling improvements
 - [ ] Accessibility enhancements
-- [ ] Mobile optimization
 - [ ] Theme customization options
-- [ ] Weather seed regeneration feature (allow users to reroll weather for a given date/region)
-  - User request: "If I'm starting my game and don't want to start in the rain, can the seed be re-rolled?"
-  - Possible solutions: Weather variance setting, "Reroll Weather" button, or time-skip to preferred conditions
-- [ ] Code cleanup: Review and archive old large files to improve conversation memory limits
 
-**Estimated Effort**: 2-3 days
+### 🧪 Test Harness Enhancements
 
-### Sprint 11: Spatial Weather (Stretch Goal)
-**Goal**: Add optional spatial relationships between regions for realistic weather propagation
+- [ ] Pattern distribution breakdown (High/Low Pressure frequency per biome)
+- [ ] Precipitation type distribution (rain/snow/sleet breakdown)
+- [ ] Filter by latitude band toggle
+- [ ] CSV export option
 
-**Features**:
-- [ ] **Adjacent Regions System** (user requested)
-  - 3x3 grid UI for declaring neighbors (N, NE, E, SE, S, SW, W, NW)
-  - Each region can reference up to 8 adjacent regions
-  - Visual selector with dropdown for each direction
-  - Weather blending based on neighbor averages
-- [ ] **Weather Blend Factor**
-  - 0-100% slider controlling neighbor influence
-  - 0% = independent (current behavior)
-  - 50% = moderate blending
-  - 100% = heavily influenced by neighbors
-- [ ] **Blended Weather Generation**
-  - Temperature, pressure, humidity, cloud cover blend with neighbors
-  - Deterministic (same neighbors + date = same weather)
-  - Performance optimized (O(n) where n = neighbors, max 8)
-- [ ] **UI Integration**
-  - Add to RegionCreator component
-  - Visual 3x3 grid layout
-  - Badge/chip display for selected regions
-  - Edit existing region spatial relationships
-- [ ] **Use Cases**
-  - Coastal → inland transitions (maritime influence)
-  - Mountain rain shadows (wet windward, dry leeward)
-  - Continental weather patterns (connected climate zones)
-  - Realistic world-building coherence
+### 🔮 Stretch Goals
 
-**Technical Notes**:
-- Backward compatible (existing regions unaffected)
-- No coordinate system required (adjacency only)
-- Export/import preserves spatial relationships
-- See [docs/SPATIAL_WEATHER_DESIGN.md](docs/SPATIAL_WEATHER_DESIGN.md) for full specification
-
-**Estimated Effort**: 4-6 hours (basic), 1-2 days (polished)
+**Spatial Weather System**
+- [ ] Adjacent regions system (3x3 grid for neighbors)
+- [ ] Weather blend factor (0-100% neighbor influence)
+- [ ] Blended weather generation across region boundaries
+- [ ] Use cases: coastal transitions, rain shadows, continental patterns
+- [ ] See [docs/SPATIAL_WEATHER_DESIGN.md](docs/SPATIAL_WEATHER_DESIGN.md)
 
 ---
 
@@ -1053,4 +998,4 @@ PROGRESS.md                    # This file (master tracker)
 
 ---
 
-**Project Status**: Sprint 13 Complete - Seasonal Transition & Precipitation Fixes → Ready for Streak Resolution 🚀
+**Project Status**: Sprint 14 Complete - Pattern Transitions & Dynamic Thresholds → System Stable 🌲

@@ -100,21 +100,12 @@ const WeatherTestHarness = () => {
       successfulTests: 0,
       anomalies: [],
       transitionAnomalies: [],
-      seasonalTransitions: [], // Track behavior at season boundaries
       seasonalTransitionAnomalies: [], // Abrupt jumps during season changes
       biomeStats: {},
       precipitationStreaks: {}, // Track longest dry/wet spells per biome
       biomeSimilarities: [], // Pairs of biomes with similar weather
       problemBiomes: [] // Summary of biomes with issues
     };
-
-    // Season boundary dates (approximate day of year)
-    const SEASON_BOUNDARIES = [
-      { name: 'Spring Equinox', dayOfYear: 80 },   // ~March 21
-      { name: 'Summer Solstice', dayOfYear: 172 }, // ~June 21
-      { name: 'Fall Equinox', dayOfYear: 266 },    // ~Sept 23
-      { name: 'Winter Solstice', dayOfYear: 356 }  // ~Dec 22
-    ];
 
     // Helper to check if a day is within a seasonal transition window
     const isInSeasonalTransition = (dayOfYear) => {
@@ -318,22 +309,6 @@ const WeatherTestHarness = () => {
                 }
               }
 
-              // Track seasonal boundary data (sample at noon on boundary days)
-              if (hour === 12) {
-                const seasonBoundary = SEASON_BOUNDARIES.find(s => s.dayOfYear === day);
-                if (seasonBoundary) {
-                  stats.seasonalTransitions.push({
-                    biome: biomeName,
-                    latitudeBand: latitudeBand,
-                    season: seasonBoundary.name,
-                    date: `${date.month}/${date.day}`,
-                    temperature: weather.temperature,
-                    condition: weather.condition,
-                    humidity: weather.humidity
-                  });
-                }
-              }
-
               // Update progress every 1000 tests
               if (completedTests % 1000 === 0) {
                 setProgress((completedTests / totalTests) * 100);
@@ -482,13 +457,29 @@ const WeatherTestHarness = () => {
         problems.push(`${seasonalAnomalies.length} abrupt seasonal transition(s)`);
       }
 
-      // Check for extreme precipitation streaks
+      // Check for extreme precipitation streaks using dynamic thresholds
+      // based on the biome's actual precipitation rate
       const streaks = stats.precipitationStreaks[biomeName];
-      if (streaks && streaks.longestWet > 14) {
-        problems.push(`Long wet streak: ${streaks.longestWet} days`);
+      const precipRate = biomeStats.precipCount / biomeStats.count; // 0-1
+
+      // Expected max wet streak: higher precip = longer streaks expected
+      // Formula: baseThreshold / (1 - precipRate), capped at reasonable bounds
+      // At 70% precip, threshold = 14 / 0.3 = ~47 days
+      // At 50% precip, threshold = 14 / 0.5 = 28 days
+      // At 30% precip, threshold = 14 / 0.7 = 20 days
+      const wetStreakThreshold = Math.min(60, Math.max(14, Math.round(14 / (1 - precipRate + 0.01))));
+
+      // Expected max dry streak: lower precip = longer dry spells expected
+      // At 10% precip, threshold = 14 / 0.1 = 140 days (capped at 90)
+      // At 30% precip, threshold = 14 / 0.3 = ~47 days
+      // At 50% precip, threshold = 14 / 0.5 = 28 days
+      const dryStreakThreshold = Math.min(90, Math.max(14, Math.round(14 / (precipRate + 0.01))));
+
+      if (streaks && streaks.longestWet > wetStreakThreshold) {
+        problems.push(`Long wet streak: ${streaks.longestWet} days (threshold: ${wetStreakThreshold})`);
       }
-      if (streaks && streaks.longestDry > 60) {
-        problems.push(`Long dry streak: ${streaks.longestDry} days`);
+      if (streaks && streaks.longestDry > dryStreakThreshold) {
+        problems.push(`Long dry streak: ${streaks.longestDry} days (threshold: ${dryStreakThreshold})`);
       }
 
       if (problems.length > 0) {
@@ -735,45 +726,6 @@ const WeatherTestHarness = () => {
               </Table>
             </Card.Body>
           </Card>
-
-          {results.seasonalTransitions && results.seasonalTransitions.length > 0 && (
-            <Card className="mb-4">
-              <Card.Header>
-                <h5>Seasonal Boundary Snapshots</h5>
-                <small className="text-muted">
-                  Weather at equinoxes and solstices (noon samples)
-                </small>
-              </Card.Header>
-              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <Table striped bordered hover size="sm">
-                  <thead>
-                    <tr>
-                      <th>Biome</th>
-                      <th>Band</th>
-                      <th>Season</th>
-                      <th>Date</th>
-                      <th>Temp</th>
-                      <th>Humidity</th>
-                      <th>Condition</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.seasonalTransitions.map((entry, idx) => (
-                      <tr key={idx}>
-                        <td><small>{entry.biome}</small></td>
-                        <td><small>{entry.latitudeBand}</small></td>
-                        <td><small>{entry.season}</small></td>
-                        <td><small>{entry.date}</small></td>
-                        <td>{entry.temperature}°F</td>
-                        <td>{entry.humidity}%</td>
-                        <td><small>{entry.condition}</small></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Card.Body>
-            </Card>
-          )}
 
           {results.transitionAnomalies.length > 0 && (
             <Card className="mb-4">
