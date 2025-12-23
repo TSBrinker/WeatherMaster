@@ -44,8 +44,8 @@ A deterministic weather generation system for D&D campaigns, featuring realistic
 ## Current Status
 
 **Version**: v2.0.0-alpha
-**Last Updated**: 2025-12-21
-**Completed Sprints**: 5 (Basic Generation, iOS UI, Modal Polish, Atmospheric Depth, Educational Modals)
+**Last Updated**: 2025-12-23
+**Completed Sprints**: 15 (through Weather Sophistication Phase A)
 
 ### Completed Features ✅
 - ✅ Deterministic weather generation with seed-based randomness
@@ -65,13 +65,15 @@ A deterministic weather generation system for D&D campaigns, featuring realistic
 - ✅ Educational modals for weather mechanics and D&D gameplay impacts
 - ✅ Dark theme with comprehensive styling
 - ✅ Proper Gregorian calendar (real month lengths, no leap years)
+- ✅ Environmental conditions tracking (drought, flooding, heat waves, cold snaps, wildfire risk)
+- ✅ Environmental alerts badge with detailed modal breakdown
 
 ### Next Features 🔜
-- **Sprint 6**: Enhanced wind patterns and frontal systems
-- **Sprint 7**: Extreme weather events (hurricanes, blizzards) and snow accumulation
-- **Sprint 8**: Wanderers (falling star events for Marai setting)
-- **Sprint 9**: Gameplay mechanics integration (badges on main display, inline cross-references)
-- **Sprint 10**: UI polish and code cleanup
+- **Phase B**: Snow/ice accumulation and ground conditions
+- **Phase C**: Extreme weather events (hurricanes, blizzards, tornadoes, ice storms)
+- **Phase D**: Sophisticated wind patterns
+- **Wanderers**: Falling star events for Marai setting
+- **Gameplay Integration**: D&D mechanics surface, inline cross-references
 
 ---
 
@@ -357,6 +359,15 @@ This project is built for personal use in Tyler's D&D campaigns. Feel free to us
 - Sprint 4: Cedar (Atmospheric Depth)
 - Sprint 5: Sage (Educational Modals)
 - Sprint 6: Rowan (README Update & Deployment Fix)
+- Sprint 7: Ash (UI Quick Wins & Dynamic Celestial)
+- Sprint 8: Birch (Weather Validation & Biome-Accurate Precipitation)
+- Sprint 9: Maple (Final Documentation & Handoff)
+- Sprint 10: Hawthorn (Condition Phrasing & Notes Processing)
+- Sprint 11: Juniper (Legacy Cleanup & Test Harness)
+- Sprint 12: Larch (Test Harness Enhancements)
+- Sprint 13: Spruce (Seasonal Transitions & Desert Precipitation)
+- Sprint 14: Fern (Pattern Transitions & Dynamic Thresholds)
+- Sprint 15: Hemlock (Weather Sophistication - Environmental Conditions)
 
 **Climate Data Sources**:
 - Weather Spark (weatherspark.com)

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { OverlayTrigger, Tooltip, Modal, Button } from 'react-bootstrap';
-import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy } from 'react-icons/wi';
-import { BsInfoCircle } from 'react-icons/bs';
+import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiSnowflakeCold } from 'react-icons/wi';
+import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { transformCondition } from '../../utils/conditionPhrasing';
@@ -14,7 +14,9 @@ import './PrimaryDisplay.css';
 const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showConditionModal, setShowConditionModal] = useState(false);
-  const { conditionPhrasing } = usePreferences();
+  const [showEnvironmentalModal, setShowEnvironmentalModal] = useState(false);
+  const [showSnowModal, setShowSnowModal] = useState(false);
+  const { conditionPhrasing, showSnowAccumulation } = usePreferences();
 
   if (!region || !weather) {
     return (
@@ -137,6 +139,32 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
     ? 'text-dark'
     : 'text-light';
 
+  // Environmental alerts
+  const environmental = weather.environmental || { activeAlerts: [], hasActiveAlerts: false };
+  const hasEnvironmentalAlerts = environmental.hasActiveAlerts;
+
+  // Get badge variant based on highest severity alert
+  const getAlertBadgeVariant = () => {
+    if (!hasEnvironmentalAlerts) return 'secondary';
+    const maxLevel = Math.max(...environmental.activeAlerts.map(a => a.level));
+    if (maxLevel >= 4) return 'danger';
+    if (maxLevel >= 3) return 'warning';
+    if (maxLevel >= 2) return 'warning';
+    return 'info';
+  };
+
+  // Get alert type display name
+  const getAlertTypeName = (type) => {
+    const names = {
+      drought: 'Drought',
+      flooding: 'Flood Risk',
+      heatWave: 'Heat Wave',
+      coldSnap: 'Cold Snap',
+      wildfireRisk: 'Wildfire Risk'
+    };
+    return names[type] || type;
+  };
+
   // Template tooltip
   const templateTooltip = (
     <Tooltip id="template-tooltip">
@@ -204,6 +232,66 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
             Feels like {Math.round(feelsLike)}°
           </div>
         )}
+
+        {/* Environmental Alerts Badge */}
+        {hasEnvironmentalAlerts && (
+          <div className="environmental-alerts-badge" onClick={() => setShowEnvironmentalModal(true)}>
+            <Badge bg={getAlertBadgeVariant()} className="alerts-badge">
+              <BsExclamationTriangleFill className="alert-icon" />
+              {environmental.activeAlerts.length} Active Alert{environmental.activeAlerts.length > 1 ? 's' : ''}
+            </Badge>
+          </div>
+        )}
+
+        {/* Snow Accumulation Visual Overlay */}
+        {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.snowFillPercent > 0 && (
+          <>
+            {/* SVG Filter for organic snow edge - defined once */}
+            <svg width="0" height="0" style={{ position: 'absolute' }}>
+              <defs>
+                <filter id="snow-edge-filter" x="-20%" y="-20%" width="140%" height="140%">
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.04"
+                    numOctaves="3"
+                    seed="42"
+                    result="noise"
+                  />
+                  <feDisplacementMap
+                    in="SourceGraphic"
+                    in2="noise"
+                    scale="20"
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                  />
+                </filter>
+              </defs>
+            </svg>
+
+            {/* Snow fill overlay */}
+            <div
+              className="snow-accumulation-overlay"
+              style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent, 60)}%` }}
+              onClick={() => setShowSnowModal(true)}
+              title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
+            >
+              <div className="snow-depth-label">
+                <BsSnow2 className="snow-icon" />
+                {weather.snowAccumulation.snowDepth}"
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Ice Accumulation Warning (if significant ice but little snow) */}
+        {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.iceAccumulation >= 0.1 && weather.snowAccumulation.snowFillPercent < 5 && (
+          <div className="ice-warning-badge" onClick={() => setShowSnowModal(true)}>
+            <Badge bg="info" className="ice-badge">
+              <WiSnowflakeCold className="ice-icon" />
+              {weather.snowAccumulation.iceAccumulation}" Ice
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Template Modal */}
@@ -263,6 +351,182 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
           </Modal.Footer>
         </Modal>
       )}
+
+      {/* Environmental Alerts Modal */}
+      <Modal
+        show={showEnvironmentalModal}
+        onHide={() => setShowEnvironmentalModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <BsExclamationTriangleFill className="me-2" style={{ color: '#f59e0b' }} />
+            Environmental Conditions
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {environmental.activeAlerts.length > 0 ? (
+            environmental.activeAlerts.map((alert, idx) => (
+              <div key={idx} className="alert-item mb-4">
+                <h5 className="d-flex align-items-center gap-2">
+                  <Badge bg={alert.level >= 3 ? 'danger' : alert.level >= 2 ? 'warning' : 'info'}>
+                    {alert.name}
+                  </Badge>
+                  <span className="text-muted fs-6">({getAlertTypeName(alert.type)})</span>
+                </h5>
+                <p className="mb-2">{alert.description}</p>
+
+                {/* Alert-specific details */}
+                {alert.type === 'drought' && (
+                  <p className="small text-muted mb-2">
+                    Precipitation deficit: {alert.precipDeficitPercent}% below normal over {alert.lookbackDays} days
+                    ({alert.actualPrecipDays} precip days vs {alert.expectedPrecipDays} expected)
+                  </p>
+                )}
+                {alert.type === 'flooding' && (
+                  <p className="small text-muted mb-2">
+                    Precipitation excess: {alert.precipExcessPercent}% above normal over {alert.lookbackDays} days
+                    ({alert.heavyPrecipDays} heavy precip days)
+                  </p>
+                )}
+                {alert.type === 'heatWave' && (
+                  <p className="small text-muted mb-2">
+                    {alert.consecutiveDays} consecutive days averaging {alert.degreesAboveNormal}°F above normal
+                  </p>
+                )}
+                {alert.type === 'coldSnap' && (
+                  <p className="small text-muted mb-2">
+                    {alert.consecutiveDays} consecutive days averaging {alert.degreesBelowNormal}°F below normal
+                  </p>
+                )}
+                {alert.type === 'wildfireRisk' && (
+                  <p className="small text-muted mb-2">
+                    Risk score: {alert.riskScore}/100
+                    (Drought: +{alert.factors.droughtContribution}, Heat: +{alert.factors.heatContribution},
+                    Low humidity: +{alert.factors.humidityContribution}, Wind: +{alert.factors.windContribution},
+                    Recent rain: {alert.factors.recentRainReduction})
+                  </p>
+                )}
+
+                {/* Gameplay impacts */}
+                {alert.gameplayImpacts && alert.gameplayImpacts.length > 0 && (
+                  <>
+                    <strong className="small">Gameplay Impacts:</strong>
+                    <ul className="small mb-0">
+                      {alert.gameplayImpacts.map((impact, i) => (
+                        <li key={i}>{impact}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No active environmental alerts.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowEnvironmentalModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Snow & Ground Conditions Modal */}
+      <Modal
+        show={showSnowModal}
+        onHide={() => setShowSnowModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <BsSnow2 className="me-2" style={{ color: '#60a5fa' }} />
+            Ground & Snow Conditions
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {weather.snowAccumulation ? (
+            <>
+              {/* Snow Depth */}
+              {weather.snowAccumulation.snowDepth > 0 && (
+                <div className="snow-detail-section mb-3">
+                  <h6>Snow Accumulation</h6>
+                  <p className="mb-1">
+                    <strong>{weather.snowAccumulation.snowDepth}"</strong> of snow on the ground
+                  </p>
+                  <p className="small text-muted mb-0">
+                    Water equivalent: {weather.snowAccumulation.snowWaterEquivalent}"
+                    {weather.snowAccumulation.snowAge > 24 && ` • Snow age: ${Math.floor(weather.snowAccumulation.snowAge / 24)} days`}
+                  </p>
+                </div>
+              )}
+
+              {/* Ice Accumulation */}
+              {weather.snowAccumulation.iceAccumulation > 0 && (
+                <div className="snow-detail-section mb-3">
+                  <h6>Ice Accumulation</h6>
+                  <p className="mb-1">
+                    <strong>{weather.snowAccumulation.iceAccumulation}"</strong> of ice on surfaces
+                  </p>
+                  <p className="small text-muted mb-0">
+                    {weather.snowAccumulation.iceAccumulation >= 0.25
+                      ? 'Severe - extremely treacherous conditions'
+                      : 'Moderate - use caution on surfaces'}
+                  </p>
+                </div>
+              )}
+
+              {/* Ground Condition */}
+              <div className="snow-detail-section mb-3">
+                <h6>Ground Condition</h6>
+                <p className="mb-1">
+                  <strong>{weather.snowAccumulation.groundCondition.name}</strong>
+                </p>
+                <p className="small text-muted mb-0">
+                  {weather.snowAccumulation.groundCondition.description}
+                </p>
+              </div>
+
+              {/* Travel Impact */}
+              {weather.snowAccumulation.travelImpact && weather.snowAccumulation.travelImpact.length > 0 && (
+                <div className="snow-detail-section mb-3">
+                  <h6>Travel Conditions</h6>
+                  <ul className="small mb-0">
+                    {weather.snowAccumulation.travelImpact.map((impact, i) => (
+                      <li key={i}>{impact}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Gameplay Effects */}
+              {weather.snowAccumulation.gameplayEffects && weather.snowAccumulation.gameplayEffects.length > 0 && (
+                <div className="snow-detail-section">
+                  <h6>Gameplay Effects</h6>
+                  <ul className="small mb-0">
+                    {weather.snowAccumulation.gameplayEffects.map((effect, i) => (
+                      <li key={i}>{effect}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* No snow/ice message */}
+              {weather.snowAccumulation.snowDepth === 0 && weather.snowAccumulation.iceAccumulation === 0 && (
+                <p className="text-muted">No snow or ice accumulation at this time.</p>
+              )}
+            </>
+          ) : (
+            <p>Ground condition data not available.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSnowModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };

@@ -34,12 +34,17 @@ export const PreferencesProvider = ({ children }) => {
       showFeelsLike: true,
       debugMode: false,
       conditionPhrasing: 'standard',
+      showSnowAccumulation: true,
     };
     setPreferences(defaults);
   };
 
   const setConditionPhrasing = (phrasing) => {
     updatePreference('conditionPhrasing', phrasing);
+  };
+
+  const setShowSnowAccumulation = (show) => {
+    updatePreference('showSnowAccumulation', show);
   };
 
   const contextValue = {
@@ -50,11 +55,13 @@ export const PreferencesProvider = ({ children }) => {
     showFeelsLike: preferences.showFeelsLike,
     debugMode: preferences.debugMode,
     conditionPhrasing: preferences.conditionPhrasing || 'standard',
+    showSnowAccumulation: preferences.showSnowAccumulation !== false, // Default true
 
     // Methods
     updatePreference,
     resetPreferences,
     setConditionPhrasing,
+    setShowSnowAccumulation,
   };
 
   return (

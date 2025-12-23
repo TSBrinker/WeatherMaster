@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { Container, Button, Card, ProgressBar, Table, Alert, Badge } from 'react-bootstrap';
+import { BsArrowLeft } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
 import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
+import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
+import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
+
+/**
+ * Navigate back to main app (remove test parameter)
+ */
+const goToMainApp = () => {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.delete('test');
+  window.location.href = currentUrl.toString();
+};
 
 /**
  * WeatherTestHarness - Comprehensive weather generation testing
@@ -104,7 +116,11 @@ const WeatherTestHarness = () => {
       biomeStats: {},
       precipitationStreaks: {}, // Track longest dry/wet spells per biome
       biomeSimilarities: [], // Pairs of biomes with similar weather
-      problemBiomes: [] // Summary of biomes with issues
+      problemBiomes: [], // Summary of biomes with issues
+      // Environmental conditions tracking
+      environmentalStats: {}, // Track alert occurrences per biome
+      // Snow accumulation tracking
+      snowStats: {} // Track max snow depth, ice, ground conditions per biome
     };
 
     // Helper to check if a day is within a seasonal transition window
@@ -139,6 +155,8 @@ const WeatherTestHarness = () => {
     };
 
     const weatherGen = new WeatherGenerator();
+    const envService = new EnvironmentalConditionsService();
+    const snowService = new SnowAccumulationService();
     let completedTests = 0;
 
     // Calculate total tests
@@ -188,6 +206,40 @@ const WeatherTestHarness = () => {
             longestWet: 0,
             currentDry: 0,
             currentWet: 0
+          };
+        }
+
+        // Initialize environmental stats tracker
+        if (!stats.environmentalStats[biomeName]) {
+          stats.environmentalStats[biomeName] = {
+            droughtDays: { none: 0, abnormallyDry: 0, moderate: 0, severe: 0, extreme: 0 },
+            floodingDays: { none: 0, elevated: 0, moderate: 0, high: 0 },
+            heatWaveDays: { none: 0, advisory: 0, warning: 0, extreme: 0 },
+            coldSnapDays: { none: 0, advisory: 0, warning: 0, extreme: 0 },
+            wildfireDays: { low: 0, moderate: 0, high: 0, veryHigh: 0, extreme: 0 },
+            maxDroughtLevel: 0,
+            maxFloodLevel: 0,
+            maxHeatLevel: 0,
+            maxColdLevel: 0,
+            maxFireLevel: 0
+          };
+        }
+
+        // Initialize snow stats tracker
+        if (!stats.snowStats[biomeName]) {
+          stats.snowStats[biomeName] = {
+            maxSnowDepth: 0,
+            maxIceAccumulation: 0,
+            daysWithSnow: 0,
+            daysWithIce: 0,
+            groundConditionCounts: {
+              snowCovered: 0,
+              icy: 0,
+              frozen: 0,
+              thawing: 0,
+              muddy: 0,
+              dry: 0
+            }
           };
         }
 
@@ -306,6 +358,83 @@ const WeatherTestHarness = () => {
                   streaks.currentDry++;
                   streaks.longestDry = Math.max(streaks.longestDry, streaks.currentDry);
                   streaks.currentWet = 0;
+                }
+
+                // Track environmental conditions (once per day at noon)
+                try {
+                  const envConditions = envService.getEnvironmentalConditions(region, date);
+                  const envStats = stats.environmentalStats[biomeName];
+
+                  // Track drought levels
+                  const droughtLevel = envConditions.drought.level;
+                  if (droughtLevel === 0) envStats.droughtDays.none++;
+                  else if (droughtLevel === 1) envStats.droughtDays.abnormallyDry++;
+                  else if (droughtLevel === 2) envStats.droughtDays.moderate++;
+                  else if (droughtLevel === 3) envStats.droughtDays.severe++;
+                  else if (droughtLevel >= 4) envStats.droughtDays.extreme++;
+                  envStats.maxDroughtLevel = Math.max(envStats.maxDroughtLevel, droughtLevel);
+
+                  // Track flooding levels
+                  const floodLevel = envConditions.flooding.level;
+                  if (floodLevel === 0) envStats.floodingDays.none++;
+                  else if (floodLevel === 1) envStats.floodingDays.elevated++;
+                  else if (floodLevel === 2) envStats.floodingDays.moderate++;
+                  else if (floodLevel >= 3) envStats.floodingDays.high++;
+                  envStats.maxFloodLevel = Math.max(envStats.maxFloodLevel, floodLevel);
+
+                  // Track heat wave levels
+                  const heatLevel = envConditions.heatWave.level;
+                  if (heatLevel === 0) envStats.heatWaveDays.none++;
+                  else if (heatLevel === 1) envStats.heatWaveDays.advisory++;
+                  else if (heatLevel === 2) envStats.heatWaveDays.warning++;
+                  else if (heatLevel >= 3) envStats.heatWaveDays.extreme++;
+                  envStats.maxHeatLevel = Math.max(envStats.maxHeatLevel, heatLevel);
+
+                  // Track cold snap levels
+                  const coldLevel = envConditions.coldSnap.level;
+                  if (coldLevel === 0) envStats.coldSnapDays.none++;
+                  else if (coldLevel === 1) envStats.coldSnapDays.advisory++;
+                  else if (coldLevel === 2) envStats.coldSnapDays.warning++;
+                  else if (coldLevel >= 3) envStats.coldSnapDays.extreme++;
+                  envStats.maxColdLevel = Math.max(envStats.maxColdLevel, coldLevel);
+
+                  // Track wildfire risk levels
+                  const fireLevel = envConditions.wildfireRisk.level;
+                  if (fireLevel === 0) envStats.wildfireDays.low++;
+                  else if (fireLevel === 1) envStats.wildfireDays.moderate++;
+                  else if (fireLevel === 2) envStats.wildfireDays.high++;
+                  else if (fireLevel === 3) envStats.wildfireDays.veryHigh++;
+                  else if (fireLevel >= 4) envStats.wildfireDays.extreme++;
+                  envStats.maxFireLevel = Math.max(envStats.maxFireLevel, fireLevel);
+                } catch (envError) {
+                  // Environmental check failed - log but continue
+                  console.warn(`Environmental check failed for ${biomeName}:`, envError.message);
+                }
+
+                // Track snow accumulation (once per day at noon)
+                try {
+                  const snowAccum = snowService.getAccumulation(region, date);
+                  const snowStats = stats.snowStats[biomeName];
+
+                  // Track max values
+                  snowStats.maxSnowDepth = Math.max(snowStats.maxSnowDepth, snowAccum.snowDepth);
+                  snowStats.maxIceAccumulation = Math.max(snowStats.maxIceAccumulation, snowAccum.iceAccumulation);
+
+                  // Track days with snow/ice
+                  if (snowAccum.snowDepth >= 0.5) snowStats.daysWithSnow++;
+                  if (snowAccum.iceAccumulation >= 0.1) snowStats.daysWithIce++;
+
+                  // Track ground conditions
+                  const conditionName = snowAccum.groundCondition.name.toLowerCase().replace(' ', '');
+                  if (conditionName === 'snowcovered') snowStats.groundConditionCounts.snowCovered++;
+                  else if (conditionName === 'icy') snowStats.groundConditionCounts.icy++;
+                  else if (conditionName === 'frozen') snowStats.groundConditionCounts.frozen++;
+                  else if (conditionName === 'thawing') snowStats.groundConditionCounts.thawing++;
+                  else if (conditionName === 'muddy') snowStats.groundConditionCounts.muddy++;
+                  else snowStats.groundConditionCounts.dry++;
+                } catch (snowError) {
+                  // Snow check failed - log but continue
+                  console.warn(`Snow check failed for ${biomeName}:`, snowError.message);
                 }
               }
 
@@ -544,7 +673,11 @@ const WeatherTestHarness = () => {
       ),
       // Only include first 20 of each anomaly type
       validationAnomalies: results.anomalies.slice(0, 20),
-      transitionAnomalies: results.transitionAnomalies.slice(0, 20)
+      transitionAnomalies: results.transitionAnomalies.slice(0, 20),
+      // Include environmental stats
+      environmentalStats: results.environmentalStats,
+      // Include snow stats
+      snowStats: results.snowStats
     };
 
     const data = JSON.stringify(problemsReport, null, 2);
@@ -558,6 +691,17 @@ const WeatherTestHarness = () => {
 
   return (
     <Container className="mt-5">
+      {/* Back to App button */}
+      <Button
+        variant="outline-secondary"
+        size="sm"
+        onClick={goToMainApp}
+        className="mb-3"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+      >
+        <BsArrowLeft /> Back to App
+      </Button>
+
       <h1>Weather Generation Test Harness</h1>
       <p className="text-muted">
         Comprehensive testing of weather generation across all biomes and seasons
@@ -726,6 +870,123 @@ const WeatherTestHarness = () => {
               </Table>
             </Card.Body>
           </Card>
+
+          {/* Environmental Conditions Statistics */}
+          {results.environmentalStats && Object.keys(results.environmentalStats).length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5>Environmental Conditions Statistics</h5>
+                <small className="text-muted">
+                  Tracking drought, flooding, heat waves, cold snaps, and wildfire risk across the test year
+                </small>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: 0 }}>
+                <Table striped bordered hover size="sm" style={{ marginBottom: 0, fontSize: '0.8rem' }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: '#212529', zIndex: 1 }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th title="Days with drought conditions">Drought</th>
+                      <th title="Days with flood risk">Flood</th>
+                      <th title="Days with heat wave conditions">Heat</th>
+                      <th title="Days with cold snap conditions">Cold</th>
+                      <th title="Days with elevated wildfire risk">Fire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(results.environmentalStats)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([biomeName, envStats]) => {
+                        const droughtDays = envStats.droughtDays.abnormallyDry + envStats.droughtDays.moderate + envStats.droughtDays.severe + envStats.droughtDays.extreme;
+                        const floodDays = envStats.floodingDays.elevated + envStats.floodingDays.moderate + envStats.floodingDays.high;
+                        const heatDays = envStats.heatWaveDays.advisory + envStats.heatWaveDays.warning + envStats.heatWaveDays.extreme;
+                        const coldDays = envStats.coldSnapDays.advisory + envStats.coldSnapDays.warning + envStats.coldSnapDays.extreme;
+                        const fireDays = envStats.wildfireDays.moderate + envStats.wildfireDays.high + envStats.wildfireDays.veryHigh + envStats.wildfireDays.extreme;
+
+                        return (
+                          <tr key={biomeName}>
+                            <td><small>{biomeName}</small></td>
+                            <td style={{ color: droughtDays > 100 ? '#dc3545' : droughtDays > 50 ? '#ffc107' : 'inherit' }}>
+                              {droughtDays}d
+                              {envStats.maxDroughtLevel >= 3 && <Badge bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>L{envStats.maxDroughtLevel}</Badge>}
+                            </td>
+                            <td style={{ color: floodDays > 50 ? '#17a2b8' : 'inherit' }}>
+                              {floodDays}d
+                              {envStats.maxFloodLevel >= 2 && <Badge bg="info" className="ms-1" style={{ fontSize: '0.6rem' }}>L{envStats.maxFloodLevel}</Badge>}
+                            </td>
+                            <td style={{ color: heatDays > 50 ? '#fd7e14' : 'inherit' }}>
+                              {heatDays}d
+                              {envStats.maxHeatLevel >= 2 && <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6rem' }}>L{envStats.maxHeatLevel}</Badge>}
+                            </td>
+                            <td style={{ color: coldDays > 50 ? '#6f42c1' : 'inherit' }}>
+                              {coldDays}d
+                              {envStats.maxColdLevel >= 2 && <Badge bg="secondary" className="ms-1" style={{ fontSize: '0.6rem' }}>L{envStats.maxColdLevel}</Badge>}
+                            </td>
+                            <td style={{ color: fireDays > 100 ? '#dc3545' : fireDays > 50 ? '#fd7e14' : 'inherit' }}>
+                              {fireDays}d
+                              {envStats.maxFireLevel >= 3 && <Badge bg="danger" className="ms-1" style={{ fontSize: '0.6rem' }}>L{envStats.maxFireLevel}</Badge>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Snow & Ground Conditions Statistics */}
+          {results.snowStats && Object.keys(results.snowStats).length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5>Snow & Ground Conditions Statistics</h5>
+                <small className="text-muted">
+                  Tracking snow accumulation, ice, and ground conditions across the test year
+                </small>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: 0 }}>
+                <Table striped bordered hover size="sm" style={{ marginBottom: 0, fontSize: '0.8rem' }}>
+                  <thead style={{ position: 'sticky', top: 0, backgroundColor: '#212529', zIndex: 1 }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th title="Maximum snow depth (inches)">Max Snow</th>
+                      <th title="Days with 0.5+ inches of snow">Snow Days</th>
+                      <th title="Maximum ice accumulation (inches)">Max Ice</th>
+                      <th title="Days with 0.1+ inches of ice">Ice Days</th>
+                      <th title="Days with frozen ground">Frozen</th>
+                      <th title="Days with muddy ground">Muddy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(results.snowStats)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([biomeName, snowStats]) => (
+                        <tr key={biomeName}>
+                          <td><small>{biomeName}</small></td>
+                          <td style={{ color: snowStats.maxSnowDepth > 12 ? '#60a5fa' : 'inherit' }}>
+                            {snowStats.maxSnowDepth.toFixed(1)}"
+                          </td>
+                          <td style={{ color: snowStats.daysWithSnow > 100 ? '#60a5fa' : 'inherit' }}>
+                            {snowStats.daysWithSnow}d
+                          </td>
+                          <td style={{ color: snowStats.maxIceAccumulation > 0.25 ? '#17a2b8' : 'inherit' }}>
+                            {snowStats.maxIceAccumulation.toFixed(2)}"
+                          </td>
+                          <td>
+                            {snowStats.daysWithIce}d
+                          </td>
+                          <td>
+                            {snowStats.groundConditionCounts.frozen}d
+                          </td>
+                          <td>
+                            {snowStats.groundConditionCounts.muddy}d
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          )}
 
           {results.transitionAnomalies.length > 0 && (
             <Card className="mb-4">

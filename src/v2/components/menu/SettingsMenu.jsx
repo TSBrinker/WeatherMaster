@@ -15,7 +15,7 @@ import { getPhrasingExample } from '../../utils/conditionPhrasing';
  */
 const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteRegion, deleteWorld } = useWorld();
-  const { conditionPhrasing, setConditionPhrasing } = usePreferences();
+  const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation } = usePreferences();
   const [showNukeRegionsConfirm, setShowNukeRegionsConfirm] = useState(false);
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
@@ -89,6 +89,18 @@ const SettingsMenu = ({ inline = false }) => {
               </Form.Select>
               <Form.Text className="text-muted">
                 {getPhrasingExample(conditionPhrasing)}
+              </Form.Text>
+            </div>
+            <div className="snow-visual-toggle mb-2">
+              <Form.Check
+                type="switch"
+                id="snow-accumulation-toggle"
+                label="Show Snow Accumulation Visual"
+                checked={showSnowAccumulation}
+                onChange={(e) => setShowSnowAccumulation(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                Display snow depth as visual fill on weather card
               </Form.Text>
             </div>
             <Button

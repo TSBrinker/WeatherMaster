@@ -1,0 +1,2684 @@
+{
+  "totalTests": 29200,
+  "successfulTests": 28883,
+  "anomalies": [
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/4 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/15 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/15 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/16 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/25 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/28 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "6/28 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "7/1 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "7/2 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/1 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/1 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/3 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/4 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/22 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "8/22 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "9/13 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Tundra Plain",
+      "latitudeBand": "central",
+      "date": "9/13 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/18 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/26 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/28 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/29 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/29 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "5/31 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/2 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/2 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/5 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/12 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/17 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/26 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/30 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "6/30 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/9 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/15 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/18 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/18 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/25 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/26 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/27 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/27 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "8/28 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/13 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/14 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/14 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/15 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/15 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/18 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "9/27 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/1 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Coast",
+      "latitudeBand": "central",
+      "date": "10/2 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "6/24 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "6/24 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "6/25 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "6/25 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/10 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/11 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/19 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/22 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Desert",
+      "latitudeBand": "central",
+      "date": "7/27 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/5 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/8 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/8 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/11 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/14 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/21 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "7/31 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "8/1 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "8/5 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "8/5 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "8/6 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Polar Highland",
+      "latitudeBand": "central",
+      "date": "8/10 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "date": "1/27 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/2 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/15 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/16 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "1/23 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "2/1 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "2/3 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "2/7 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "2/25 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "3/3 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "3/15 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "3/25 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "4/24 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "10/14 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "11/20 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/7 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/9 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/15 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Prairie",
+      "latitudeBand": "temperate",
+      "date": "12/28 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/4 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/4 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/12 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/23 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "1/30 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/8 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/10 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/18 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "2/27 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "3/4 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/4 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/5 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/13 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/15 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "4/22 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "5/2 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "5/10 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "9/12 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "10/4 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "10/27 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "10/29 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "11/8 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/5 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/5 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/6 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/31 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Highland",
+      "latitudeBand": "temperate",
+      "date": "12/31 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "1/13 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "1/15 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/3 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/15 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/20 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/21 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "2/26 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "3/10 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "3/21 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "3/23 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "11/29 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "12/26 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Desert",
+      "latitudeBand": "temperate",
+      "date": "12/28 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/9 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/13 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "1/23 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/4 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/10 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "date": "2/13 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/10 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/13 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/16 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/16 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/18 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/21 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/21 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/22 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/22 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/24 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/26 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "1/27 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/3 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/3 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/4 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/4 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/9 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/19 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/19 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "2/25 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/3 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/3 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/4 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/14 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/14 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/18 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/24 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "River Valley",
+      "latitudeBand": "temperate",
+      "date": "12/29 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "1/13 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "1/22 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "1/22 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "1/29 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Seasonal Wetland",
+      "latitudeBand": "temperate",
+      "date": "2/1 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "1/29 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "1/31 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/21 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/21 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/22 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "2/25 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/6 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/9 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/12 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/12 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/15 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/16 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/25 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/3 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/8 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/13 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/16 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/26 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/13 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/27 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/27 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/28 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "9/29 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/2 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/19 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/22 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/31 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/31 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/2 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/3 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/3 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/4 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/7 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/11 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/16 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/18 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/20 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "12/16 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Coastal Taiga",
+      "latitudeBand": "subarctic",
+      "date": "12/17 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/26 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "3/28 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/1 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/2 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/7 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "4/21 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/10 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/14 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "5/20 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/9 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/22 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "10/25 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/2 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/4 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Continental Taiga",
+      "latitudeBand": "subarctic",
+      "date": "11/5 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/4 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/12 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/14 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/15 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/25 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "5/27 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "8/17 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/5 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/5 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/8 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/13 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/27 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/29 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/29 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "9/30 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/12 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/14 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/19 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "10/21 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Highland",
+      "latitudeBand": "subarctic",
+      "date": "11/3 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/5 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/5 12:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/18 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/19 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/20 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/22 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "3/23 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/2 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/7 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/8 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/13 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "4/20 12:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/4 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/5 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "5/6 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "9/2 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "9/11 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "9/23 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/11 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/13 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/18 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/20 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/23 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "10/31 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "11/4 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Northern Grassland",
+      "latitudeBand": "subarctic",
+      "date": "11/19 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/2 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/8 6:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "1/8 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "2/2 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "2/10 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/20 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/20 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "3/31 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/3 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/4 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/6 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/6 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/14 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/26 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "4/29 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/10 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "5/19 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/21 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/23 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/27 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/30 0:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "10/31 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/1 0:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/1 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/3 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/4 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/15 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "11/19 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/2 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/5 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/8 18:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/10 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/17 12:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/21 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/21 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "date": "12/31 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "3/17 12:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "3/31 6:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "4/28 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/11 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/12 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/18 0:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/25 0:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "9/26 18:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/25 18:00",
+      "issues": [
+        "Rain at 31°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "10/26 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "11/1 18:00",
+      "issues": [
+        "Rain at 29°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "11/4 6:00",
+      "issues": [
+        "Rain at 32°F"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "date": "11/20 6:00",
+      "issues": [
+        "Rain at 30°F"
+      ]
+    }
+  ],
+  "biomeStats": {
+    "Tundra Plain": {
+      "tempMin": -29,
+      "tempMax": 53,
+      "tempSum": 19607,
+      "count": 1460,
+      "precipCount": 721
+    },
+    "Polar Coast": {
+      "tempMin": -22,
+      "tempMax": 54,
+      "tempSum": 27643,
+      "count": 1460,
+      "precipCount": 740
+    },
+    "Ice Sheet": {
+      "tempMin": -54,
+      "tempMax": 23,
+      "tempSum": -21292,
+      "count": 1460,
+      "precipCount": 701
+    },
+    "Polar Desert": {
+      "tempMin": -46,
+      "tempMax": 37,
+      "tempSum": -4283,
+      "count": 1460,
+      "precipCount": 630
+    },
+    "Polar Highland": {
+      "tempMin": -49,
+      "tempMax": 38,
+      "tempSum": -8734,
+      "count": 1460,
+      "precipCount": 703
+    },
+    "Maritime Forest": {
+      "tempMin": 31,
+      "tempMax": 77,
+      "tempSum": 76901,
+      "count": 1460,
+      "precipCount": 724
+    },
+    "Mediterranean Coast": {
+      "tempMin": 46,
+      "tempMax": 87,
+      "tempSum": 97015,
+      "count": 1460,
+      "precipCount": 669
+    },
+    "Continental Prairie": {
+      "tempMin": 0,
+      "tempMax": 102,
+      "tempSum": 74480,
+      "count": 1460,
+      "precipCount": 678
+    },
+    "Temperate Highland": {
+      "tempMin": 8,
+      "tempMax": 86,
+      "tempSum": 67366,
+      "count": 1460,
+      "precipCount": 612
+    },
+    "Temperate Desert": {
+      "tempMin": 15,
+      "tempMax": 109,
+      "tempSum": 86716,
+      "count": 1460,
+      "precipCount": 663
+    },
+    "Temperate Rainforest": {
+      "tempMin": 27,
+      "tempMax": 78,
+      "tempSum": 75189,
+      "count": 1460,
+      "precipCount": 736
+    },
+    "River Valley": {
+      "tempMin": 17,
+      "tempMax": 93,
+      "tempSum": 79847,
+      "count": 1460,
+      "precipCount": 740
+    },
+    "Seasonal Wetland": {
+      "tempMin": 29,
+      "tempMax": 90,
+      "tempSum": 87388,
+      "count": 1460,
+      "precipCount": 750
+    },
+    "Maritime Islands": {
+      "tempMin": 33,
+      "tempMax": 74,
+      "tempSum": 80620,
+      "count": 1460,
+      "precipCount": 702
+    },
+    "Coastal Taiga": {
+      "tempMin": 8,
+      "tempMax": 71,
+      "tempSum": 56172,
+      "count": 1460,
+      "precipCount": 692
+    },
+    "Continental Taiga": {
+      "tempMin": -34,
+      "tempMax": 77,
+      "tempSum": 36853,
+      "count": 1460,
+      "precipCount": 685
+    },
+    "Subarctic Highland": {
+      "tempMin": -30,
+      "tempMax": 68,
+      "tempSum": 28736,
+      "count": 1460,
+      "precipCount": 702
+    },
+    "Northern Grassland": {
+      "tempMin": -38,
+      "tempMax": 92,
+      "tempSum": 45480,
+      "count": 1460,
+      "precipCount": 774
+    },
+    "Subarctic Maritime": {
+      "tempMin": 10,
+      "tempMax": 66,
+      "tempSum": 57689,
+      "count": 1460,
+      "precipCount": 688
+    },
+    "Peatland/Muskeg": {
+      "tempMin": -24,
+      "tempMax": 77,
+      "tempSum": 43419,
+      "count": 1460,
+      "precipCount": 640
+    }
+  }
+}

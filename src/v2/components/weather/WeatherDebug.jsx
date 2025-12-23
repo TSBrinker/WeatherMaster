@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import './WeatherDebug.css';
 
 /**
+ * Toggle between main app and test harness
+ */
+const toggleTestMode = () => {
+  const currentUrl = new URL(window.location.href);
+  const isCurrentlyTest = currentUrl.searchParams.get('test') === 'true';
+
+  if (isCurrentlyTest) {
+    currentUrl.searchParams.delete('test');
+  } else {
+    currentUrl.searchParams.set('test', 'true');
+  }
+
+  window.location.href = currentUrl.toString();
+};
+
+/**
  * Debug console showing expected vs actual temperature values
  * Helps verify weather generation is working correctly
  */
@@ -17,12 +33,21 @@ const WeatherDebug = ({ weatherData }) => {
 
   return (
     <div className="weather-debug">
-      <button
-        className="weather-debug-toggle"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        {isExpanded ? '▼' : '▶'} Debug Console
-      </button>
+      <div className="weather-debug-header">
+        <button
+          className="weather-debug-toggle"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? '▼' : '▶'} Debug Console
+        </button>
+        <button
+          className="weather-debug-test-toggle"
+          onClick={toggleTestMode}
+          title="Open Test Harness"
+        >
+          🧪 Test Harness
+        </button>
+      </div>
 
       {isExpanded && (
         <div className="weather-debug-content">

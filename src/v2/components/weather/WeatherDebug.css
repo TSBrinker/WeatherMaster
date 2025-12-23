@@ -5,8 +5,15 @@
   background-color: #f5f5f5;
 }
 
+.weather-debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #666;
+}
+
 .weather-debug-toggle {
-  width: 100%;
+  flex: 1;
   padding: 0.5rem 1rem;
   background-color: #666;
   color: white;
@@ -20,6 +27,22 @@
 
 .weather-debug-toggle:hover {
   background-color: #555;
+}
+
+.weather-debug-test-toggle {
+  padding: 0.5rem 1rem;
+  background-color: #4a90d9;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.weather-debug-test-toggle:hover {
+  background-color: #357abd;
 }
 
 .weather-debug-content {

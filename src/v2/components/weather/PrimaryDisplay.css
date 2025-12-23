@@ -204,3 +204,175 @@
     font-size: 1rem;
   }
 }
+
+/* Environmental Alerts Badge */
+.environmental-alerts-badge {
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.environmental-alerts-badge:hover {
+  transform: scale(1.05);
+}
+
+.alerts-badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.alerts-badge .alert-icon {
+  font-size: 1rem;
+}
+
+/* Alert item styling in modal */
+.alert-item {
+  padding: 1rem;
+  background: var(--bg-tertiary, #242b3d);
+  border-radius: 8px;
+  border-left: 4px solid var(--bs-warning, #ffc107);
+}
+
+.alert-item h5 {
+  margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   Snow Accumulation Visual Effect
+   ======================================== */
+
+/* Snow fill overlay - rises from bottom */
+.snow-accumulation-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 252, 0.9) 30%,
+    rgba(241, 245, 249, 0.85) 60%,
+    rgba(226, 232, 240, 0.7) 100%
+  );
+  border-radius: 0 0 20px 20px;
+  cursor: pointer;
+  transition: height 0.5s ease-out;
+  z-index: 1;
+
+  /* Apply SVG turbulence filter for organic edge */
+  filter: url(#snow-edge-filter);
+  -webkit-filter: url(#snow-edge-filter);
+
+  /* Fallback for browsers without filter support - wavy border */
+  clip-path: polygon(
+    0% 15%,
+    5% 12%,
+    10% 18%,
+    15% 10%,
+    20% 16%,
+    25% 8%,
+    30% 14%,
+    35% 6%,
+    40% 12%,
+    45% 5%,
+    50% 10%,
+    55% 4%,
+    60% 11%,
+    65% 7%,
+    70% 15%,
+    75% 9%,
+    80% 17%,
+    85% 11%,
+    90% 18%,
+    95% 13%,
+    100% 16%,
+    100% 100%,
+    0% 100%
+  );
+}
+
+.snow-accumulation-overlay:hover {
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(248, 250, 252, 0.95) 30%,
+    rgba(241, 245, 249, 0.9) 60%,
+    rgba(226, 232, 240, 0.8) 100%
+  );
+}
+
+/* Snow depth label */
+.snow-depth-label {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 41, 59, 0.8);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.snow-depth-label .snow-icon {
+  font-size: 1rem;
+}
+
+/* Ice warning badge */
+.ice-warning-badge {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.ice-warning-badge:hover {
+  transform: translateX(-50%) scale(1.05);
+}
+
+.ice-badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ice-badge .ice-icon {
+  font-size: 1.2rem;
+}
+
+/* Snow detail section in modal */
+.snow-detail-section {
+  padding: 0.75rem;
+  background: var(--bg-tertiary, #242b3d);
+  border-radius: 8px;
+  border-left: 4px solid #60a5fa;
+}
+
+.snow-detail-section h6 {
+  margin-bottom: 0.5rem;
+  color: #60a5fa;
+}
+
+/* Make primary-display position relative for absolute children */
+.primary-display {
+  position: relative;
+}

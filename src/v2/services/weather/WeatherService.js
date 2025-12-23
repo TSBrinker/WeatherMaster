@@ -7,6 +7,8 @@
 import { WeatherGenerator } from './WeatherGenerator';
 import SunriseSunsetService from '../celestial/SunriseSunsetService';
 import MoonService from '../celestial/MoonService';
+import { EnvironmentalConditionsService } from './EnvironmentalConditionsService';
+import { SnowAccumulationService } from './SnowAccumulationService';
 import { advanceDate, getMonthName } from '../../utils/dateUtils';
 
 /**
@@ -18,6 +20,8 @@ export class WeatherService {
     this.weatherGenerator = new WeatherGenerator();
     this.sunService = SunriseSunsetService;
     this.moonService = MoonService;
+    this.environmentalService = new EnvironmentalConditionsService();
+    this.snowService = new SnowAccumulationService();
   }
 
   /**
@@ -38,9 +42,17 @@ export class WeatherService {
     // Get celestial data
     const celestial = this.getCelestialData(region, date);
 
+    // Get environmental conditions (drought, flooding, heat waves, etc.)
+    const environmental = this.environmentalService.getEnvironmentalConditions(region, date);
+
+    // Get snow/ice accumulation and ground conditions
+    const snowAccumulation = this.snowService.getAccumulation(region, date);
+
     return {
       ...weather,
       celestial,
+      environmental,
+      snowAccumulation,
       timestamp: this.getTimestamp(date)
     };
   }
@@ -133,6 +145,7 @@ export class WeatherService {
       pattern: 'Unknown',
       effects: [],
       celestial: null,
+      environmental: { activeAlerts: [], hasActiveAlerts: false },
       timestamp: 'Unknown'
     };
   }
@@ -241,6 +254,8 @@ export class WeatherService {
    */
   clearCache() {
     this.weatherGenerator.clearCache();
+    this.environmentalService.clearCache();
+    this.snowService.clearCache();
   }
 }
 
