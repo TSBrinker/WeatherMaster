@@ -139,6 +139,11 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
     ? 'text-dark'
     : 'text-light';
 
+  // Determine if snow overlay is visible (for enhanced text shadows)
+  const hasSnowOverlay = showSnowAccumulation &&
+    weather.snowAccumulation &&
+    weather.snowAccumulation.snowFillPercent > 10;
+
   // Environmental alerts
   const environmental = weather.environmental || { activeAlerts: [], hasActiveAlerts: false };
   const hasEnvironmentalAlerts = environmental.hasActiveAlerts;
@@ -183,7 +188,7 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   return (
     <>
       <div
-        className={`primary-display ${textClass}`}
+        className={`primary-display ${textClass}${hasSnowOverlay ? ' snow-covered' : ''}`}
         style={{ background: getWeatherGradient() }}
       >
         {/* Location Name - HUGE */}
@@ -244,43 +249,19 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
         )}
 
         {/* Snow Accumulation Visual Overlay */}
+        {/* Height scales: 0" = 0%, 6" = 15%, 12" = 30%, 24"+ = 60% (capped) */}
         {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.snowFillPercent > 0 && (
-          <>
-            {/* SVG Filter for organic snow edge - defined once */}
-            <svg width="0" height="0" style={{ position: 'absolute' }}>
-              <defs>
-                <filter id="snow-edge-filter" x="-20%" y="-20%" width="140%" height="140%">
-                  <feTurbulence
-                    type="fractalNoise"
-                    baseFrequency="0.04"
-                    numOctaves="3"
-                    seed="42"
-                    result="noise"
-                  />
-                  <feDisplacementMap
-                    in="SourceGraphic"
-                    in2="noise"
-                    scale="20"
-                    xChannelSelector="R"
-                    yChannelSelector="G"
-                  />
-                </filter>
-              </defs>
-            </svg>
-
-            {/* Snow fill overlay */}
-            <div
-              className="snow-accumulation-overlay"
-              style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent, 60)}%` }}
-              onClick={() => setShowSnowModal(true)}
-              title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
-            >
-              <div className="snow-depth-label">
-                <BsSnow2 className="snow-icon" />
-                {weather.snowAccumulation.snowDepth}"
-              </div>
+          <div
+            className="snow-accumulation-overlay"
+            style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent * 0.6, 60)}%` }}
+            onClick={() => setShowSnowModal(true)}
+            title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
+          >
+            <div className="snow-depth-label">
+              <BsSnow2 className="snow-icon" />
+              {weather.snowAccumulation.snowDepth}"
             </div>
-          </>
+          </div>
         )}
 
         {/* Ice Accumulation Warning (if significant ice but little snow) */}

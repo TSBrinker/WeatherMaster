@@ -23,11 +23,18 @@ import { advanceDate } from '../../utils/dateUtils';
 
 /**
  * Snow accumulation rates (inches per hour by intensity)
+ * Tuned for realistic ground accumulation - a typical Midwest winter
+ * might see 30-40" total annual snowfall, with max ground depth ~12-15".
+ *
+ * Rates reduced from original (0.4/1.0/2.0) to account for:
+ * - Wind redistribution
+ * - Immediate settling during fall
+ * - Temperature-dependent snow density
  */
 const SNOW_RATES = {
-  light: 0.4,      // Light snow: ~0.4 in/hr
-  moderate: 1.0,   // Moderate snow: ~1.0 in/hr
-  heavy: 2.0       // Heavy snow: ~2.0 in/hr
+  light: 0.2,      // Light snow: ~0.2 in/hr (fluffy flurries)
+  moderate: 0.5,   // Moderate snow: ~0.5 in/hr (steady snowfall)
+  heavy: 1.0       // Heavy snow: ~1.0 in/hr (significant storm)
 };
 
 /**
@@ -41,10 +48,15 @@ const ICE_RATES = {
 
 /**
  * Melt rate constants
+ * Increased from original values to ensure snow doesn't accumulate unrealistically.
+ * Real-world: 40°F sunny day can melt 2-4" of snow.
+ * At 40°F (8° above freezing), with solar bonus: 8 * 0.06 * 1.5 = 0.72"/hr
+ * That's about 5-6" in a sunny day - realistic for spring melt.
  */
 const MELT_CONSTANTS = {
   // Snow melt: inches melted per degree-hour above 32°F
-  snowMeltPerDegreeHour: 0.03,
+  // Increased from 0.03 to 0.06 for faster melt during warm spells
+  snowMeltPerDegreeHour: 0.06,
 
   // Solar radiation multiplier during daylight
   dayTimeMeltMultiplier: 1.5,
@@ -53,7 +65,7 @@ const MELT_CONSTANTS = {
   rainOnSnowMultiplier: 2.5,
 
   // Ice melts slower than snow
-  iceMeltPerDegreeHour: 0.015,
+  iceMeltPerDegreeHour: 0.02,
 
   // Sublimation rate (snow loss in dry cold conditions, in/hr)
   sublimationRate: 0.01
@@ -61,12 +73,15 @@ const MELT_CONSTANTS = {
 
 /**
  * Compaction rates (how much snow settles)
+ * Fresh powder (10:1 ratio) compacts to dense pack (4:1 ratio) over days.
+ * This means fresh snow loses ~60% of its depth to compaction alone.
  */
 const COMPACTION = {
-  // Fresh snow compacts about 5% per hour for first 24 hours
-  hourlyRate: 0.02,
-  // Maximum compaction (old snow is about 40% of fresh depth)
-  maxCompaction: 0.4
+  // Fresh snow compacts about 3% per hour for first 24 hours
+  hourlyRate: 0.03,
+  // Maximum compaction - old snow is about 35% of fresh depth
+  // (e.g., 10" fresh snow becomes ~3.5" packed snow)
+  maxCompaction: 0.65
 };
 
 /**

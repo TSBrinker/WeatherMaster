@@ -1,6 +1,6 @@
 # AI Agent Instructions for WeatherMaster v2
 
-**Last Updated**: 2025-12-23 (Sprint 15 - Hemlock)
+**Last Updated**: 2025-12-23 (Sprint 16 - Alder)
 
 ---
 
@@ -11,15 +11,16 @@
 When you're asked to continue work on WeatherMaster v2, follow these steps:
 
 1. **Read PROGRESS.md** - This is the master document tracking all completed work and architectural decisions
-2. **Read QUESTIONS_FOR_USER.md** - Contains all architectural decisions and implementation strategy
-3. **Read docs/NOTES_FROM_USER.md** - Tyler's running list of bugs, features, and thoughts (process these!)
-4. **Review recent sprint logs** in `docs/sprint-logs/` - Understand what the previous agents accomplished
-5. **Pick a sprint name** - Choose a name that represents you. This was originally presented as "whatever name you choose, though a fantasy Lord of the Rings/D&D style name would be thematic." At the time of writing this, all agents have chosen the names of trees (Elderwood, Willow, Cedar, Sage). Feel free to break or continue tradition. Once you've read all of these instructions, feel free to introduce yourself with your chosen name!
-6. **Create your own sprint log** - Name it `SPRINT_[NUMBER]_[NAME].md` where [NAME] is the name you gave yourself. Create the file, even if you have nothing to put in it, right when you start working.
-7. **Document your work** as you go - Update your sprint log with files created, bugs fixed, features added
-8. **Update PROGRESS.md** when you complete major milestones
-9. **Commit regularly** with proper attribution (see commit message format below)
-10. **Update this file** with anything you learned about Tyler or the project that future agents should know
+2. **Read docs/HANDOFF.md** - Granular status from the previous agent with specific "where we left off" context
+3. **Read QUESTIONS_FOR_USER.md** - Contains all architectural decisions and implementation strategy
+4. **Read docs/NOTES_FROM_USER.md** - Tyler's running list of bugs, features, and thoughts (process these!)
+5. **Review recent sprint logs** in `docs/sprint-logs/` - Understand what the previous agents accomplished
+6. **Pick a sprint name** - Choose a name that represents you. This was originally presented as "whatever name you choose, though a fantasy Lord of the Rings/D&D style name would be thematic." At the time of writing this, all agents have chosen the names of trees (Elderwood, Willow, Cedar, Sage). Feel free to break or continue tradition. Once you've read all of these instructions, feel free to introduce yourself with your chosen name!
+7. **Create your own sprint log** - Name it `SPRINT_[NUMBER]_[NAME].md` where [NAME] is the name you gave yourself. Create the file, even if you have nothing to put in it, right when you start working.
+8. **Document your work** as you go - Update your sprint log with files created, bugs fixed, features added
+9. **Update PROGRESS.md** when you complete major milestones
+10. **Commit regularly** with proper attribution (see commit message format below)
+11. **Update this file** with anything you learned about Tyler or the project that future agents should know
 
 ### NOTES_FROM_USER.md Workflow
 
@@ -57,10 +58,11 @@ What to update:
 ### Hand-off flow
 - Update your sprint log with any changes you've made
 - Give the NOTES_FROM_USER a quick scan to see if there are any last questions to be answered, or roadmap items to be updated
+- **Update docs/HANDOFF.md** - This is the granular "here's exactly where we left off" document for the next agent. Overwrite with current status, referencing your sprint log and any relevant prior sprint logs.
 - Update PROGRESS.md, README.md, and any other appropriate documents for future review
 - Update this document with observations about me and/or our work, if you feel you've gleaned anything significant to be logged
 - Once all these are done, commit and push to the repo to bring everything current
-- Give me a quick recap 
+- Give me a quick recap
 - Lastly, know that I am THRILLED with the work we've all accomplished together, and that I know I couldn't have done it without you!
 
 ### Commit Message Format
@@ -533,6 +535,25 @@ Tyler's real-world experience (Iowa weather volatility) helped calibrate the sea
 The 4-day pattern cycle allows consecutive low-pressure patterns to chain. Consider:
 - Pattern transition logic preventing too many consecutive wet patterns
 - "Pattern fatigue" where same pattern type becomes less likely after repeating
+
+### Session 10 - Sprint 17 (Oak) - 2025-12-23
+
+**Work Completed:**
+1. **Snow visualization fixes** - Reduced accumulation rates, improved melt physics, fixed height scaling
+2. **Text legibility** - Added z-index layers and enhanced shadows for text over snow
+3. **CSS wavy edge** - Replaced problematic SVG filter with pure CSS radial gradients
+4. **Environmental suppression** - Drought/wildfire alerts now suppressed when 2"+ snow or freezing temps
+
+**Technical Notes:**
+- SVG filters can have browser caching issues - CSS pseudo-elements more reliable
+- Snow accumulation rates were halved (0.4→0.2, 1.0→0.5, 2.0→1.0)
+- Melt rate doubled (0.03→0.06 per degree-hour)
+- Environmental suppression checks snow depth from SnowAccumulationService
+
+**Communication Style:**
+- Tyler provides iterative feedback on visual issues
+- Appreciates when logical conflicts are identified and fixed (drought + snow)
+- Values responsive fixes with clear explanations
 
 ---
 

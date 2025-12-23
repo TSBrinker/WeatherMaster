@@ -8,6 +8,7 @@
 
 import { WeatherGenerator } from './WeatherGenerator';
 import { advanceDate } from '../../utils/dateUtils';
+import { SnowAccumulationService } from './SnowAccumulationService';
 
 /**
  * Drought severity levels based on US Drought Monitor categories
@@ -67,6 +68,7 @@ export class EnvironmentalConditionsService {
     // We'll use a separate WeatherGenerator instance to look back at historical weather
     // This avoids circular dependencies and keeps concerns separated
     this.weatherGenerator = new WeatherGenerator();
+    this.snowService = new SnowAccumulationService();
     this.conditionsCache = new Map();
   }
 
@@ -84,11 +86,58 @@ export class EnvironmentalConditionsService {
     }
 
     // Calculate all environmental conditions
-    const drought = this.calculateDrought(region, date);
+    let drought = this.calculateDrought(region, date);
     const flooding = this.calculateFlooding(region, date);
     const heatWave = this.calculateHeatWave(region, date);
     const coldSnap = this.calculateColdSnap(region, date);
-    const wildfireRisk = this.calculateWildfireRisk(region, date, drought, heatWave);
+    let wildfireRisk = this.calculateWildfireRisk(region, date, drought, heatWave);
+
+    // Get snow accumulation to check for suppression conditions
+    const snowData = this.snowService.getAccumulation(region, date);
+    const hasSignificantSnow = snowData.snowDepth >= 2; // 2+ inches of snow on ground
+    const currentWeather = this.weatherGenerator.generateWeather(region, { ...date, hour: 12 });
+    const isFreezing = currentWeather.temperature <= 32;
+
+    // SUPPRESSION LOGIC:
+    // Snow cover suppresses drought and wildfire alerts - you can't have a drought
+    // or wildfire risk when there's snow on the ground!
+    if (hasSignificantSnow) {
+      // Suppress drought - snow IS precipitation, and ground is wet beneath it
+      if (drought.level > 0) {
+        drought = {
+          ...DROUGHT_LEVELS.NONE,
+          precipDeficitPercent: drought.precipDeficitPercent,
+          actualPrecipDays: drought.actualPrecipDays,
+          expectedPrecipDays: drought.expectedPrecipDays,
+          lookbackDays: drought.lookbackDays,
+          gameplayImpacts: [],
+          suppressedBySnow: true
+        };
+      }
+
+      // Suppress wildfire - snow-covered ground can't burn
+      if (wildfireRisk.level > 0) {
+        wildfireRisk = {
+          ...WILDFIRE_LEVELS.NONE,
+          riskScore: 0,
+          factors: wildfireRisk.factors,
+          gameplayImpacts: [],
+          suppressedBySnow: true
+        };
+      }
+    }
+
+    // Also suppress wildfire if consistently freezing (even without snow)
+    // Frozen vegetation doesn't burn easily
+    if (isFreezing && coldSnap.consecutiveDays >= 2 && wildfireRisk.level > 0 && !wildfireRisk.suppressedBySnow) {
+      wildfireRisk = {
+        ...WILDFIRE_LEVELS.NONE,
+        riskScore: Math.min(wildfireRisk.riskScore, 10),
+        factors: wildfireRisk.factors,
+        gameplayImpacts: [],
+        suppressedByFreezing: true
+      };
+    }
 
     // Compile active alerts (conditions with level > 0)
     const activeAlerts = [];
