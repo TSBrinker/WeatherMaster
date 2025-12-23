@@ -1,114 +1,97 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-23
-**Previous Agent**: Opus (Sprint 19)
-**Status**: Ready for Precipitation/Accumulation Analysis
+**Previous Agent**: Sequoia (Sprint 21)
+**Current Sprint Count**: 21 (next agent creates `SPRINT_22_*.md`)
+**Status**: Documentation cleanup complete; Ground Temperature implementation ready
 
 ---
 
 ## Where We Left Off
 
-Sprint 19 completed two major items:
-1. **Primary Display Redesign** - Merged to main, iOS Weather-inspired layout
-2. **Test Harness Refactor** - Split 1156-line monolith into modular components
+Sprint 21 focused on **documentation cleanup and workflow streamlining**:
 
-### What Was Done in Sprint 19
+1. **Created new documentation structure**:
+   - `START_HERE.md` - Single entry point for new agents
+   - `WORKING_WITH_TYLER.md` - Evergreen preferences and decisions
+   - `archive/` folder for historical docs
 
-1. **Primary Display Redesign** (merged to main)
-   - Restructured layout: Location → Temperature → Condition line → Feels like
-   - Moved weather icon inline with condition text
-   - Added High/Low temps from daily forecast data
-   - Created info badges section (ground conditions, alerts, biome)
-   - Ground conditions now accessible without snow visualization enabled
-   - Enhanced text shadows for snow overlay legibility
+2. **Archived bloated/stale documents**:
+   - `PROGRESS.md` → `archive/` (1000+ lines, duplicated sprint logs)
+   - `AI_INSTRUCTIONS.md` → `archive/` (658 lines, half was session logs)
+   - `QUESTIONS_FOR_USER.md` → `archive/` (historical decisions)
 
-2. **Test Harness Modularization**
-   - Split `WeatherTestHarness.jsx` from 1156 lines → 137 lines
-   - Created focused modules: `testConfig.js`, `testRunner.js`, `weatherValidation.js`, `resultExporters.js`
-   - Created `results/` subfolder with reusable table components
-   - Much easier to add new tests and analysis now
+3. **Did NOT implement ground temperature** - that's ready for you!
 
 ---
 
-## Next Task: Precipitation/Accumulation Analysis
+## Ready Task: Ground Temperature System
 
 ### The Problem
-Tyler observed unrealistic snow accumulation patterns in Continental Prairie:
-- ~23" of snow accumulating over ~50 hours
-- Transitioning to sleet then heavy rain for ~9 hours
-- Rain completely washing away all snow
 
-This feels like a calibration issue. Possible culprits:
-- Precipitation type flip-flopping too aggressively near 32°F
-- Rain melt rate too aggressive on existing snow
-- Temperature oscillation too volatile
-- Snow compaction rates
+Precipitation type is evaluated hourly based on **instantaneous air temperature**. In marginal biomes (winter mean 20-32°F), this causes rapid flip-flopping between snow and rain, leading to unrealistic mid-winter snow melt.
 
-### Suggested Approach
-Add a time-series logging test to `testRunner.js` that captures:
-- Hour, Temperature, Precip Type, Precip Amount
-- Snow Depth (before & after), Melt Amount
-- Run for 720 hours (30 days) in a cold climate region
+### The Solution
 
-This will show:
-- How often precip type changes near freezing
-- Whether melt rates are proportional/reasonable
-- If accumulation math is working correctly
+Add ground temperature as a rolling average of air temperature, weighted by ground type (thermal inertia).
 
-### Key Files for Analysis
-- `src/v2/components/testing/testRunner.js` - Add new analysis here
-- `src/v2/components/testing/testConfig.js` - Add config for new test
-- `src/v2/services/weather/SnowAccumulationService.js` - Snow/melt logic
-- `src/v2/services/weather/WeatherGenerator.js` - Precip type selection
+**Ground Types:**
+
+| Ground Type | Thermal Inertia | Lag Hours | Use Case |
+|-------------|-----------------|-----------|----------|
+| rock | 0.95 | ~48-72 | Mountains, highlands |
+| soil | 0.85 | ~24-36 | Most temperate biomes |
+| sand | 0.70 | ~12-18 | Deserts |
+| clay | 0.90 | ~36-48 | River valleys, wetlands |
+| peat | 0.85 | ~24-36 | Muskeg, bogs |
+| permafrost | 0.98 | ~72+ | Polar regions |
+
+**Implementation Steps:**
+
+1. Add `groundType` to biome templates in `src/v2/data/region-templates.js`
+2. Create `src/v2/services/weather/GroundTemperatureService.js`:
+   - Look back N hours based on thermal inertia
+   - Calculate weighted average of air temperatures
+   - Return ground temperature
+3. Modify `src/v2/services/weather/SnowAccumulationService.js`:
+   - Use ground temp for snow accumulation (ground must be ≤ 33°F)
+   - Use ground temp for melt rate calculation
+
+### Test Data
+
+Baseline in `docs/testing-results/precip-summary-1.json`
+
+**Targets:**
+- Continental Prairie: < 10 precip type changes (was 24), < 5 rain-on-snow (was 16)
+- Convergence Zone: < 20 type changes (was 72), < 10 rain-on-snow (was 23)
+- Biomes with complete mid-winter melt: 0 (was 2)
 
 ---
 
 ## Current System State
 
-### Primary Display - REDESIGNED
-- iOS Weather-inspired layout with info badges
-- Ground conditions accessible without snow visualization
-- High/Low temps from daily forecast
-
-### Test Harness - MODULARIZED
-```
-src/v2/components/testing/
-├── WeatherTestHarness.jsx     # Main component (137 lines)
-├── testConfig.js              # TEST_CONFIG, THRESHOLDS
-├── weatherValidation.js       # validateWeather()
-├── testRunner.js              # runTests() - core logic
-├── resultExporters.js         # JSON download utilities
-└── results/                   # UI components for tables
-```
-
-### Phase A (Environmental Conditions) - COMPLETE
-### Phase B (Snow & Ice Accumulation) - COMPLETE
-### Snow Visualization - POLISHED
-
----
-
-## Quick Start for Next Agent
-
-1. Read `docs/AI_INSTRUCTIONS.md` for full context
-2. Check `docs/NOTES_FROM_USER.md` for any new items from Tyler
-3. You're on `main` branch with all recent work merged
-4. Test changes with `npm start`
-5. Build verification with `npm run build`
-6. Access test harness at `localhost:3000?test=true`
-
-### Testing Snow Accumulation Issue
-- Navigate to Continental Prairie, set date to late January
-- Click through hours and watch snow depth vs precip type
-- Note any rapid transitions between snow/sleet/rain
+| Component | Status |
+|-----------|--------|
+| Primary Display | STABLE |
+| Test Harness | ENHANCED (precipitation analysis added) |
+| Phase A (Environmental Conditions) | COMPLETE |
+| Phase B (Snow & Ice Accumulation) | NEEDS GROUND TEMP |
 
 ---
 
 ## Git State
 
-- **Branch**: main (all work merged)
-- **Recent commits**:
-  - `496e314` Refactor WeatherTestHarness into modular components
-  - `7aebdd6` Primary display redesign: iOS Weather-inspired layout
+- **Branch**: main
+- **Uncommitted**: Documentation restructure (this sprint)
+
+---
+
+## NOTES_FROM_USER.md Item
+
+There's one pending item from Tyler:
+> "this new test should also have a button to export the data from that test specifically. maybe even a 'copy to clipboard' so I can get it into a doc here more easily"
+
+This refers to the precipitation analysis test - adding easier export options.
 
 ---
 

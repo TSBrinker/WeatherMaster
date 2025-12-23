@@ -230,14 +230,14 @@ data-tables/
 └── weather-effects.js           # D&D 5e game mechanics reference
 
 docs/
-├── sprint-logs/                 # Individual agent sprint documentation
-├── climate-research/            # Real-world climate data sources
+├── START_HERE.md               # Entry point for AI agents
+├── HANDOFF.md                  # Current task context for next agent
+├── WORKING_WITH_TYLER.md       # Evergreen preferences and decisions
+├── NOTES_FROM_USER.md          # Tyler's scratchpad
 ├── FLAT_DISC_WORLD.md          # Celestial mechanics specification
-└── NOTES_FROM_USER.md          # Tyler's scratchpad (check regularly!)
-
-PROGRESS.md                      # Master progress tracker
-QUESTIONS_FOR_USER.md            # Architectural decisions
-AI_INSTRUCTIONS.md               # Instructions for AI agents
+├── sprint-logs/                # Individual agent sprint documentation
+├── climate-research/           # Real-world climate data sources
+└── archive/                    # Historical docs (PROGRESS.md, etc.)
 ```
 
 ---
@@ -272,10 +272,10 @@ AI_INSTRUCTIONS.md               # Instructions for AI agents
 - **Gameplay Mechanics Modal** - D&D 5e mechanical impacts of weather (searchable)
 - **FLAT_DISC_WORLD.md** - Complete flat disc celestial mechanics specification
 
-### For Developers
-- **PROGRESS.md** - Master progress tracker with all completed work
-- **QUESTIONS_FOR_USER.md** - Architectural decisions and implementation strategy
-- **AI_INSTRUCTIONS.md** - Instructions for AI agents continuing development
+### For Developers / AI Agents
+- **[docs/START_HERE.md](docs/START_HERE.md)** - Entry point for new AI agents
+- **[docs/HANDOFF.md](docs/HANDOFF.md)** - Current task context and next steps
+- **[docs/WORKING_WITH_TYLER.md](docs/WORKING_WITH_TYLER.md)** - Preferences and established decisions
 - **Sprint Logs** - Detailed documentation of each sprint's work (in `docs/sprint-logs/`)
 - **Climate Research** - Real-world data sources and temperature validation (in `docs/climate-research/`)
 
@@ -285,11 +285,11 @@ AI_INSTRUCTIONS.md               # Instructions for AI agents
 
 This project is primarily developed for Tyler's personal Marai campaign setting, but contributions are welcome! When contributing:
 
-1. **Read AI_INSTRUCTIONS.md** - Understand project philosophy and Tyler's preferences
-2. **Read PROGRESS.md** - See what's been completed and what's planned
+1. **Read [docs/START_HERE.md](docs/START_HERE.md)** - Entry point with full workflow
+2. **Read [docs/HANDOFF.md](docs/HANDOFF.md)** - See current task context
 3. **Create a sprint log** - Document your work in `docs/sprint-logs/SPRINT_[NUMBER]_[NAME].md`
-4. **Update documentation** - Keep PROGRESS.md and AI_INSTRUCTIONS.md current
-5. **Follow commit format** - Use proper attribution (see AI_INSTRUCTIONS.md)
+4. **Update HANDOFF.md** - Pass context to the next contributor
+5. **Follow commit format** - See [docs/WORKING_WITH_TYLER.md](docs/WORKING_WITH_TYLER.md)
 
 ### Design Principles
 - **Simplicity over complexity** - Only add features that enhance gameplay
@@ -326,20 +326,22 @@ See [DEPENDENCIES.md](DEPENDENCIES.md) for complete workstation setup instructio
 ## Roadmap
 
 ### Completed Sprints ✅
-- **Sprint 1**: Basic Weather Generation
-- **Sprint 2**: iOS Weather UI Redesign "Elderwood"
-- **Sprint 3**: Modal Legibility & UI Polish "Willow"
-- **Sprint 4**: Atmospheric Depth "Cedar"
-- **Sprint 5**: Educational Modals & Documentation "Sage"
+21 sprints completed through December 2025, including:
+- Core weather generation with deterministic seed-based randomness
+- iOS Weather-inspired UI with dynamic gradients
+- Flat disc celestial mechanics
+- Environmental conditions (drought, flooding, heat waves, cold snaps, wildfire risk)
+- Snow & ice accumulation with visual display
+- Comprehensive test harness for validation
 
-### Upcoming Sprints 🔜
-- **Sprint 6**: Enhanced Wind & Weather Systems
-- **Sprint 7**: Extreme Weather & Snow Accumulation
-- **Sprint 8**: Wanderers (Falling Stars for Marai)
-- **Sprint 9**: Gameplay Integration & UI Refinements
-- **Sprint 10**: UI Polish & User Experience
+See `docs/sprint-logs/` for detailed sprint documentation.
 
-See [PROGRESS.md](PROGRESS.md) for detailed roadmap and sprint planning.
+### Current Focus 🔜
+- **Ground Temperature System** - Thermal inertia for realistic snow behavior
+- **Extreme Weather Events** - Hurricanes, blizzards, tornadoes
+- **Wanderers** - Falling star events for Marai setting
+
+See [docs/HANDOFF.md](docs/HANDOFF.md) for current task context.
 
 ---
 
@@ -352,22 +354,11 @@ This project is built for personal use in Tyler's D&D campaigns. Feel free to us
 ## Credits
 
 **Original Development**: Tyler Brinker (TSBrinker)
-**AI Development Team**:
-- Sprint 1: Cedar (Basic Weather Generation)
-- Sprint 2: Elderwood (iOS UI Redesign)
-- Sprint 3: Willow (Modal Legibility)
-- Sprint 4: Cedar (Atmospheric Depth)
-- Sprint 5: Sage (Educational Modals)
-- Sprint 6: Rowan (README Update & Deployment Fix)
-- Sprint 7: Ash (UI Quick Wins & Dynamic Celestial)
-- Sprint 8: Birch (Weather Validation & Biome-Accurate Precipitation)
-- Sprint 9: Maple (Final Documentation & Handoff)
-- Sprint 10: Hawthorn (Condition Phrasing & Notes Processing)
-- Sprint 11: Juniper (Legacy Cleanup & Test Harness)
-- Sprint 12: Larch (Test Harness Enhancements)
-- Sprint 13: Spruce (Seasonal Transitions & Desert Precipitation)
-- Sprint 14: Fern (Pattern Transitions & Dynamic Thresholds)
-- Sprint 15: Hemlock (Weather Sophistication - Environmental Conditions)
+
+**AI Development Team** (21 sprints and counting):
+Cedar, Elderwood, Willow, Sage, Rowan, Ash, Birch, Maple, Hawthorn, Juniper, Larch, Spruce, Fern, Hemlock, Alder, Oak, Pine, Opus, Ember, Sequoia, and more...
+
+See `docs/sprint-logs/` for individual sprint contributions.
 
 **Climate Data Sources**:
 - Weather Spark (weatherspark.com)
