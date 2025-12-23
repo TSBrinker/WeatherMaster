@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
-import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiSnowflakeCold } from 'react-icons/wi';
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy } from 'react-icons/wi';
 import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
@@ -84,7 +84,7 @@ const generateSnowDriftPath = (regionId, day) => {
  * PrimaryDisplay - iOS Weather-inspired hero component
  * Features HUGE location name, massive temperature, and clean layout
  */
-const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
+const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService }) => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showConditionModal, setShowConditionModal] = useState(false);
   const [showEnvironmentalModal, setShowEnvironmentalModal] = useState(false);
@@ -110,10 +110,10 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   const rawCondition = weather.condition;
   const condition = transformCondition(rawCondition, conditionPhrasing);
 
-  // High/Low would come from daily forecast, but we don't have that yet
-  // For now, we'll skip showing high/low
-  const high = null;
-  const low = null;
+  // Get High/Low from daily forecast for today
+  const todayForecast = weatherService?.getDailyForecast?.(region, currentDate, 1)?.[0];
+  const high = todayForecast?.high ?? null;
+  const low = todayForecast?.low ?? null;
 
   // Determine if feels like is different enough to show
   const showFeelsLike = feelsLike && Math.abs(temperature - feelsLike) >= 3;
@@ -243,13 +243,6 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
     return names[type] || type;
   };
 
-  // Template tooltip
-  const templateTooltip = (
-    <Tooltip id="template-tooltip">
-      {template?.name || 'Click for details'}
-    </Tooltip>
-  );
-
   // Condition tooltip (if has effects)
   const hasConditionEffects = weather.effects && weather.effects.length > 0;
   const conditionTooltip = hasConditionEffects ? (
@@ -269,40 +262,29 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
           {region.name}
         </div>
 
-        {/* Biome name below location, with info icon on same line */}
-        <div className="template-info">
-          <span className="template-name-text">{template?.name || region.climate || 'Unknown Climate'}</span>
-          <OverlayTrigger placement="bottom" overlay={templateTooltip}>
-            <BsInfoCircle className="info-icon clickable" onClick={() => setShowTemplateModal(true)} />
-          </OverlayTrigger>
-        </div>
-
-        {/* Weather Icon */}
-        <div className="weather-icon-hero">
-          {getWeatherIcon()}
-        </div>
-
         {/* Temperature - MASSIVE */}
         <div className="temperature-hero">
           {Math.round(temperature)}°
         </div>
 
-        {/* Condition with optional info icon */}
-        <div className="condition-hero">
-          {condition}
-          {hasConditionEffects && (
-            <OverlayTrigger placement="bottom" overlay={conditionTooltip}>
-              <BsInfoCircle className="info-icon clickable" onClick={() => setShowConditionModal(true)} />
-            </OverlayTrigger>
+        {/* Condition Line: Icon + Condition + High/Low */}
+        <div className="condition-line">
+          <span className="condition-icon">{getWeatherIcon()}</span>
+          <span className="condition-text">
+            {condition}
+            {hasConditionEffects && (
+              <OverlayTrigger placement="bottom" overlay={conditionTooltip}>
+                <BsInfoCircle className="info-icon clickable" onClick={() => setShowConditionModal(true)} />
+              </OverlayTrigger>
+            )}
+          </span>
+          {high !== null && low !== null && (
+            <>
+              <span className="condition-separator">•</span>
+              <span className="high-low-inline">H:{Math.round(high)}° L:{Math.round(low)}°</span>
+            </>
           )}
         </div>
-
-        {/* High/Low - iOS style */}
-        {high && low && (
-          <div className="high-low-display">
-            H:{Math.round(high)}° L:{Math.round(low)}°
-          </div>
-        )}
 
         {/* Feels Like - if different */}
         {showFeelsLike && (
@@ -311,54 +293,75 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
           </div>
         )}
 
-        {/* Environmental Alerts Badge */}
-        {hasEnvironmentalAlerts && (
-          <div className="environmental-alerts-badge" onClick={() => setShowEnvironmentalModal(true)}>
-            <Badge bg={getAlertBadgeVariant()} className="alerts-badge">
-              <BsExclamationTriangleFill className="alert-icon" />
-              {environmental.activeAlerts.length} Active Alert{environmental.activeAlerts.length > 1 ? 's' : ''}
+        {/* Info Badges Section */}
+        <div className="info-badges">
+          {/* Ground Conditions Badge - always show if data exists */}
+          {weather.snowAccumulation && (
+            <Badge
+              bg="dark"
+              className="info-badge ground-badge"
+              onClick={() => setShowSnowModal(true)}
+            >
+              {weather.snowAccumulation.snowDepth > 0 ? (
+                <>
+                  <BsSnow2 className="badge-icon" />
+                  {weather.snowAccumulation.snowDepth}" snow
+                </>
+              ) : (
+                <>
+                  <span className="badge-icon">🌍</span>
+                  {weather.snowAccumulation.groundCondition?.name || 'Ground'}
+                </>
+              )}
             </Badge>
-          </div>
-        )}
+          )}
+
+          {/* Environmental Alerts Badge */}
+          {hasEnvironmentalAlerts && (
+            <Badge
+              bg={getAlertBadgeVariant()}
+              className="info-badge alerts-badge"
+              onClick={() => setShowEnvironmentalModal(true)}
+            >
+              <BsExclamationTriangleFill className="badge-icon" />
+              {environmental.activeAlerts.length} Alert{environmental.activeAlerts.length > 1 ? 's' : ''}
+            </Badge>
+          )}
+
+          {/* Biome Info Badge - subtle, at end */}
+          {template && (
+            <Badge
+              bg="secondary"
+              className="info-badge biome-badge"
+              onClick={() => setShowTemplateModal(true)}
+            >
+              <BsInfoCircle className="badge-icon" />
+              {template.name}
+            </Badge>
+          )}
+        </div>
 
         {/* Snow Accumulation Visual Overlay with SVG drift edge */}
         {/* Height scales: 0" = 0%, 6" = 15%, 12" = 30%, 24"+ = 60% (capped) */}
         {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.snowFillPercent > 0 && (
-          <>
-            <div
-              className="snow-accumulation-overlay"
-              style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent * 0.6, 60)}%` }}
-              onClick={() => setShowSnowModal(true)}
-              title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
+          <div
+            className="snow-accumulation-overlay"
+            style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent * 0.6, 60)}%` }}
+            onClick={() => setShowSnowModal(true)}
+            title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
+          >
+            {/* SVG for organic wavy drift edge at top */}
+            <svg
+              className="snow-drift-edge"
+              viewBox="0 0 100 30"
+              preserveAspectRatio="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              {/* SVG for organic wavy drift edge at top */}
-              <svg
-                className="snow-drift-edge"
-                viewBox="0 0 100 30"
-                preserveAspectRatio="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d={generateSnowDriftPath(region?.id, currentDate?.day || 1)}
-                  fill="rgb(248, 251, 255)"
-                />
-              </svg>
-            </div>
-            {/* Snow depth label positioned outside overlay for proper z-index */}
-            <div className="snow-depth-label" onClick={() => setShowSnowModal(true)}>
-              <BsSnow2 className="snow-icon" />
-              {weather.snowAccumulation.snowDepth}"
-            </div>
-          </>
-        )}
-
-        {/* Ice Accumulation Warning (if significant ice but little snow) */}
-        {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.iceAccumulation >= 0.1 && weather.snowAccumulation.snowFillPercent < 5 && (
-          <div className="ice-warning-badge" onClick={() => setShowSnowModal(true)}>
-            <Badge bg="info" className="ice-badge">
-              <WiSnowflakeCold className="ice-icon" />
-              {weather.snowAccumulation.iceAccumulation}" Ice
-            </Badge>
+              <path
+                d={generateSnowDriftPath(region?.id, currentDate?.day || 1)}
+                fill="rgb(248, 251, 255)"
+              />
+            </svg>
           </div>
         )}
       </div>

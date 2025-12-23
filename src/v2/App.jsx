@@ -101,6 +101,7 @@ const AppContent = () => {
                   weather={weatherData}
                   world={activeWorld}
                   currentDate={activeWorld.currentDate}
+                  weatherService={weatherService}
                 />
 
                 {/* Conditions Card - Wind, Humidity, Precip */}
