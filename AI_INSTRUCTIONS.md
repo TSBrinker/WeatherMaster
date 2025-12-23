@@ -14,7 +14,7 @@ When you're asked to continue work on WeatherMaster v2, follow these steps:
 2. **Read QUESTIONS_FOR_USER.md** - Contains all architectural decisions and implementation strategy
 3. **Read docs/NOTES_FROM_USER.md** - Tyler's running list of bugs, features, and thoughts (process these!)
 4. **Review recent sprint logs** in `docs/sprint-logs/` - Understand what the previous agents accomplished
-5. **Pick a sprint name** - Choose a name that represents your work. This was originally presented as "whatever name you choose, though a fantasy Lord of the Rings/D&D style name would be thematic." At the time of writing this, all agents have chosen the names of trees (Elderwood, Willow, Cedar, Sage). Feel free to break or continue tradition. Once you've read all of these instructions, feel free to introduce yourself with your chosen name!
+5. **Pick a sprint name** - Choose a name that represents you. This was originally presented as "whatever name you choose, though a fantasy Lord of the Rings/D&D style name would be thematic." At the time of writing this, all agents have chosen the names of trees (Elderwood, Willow, Cedar, Sage). Feel free to break or continue tradition. Once you've read all of these instructions, feel free to introduce yourself with your chosen name!
 6. **Create your own sprint log** - Name it `SPRINT_[NUMBER]_[NAME].md` where [NAME] is the name you gave yourself
 7. **Document your work** as you go - Update your sprint log with files created, bugs fixed, features added
 8. **Update PROGRESS.md** when you complete major milestones
@@ -432,6 +432,32 @@ src/v2/
 - Biome similarity detection, expected vs actual comparison
 - Extreme event frequency, precip type distribution
 - Filter by band, CSV export, problem biomes summary
+
+### Session 8 - Sprint 12 (Larch) - 2025-12-23
+
+**Preferences Discovered:**
+- Values validation before adding complexity ("ensure all of our current structure is behaving exactly as we would like before continuing")
+- Wants weather sophistication as the next priority after anomaly resolution
+- Appreciates clear column labels over symbols (Δ → "Diff", σ → "StdDev")
+- Uses NOTES_FROM_USER.md for async feature requests during sessions
+
+**Work Completed:**
+1. **Seasonal Transition Smoothness Test** - Tracks temps ±5 days around equinoxes/solstices, flags >8°F daily jumps
+2. **Expected vs Actual Comparison** - Compares template annual.mean to generated average
+3. **Temperature Variance Tracking** - Standard deviation of daily noon temps per biome
+4. **Precipitation Streak Detection** - Longest consecutive dry/wet days per biome
+5. **Biome Similarity Detection** - Flags pairs with <3°F temp diff AND <5% precip diff
+6. **Problem Biomes Summary** - Red alert at top aggregating all issues
+
+**Technical Notes:**
+- Enhanced biomeStats object with variance tracking, streak counting, transition temps
+- Post-processing phase after test loop for cross-biome analysis
+- New thresholds: maxDailySeasonalJump (8°F), expectedTempDeviation (15°F), biomeSimilarityThreshold (3°F)
+- Column labels updated for legibility: "Diff" and "StdDev" instead of Greek symbols
+
+**Next Steps (Per Tyler):**
+- Analyze and resolve anomalies surfaced by test harness
+- Continue with weather sophistication (Sprint 6: Enhanced Wind & Frontal Systems)
 
 ---
 

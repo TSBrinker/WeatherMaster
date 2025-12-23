@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Button, Card, ProgressBar, Table, Alert } from 'react-bootstrap';
+import { Container, Button, Card, ProgressBar, Table, Alert, Badge } from 'react-bootstrap';
 import { regionTemplates } from '../../data/region-templates';
 import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { extractClimateProfile } from '../../data/templateHelpers';
@@ -20,7 +20,14 @@ const WeatherTestHarness = () => {
     daysToTest: 365,
     hoursToTest: [0, 6, 12, 18], // Midnight, dawn, noon, dusk
     // Flat disc world latitude bands (center to edge)
-    latitudeBands: ['central', 'subarctic', 'temperate', 'tropical', 'rim', 'special']
+    latitudeBands: ['central', 'subarctic', 'temperate', 'tropical', 'rim', 'special'],
+    // Seasonal transition windows (±5 days around each boundary)
+    seasonalTransitionDays: {
+      springEquinox: { center: 80, start: 75, end: 85 },
+      summerSolstice: { center: 172, start: 167, end: 177 },
+      fallEquinox: { center: 266, start: 261, end: 271 },
+      winterSolstice: { center: 356, start: 351, end: 361 }
+    }
   };
 
   const THRESHOLDS = {
@@ -28,7 +35,10 @@ const WeatherTestHarness = () => {
     humidity: { min: 0, max: 100 },
     pressure: { min: 28, max: 32 },
     cloudCover: { min: 0, max: 100 },
-    maxTempChangePerHour: 15 // Maximum realistic temp change in 1 hour
+    maxTempChangePerHour: 15, // Maximum realistic temp change in 1 hour
+    maxDailySeasonalJump: 8, // Max temp change between consecutive days during season transition
+    expectedTempDeviation: 15, // Flag if annual avg deviates more than this from template
+    biomeSimilarityThreshold: 3 // Flag biomes with avg temps within this range as similar
   };
 
   const validateWeather = (weather, context) => {
@@ -91,7 +101,11 @@ const WeatherTestHarness = () => {
       anomalies: [],
       transitionAnomalies: [],
       seasonalTransitions: [], // Track behavior at season boundaries
-      biomeStats: {}
+      seasonalTransitionAnomalies: [], // Abrupt jumps during season changes
+      biomeStats: {},
+      precipitationStreaks: {}, // Track longest dry/wet spells per biome
+      biomeSimilarities: [], // Pairs of biomes with similar weather
+      problemBiomes: [] // Summary of biomes with issues
     };
 
     // Season boundary dates (approximate day of year)
@@ -101,6 +115,37 @@ const WeatherTestHarness = () => {
       { name: 'Fall Equinox', dayOfYear: 266 },    // ~Sept 23
       { name: 'Winter Solstice', dayOfYear: 356 }  // ~Dec 22
     ];
+
+    // Helper to check if a day is within a seasonal transition window
+    const isInSeasonalTransition = (dayOfYear) => {
+      const windows = TEST_CONFIG.seasonalTransitionDays;
+      for (const [, window] of Object.entries(windows)) {
+        if (dayOfYear >= window.start && dayOfYear <= window.end) {
+          return true;
+        }
+        // Handle year wraparound for winter solstice
+        if (window.start > 350 && (dayOfYear >= window.start || dayOfYear <= 5)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Helper to get season from month
+    const getSeason = (month) => {
+      if (month >= 3 && month <= 5) return 'spring';
+      if (month >= 6 && month <= 8) return 'summer';
+      if (month >= 9 && month <= 11) return 'fall';
+      return 'winter';
+    };
+
+    // Helper to calculate standard deviation
+    const calcStdDev = (values) => {
+      if (values.length === 0) return 0;
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+      return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+    };
 
     const weatherGen = new WeatherGenerator();
     let completedTests = 0;
@@ -119,6 +164,7 @@ const WeatherTestHarness = () => {
       // Test each biome
       for (const [templateId, template] of Object.entries(templates)) {
         const biomeName = template.name;
+        const expectedAnnualTemp = template.parameters?.temperatureProfile?.annual?.mean;
 
         if (!stats.biomeStats[biomeName]) {
           stats.biomeStats[biomeName] = {
@@ -126,7 +172,31 @@ const WeatherTestHarness = () => {
             tempMax: -Infinity,
             tempSum: 0,
             count: 0,
-            precipCount: 0
+            precipCount: 0,
+            latitudeBand: latitudeBand,
+            // Expected vs Actual tracking
+            expectedAnnualTemp: expectedAnnualTemp,
+            // Temperature variance tracking
+            dailyTemps: [], // Store noon temps for variance calculation
+            seasonalTemps: { winter: [], spring: [], summer: [], fall: [] },
+            // Precipitation streak tracking
+            currentDryStreak: 0,
+            currentWetStreak: 0,
+            longestDryStreak: 0,
+            longestWetStreak: 0,
+            lastPrecipState: null,
+            // Seasonal transition tracking
+            seasonalTransitionTemps: {} // day -> temp at noon
+          };
+        }
+
+        // Initialize precipitation streaks tracker
+        if (!stats.precipitationStreaks[biomeName]) {
+          stats.precipitationStreaks[biomeName] = {
+            longestDry: 0,
+            longestWet: 0,
+            currentDry: 0,
+            currentWet: 0
           };
         }
 
@@ -218,6 +288,36 @@ const WeatherTestHarness = () => {
                 biomeStats.precipCount++;
               }
 
+              // Track noon temperatures for variance calculation
+              if (hour === 12) {
+                biomeStats.dailyTemps.push(weather.temperature);
+
+                // Categorize by season for seasonal variance
+                const season = getSeason(date.month);
+                biomeStats.seasonalTemps[season].push(weather.temperature);
+
+                // Track temps during seasonal transition windows
+                if (isInSeasonalTransition(day)) {
+                  biomeStats.seasonalTransitionTemps[day] = weather.temperature;
+                }
+              }
+
+              // Track precipitation streaks (using noon samples to avoid double-counting)
+              if (hour === 12) {
+                const streaks = stats.precipitationStreaks[biomeName];
+                if (weather.precipitation) {
+                  // Wet day
+                  streaks.currentWet++;
+                  streaks.longestWet = Math.max(streaks.longestWet, streaks.currentWet);
+                  streaks.currentDry = 0;
+                } else {
+                  // Dry day
+                  streaks.currentDry++;
+                  streaks.longestDry = Math.max(streaks.longestDry, streaks.currentDry);
+                  streaks.currentWet = 0;
+                }
+              }
+
               // Track seasonal boundary data (sample at noon on boundary days)
               if (hour === 12) {
                 const seasonBoundary = SEASON_BOUNDARIES.find(s => s.dayOfYear === day);
@@ -251,6 +351,124 @@ const WeatherTestHarness = () => {
             }
           }
         }
+      }
+    }
+
+    // ===== POST-PROCESSING: Analyze collected data =====
+
+    // 1. Seasonal Transition Smoothness Analysis
+    for (const [biomeName, biomeStats] of Object.entries(stats.biomeStats)) {
+      const transitionTemps = biomeStats.seasonalTransitionTemps;
+      const days = Object.keys(transitionTemps).map(Number).sort((a, b) => a - b);
+
+      for (let i = 1; i < days.length; i++) {
+        const prevDay = days[i - 1];
+        const currDay = days[i];
+
+        // Only check consecutive days
+        if (currDay - prevDay === 1) {
+          const tempChange = Math.abs(transitionTemps[currDay] - transitionTemps[prevDay]);
+
+          if (tempChange > THRESHOLDS.maxDailySeasonalJump) {
+            stats.seasonalTransitionAnomalies.push({
+              biome: biomeName,
+              latitudeBand: biomeStats.latitudeBand,
+              fromDay: prevDay,
+              toDay: currDay,
+              tempChange: tempChange.toFixed(1),
+              fromTemp: transitionTemps[prevDay].toFixed(1),
+              toTemp: transitionTemps[currDay].toFixed(1)
+            });
+          }
+        }
+      }
+
+      // 2. Calculate temperature variance stats
+      biomeStats.dailyTempVariance = calcStdDev(biomeStats.dailyTemps);
+      biomeStats.seasonalVariance = {};
+      for (const [season, temps] of Object.entries(biomeStats.seasonalTemps)) {
+        biomeStats.seasonalVariance[season] = calcStdDev(temps);
+      }
+
+      // 3. Calculate expected vs actual deviation
+      const actualAvg = biomeStats.tempSum / biomeStats.count;
+      biomeStats.actualAnnualTemp = actualAvg;
+      if (biomeStats.expectedAnnualTemp !== undefined) {
+        biomeStats.tempDeviation = actualAvg - biomeStats.expectedAnnualTemp;
+      }
+    }
+
+    // 4. Biome Similarity Detection
+    const biomeNames = Object.keys(stats.biomeStats);
+    for (let i = 0; i < biomeNames.length; i++) {
+      for (let j = i + 1; j < biomeNames.length; j++) {
+        const biome1 = biomeNames[i];
+        const biome2 = biomeNames[j];
+        const avg1 = stats.biomeStats[biome1].tempSum / stats.biomeStats[biome1].count;
+        const avg2 = stats.biomeStats[biome2].tempSum / stats.biomeStats[biome2].count;
+        const precip1 = (stats.biomeStats[biome1].precipCount / stats.biomeStats[biome1].count) * 100;
+        const precip2 = (stats.biomeStats[biome2].precipCount / stats.biomeStats[biome2].count) * 100;
+
+        // Check if both temp AND precip are very similar
+        const tempDiff = Math.abs(avg1 - avg2);
+        const precipDiff = Math.abs(precip1 - precip2);
+
+        if (tempDiff < THRESHOLDS.biomeSimilarityThreshold && precipDiff < 5) {
+          stats.biomeSimilarities.push({
+            biome1,
+            biome2,
+            avgTempDiff: tempDiff.toFixed(1),
+            precipDiff: precipDiff.toFixed(1),
+            band1: stats.biomeStats[biome1].latitudeBand,
+            band2: stats.biomeStats[biome2].latitudeBand
+          });
+        }
+      }
+    }
+
+    // 5. Problem Biomes Summary
+    for (const [biomeName, biomeStats] of Object.entries(stats.biomeStats)) {
+      const problems = [];
+
+      // Check expected vs actual deviation
+      if (biomeStats.tempDeviation !== undefined &&
+          Math.abs(biomeStats.tempDeviation) > THRESHOLDS.expectedTempDeviation) {
+        problems.push(`Temp deviation: ${biomeStats.tempDeviation > 0 ? '+' : ''}${biomeStats.tempDeviation.toFixed(1)}°F from expected`);
+      }
+
+      // Check for validation anomalies
+      const biomeAnomalies = stats.anomalies.filter(a => a.biome === biomeName);
+      if (biomeAnomalies.length > 10) {
+        problems.push(`${biomeAnomalies.length} validation anomalies`);
+      }
+
+      // Check for transition anomalies
+      const biomeTransitions = stats.transitionAnomalies.filter(a => a.biome === biomeName);
+      if (biomeTransitions.length > 5) {
+        problems.push(`${biomeTransitions.length} hourly transition anomalies`);
+      }
+
+      // Check for seasonal transition anomalies
+      const seasonalAnomalies = stats.seasonalTransitionAnomalies.filter(a => a.biome === biomeName);
+      if (seasonalAnomalies.length > 0) {
+        problems.push(`${seasonalAnomalies.length} seasonal transition jumps`);
+      }
+
+      // Check for extreme precipitation streaks
+      const streaks = stats.precipitationStreaks[biomeName];
+      if (streaks && streaks.longestWet > 14) {
+        problems.push(`Long wet streak: ${streaks.longestWet} days`);
+      }
+      if (streaks && streaks.longestDry > 60) {
+        problems.push(`Long dry streak: ${streaks.longestDry} days`);
+      }
+
+      if (problems.length > 0) {
+        stats.problemBiomes.push({
+          biome: biomeName,
+          latitudeBand: biomeStats.latitudeBand,
+          problems
+        });
       }
     }
 
@@ -308,16 +526,44 @@ const WeatherTestHarness = () => {
 
       {results && (
         <>
-          <Alert variant={results.anomalies.length === 0 && results.transitionAnomalies.length === 0 ? 'success' : 'warning'}>
-            <h5>Test Results</h5>
-            <p><strong>Total Tests:</strong> {results.totalTests.toLocaleString()}</p>
-            <p><strong>Passed:</strong> {results.successfulTests.toLocaleString()}</p>
-            <p><strong>Failed:</strong> {(results.totalTests - results.successfulTests).toLocaleString()}</p>
-            <p><strong>Success Rate:</strong> {((results.successfulTests / results.totalTests) * 100).toFixed(2)}%</p>
-            <p><strong>Validation Anomalies:</strong> {results.anomalies.length.toLocaleString()}</p>
-            <p><strong>Transition Anomalies:</strong> {results.transitionAnomalies.length.toLocaleString()}</p>
+          {/* Problem Biomes Summary - shown first if there are issues */}
+          {results.problemBiomes && results.problemBiomes.length > 0 && (
+            <Alert variant="danger" className="mb-4">
+              <h5>⚠️ Problem Biomes ({results.problemBiomes.length})</h5>
+              <p className="text-muted mb-2">These biomes have issues that may need attention:</p>
+              {results.problemBiomes.map((pb, idx) => (
+                <div key={idx} className="mb-2">
+                  <strong>{pb.biome}</strong> <Badge bg="secondary">{pb.latitudeBand}</Badge>
+                  <ul className="mb-0 mt-1">
+                    {pb.problems.map((problem, pIdx) => (
+                      <li key={pIdx}><small>{problem}</small></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </Alert>
+          )}
 
-            <Button variant="secondary" size="sm" onClick={downloadResults} className="mt-2">
+          <Alert variant={results.anomalies.length === 0 && results.transitionAnomalies.length === 0 && results.seasonalTransitionAnomalies.length === 0 ? 'success' : 'warning'}>
+            <h5>Test Results Summary</h5>
+            <div className="d-flex flex-wrap gap-4">
+              <div>
+                <p className="mb-1"><strong>Total Tests:</strong> {results.totalTests.toLocaleString()}</p>
+                <p className="mb-1"><strong>Passed:</strong> {results.successfulTests.toLocaleString()}</p>
+                <p className="mb-1"><strong>Success Rate:</strong> {((results.successfulTests / results.totalTests) * 100).toFixed(2)}%</p>
+              </div>
+              <div>
+                <p className="mb-1"><strong>Validation Anomalies:</strong> {results.anomalies.length}</p>
+                <p className="mb-1"><strong>Hourly Transition Anomalies:</strong> {results.transitionAnomalies.length}</p>
+                <p className="mb-1"><strong>Seasonal Transition Anomalies:</strong> {results.seasonalTransitionAnomalies.length}</p>
+              </div>
+              <div>
+                <p className="mb-1"><strong>Similar Biome Pairs:</strong> {results.biomeSimilarities.length}</p>
+                <p className="mb-1"><strong>Problem Biomes:</strong> {results.problemBiomes.length}</p>
+              </div>
+            </div>
+
+            <Button variant="secondary" size="sm" onClick={downloadResults} className="mt-3">
               Download Full Results (JSON)
             </Button>
           </Alert>
@@ -325,66 +571,42 @@ const WeatherTestHarness = () => {
           <Card className="mb-4">
             <Card.Header>
               <h5>Biome Statistics</h5>
-              <small className="text-muted">Click column headers to sort</small>
+              <small className="text-muted">Click column headers to sort. Includes expected vs actual temps, variance, and precipitation streaks.</small>
             </Card.Header>
-            <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: 0 }}>
-              <Table striped bordered hover size="sm" style={{ marginBottom: 0 }}>
+            <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: 0 }}>
+              <Table striped bordered hover size="sm" style={{ marginBottom: 0, fontSize: '0.85rem' }}>
                 <thead style={{ position: 'sticky', top: 0, backgroundColor: '#212529', zIndex: 1 }}>
                   <tr>
-                    <th style={{ cursor: 'default', width: '40px' }}>#</th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'name',
-                        direction: sortConfig.key === 'name' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
+                    <th style={{ cursor: 'default', width: '30px' }}>#</th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'name', direction: sortConfig.key === 'name' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
                       Biome {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'tempMin',
-                        direction: sortConfig.key === 'tempMin' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
-                      Min Temp {sortConfig.key === 'tempMin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'tempMin', direction: sortConfig.key === 'tempMin' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Min {sortConfig.key === 'tempMin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'tempMax',
-                        direction: sortConfig.key === 'tempMax' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
-                      Max Temp {sortConfig.key === 'tempMax' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'tempMax', direction: sortConfig.key === 'tempMax' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Max {sortConfig.key === 'tempMax' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'avgTemp',
-                        direction: sortConfig.key === 'avgTemp' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
-                      Avg Temp {sortConfig.key === 'avgTemp' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'avgTemp', direction: sortConfig.key === 'avgTemp' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Avg {sortConfig.key === 'avgTemp' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'precip',
-                        direction: sortConfig.key === 'precip' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
-                      Precip % {sortConfig.key === 'precip' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'expectedTemp', direction: sortConfig.key === 'expectedTemp' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Expected {sortConfig.key === 'expectedTemp' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSortConfig({
-                        key: 'samples',
-                        direction: sortConfig.key === 'samples' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-                      })}
-                    >
-                      Samples {sortConfig.key === 'samples' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'deviation', direction: sortConfig.key === 'deviation' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Diff {sortConfig.key === 'deviation' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'variance', direction: sortConfig.key === 'variance' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      StdDev {sortConfig.key === 'variance' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'precip', direction: sortConfig.key === 'precip' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Precip% {sortConfig.key === 'precip' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'dryStreak', direction: sortConfig.key === 'dryStreak' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Dry {sortConfig.key === 'dryStreak' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th style={{ cursor: 'pointer' }} onClick={() => setSortConfig({ key: 'wetStreak', direction: sortConfig.key === 'wetStreak' && sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>
+                      Wet {sortConfig.key === 'wetStreak' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                   </tr>
                 </thead>
@@ -395,29 +617,39 @@ const WeatherTestHarness = () => {
                       tempMin: stats.tempMin,
                       tempMax: stats.tempMax,
                       avgTemp: stats.tempSum / stats.count,
+                      expectedTemp: stats.expectedAnnualTemp,
+                      deviation: stats.tempDeviation,
+                      variance: stats.dailyTempVariance,
                       precip: (stats.precipCount / stats.count) * 100,
-                      samples: stats.count
+                      dryStreak: results.precipitationStreaks[name]?.longestDry || 0,
+                      wetStreak: results.precipitationStreaks[name]?.longestWet || 0
                     }))
                     .sort((a, b) => {
                       if (!sortConfig.key) return 0;
                       const aVal = a[sortConfig.key];
                       const bVal = b[sortConfig.key];
+                      if (aVal === undefined) return 1;
+                      if (bVal === undefined) return -1;
                       if (typeof aVal === 'string') {
-                        return sortConfig.direction === 'asc'
-                          ? aVal.localeCompare(bVal)
-                          : bVal.localeCompare(aVal);
+                        return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                       }
                       return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
                     })
                     .map((row, idx) => (
                       <tr key={row.name}>
                         <td style={{ color: '#6c757d' }}>{idx + 1}</td>
-                        <td>{row.name}</td>
-                        <td>{row.tempMin.toFixed(1)}°F</td>
-                        <td>{row.tempMax.toFixed(1)}°F</td>
-                        <td>{row.avgTemp.toFixed(1)}°F</td>
-                        <td>{row.precip.toFixed(1)}%</td>
-                        <td>{row.samples.toLocaleString()}</td>
+                        <td><small>{row.name}</small></td>
+                        <td>{row.tempMin.toFixed(0)}°</td>
+                        <td>{row.tempMax.toFixed(0)}°</td>
+                        <td>{row.avgTemp.toFixed(0)}°</td>
+                        <td>{row.expectedTemp !== undefined ? `${row.expectedTemp}°` : '-'}</td>
+                        <td style={{ color: row.deviation !== undefined && Math.abs(row.deviation) > THRESHOLDS.expectedTempDeviation ? '#dc3545' : 'inherit' }}>
+                          {row.deviation !== undefined ? `${row.deviation > 0 ? '+' : ''}${row.deviation.toFixed(1)}°` : '-'}
+                        </td>
+                        <td>{row.variance !== undefined ? row.variance.toFixed(1) : '-'}</td>
+                        <td>{row.precip.toFixed(0)}%</td>
+                        <td>{row.dryStreak}d</td>
+                        <td style={{ color: row.wetStreak > 14 ? '#ffc107' : 'inherit' }}>{row.wetStreak}d</td>
                       </tr>
                     ))}
                 </tbody>
@@ -507,8 +739,85 @@ const WeatherTestHarness = () => {
             </Card>
           )}
 
+          {/* Seasonal Transition Anomalies */}
+          {results.seasonalTransitionAnomalies && results.seasonalTransitionAnomalies.length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5>Seasonal Transition Anomalies ({results.seasonalTransitionAnomalies.length})</h5>
+                <small className="text-muted">
+                  Abrupt temperature jumps during season changes (>{THRESHOLDS.maxDailySeasonalJump}°F between consecutive days)
+                </small>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered hover size="sm">
+                  <thead>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Band</th>
+                      <th>Days</th>
+                      <th>Temperature Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.seasonalTransitionAnomalies.slice(0, 50).map((anomaly, idx) => (
+                      <tr key={idx}>
+                        <td><small>{anomaly.biome}</small></td>
+                        <td><small>{anomaly.latitudeBand}</small></td>
+                        <td>Day {anomaly.fromDay} → {anomaly.toDay}</td>
+                        <td>{anomaly.fromTemp}°F → {anomaly.toTemp}°F (Δ{anomaly.tempChange}°F)</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+                {results.seasonalTransitionAnomalies.length > 50 && (
+                  <p className="text-muted">
+                    Showing first 50 of {results.seasonalTransitionAnomalies.length}. Download full results for complete list.
+                  </p>
+                )}
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Biome Similarities */}
+          {results.biomeSimilarities && results.biomeSimilarities.length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5>Similar Biome Pairs ({results.biomeSimilarities.length})</h5>
+                <small className="text-muted">
+                  Biomes with nearly identical weather patterns (temp diff &lt;{THRESHOLDS.biomeSimilarityThreshold}°F and precip diff &lt;5%)
+                </small>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <Table striped bordered hover size="sm">
+                  <thead>
+                    <tr>
+                      <th>Biome 1</th>
+                      <th>Band</th>
+                      <th>Biome 2</th>
+                      <th>Band</th>
+                      <th>Temp Δ</th>
+                      <th>Precip Δ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.biomeSimilarities.map((sim, idx) => (
+                      <tr key={idx}>
+                        <td><small>{sim.biome1}</small></td>
+                        <td><small>{sim.band1}</small></td>
+                        <td><small>{sim.biome2}</small></td>
+                        <td><small>{sim.band2}</small></td>
+                        <td>{sim.avgTempDiff}°F</td>
+                        <td>{sim.precipDiff}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          )}
+
           {results.anomalies.length > 0 && (
-            <Card>
+            <Card className="mb-4">
               <Card.Header>
                 <h5>Validation Anomalies ({results.anomalies.length})</h5>
               </Card.Header>

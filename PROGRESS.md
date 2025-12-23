@@ -750,17 +750,19 @@ PROGRESS.md                    # This file (master tracker)
   - ~~Display all 37 biomes in results~~ ✅ Now shows all 43 templates
   - ~~Test Rim biomes~~ ✅ Fixed latitude bands to include rim & special
   - [x] Sortable columns with sticky header and row numbers
+- [x] Test harness enhancements (Sprint 12 Larch)
+  - ~~Temperature variance tracking (daily/seasonal swing per biome)~~ ✅
+  - ~~Precipitation streak detection (longest dry/wet spells)~~ ✅
+  - ~~Biome similarity detection (flag near-identical weather generation)~~ ✅
+  - ~~Expected vs Actual comparison (template means vs generated averages)~~ ✅
+  - ~~"Problem biomes" auto-summary at top~~ ✅
+  - ~~Seasonal transition smoothness test~~ ✅
 - [ ] Test harness enhancements (future)
-  - Temperature variance tracking (daily/seasonal swing per biome)
-  - Precipitation streak detection (longest dry/wet spells)
   - Pattern distribution breakdown (High/Low Pressure, Fronts per biome)
-  - Biome similarity detection (flag near-identical weather generation)
-  - Expected vs Actual comparison (template means vs generated averages)
   - Extreme event frequency (dangerous threshold tracking)
   - Precipitation type distribution (rain/snow/sleet breakdown)
   - Filter by latitude band toggle
   - CSV export option
-  - "Problem biomes" auto-summary at top
 - [ ] Review and process all items in NOTES_FROM_USER.md
 
 **Estimated Effort**: 1-2 days
@@ -781,6 +783,10 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] **Biome Coverage Audit**
   - Review all major real-world biomes are represented
   - Add any missing climate templates
+- [ ] **Real-World Analog Labels** (user requested)
+  - Display real-world location examples for fantasy biomes
+  - Example: "Continental Prairie (Midwest USA)"
+  - Helps users understand what climate to expect
 - [ ] Loading states and transitions
 - [ ] Error handling improvements
 - [ ] Accessibility enhancements
@@ -1036,4 +1042,4 @@ PROGRESS.md                    # This file (master tracker)
 
 ---
 
-**Project Status**: Sprint 1.5 Complete - Ready for Sprint 2 🚀
+**Project Status**: Sprint 12 Complete - Test Harness Enhanced, Ready for Anomaly Resolution → Weather Sophistication 🚀
