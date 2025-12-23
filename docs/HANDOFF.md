@@ -1,123 +1,114 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-23
-**Previous Agent**: Pine (Sprint 18)
-**Status**: Ready for Primary Display Redesign
+**Previous Agent**: Opus (Sprint 19)
+**Status**: Ready for Precipitation/Accumulation Analysis
 
 ---
 
 ## Where We Left Off
 
-Sprint 18 completed all snow visualization fixes. The system now has organic SVG-based snow drifts and properly balanced text shadows. A feature branch is ready for the primary display redesign.
+Sprint 19 completed two major items:
+1. **Primary Display Redesign** - Merged to main, iOS Weather-inspired layout
+2. **Test Harness Refactor** - Split 1156-line monolith into modular components
 
-### What Was Fixed in Sprint 18
+### What Was Done in Sprint 19
 
-1. **Snow depth label z-index** - Moved outside overlay div, now appears above weather icon
-2. **SVG snow drift edge** - Replaced broken CSS approach with procedural SVG Bezier curves
-3. **Balanced text shadows** - Shadows now scaled by text size (large text = subtle, small text = strong)
-4. **Weather icon shadow** - Uses `filter: drop-shadow()` for SVG icons
+1. **Primary Display Redesign** (merged to main)
+   - Restructured layout: Location → Temperature → Condition line → Feels like
+   - Moved weather icon inline with condition text
+   - Added High/Low temps from daily forecast data
+   - Created info badges section (ground conditions, alerts, biome)
+   - Ground conditions now accessible without snow visualization enabled
+   - Enhanced text shadows for snow overlay legibility
 
----
-
-## Current Task: Primary Display Redesign
-
-### Branch Setup
-- **Main branch**: Stable snow visualization code
-- **Feature branch**: `feature/primary-display-redesign` (currently checked out)
-
-### The Goal
-Improve visual hierarchy to match iOS Weather app pattern while keeping our weather icon.
-
-### Proposed Layout
-```
-┌─────────────────────────────────┐
-│         Kingdom                 │  ← Location
-│           30°                   │  ← Temperature (MASSIVE)
-│      ☁️ Sleeting • H:34° L:28°  │  ← Icon + Condition + High/Low (one line)
-│       Feels like 16°            │  ← Feels like
-│                                 │
-│  [❄️ 24" snow]  [⚠️ 2 Alerts]   │  ← Info badges at bottom
-└─────────────────────────────────┘
-```
-
-### Key Changes to Implement
-1. **Move weather icon** - From above temperature to inline with condition text
-2. **Add High/Low temps** - Display daily high/low (need to get from forecast data)
-3. **Consolidate badges** - Ground conditions + alerts as pills at bottom
-4. **Ground conditions access** - Show even when snow visualization is disabled
-5. **Reduce biome info prominence** - Move to hamburger menu or make smaller
-
-### Reference Image
-`ref images/Weather - Primary Display.png` - iOS Weather app screenshot
-
-### Tyler's Preferences
-- Keep the weather icon (we don't have animated backgrounds like iOS)
-- Icon inline with condition makes sense
-- Wants ground conditions accessible without snow visualization enabled
+2. **Test Harness Modularization**
+   - Split `WeatherTestHarness.jsx` from 1156 lines → 137 lines
+   - Created focused modules: `testConfig.js`, `testRunner.js`, `weatherValidation.js`, `resultExporters.js`
+   - Created `results/` subfolder with reusable table components
+   - Much easier to add new tests and analysis now
 
 ---
 
-## Git Commands Cheat Sheet
+## Next Task: Precipitation/Accumulation Analysis
 
-```bash
-# See current branch
-git branch
+### The Problem
+Tyler observed unrealistic snow accumulation patterns in Continental Prairie:
+- ~23" of snow accumulating over ~50 hours
+- Transitioning to sleet then heavy rain for ~9 hours
+- Rain completely washing away all snow
 
-# Switch to main (stable code)
-git checkout main
+This feels like a calibration issue. Possible culprits:
+- Precipitation type flip-flopping too aggressively near 32°F
+- Rain melt rate too aggressive on existing snow
+- Temperature oscillation too volatile
+- Snow compaction rates
 
-# Switch to redesign branch
-git checkout feature/primary-display-redesign
+### Suggested Approach
+Add a time-series logging test to `testRunner.js` that captures:
+- Hour, Temperature, Precip Type, Precip Amount
+- Snow Depth (before & after), Melt Amount
+- Run for 720 hours (30 days) in a cold climate region
 
-# If redesign is approved, merge to main
-git checkout main
-git merge feature/primary-display-redesign
+This will show:
+- How often precip type changes near freezing
+- Whether melt rates are proportional/reasonable
+- If accumulation math is working correctly
 
-# If redesign is rejected, delete branch
-git branch -d feature/primary-display-redesign
-```
-
----
-
-## Key Files for Redesign
-
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Component structure
-- `src/v2/components/weather/PrimaryDisplay.css` - Styling
-- `src/v2/services/weather/WeatherService.js` - May need to expose daily high/low
+### Key Files for Analysis
+- `src/v2/components/testing/testRunner.js` - Add new analysis here
+- `src/v2/components/testing/testConfig.js` - Add config for new test
+- `src/v2/services/weather/SnowAccumulationService.js` - Snow/melt logic
+- `src/v2/services/weather/WeatherGenerator.js` - Precip type selection
 
 ---
 
 ## Current System State
 
+### Primary Display - REDESIGNED
+- iOS Weather-inspired layout with info badges
+- Ground conditions accessible without snow visualization
+- High/Low temps from daily forecast
+
+### Test Harness - MODULARIZED
+```
+src/v2/components/testing/
+├── WeatherTestHarness.jsx     # Main component (137 lines)
+├── testConfig.js              # TEST_CONFIG, THRESHOLDS
+├── weatherValidation.js       # validateWeather()
+├── testRunner.js              # runTests() - core logic
+├── resultExporters.js         # JSON download utilities
+└── results/                   # UI components for tables
+```
+
 ### Phase A (Environmental Conditions) - COMPLETE
-- Drought, flooding, heat waves, cold snaps, wildfire risk
-- All with snow/freezing suppression logic
-
 ### Phase B (Snow & Ice Accumulation) - COMPLETE
-- Snow depth tracking with realistic melt physics
-- Visual snow overlay with organic SVG wavy edge
-- Ground conditions (frozen, thawing, muddy, dry)
-
 ### Snow Visualization - POLISHED
-- SVG-based drift edge with seeded variation
-- Balanced text shadows by size
-- Proper z-index stacking
 
 ---
 
 ## Quick Start for Next Agent
 
 1. Read `docs/AI_INSTRUCTIONS.md` for full context
-2. Read `docs/sprint-logs/SPRINT_18_PINE.md` for recent changes
-3. Check `docs/NOTES_FROM_USER.md` for any new items from Tyler
-4. You're on `feature/primary-display-redesign` branch - continue the redesign work
-5. Test changes with `npm start`
-6. Build verification with `npm run build`
+2. Check `docs/NOTES_FROM_USER.md` for any new items from Tyler
+3. You're on `main` branch with all recent work merged
+4. Test changes with `npm start`
+5. Build verification with `npm run build`
+6. Access test harness at `localhost:3000?test=true`
 
-### Testing Snow
+### Testing Snow Accumulation Issue
 - Navigate to Continental Prairie, set date to late January
-- Should see organic wavy snow drifts
-- Text should be readable with balanced shadows
+- Click through hours and watch snow depth vs precip type
+- Note any rapid transitions between snow/sleet/rain
+
+---
+
+## Git State
+
+- **Branch**: main (all work merged)
+- **Recent commits**:
+  - `496e314` Refactor WeatherTestHarness into modular components
+  - `7aebdd6` Primary display redesign: iOS Weather-inspired layout
 
 ---
 
