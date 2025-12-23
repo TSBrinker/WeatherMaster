@@ -374,6 +374,66 @@ src/v2/
 - Refactored PrimaryDisplay to avoid duplicate time-of-day calculations
 - All condition boxes now use `height: 140px` instead of `min-height`
 
+### Session 6 - Sprint 10 (Hawthorn) - 2025-12-22
+
+**Preferences Discovered:**
+- Uses NOTES_FROM_USER.md actively for async communication during sessions
+- Appreciates being given options/toggles rather than forced changes
+- Values the ability to easily switch back if a change doesn't feel right
+- Comfortable stepping away while agent works autonomously
+
+**Feature Requests:**
+- Condition phrasing toggle ("Mist" vs "Misty" style) - IMPLEMENTED
+- Druidcraft redundant descriptor fix - IMPLEMENTED
+- Seasonal transition testing in test harness
+- Ocean/sailing biomes
+- Biome coverage audit
+
+**Communication Style:**
+- Efficiently delegates work and trusts agent judgment
+- Provides clear guidance on scope ("implement those", "add a toggle")
+- Gives heads-up when stepping away ("I'll be stepping away")
+- Explicit about what requires approval vs. autonomous work
+
+**Features Implemented:**
+1. **Condition Phrasing Toggle** - New preference with Standard/Descriptive options
+2. **Druidcraft Fix** - Removed redundant "(precipType)" suffixes
+3. **Notes Processing** - All items migrated to roadmap and cleared
+
+**Technical Notes:**
+- New utility: `src/v2/utils/conditionPhrasing.js` for condition text transformation
+- Phrasing preference stored in PreferencesContext and persisted to localStorage
+- Twilight levels confirmed fully implemented (documented location for future reference)
+- PROGRESS.md roadmap updated with all outstanding items
+
+**Bug Fix - Dual PreferencesContext Pitfall:**
+- Discovered runtime crash caused by importing wrong PreferencesContext
+- Project has TWO contexts with different APIs - see warning below
+
+---
+
+## CRITICAL: Dual PreferencesContext Warning
+
+**This project has TWO PreferencesContext implementations with different APIs!**
+
+| File | Pattern | Used By |
+|------|---------|---------|
+| `src/contexts/PreferencesContext.js` | `{ state, setters... }` | Legacy/src components |
+| `src/v2/contexts/PreferencesContext.jsx` | `{ prop1, prop2, setters... }` (flat) | V2 components |
+
+**When adding preferences to V2 components:**
+1. Import from `../../contexts/PreferencesContext` (the V2 one, relative to component location)
+2. Destructure directly: `const { myPref, setMyPref } = usePreferences()`
+3. Do NOT use `{ state: preferences }` pattern - that's the legacy context
+
+**When adding preferences to legacy components:**
+1. Import from the appropriate relative path to `src/contexts/PreferencesContext.js`
+2. Use `{ state, setters... }` pattern
+
+**Symptoms of using wrong context:**
+- Build succeeds but app crashes at runtime
+- Error may not be visible if it breaks rendering early
+
 ---
 
 ## Instructions for Updating This Document

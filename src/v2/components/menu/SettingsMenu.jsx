@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Dropdown, Modal, Button } from 'react-bootstrap';
+import { Dropdown, Modal, Button, Form } from 'react-bootstrap';
 import { FaTrash, FaBomb } from 'react-icons/fa';
-import { Cloud, Shield, BookOpen, RefreshCw } from 'lucide-react';
+import { Cloud, Shield, RefreshCw } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import WeatherPrimerModal from '../modals/WeatherPrimerModal';
 import GameplayMechanicsModal from '../modals/GameplayMechanicsModal';
 import weatherService from '../../services/weather/WeatherService';
+import { getPhrasingExample } from '../../utils/conditionPhrasing';
 
 /**
  * Settings Menu - Dangerous operations + educational resources
@@ -13,6 +15,7 @@ import weatherService from '../../services/weather/WeatherService';
  */
 const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteRegion, deleteWorld } = useWorld();
+  const { conditionPhrasing, setConditionPhrasing } = usePreferences();
   const [showNukeRegionsConfirm, setShowNukeRegionsConfirm] = useState(false);
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
@@ -74,6 +77,20 @@ const SettingsMenu = ({ inline = false }) => {
 
           <h6 className="mb-3 mt-4">Settings</h6>
           <div className="d-grid gap-2 mb-3">
+            <div className="phrasing-toggle mb-2">
+              <Form.Label className="mb-1">Condition Phrasing</Form.Label>
+              <Form.Select
+                size="sm"
+                value={conditionPhrasing}
+                onChange={(e) => setConditionPhrasing(e.target.value)}
+              >
+                <option value="standard">Standard (Mist, Heavy Rain)</option>
+                <option value="descriptive">Descriptive (Misty, Raining Heavily)</option>
+              </Form.Select>
+              <Form.Text className="text-muted">
+                {getPhrasingExample(conditionPhrasing)}
+              </Form.Text>
+            </div>
             <Button
               variant="outline-secondary"
               onClick={handleClearWeatherCache}
@@ -181,6 +198,11 @@ const SettingsMenu = ({ inline = false }) => {
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Header>Settings</Dropdown.Header>
+          <Dropdown.Item
+            onClick={() => setConditionPhrasing(conditionPhrasing === 'standard' ? 'descriptive' : 'standard')}
+          >
+            Phrasing: {conditionPhrasing === 'standard' ? 'Standard' : 'Descriptive'}
+          </Dropdown.Item>
           <Dropdown.Item onClick={handleClearWeatherCache}>
             <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Clear Weather Cache

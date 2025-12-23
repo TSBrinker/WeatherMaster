@@ -12,7 +12,8 @@ const initialPreferences = {
   temperatureUnit: 'fahrenheit',
   timeFormat: '12hour',
   windSpeedUnit: 'mph',
-  showFeelsLike: true
+  showFeelsLike: true,
+  conditionPhrasing: 'standard' // 'standard' (e.g., "Mist") or 'descriptive' (e.g., "Misty")
 };
 
 // Create context
@@ -26,7 +27,8 @@ export const ACTIONS = {
   SET_TEMPERATURE_UNIT: 'set_temperature_unit',
   SET_TIME_FORMAT: 'set_time_format',
   SET_WIND_SPEED_UNIT: 'set_wind_speed_unit',
-  SET_SHOW_FEELS_LIKE: 'set_show_feels_like'
+  SET_SHOW_FEELS_LIKE: 'set_show_feels_like',
+  SET_CONDITION_PHRASING: 'set_condition_phrasing'
 };
 
 // Reducer function
@@ -74,7 +76,13 @@ const preferencesReducer = (state, action) => {
         ...state,
         showFeelsLike: action.payload
       };
-    
+
+    case ACTIONS.SET_CONDITION_PHRASING:
+      return {
+        ...state,
+        conditionPhrasing: action.payload
+      };
+
     default:
       return state;
   }
@@ -107,16 +115,18 @@ export const PreferencesProvider = ({ children }) => {
       temperatureUnit: state.temperatureUnit,
       timeFormat: state.timeFormat,
       windSpeedUnit: state.windSpeedUnit,
-      showFeelsLike: state.showFeelsLike
+      showFeelsLike: state.showFeelsLike,
+      conditionPhrasing: state.conditionPhrasing
     };
-    
+
     storageUtils.saveData(PREFS_STORAGE_KEY, prefsToSave);
   }, [
-    state.debugMode, 
-    state.temperatureUnit, 
-    state.timeFormat, 
-    state.windSpeedUnit, 
-    state.showFeelsLike
+    state.debugMode,
+    state.temperatureUnit,
+    state.timeFormat,
+    state.windSpeedUnit,
+    state.showFeelsLike,
+    state.conditionPhrasing
   ]);
   
   // Action creators
@@ -143,7 +153,11 @@ export const PreferencesProvider = ({ children }) => {
   const setShowFeelsLike = (show) => {
     dispatch({ type: ACTIONS.SET_SHOW_FEELS_LIKE, payload: show });
   };
-  
+
+  const setConditionPhrasing = (phrasing) => {
+    dispatch({ type: ACTIONS.SET_CONDITION_PHRASING, payload: phrasing });
+  };
+
   const value = {
     state,
     setDebugMode,
@@ -151,7 +165,8 @@ export const PreferencesProvider = ({ children }) => {
     setTemperatureUnit,
     setTimeFormat,
     setWindSpeedUnit,
-    setShowFeelsLike
+    setShowFeelsLike,
+    setConditionPhrasing
   };
   
   return (

@@ -3,6 +3,8 @@ import { OverlayTrigger, Tooltip, Modal, Button } from 'react-bootstrap';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy } from 'react-icons/wi';
 import { BsInfoCircle } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
+import { usePreferences } from '../../contexts/PreferencesContext';
+import { transformCondition } from '../../utils/conditionPhrasing';
 import './PrimaryDisplay.css';
 
 /**
@@ -12,6 +14,7 @@ import './PrimaryDisplay.css';
 const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showConditionModal, setShowConditionModal] = useState(false);
+  const { conditionPhrasing } = usePreferences();
 
   if (!region || !weather) {
     return (
@@ -29,7 +32,8 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
   // Weather data is flat, not nested under 'current'
   const temperature = weather.temperature;
   const feelsLike = weather.feelsLike;
-  const condition = weather.condition;
+  const rawCondition = weather.condition;
+  const condition = transformCondition(rawCondition, conditionPhrasing);
 
   // High/Low would come from daily forecast, but we don't have that yet
   // For now, we'll skip showing high/low

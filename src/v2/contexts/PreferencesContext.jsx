@@ -33,8 +33,13 @@ export const PreferencesProvider = ({ children }) => {
       timeFormat: 12,
       showFeelsLike: true,
       debugMode: false,
+      conditionPhrasing: 'standard',
     };
     setPreferences(defaults);
+  };
+
+  const setConditionPhrasing = (phrasing) => {
+    updatePreference('conditionPhrasing', phrasing);
   };
 
   const contextValue = {
@@ -44,10 +49,12 @@ export const PreferencesProvider = ({ children }) => {
     timeFormat: preferences.timeFormat,
     showFeelsLike: preferences.showFeelsLike,
     debugMode: preferences.debugMode,
+    conditionPhrasing: preferences.conditionPhrasing || 'standard',
 
     // Methods
     updatePreference,
     resetPreferences,
+    setConditionPhrasing,
   };
 
   return (

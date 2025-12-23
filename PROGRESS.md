@@ -742,9 +742,13 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] Add gameplay mechanics indicators to main weather display
   - Badge/icon when current conditions have mechanical impacts
   - Quick link to relevant mechanics in modal
-- [ ] UI consistency fixes from NOTES_FROM_USER.md
-  - Clear skies icon should show moon during nighttime
-  - Standardize ConditionsCard box heights (precipitation box size mismatch)
+- [ ] UI consistency fixes
+  - Fix Feels Like section causing height shifts in main display
+  - Add background gradient fade transitions (with interruption handling)
+- [ ] Test harness improvements
+  - Add seasonal transition tests (temperature, weather patterns across seasons)
+  - Display all 37 biomes in results (currently only shows 20)
+  - Test Rim biomes (currently not included in results display)
 - [ ] Review and process all items in NOTES_FROM_USER.md
 
 **Estimated Effort**: 1-2 days
@@ -758,6 +762,13 @@ PROGRESS.md                    # This file (master tracker)
   - Import from JSON file
   - Enables cross-device usage, backups, and sharing with other DMs
   - ~2 hours of work (add download/upload buttons to settings menu)
+- [ ] **Ocean Biomes for Sailing** (user requested)
+  - Open ocean climate templates
+  - Sea weather patterns (swells, storms, calm seas)
+  - Maritime navigation conditions
+- [ ] **Biome Coverage Audit**
+  - Review all major real-world biomes are represented
+  - Add any missing climate templates
 - [ ] Loading states and transitions
 - [ ] Error handling improvements
 - [ ] Accessibility enhancements
@@ -934,6 +945,11 @@ PROGRESS.md                    # This file (master tracker)
 - No extreme weather events yet (hurricanes, blizzards)
 - No spatial weather propagation (by design)
 - No map view (far future stretch goal)
+- Feels Like section still causes height shifts in main display (needs CSS fix)
+- Background gradient transitions could use fade animation (complex - interruption handling needed)
+- Test harness only displays 20 biomes in results (should show all 37)
+- Ocean/sailing biomes not yet implemented
+- Need to verify all major biomes are covered
 
 ---
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import { GiSpellBook } from 'react-icons/gi';
 import weatherService from '../../services/weather/WeatherService';
+import { usePreferences } from '../../contexts/PreferencesContext';
+import { transformCondition } from '../../utils/conditionPhrasing';
 import './DruidcraftForecast.css';
 
 /**
@@ -11,6 +13,7 @@ import './DruidcraftForecast.css';
 const DruidcraftForecast = ({ region, currentDate, currentWeather }) => {
   const [showForecast, setShowForecast] = useState(false);
   const [forecast, setForecast] = useState(null);
+  const { conditionPhrasing } = usePreferences();
 
   const castDruidcraft = () => {
     if (!region || !currentDate) return;
@@ -30,11 +33,9 @@ const DruidcraftForecast = ({ region, currentDate, currentWeather }) => {
     setShowForecast(true);
   };
 
-  const formatCondition = (condition, precipType) => {
-    if (precipType) {
-      return `${condition} (${precipType})`;
-    }
-    return condition;
+  // Transform condition based on phrasing preference
+  const formatCondition = (condition) => {
+    return transformCondition(condition, conditionPhrasing);
   };
 
   const formatTempRange = (min, max) => {
@@ -63,7 +64,7 @@ const DruidcraftForecast = ({ region, currentDate, currentWeather }) => {
           <div className="forecast-content">
             <div className="current-weather mb-3">
               <strong>Current Conditions:</strong>{' '}
-              {currentWeather?.condition || 'Unknown'}, {currentWeather?.temperature || '--'}°F
+              {formatCondition(currentWeather?.condition) || 'Unknown'}, {currentWeather?.temperature || '--'}°F
               {currentWeather?.feelsLike !== currentWeather?.temperature && (
                 <span> (feels like {currentWeather?.feelsLike}°F)</span>
               )}
@@ -79,7 +80,7 @@ const DruidcraftForecast = ({ region, currentDate, currentWeather }) => {
                   <span className="period-duration">{period.hours} {period.hours === 1 ? 'hr' : 'hrs'}</span>
                   <span className="period-separator">-</span>
                   <span className="period-condition">
-                    {formatCondition(period.condition, period.precipitationType)}
+                    {formatCondition(period.condition)}
                   </span>
                   <span className="period-separator">,</span>
                   <span className="period-temp">{formatTempRange(period.tempMin, period.tempMax)}</span>
