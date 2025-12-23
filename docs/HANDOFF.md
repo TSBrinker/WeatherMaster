@@ -1,23 +1,89 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-23
-**Previous Agent**: Oak (Sprint 17)
-**Status**: Ready for Sprint 18
+**Previous Agent**: Pine (Sprint 18)
+**Status**: Ready for Primary Display Redesign
 
 ---
 
 ## Where We Left Off
 
-Sprint 17 fixed all snow visualization issues from Sprint 16, plus added environmental condition suppression logic. The system is now stable and ready for new feature work.
+Sprint 18 completed all snow visualization fixes. The system now has organic SVG-based snow drifts and properly balanced text shadows. A feature branch is ready for the primary display redesign.
 
-### What Was Fixed in Sprint 17
+### What Was Fixed in Sprint 18
 
-1. **Snow accumulation rates** - Reduced to realistic levels (was 47", now ~10-15" max)
-2. **Text legibility** - All text has z-index above snow, plus enhanced shadows when snow present
-3. **Snow edge** - Switched from SVG filter to CSS radial gradients (soft drifts appearance)
-4. **Snow height scaling** - Now proportional to depth (was hitting cap at same height)
-5. **Drought/wildfire + snow conflict** - Added suppression logic (no drought/fire alerts with 2"+ snow)
-6. **Snow opacity** - Now fully opaque (was semi-transparent)
+1. **Snow depth label z-index** - Moved outside overlay div, now appears above weather icon
+2. **SVG snow drift edge** - Replaced broken CSS approach with procedural SVG Bezier curves
+3. **Balanced text shadows** - Shadows now scaled by text size (large text = subtle, small text = strong)
+4. **Weather icon shadow** - Uses `filter: drop-shadow()` for SVG icons
+
+---
+
+## Current Task: Primary Display Redesign
+
+### Branch Setup
+- **Main branch**: Stable snow visualization code
+- **Feature branch**: `feature/primary-display-redesign` (currently checked out)
+
+### The Goal
+Improve visual hierarchy to match iOS Weather app pattern while keeping our weather icon.
+
+### Proposed Layout
+```
+┌─────────────────────────────────┐
+│         Kingdom                 │  ← Location
+│           30°                   │  ← Temperature (MASSIVE)
+│      ☁️ Sleeting • H:34° L:28°  │  ← Icon + Condition + High/Low (one line)
+│       Feels like 16°            │  ← Feels like
+│                                 │
+│  [❄️ 24" snow]  [⚠️ 2 Alerts]   │  ← Info badges at bottom
+└─────────────────────────────────┘
+```
+
+### Key Changes to Implement
+1. **Move weather icon** - From above temperature to inline with condition text
+2. **Add High/Low temps** - Display daily high/low (need to get from forecast data)
+3. **Consolidate badges** - Ground conditions + alerts as pills at bottom
+4. **Ground conditions access** - Show even when snow visualization is disabled
+5. **Reduce biome info prominence** - Move to hamburger menu or make smaller
+
+### Reference Image
+`ref images/Weather - Primary Display.png` - iOS Weather app screenshot
+
+### Tyler's Preferences
+- Keep the weather icon (we don't have animated backgrounds like iOS)
+- Icon inline with condition makes sense
+- Wants ground conditions accessible without snow visualization enabled
+
+---
+
+## Git Commands Cheat Sheet
+
+```bash
+# See current branch
+git branch
+
+# Switch to main (stable code)
+git checkout main
+
+# Switch to redesign branch
+git checkout feature/primary-display-redesign
+
+# If redesign is approved, merge to main
+git checkout main
+git merge feature/primary-display-redesign
+
+# If redesign is rejected, delete branch
+git branch -d feature/primary-display-redesign
+```
+
+---
+
+## Key Files for Redesign
+
+- `src/v2/components/weather/PrimaryDisplay.jsx` - Component structure
+- `src/v2/components/weather/PrimaryDisplay.css` - Styling
+- `src/v2/services/weather/WeatherService.js` - May need to expose daily high/low
 
 ---
 
@@ -29,45 +95,29 @@ Sprint 17 fixed all snow visualization issues from Sprint 16, plus added environ
 
 ### Phase B (Snow & Ice Accumulation) - COMPLETE
 - Snow depth tracking with realistic melt physics
-- Visual snow overlay with soft wavy edge
+- Visual snow overlay with organic SVG wavy edge
 - Ground conditions (frozen, thawing, muddy, dry)
 
-### Ready for Next Phase
-From the roadmap, the next priorities are:
-- **Phase C: Extreme Weather Events** - Hurricanes, blizzards, tornadoes, ice storms
-- **Phase D: Wind System Enhancements** - Prevailing winds, gusts during storms
-- Or any other roadmap item Tyler wants to prioritize
-
----
-
-## Key Files Modified in Sprint 17
-
-- `src/v2/services/weather/SnowAccumulationService.js` - Tuned rates/melt constants
-- `src/v2/services/weather/EnvironmentalConditionsService.js` - Added snow suppression
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Removed SVG filter, fixed scaling
-- `src/v2/components/weather/PrimaryDisplay.css` - CSS wavy edge, z-index fixes
-
----
-
-## Known Issues / Future Work
-
-1. **Snow edge still uses clip-path fallback** - The radial gradient approach may need fine-tuning
-2. **Test harness** - May want to verify new snow rates produce realistic results
-3. **Snow visual tuning** - Tyler may want to adjust the wavy edge appearance further
+### Snow Visualization - POLISHED
+- SVG-based drift edge with seeded variation
+- Balanced text shadows by size
+- Proper z-index stacking
 
 ---
 
 ## Quick Start for Next Agent
 
 1. Read `docs/AI_INSTRUCTIONS.md` for full context
-2. Read `docs/PROGRESS.md` for project status and roadmap
-3. Read `docs/sprint-logs/SPRINT_17_OAK.md` for recent changes
-4. Check `docs/NOTES_FROM_USER.md` for any new items from Tyler
+2. Read `docs/sprint-logs/SPRINT_18_PINE.md` for recent changes
+3. Check `docs/NOTES_FROM_USER.md` for any new items from Tyler
+4. You're on `feature/primary-display-redesign` branch - continue the redesign work
+5. Test changes with `npm start`
+6. Build verification with `npm run build`
 
-### Testing
-- Run build: `npm run build`
-- Test harness: Add `?test=true` to URL
-- Test snow: Navigate to Continental Prairie, set date to late January
+### Testing Snow
+- Navigate to Continental Prairie, set date to late January
+- Should see organic wavy snow drifts
+- Text should be readable with balanced shadows
 
 ---
 

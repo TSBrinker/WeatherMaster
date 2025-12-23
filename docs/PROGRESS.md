@@ -1,7 +1,7 @@
 # WeatherMaster v2 - Master Progress Document
 
 **Last Updated**: 2025-12-23
-**Current Status**: Sprint 16 Complete (Weather Sophistication - Phase B Complete) ✅
+**Current Status**: Sprint 18 Complete (Snow Visualization Polish) ✅
 
 ---
 
@@ -77,16 +77,19 @@ Rebuilding WeatherMaster with cleaner architecture in `src/v2/`, implementing:
 - **Sprint 14**: Pattern Transition System & Dynamic Thresholds "Fern" (COMPLETE)
 - **Sprint 15**: Weather Sophistication "Hemlock" (COMPLETE - Phase A)
 - **Sprint 16**: Snow & Ice Accumulation "Alder" (COMPLETE - Phase B)
+- **Sprint 17**: Snow Visualization Fixes "Oak" (COMPLETE)
+- **Sprint 18**: Snow Visualization Polish "Pine" (COMPLETE)
 
 ### 🔜 Current Status
-Phase A (Environmental Conditions) and Phase B (Snow/Ice Accumulation) of Weather Sophistication complete.
+Snow visualization is now polished with organic SVG drift edges and balanced text shadows.
 
-**Sprint 17 Priority: Fix three snow visualization issues before moving on:**
-1. **Snow accumulation too high** - 47" on ground is unrealistic (tune rates in SnowAccumulationService.js)
-2. **Text legibility** - White text unreadable on snow background (add text shadow or reduce snow opacity)
-3. **Snow edge too jagged** - SVG turbulence creates peaks, need softer drifts (tune filter params)
+**Current Task: Primary Display Redesign** (on feature branch `feature/primary-display-redesign`)
+- Move weather icon inline with condition text
+- Add High/Low temperature display
+- Add ground conditions badge (accessible without snow visualization)
+- Improve visual hierarchy to match iOS Weather pattern
 
-See `docs/sprint-logs/SPRINT_16_ALDER.md` for detailed fix recommendations.
+See `docs/sprint-logs/SPRINT_18_PINE.md` and `docs/HANDOFF.md` for details.
 
 **Ready for next priority from roadmap** - see "Roadmap: Future Work" section below for themed categories:
 - 🌪️ Weather Sophistication (drought, extreme events, snow tracking)
