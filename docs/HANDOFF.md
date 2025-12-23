@@ -81,8 +81,8 @@ Baseline in `docs/testing-results/precip-summary-1.json`
 
 ## Git State
 
-- **Branch**: main
-- **Uncommitted**: Documentation restructure (this sprint)
+- **Branch**: main (all work committed and pushed)
+- **Latest commit**: Sprint 21 documentation cleanup
 
 ---
 
