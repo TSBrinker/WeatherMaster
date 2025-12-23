@@ -8,6 +8,79 @@ import { transformCondition } from '../../utils/conditionPhrasing';
 import './PrimaryDisplay.css';
 
 /**
+ * Generate a seeded pseudo-random number
+ * Simple but effective for visual variation
+ */
+const seededRandom = (seed) => {
+  const x = Math.sin(seed * 9999) * 10000;
+  return x - Math.floor(x);
+};
+
+/**
+ * Generate an SVG path for organic snow drifts
+ * Uses quadratic Bezier curves for smooth, natural-looking mounds
+ * @param {string} regionId - Region ID for seeding
+ * @param {number} day - Day for variation
+ * @returns {string} SVG path d attribute
+ */
+const generateSnowDriftPath = (regionId, day) => {
+  const baseSeed = ((regionId || 'default').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (day || 0));
+
+  // We'll work in a 100x30 viewBox (width x height)
+  // Path starts at bottom-left, goes up to create drifts, then back down
+  const width = 100;
+  const driftHeight = 25; // Max height of drift peaks
+
+  // Generate 6-8 control points for the wavy top edge
+  const numPeaks = 5 + Math.floor(seededRandom(baseSeed) * 3); // 5-7 peaks
+  const points = [];
+
+  // Start off-screen left at bottom of drift area
+  points.push({ x: -5, y: driftHeight });
+
+  // Generate peaks and valleys
+  for (let i = 0; i <= numPeaks; i++) {
+    const t = i / numPeaks; // 0 to 1 across width
+    const x = t * (width + 10) - 5; // -5 to 105
+
+    const pointSeed = baseSeed + i * 137;
+    const r1 = seededRandom(pointSeed);
+    const r2 = seededRandom(pointSeed + 1);
+
+    // Alternate between peaks and valleys with randomness
+    const isPeak = i % 2 === 1;
+    const baseY = isPeak ? 5 + r1 * 8 : 15 + r1 * 8; // Peaks: 5-13, Valleys: 15-23
+    const xOffset = (r2 - 0.5) * 8; // Slight horizontal jitter
+
+    points.push({ x: x + xOffset, y: baseY });
+  }
+
+  // End off-screen right at bottom of drift area
+  points.push({ x: 105, y: driftHeight });
+
+  // Build SVG path using quadratic Bezier curves for smoothness
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  // Use smooth curves between points
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+
+    // Control point at midpoint, with y averaged for smooth curve
+    const cpX = (prev.x + curr.x) / 2;
+    const cpY = (prev.y + curr.y) / 2;
+
+    // Quadratic curve to current point
+    path += ` Q ${prev.x + (curr.x - prev.x) * 0.5} ${prev.y} ${cpX} ${cpY}`;
+  }
+
+  // Close the path: go to bottom-right, across bottom, back to start
+  path += ` L 105 30 L -5 30 Z`;
+
+  return path;
+};
+
+/**
  * PrimaryDisplay - iOS Weather-inspired hero component
  * Features HUGE location name, massive temperature, and clean layout
  */
@@ -248,20 +321,35 @@ const PrimaryDisplay = ({ region, weather, world, currentDate }) => {
           </div>
         )}
 
-        {/* Snow Accumulation Visual Overlay */}
+        {/* Snow Accumulation Visual Overlay with SVG drift edge */}
         {/* Height scales: 0" = 0%, 6" = 15%, 12" = 30%, 24"+ = 60% (capped) */}
         {showSnowAccumulation && weather.snowAccumulation && weather.snowAccumulation.snowFillPercent > 0 && (
-          <div
-            className="snow-accumulation-overlay"
-            style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent * 0.6, 60)}%` }}
-            onClick={() => setShowSnowModal(true)}
-            title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
-          >
-            <div className="snow-depth-label">
+          <>
+            <div
+              className="snow-accumulation-overlay"
+              style={{ height: `${Math.min(weather.snowAccumulation.snowFillPercent * 0.6, 60)}%` }}
+              onClick={() => setShowSnowModal(true)}
+              title={`${weather.snowAccumulation.snowDepth}" snow on ground - click for details`}
+            >
+              {/* SVG for organic wavy drift edge at top */}
+              <svg
+                className="snow-drift-edge"
+                viewBox="0 0 100 30"
+                preserveAspectRatio="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d={generateSnowDriftPath(region?.id, currentDate?.day || 1)}
+                  fill="rgb(248, 251, 255)"
+                />
+              </svg>
+            </div>
+            {/* Snow depth label positioned outside overlay for proper z-index */}
+            <div className="snow-depth-label" onClick={() => setShowSnowModal(true)}>
               <BsSnow2 className="snow-icon" />
               {weather.snowAccumulation.snowDepth}"
             </div>
-          </div>
+          </>
         )}
 
         {/* Ice Accumulation Warning (if significant ice but little snow) */}
