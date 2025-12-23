@@ -1,6 +1,6 @@
 # AI Agent Instructions for WeatherMaster v2
 
-**Last Updated**: 2025-12-21 (Sprint 5 - Sage)
+**Last Updated**: 2025-12-23 (Sprint 13 - Spruce)
 
 ---
 
@@ -458,6 +458,40 @@ src/v2/
 **Next Steps (Per Tyler):**
 - Analyze and resolve anomalies surfaced by test harness
 - Continue with weather sophistication (Sprint 6: Enhanced Wind & Frontal Systems)
+
+### Session 9 - Sprint 13 (Spruce) - 2025-12-23
+
+**Preferences Discovered:**
+- Values real-world experience in calibrating tests ("As an Iowa resident, I've seen 20-30 degree differences between one day and the next")
+- Prefers fixing root causes over band-aid solutions ("Rather than enforcing breaks, how can we correct the calculations?")
+- Appreciates understanding WHY things work, not just THAT they work
+- Proactive about documentation and handoff when context is running low
+
+**Work Completed:**
+1. **Seasonal Transition Test Methodology** - Changed from daily jumps (200+ anomalies) to weekly averages (1 anomaly)
+2. **Coastal Desert Precipitation Fix** - Added coldOceanCurrent and rainShadowEffect handlers (22 wet days → 2 days)
+3. **Export Problems Only Button** - Smaller JSON export for faster iteration (~10KB vs 500KB)
+4. **Precipitation Streak Prevention** - Mid-pattern break logic (partial fix, reduced but not eliminated)
+
+**Technical Notes:**
+- Weekly average comparison is better than daily jump detection for continental climates
+- Cold ocean currents (Atacama, Namib) need explicit precipitation suppression
+- Maritime influence should NOT boost precipitation when cold currents present
+- Pattern chaining is the root cause of long wet streaks - break logic is a band-aid
+- Temperate Desert has a template issue: winter avg > spring avg (backwards)
+
+**Key Insight:**
+Tyler's real-world experience (Iowa weather volatility) helped calibrate the seasonal transition test. The issue wasn't day-to-day swings (which are natural in continental climates) but whether the *weekly trend* had abrupt discontinuities.
+
+**Remaining Issues for Next Sprint:**
+1. Monsoon Coast 44-day wet streak - pattern transition logic needs work
+2. Temperate Desert seasonal jump (76°F winter → 56°F spring) - template issue
+3. 16 biomes still have >14-day wet streaks
+
+**Suggested Root Fix:**
+The 4-day pattern cycle allows consecutive low-pressure patterns to chain. Consider:
+- Pattern transition logic preventing too many consecutive wet patterns
+- "Pattern fatigue" where same pattern type becomes less likely after repeating
 
 ---
 

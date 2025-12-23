@@ -193,6 +193,17 @@ export class WeatherPatternService {
       chance *= 0.15; // 85% reduction - ice sheets are deserts
     }
 
+    // Cold ocean currents create coastal deserts (Atacama, Namib, etc.)
+    // These are some of the driest places on Earth despite being on the coast
+    if (specialFactors.coldOceanCurrent) {
+      chance *= (1 - specialFactors.coldOceanCurrent * 0.85); // Up to 85% reduction
+    }
+
+    // Rain shadow effect - mountains block moisture
+    if (specialFactors.rainShadowEffect) {
+      chance *= (1 - specialFactors.rainShadowEffect * 0.7); // Up to 70% reduction
+    }
+
     // === HUMIDITY-BASED MODIFIERS ===
     // Low humidity regions get less precipitation
     const seasonalHumidity = humidity[season];
@@ -216,8 +227,12 @@ export class WeatherPatternService {
     }
 
     // Maritime/coastal influence increases precipitation
+    // BUT NOT if there's a cold ocean current (coastal deserts are exceptions)
     if (climate.maritimeInfluence && climate.maritimeInfluence > 0.6) {
-      chance *= 1.2; // Coastal areas: 20% increase
+      if (!specialFactors.coldOceanCurrent) {
+        chance *= 1.2; // Coastal areas: 20% increase
+      }
+      // Cold current coasts already handled above - no boost here
     }
 
     // === SEASONAL VARIATIONS ===
@@ -259,6 +274,27 @@ export class WeatherPatternService {
       if (!specialFactors.hasMonsoonSeason && climate.maritimeInfluence < 0.5) {
         chance *= 0.8;
       }
+    }
+
+    // === PRECIPITATION STREAK PREVENTION ===
+    // Even wet climates have occasional dry periods. Use a secondary roll
+    // based on the day-of-pattern to create natural breaks.
+    // This prevents unrealistically long wet streaks (30+ days).
+    const patternDay = this.getDayOfPattern(region, date);
+    const breakRoll = rng.next();
+
+    // Every 3-4 days within a pattern, there's a chance for a "break day"
+    // This is more likely mid-pattern and less likely at pattern transitions
+    if (patternDay === 2 || patternDay === 3) {
+      // Mid-pattern break chance (15% chance to skip precipitation)
+      if (breakRoll < 0.15) {
+        chance *= 0.3; // Significantly reduce chance, creating dry breaks
+      }
+    }
+
+    // High pressure patterns should have even more reliable dry periods
+    if (pattern.type === 'HIGH_PRESSURE' && patternDay >= 2) {
+      chance *= 0.7; // Additional 30% reduction on non-first days
     }
 
     // Clamp chance to valid range [0, 1]

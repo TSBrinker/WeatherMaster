@@ -36,7 +36,7 @@ const WeatherTestHarness = () => {
     pressure: { min: 28, max: 32 },
     cloudCover: { min: 0, max: 100 },
     maxTempChangePerHour: 15, // Maximum realistic temp change in 1 hour
-    maxDailySeasonalJump: 8, // Max temp change between consecutive days during season transition
+    maxWeeklySeasonalJump: 12, // Max weekly average temp change during season transitions
     expectedTempDeviation: 15, // Flag if annual avg deviates more than this from template
     biomeSimilarityThreshold: 3 // Flag biomes with avg temps within this range as similar
   };
@@ -356,28 +356,56 @@ const WeatherTestHarness = () => {
 
     // ===== POST-PROCESSING: Analyze collected data =====
 
-    // 1. Seasonal Transition Smoothness Analysis
+    // 1. Seasonal Transition Smoothness Analysis (Weekly Averages)
+    // Instead of checking daily jumps (which can vary wildly in continental climates),
+    // we compare weekly averages before and after each seasonal boundary.
+    // This captures whether the TREND is smooth, not individual day variability.
     for (const [biomeName, biomeStats] of Object.entries(stats.biomeStats)) {
       const transitionTemps = biomeStats.seasonalTransitionTemps;
       const days = Object.keys(transitionTemps).map(Number).sort((a, b) => a - b);
 
-      for (let i = 1; i < days.length; i++) {
-        const prevDay = days[i - 1];
-        const currDay = days[i];
+      // Group temps by seasonal boundary window
+      const seasonalWindows = TEST_CONFIG.seasonalTransitionDays;
+      for (const [seasonName, window] of Object.entries(seasonalWindows)) {
+        // Get temps before center (days start to center-1) and after center (center to end)
+        const beforeTemps = [];
+        const afterTemps = [];
 
-        // Only check consecutive days
-        if (currDay - prevDay === 1) {
-          const tempChange = Math.abs(transitionTemps[currDay] - transitionTemps[prevDay]);
+        for (const day of days) {
+          const temp = transitionTemps[day];
+          if (temp === undefined) continue;
 
-          if (tempChange > THRESHOLDS.maxDailySeasonalJump) {
+          // Handle winter solstice year wraparound
+          let effectiveDay = day;
+          if (window.start > 350 && day <= 5) {
+            effectiveDay = day + 365; // Treat early January days as after Dec 31
+          }
+
+          const effectiveCenter = window.start > 350 ? window.center : window.center;
+          const effectiveEnd = window.start > 350 ? window.end + 365 : window.end;
+
+          if (effectiveDay >= window.start && effectiveDay < window.center) {
+            beforeTemps.push(temp);
+          } else if (effectiveDay >= window.center && effectiveDay <= effectiveEnd) {
+            afterTemps.push(temp);
+          }
+        }
+
+        // Calculate weekly averages and compare
+        if (beforeTemps.length >= 3 && afterTemps.length >= 3) {
+          const beforeAvg = beforeTemps.reduce((a, b) => a + b, 0) / beforeTemps.length;
+          const afterAvg = afterTemps.reduce((a, b) => a + b, 0) / afterTemps.length;
+          const weeklyChange = Math.abs(afterAvg - beforeAvg);
+
+          if (weeklyChange > THRESHOLDS.maxWeeklySeasonalJump) {
             stats.seasonalTransitionAnomalies.push({
               biome: biomeName,
               latitudeBand: biomeStats.latitudeBand,
-              fromDay: prevDay,
-              toDay: currDay,
-              tempChange: tempChange.toFixed(1),
-              fromTemp: transitionTemps[prevDay].toFixed(1),
-              toTemp: transitionTemps[currDay].toFixed(1)
+              season: seasonName,
+              beforeAvg: beforeAvg.toFixed(1),
+              afterAvg: afterAvg.toFixed(1),
+              weeklyChange: weeklyChange.toFixed(1),
+              daysAnalyzed: beforeTemps.length + afterTemps.length
             });
           }
         }
@@ -448,10 +476,10 @@ const WeatherTestHarness = () => {
         problems.push(`${biomeTransitions.length} hourly transition anomalies`);
       }
 
-      // Check for seasonal transition anomalies
+      // Check for seasonal transition anomalies (now using weekly averages)
       const seasonalAnomalies = stats.seasonalTransitionAnomalies.filter(a => a.biome === biomeName);
       if (seasonalAnomalies.length > 0) {
-        problems.push(`${seasonalAnomalies.length} seasonal transition jumps`);
+        problems.push(`${seasonalAnomalies.length} abrupt seasonal transition(s)`);
       }
 
       // Check for extreme precipitation streaks
@@ -486,6 +514,54 @@ const WeatherTestHarness = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `weather-test-results-${Date.now()}.json`;
+    a.click();
+  };
+
+  const downloadProblemsOnly = () => {
+    if (!results) return;
+
+    // Extract just the problem-relevant data
+    const problemsReport = {
+      summary: {
+        totalTests: results.totalTests,
+        successRate: ((results.successfulTests / results.totalTests) * 100).toFixed(2) + '%',
+        validationAnomalies: results.anomalies.length,
+        hourlyTransitionAnomalies: results.transitionAnomalies.length,
+        seasonalTransitionAnomalies: results.seasonalTransitionAnomalies.length,
+        similarBiomePairs: results.biomeSimilarities.length,
+        problemBiomeCount: results.problemBiomes.length
+      },
+      problemBiomes: results.problemBiomes,
+      seasonalTransitionAnomalies: results.seasonalTransitionAnomalies,
+      biomeSimilarities: results.biomeSimilarities,
+      // Include condensed biome stats (just the key metrics, not daily temps)
+      biomeStats: Object.fromEntries(
+        Object.entries(results.biomeStats).map(([name, stats]) => [
+          name,
+          {
+            latitudeBand: stats.latitudeBand,
+            tempMin: stats.tempMin,
+            tempMax: stats.tempMax,
+            avgTemp: (stats.tempSum / stats.count).toFixed(1),
+            expectedTemp: stats.expectedAnnualTemp,
+            tempDeviation: stats.tempDeviation?.toFixed(1),
+            precipPercent: ((stats.precipCount / stats.count) * 100).toFixed(1),
+            longestDry: results.precipitationStreaks[name]?.longestDry,
+            longestWet: results.precipitationStreaks[name]?.longestWet
+          }
+        ])
+      ),
+      // Only include first 20 of each anomaly type
+      validationAnomalies: results.anomalies.slice(0, 20),
+      transitionAnomalies: results.transitionAnomalies.slice(0, 20)
+    };
+
+    const data = JSON.stringify(problemsReport, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `weather-problems-${Date.now()}.json`;
     a.click();
   };
 
@@ -563,8 +639,11 @@ const WeatherTestHarness = () => {
               </div>
             </div>
 
+            <Button variant="primary" size="sm" onClick={downloadProblemsOnly} className="mt-3 me-2">
+              Export Problems Only
+            </Button>
             <Button variant="secondary" size="sm" onClick={downloadResults} className="mt-3">
-              Download Full Results (JSON)
+              Export Full Results
             </Button>
           </Alert>
 
@@ -745,7 +824,7 @@ const WeatherTestHarness = () => {
               <Card.Header>
                 <h5>Seasonal Transition Anomalies ({results.seasonalTransitionAnomalies.length})</h5>
                 <small className="text-muted">
-                  Abrupt temperature jumps during season changes (>{THRESHOLDS.maxDailySeasonalJump}°F between consecutive days)
+                  Weekly average temperature jumps during season changes (>{THRESHOLDS.maxWeeklySeasonalJump}°F between pre/post boundary weeks)
                 </small>
               </Card.Header>
               <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -754,8 +833,8 @@ const WeatherTestHarness = () => {
                     <tr>
                       <th>Biome</th>
                       <th>Band</th>
-                      <th>Days</th>
-                      <th>Temperature Change</th>
+                      <th>Season</th>
+                      <th>Weekly Avg Change</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -763,8 +842,8 @@ const WeatherTestHarness = () => {
                       <tr key={idx}>
                         <td><small>{anomaly.biome}</small></td>
                         <td><small>{anomaly.latitudeBand}</small></td>
-                        <td>Day {anomaly.fromDay} → {anomaly.toDay}</td>
-                        <td>{anomaly.fromTemp}°F → {anomaly.toTemp}°F (Δ{anomaly.tempChange}°F)</td>
+                        <td><small>{anomaly.season}</small></td>
+                        <td>{anomaly.beforeAvg}°F → {anomaly.afterAvg}°F (Δ{anomaly.weeklyChange}°F)</td>
                       </tr>
                     ))}
                   </tbody>
