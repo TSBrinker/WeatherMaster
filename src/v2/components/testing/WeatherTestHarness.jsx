@@ -13,12 +13,14 @@ const WeatherTestHarness = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const TEST_CONFIG = {
     year: 1,
     daysToTest: 365,
     hoursToTest: [0, 6, 12, 18], // Midnight, dawn, noon, dusk
-    latitudeBands: ['central', 'subtropical', 'temperate', 'subarctic', 'polar']
+    // Flat disc world latitude bands (center to edge)
+    latitudeBands: ['central', 'subarctic', 'temperate', 'tropical', 'rim', 'special']
   };
 
   const THRESHOLDS = {
@@ -88,8 +90,17 @@ const WeatherTestHarness = () => {
       successfulTests: 0,
       anomalies: [],
       transitionAnomalies: [],
+      seasonalTransitions: [], // Track behavior at season boundaries
       biomeStats: {}
     };
+
+    // Season boundary dates (approximate day of year)
+    const SEASON_BOUNDARIES = [
+      { name: 'Spring Equinox', dayOfYear: 80 },   // ~March 21
+      { name: 'Summer Solstice', dayOfYear: 172 }, // ~June 21
+      { name: 'Fall Equinox', dayOfYear: 266 },    // ~Sept 23
+      { name: 'Winter Solstice', dayOfYear: 356 }  // ~Dec 22
+    ];
 
     const weatherGen = new WeatherGenerator();
     let completedTests = 0;
@@ -207,6 +218,22 @@ const WeatherTestHarness = () => {
                 biomeStats.precipCount++;
               }
 
+              // Track seasonal boundary data (sample at noon on boundary days)
+              if (hour === 12) {
+                const seasonBoundary = SEASON_BOUNDARIES.find(s => s.dayOfYear === day);
+                if (seasonBoundary) {
+                  stats.seasonalTransitions.push({
+                    biome: biomeName,
+                    latitudeBand: latitudeBand,
+                    season: seasonBoundary.name,
+                    date: `${date.month}/${date.day}`,
+                    temperature: weather.temperature,
+                    condition: weather.condition,
+                    humidity: weather.humidity
+                  });
+                }
+              }
+
               // Update progress every 1000 tests
               if (completedTests % 1000 === 0) {
                 setProgress((completedTests / totalTests) * 100);
@@ -298,36 +325,144 @@ const WeatherTestHarness = () => {
           <Card className="mb-4">
             <Card.Header>
               <h5>Biome Statistics</h5>
+              <small className="text-muted">Click column headers to sort</small>
             </Card.Header>
-            <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              <Table striped bordered hover size="sm">
-                <thead>
+            <Card.Body style={{ maxHeight: '400px', overflowY: 'auto', padding: 0 }}>
+              <Table striped bordered hover size="sm" style={{ marginBottom: 0 }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#212529', zIndex: 1 }}>
                   <tr>
-                    <th>Biome</th>
-                    <th>Temp Range</th>
-                    <th>Avg Temp</th>
-                    <th>Precip %</th>
-                    <th>Samples</th>
+                    <th style={{ cursor: 'default', width: '40px' }}>#</th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'name',
+                        direction: sortConfig.key === 'name' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Biome {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'tempMin',
+                        direction: sortConfig.key === 'tempMin' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Min Temp {sortConfig.key === 'tempMin' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'tempMax',
+                        direction: sortConfig.key === 'tempMax' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Max Temp {sortConfig.key === 'tempMax' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'avgTemp',
+                        direction: sortConfig.key === 'avgTemp' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Avg Temp {sortConfig.key === 'avgTemp' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'precip',
+                        direction: sortConfig.key === 'precip' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Precip % {sortConfig.key === 'precip' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSortConfig({
+                        key: 'samples',
+                        direction: sortConfig.key === 'samples' && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+                      })}
+                    >
+                      Samples {sortConfig.key === 'samples' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(results.biomeStats).map(([name, stats]) => {
-                    const avg = (stats.tempSum / stats.count).toFixed(1);
-                    const precipPercent = ((stats.precipCount / stats.count) * 100).toFixed(1);
-                    return (
-                      <tr key={name}>
-                        <td>{name}</td>
-                        <td>{stats.tempMin.toFixed(1)}°F to {stats.tempMax.toFixed(1)}°F</td>
-                        <td>{avg}°F</td>
-                        <td>{precipPercent}%</td>
-                        <td>{stats.count.toLocaleString()}</td>
+                  {Object.entries(results.biomeStats)
+                    .map(([name, stats]) => ({
+                      name,
+                      tempMin: stats.tempMin,
+                      tempMax: stats.tempMax,
+                      avgTemp: stats.tempSum / stats.count,
+                      precip: (stats.precipCount / stats.count) * 100,
+                      samples: stats.count
+                    }))
+                    .sort((a, b) => {
+                      if (!sortConfig.key) return 0;
+                      const aVal = a[sortConfig.key];
+                      const bVal = b[sortConfig.key];
+                      if (typeof aVal === 'string') {
+                        return sortConfig.direction === 'asc'
+                          ? aVal.localeCompare(bVal)
+                          : bVal.localeCompare(aVal);
+                      }
+                      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                    })
+                    .map((row, idx) => (
+                      <tr key={row.name}>
+                        <td style={{ color: '#6c757d' }}>{idx + 1}</td>
+                        <td>{row.name}</td>
+                        <td>{row.tempMin.toFixed(1)}°F</td>
+                        <td>{row.tempMax.toFixed(1)}°F</td>
+                        <td>{row.avgTemp.toFixed(1)}°F</td>
+                        <td>{row.precip.toFixed(1)}%</td>
+                        <td>{row.samples.toLocaleString()}</td>
                       </tr>
-                    );
-                  })}
+                    ))}
                 </tbody>
               </Table>
             </Card.Body>
           </Card>
+
+          {results.seasonalTransitions && results.seasonalTransitions.length > 0 && (
+            <Card className="mb-4">
+              <Card.Header>
+                <h5>Seasonal Boundary Snapshots</h5>
+                <small className="text-muted">
+                  Weather at equinoxes and solstices (noon samples)
+                </small>
+              </Card.Header>
+              <Card.Body style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered hover size="sm">
+                  <thead>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Band</th>
+                      <th>Season</th>
+                      <th>Date</th>
+                      <th>Temp</th>
+                      <th>Humidity</th>
+                      <th>Condition</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.seasonalTransitions.map((entry, idx) => (
+                      <tr key={idx}>
+                        <td><small>{entry.biome}</small></td>
+                        <td><small>{entry.latitudeBand}</small></td>
+                        <td><small>{entry.season}</small></td>
+                        <td><small>{entry.date}</small></td>
+                        <td>{entry.temperature}°F</td>
+                        <td>{entry.humidity}%</td>
+                        <td><small>{entry.condition}</small></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          )}
 
           {results.transitionAnomalies.length > 0 && (
             <Card className="mb-4">

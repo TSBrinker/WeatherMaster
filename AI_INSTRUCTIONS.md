@@ -406,33 +406,57 @@ src/v2/
 - Twilight levels confirmed fully implemented (documented location for future reference)
 - PROGRESS.md roadmap updated with all outstanding items
 
-**Bug Fix - Dual PreferencesContext Pitfall:**
-- Discovered runtime crash caused by importing wrong PreferencesContext
-- Project has TWO contexts with different APIs - see warning below
+### Session 7 - Sprint 11 (Juniper) - 2024-12-23
+
+**Preferences Discovered:**
+- Values clean codebase - proactively asked about removing legacy code
+- Appreciates data tables with sorting, row numbers, and sticky headers
+- Wants test harness to be comprehensive and informative
+- Open to suggestions for future enhancements (asked "what would YOU think is valuable?")
+
+**Work Completed:**
+1. **Legacy Code Removal** - Deleted ~12,800 lines of unused v1 code
+2. **Migrated weather-effects.js** - Moved D&D gameplay mechanics to v2/data/
+3. **Fixed test harness** - Now tests all 43 biomes (was missing rim, tropical, special)
+4. **Seasonal transition testing** - Added snapshots at equinoxes/solstices
+5. **Sortable biome table** - Row numbers, clickable headers, sticky header
+
+**Technical Notes:**
+- V2 is now fully self-contained in `src/v2/`
+- Only `src/index.jsx` and assets remain outside v2
+- Test mode (`?test=true`) now routed through `src/v2/App.jsx`
+- Flat disc latitude bands: central, subarctic, temperate, tropical, rim, special
+
+**Roadmap Items Added (Test Harness Enhancements):**
+- Temperature variance tracking, precipitation streaks, pattern distribution
+- Biome similarity detection, expected vs actual comparison
+- Extreme event frequency, precip type distribution
+- Filter by band, CSV export, problem biomes summary
 
 ---
 
-## CRITICAL: Dual PreferencesContext Warning
+## Project Structure (Post-Cleanup)
 
-**This project has TWO PreferencesContext implementations with different APIs!**
+After Sprint 11, the legacy `src/` code was removed. The codebase is now:
 
-| File | Pattern | Used By |
-|------|---------|---------|
-| `src/contexts/PreferencesContext.js` | `{ state, setters... }` | Legacy/src components |
-| `src/v2/contexts/PreferencesContext.jsx` | `{ prop1, prop2, setters... }` (flat) | V2 components |
+```
+src/
+├── index.jsx           # Entry point → loads v2/App
+├── logo.ico, logo.svg  # Assets
+├── WM *.png            # Logo images
+└── v2/                 # THE ENTIRE APPLICATION
+    ├── App.jsx         # Main app + test mode routing
+    ├── components/     # All React components
+    ├── contexts/       # WorldContext, PreferencesContext
+    ├── data/           # region-templates.js, weather-effects.js
+    ├── models/         # types.js, constants.js
+    ├── services/       # weather/, celestial/, storage/
+    ├── styles/         # theme.css, app.css
+    └── utils/          # dateUtils, seedGenerator, etc.
+```
 
-**When adding preferences to V2 components:**
-1. Import from `../../contexts/PreferencesContext` (the V2 one, relative to component location)
-2. Destructure directly: `const { myPref, setMyPref } = usePreferences()`
-3. Do NOT use `{ state: preferences }` pattern - that's the legacy context
-
-**When adding preferences to legacy components:**
-1. Import from the appropriate relative path to `src/contexts/PreferencesContext.js`
-2. Use `{ state, setters... }` pattern
-
-**Symptoms of using wrong context:**
-- Build succeeds but app crashes at runtime
-- Error may not be visible if it breaks rendering early
+**Important**: There is now only ONE PreferencesContext (`src/v2/contexts/PreferencesContext.jsx`).
+Use flat destructuring: `const { myPref, setMyPref } = usePreferences()`
 
 ---
 

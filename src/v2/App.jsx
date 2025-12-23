@@ -12,10 +12,15 @@ import CelestialCard from './components/weather/CelestialCard';
 import DruidcraftForecast from './components/weather/DruidcraftForecast';
 import DMForecastPanel from './components/weather/DMForecastPanel';
 import WeatherDebug from './components/weather/WeatherDebug';
+import WeatherTestHarness from './components/testing/WeatherTestHarness';
 import weatherService from './services/weather/WeatherService';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/theme.css';
 import './styles/app.css';
+
+// Check if test mode is enabled via URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const isTestMode = urlParams.get('test') === 'true';
 
 /**
  * Main App Content (needs to be inside WorldProvider)
@@ -156,6 +161,15 @@ const AppContent = () => {
  * Root App Component
  */
 const App = () => {
+  // Test mode renders the weather test harness instead of the main app
+  if (isTestMode) {
+    return (
+      <PreferencesProvider>
+        <WeatherTestHarness />
+      </PreferencesProvider>
+    );
+  }
+
   return (
     <PreferencesProvider>
       <WorldProvider>

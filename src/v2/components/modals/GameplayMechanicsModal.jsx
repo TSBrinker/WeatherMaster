@@ -3,7 +3,7 @@ import { Modal, Accordion, Badge, Row, Col } from 'react-bootstrap';
 import {
   Eye, Footprints, Moon, Shield, AlertTriangle, Map, Wind
 } from 'lucide-react';
-import { weatherEffects, windIntensityEffects } from '../../../data-tables/weather-effects';
+import { weatherEffects, windIntensityEffects } from '../../data/weather-effects';
 import './GameplayMechanicsModal.css';
 
 /**

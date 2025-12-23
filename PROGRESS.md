@@ -745,10 +745,22 @@ PROGRESS.md                    # This file (master tracker)
 - [ ] UI consistency fixes
   - Fix Feels Like section causing height shifts in main display
   - Add background gradient fade transitions (with interruption handling)
-- [ ] Test harness improvements
-  - Add seasonal transition tests (temperature, weather patterns across seasons)
-  - Display all 37 biomes in results (currently only shows 20)
-  - Test Rim biomes (currently not included in results display)
+- [x] Test harness improvements (Sprint 11 Juniper)
+  - ~~Add seasonal transition tests~~ ✅ Added seasonal boundary snapshots
+  - ~~Display all 37 biomes in results~~ ✅ Now shows all 43 templates
+  - ~~Test Rim biomes~~ ✅ Fixed latitude bands to include rim & special
+  - [x] Sortable columns with sticky header and row numbers
+- [ ] Test harness enhancements (future)
+  - Temperature variance tracking (daily/seasonal swing per biome)
+  - Precipitation streak detection (longest dry/wet spells)
+  - Pattern distribution breakdown (High/Low Pressure, Fronts per biome)
+  - Biome similarity detection (flag near-identical weather generation)
+  - Expected vs Actual comparison (template means vs generated averages)
+  - Extreme event frequency (dangerous threshold tracking)
+  - Precipitation type distribution (rain/snow/sleet breakdown)
+  - Filter by latitude band toggle
+  - CSV export option
+  - "Problem biomes" auto-summary at top
 - [ ] Review and process all items in NOTES_FROM_USER.md
 
 **Estimated Effort**: 1-2 days

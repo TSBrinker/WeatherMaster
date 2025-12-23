@@ -11,7 +11,9 @@
       "Bash(git push:*)",
       "Bash(timeout:*)",
       "Bash(npm run build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)"
     ]
   }
 }
