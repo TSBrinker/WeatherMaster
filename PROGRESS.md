@@ -785,12 +785,29 @@ PROGRESS.md                    # This file (master tracker)
 
 ### 🔮 Stretch Goals
 
+**Interactive Map System**
+- [ ] Upload continent map image, declare scale (miles from world center to top)
+- [ ] Overlay climate band visualization on map
+- [ ] Pin placement for regions - auto-suggest biomes based on latitude band
+- [ ] Toggle between map views (satellite, height map, etc.)
+
 **Spatial Weather System**
 - [ ] Adjacent regions system (3x3 grid for neighbors)
 - [ ] Weather blend factor (0-100% neighbor influence)
 - [ ] Blended weather generation across region boundaries
 - [ ] Use cases: coastal transitions, rain shadows, continental patterns
 - [ ] See [docs/SPATIAL_WEATHER_DESIGN.md](docs/SPATIAL_WEATHER_DESIGN.md)
+
+### 🌟 Long-Term Vision
+
+**Game/World Manager Expansion**
+- [ ] Evolve from weather tool to full world management suite
+- [ ] Multiple modes: Map Mode, Calendar Mode, Weather Mode
+- [ ] Dedicated backend for persistent data
+- [ ] Desktop app (Electron?) for robust features + export/import
+- [ ] Web app for mobile access (weather tracking on the go)
+- [ ] Sync between desktop and web versions
+- [ ] Potential repackaging as downloadable exe
 
 ---
 
