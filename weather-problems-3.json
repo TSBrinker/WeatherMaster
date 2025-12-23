@@ -1,0 +1,631 @@
+{
+  "summary": {
+    "totalTests": 54020,
+    "successRate": "100.00%",
+    "validationAnomalies": 0,
+    "hourlyTransitionAnomalies": 0,
+    "seasonalTransitionAnomalies": 0,
+    "similarBiomePairs": 15,
+    "problemBiomeCount": 12
+  },
+  "problemBiomes": [
+    {
+      "biome": "Subarctic Maritime",
+      "latitudeBand": "subarctic",
+      "problems": [
+        "Long wet streak: 23 days"
+      ]
+    },
+    {
+      "biome": "Peatland/Muskeg",
+      "latitudeBand": "subarctic",
+      "problems": [
+        "Long wet streak: 18 days"
+      ]
+    },
+    {
+      "biome": "Maritime Forest",
+      "latitudeBand": "temperate",
+      "problems": [
+        "Long wet streak: 22 days"
+      ]
+    },
+    {
+      "biome": "Temperate Rainforest",
+      "latitudeBand": "temperate",
+      "problems": [
+        "Long wet streak: 20 days"
+      ]
+    },
+    {
+      "biome": "Maritime Islands",
+      "latitudeBand": "temperate",
+      "problems": [
+        "Long wet streak: 19 days"
+      ]
+    },
+    {
+      "biome": "Monsoon Coast",
+      "latitudeBand": "tropical",
+      "problems": [
+        "Long wet streak: 36 days"
+      ]
+    },
+    {
+      "biome": "Tropical Highland",
+      "latitudeBand": "tropical",
+      "problems": [
+        "Long wet streak: 15 days"
+      ]
+    },
+    {
+      "biome": "Tropical Maritime",
+      "latitudeBand": "tropical",
+      "problems": [
+        "Long wet streak: 18 days"
+      ]
+    },
+    {
+      "biome": "Rainforest Basin",
+      "latitudeBand": "rim",
+      "problems": [
+        "Long wet streak: 16 days"
+      ]
+    },
+    {
+      "biome": "Island Archipelago",
+      "latitudeBand": "rim",
+      "problems": [
+        "Long wet streak: 16 days"
+      ]
+    },
+    {
+      "biome": "Equatorial Swamp",
+      "latitudeBand": "rim",
+      "problems": [
+        "Long wet streak: 27 days"
+      ]
+    },
+    {
+      "biome": "Rain Shadow",
+      "latitudeBand": "special",
+      "problems": [
+        "Long dry streak: 62 days"
+      ]
+    }
+  ],
+  "seasonalTransitionAnomalies": [],
+  "biomeSimilarities": [
+    {
+      "biome1": "Coastal Taiga",
+      "biome2": "Subarctic Maritime",
+      "avgTempDiff": "1.0",
+      "precipDiff": "3.4",
+      "band1": "subarctic",
+      "band2": "subarctic"
+    },
+    {
+      "biome1": "Northern Grassland",
+      "biome2": "Peatland/Muskeg",
+      "avgTempDiff": "0.5",
+      "precipDiff": "0.6",
+      "band1": "subarctic",
+      "band2": "subarctic"
+    },
+    {
+      "biome1": "Continental Prairie",
+      "biome2": "Mountain Microclimate",
+      "avgTempDiff": "0.9",
+      "precipDiff": "1.9",
+      "band1": "temperate",
+      "band2": "special"
+    },
+    {
+      "biome1": "Continental Prairie",
+      "biome2": "Convergence Zone",
+      "avgTempDiff": "1.4",
+      "precipDiff": "0.5",
+      "band1": "temperate",
+      "band2": "special"
+    },
+    {
+      "biome1": "River Valley",
+      "biome2": "Geothermal Zone",
+      "avgTempDiff": "0.8",
+      "precipDiff": "4.0",
+      "band1": "temperate",
+      "band2": "special"
+    },
+    {
+      "biome1": "River Valley",
+      "biome2": "Convergence Zone",
+      "avgTempDiff": "2.4",
+      "precipDiff": "2.8",
+      "band1": "temperate",
+      "band2": "special"
+    },
+    {
+      "biome1": "Seasonal Wetland",
+      "biome2": "Tropical Highland",
+      "avgTempDiff": "1.8",
+      "precipDiff": "0.7",
+      "band1": "temperate",
+      "band2": "tropical"
+    },
+    {
+      "biome1": "Monsoon Coast",
+      "biome2": "Mangrove Coast",
+      "avgTempDiff": "2.1",
+      "precipDiff": "1.6",
+      "band1": "tropical",
+      "band2": "tropical"
+    },
+    {
+      "biome1": "Monsoon Coast",
+      "biome2": "Rainforest Basin",
+      "avgTempDiff": "0.6",
+      "precipDiff": "4.5",
+      "band1": "tropical",
+      "band2": "rim"
+    },
+    {
+      "biome1": "Monsoon Coast",
+      "biome2": "Island Archipelago",
+      "avgTempDiff": "0.8",
+      "precipDiff": "0.3",
+      "band1": "tropical",
+      "band2": "rim"
+    },
+    {
+      "biome1": "Tropical Savanna",
+      "biome2": "Tropical Deciduous Forest",
+      "avgTempDiff": "2.8",
+      "precipDiff": "3.0",
+      "band1": "tropical",
+      "band2": "tropical"
+    },
+    {
+      "biome1": "Tropical Maritime",
+      "biome2": "Rainforest Basin",
+      "avgTempDiff": "0.2",
+      "precipDiff": "3.4",
+      "band1": "tropical",
+      "band2": "rim"
+    },
+    {
+      "biome1": "Mangrove Coast",
+      "biome2": "Island Archipelago",
+      "avgTempDiff": "1.3",
+      "precipDiff": "1.9",
+      "band1": "tropical",
+      "band2": "rim"
+    },
+    {
+      "biome1": "Rainforest Basin",
+      "biome2": "Island Archipelago",
+      "avgTempDiff": "0.2",
+      "precipDiff": "4.2",
+      "band1": "rim",
+      "band2": "rim"
+    },
+    {
+      "biome1": "Mountain Microclimate",
+      "biome2": "Convergence Zone",
+      "avgTempDiff": "2.2",
+      "precipDiff": "1.4",
+      "band1": "special",
+      "band2": "special"
+    }
+  ],
+  "biomeStats": {
+    "Tundra Plain": {
+      "latitudeBand": "central",
+      "tempMin": -30,
+      "tempMax": 54,
+      "avgTemp": "13.6",
+      "expectedTemp": 14,
+      "tempDeviation": "-0.4",
+      "precipPercent": "41.4",
+      "longestDry": 13,
+      "longestWet": 10
+    },
+    "Polar Coast": {
+      "latitudeBand": "central",
+      "tempMin": -22,
+      "tempMax": 57,
+      "avgTemp": "20.1",
+      "expectedTemp": 20,
+      "tempDeviation": "0.1",
+      "precipPercent": "54.6",
+      "longestDry": 12,
+      "longestWet": 14
+    },
+    "Ice Sheet": {
+      "latitudeBand": "central",
+      "tempMin": -54,
+      "tempMax": 20,
+      "avgTemp": "-14.8",
+      "expectedTemp": -15,
+      "tempDeviation": "0.2",
+      "precipPercent": "5.0",
+      "longestDry": 46,
+      "longestWet": 1
+    },
+    "Polar Desert": {
+      "latitudeBand": "central",
+      "tempMin": -48,
+      "tempMax": 41,
+      "avgTemp": "-2.9",
+      "expectedTemp": -5,
+      "tempDeviation": "2.1",
+      "precipPercent": "6.7",
+      "longestDry": 58,
+      "longestWet": 2
+    },
+    "Polar Highland": {
+      "latitudeBand": "central",
+      "tempMin": -52,
+      "tempMax": 40,
+      "avgTemp": "-6.6",
+      "expectedTemp": -10,
+      "tempDeviation": "3.4",
+      "precipPercent": "34.2",
+      "longestDry": 29,
+      "longestWet": 6
+    },
+    "Coastal Taiga": {
+      "latitudeBand": "subarctic",
+      "tempMin": 5,
+      "tempMax": 72,
+      "avgTemp": "38.6",
+      "expectedTemp": 35,
+      "tempDeviation": "3.6",
+      "precipPercent": "56.5",
+      "longestDry": 12,
+      "longestWet": 13
+    },
+    "Continental Taiga": {
+      "latitudeBand": "subarctic",
+      "tempMin": -34,
+      "tempMax": 78,
+      "avgTemp": "26.0",
+      "expectedTemp": 28,
+      "tempDeviation": "-2.0",
+      "precipPercent": "41.7",
+      "longestDry": 13,
+      "longestWet": 7
+    },
+    "Subarctic Highland": {
+      "latitudeBand": "subarctic",
+      "tempMin": -32,
+      "tempMax": 70,
+      "avgTemp": "20.6",
+      "expectedTemp": 20,
+      "tempDeviation": "0.6",
+      "precipPercent": "39.6",
+      "longestDry": 12,
+      "longestWet": 11
+    },
+    "Northern Grassland": {
+      "latitudeBand": "subarctic",
+      "tempMin": -35,
+      "tempMax": 94,
+      "avgTemp": "30.9",
+      "expectedTemp": 30,
+      "tempDeviation": "0.9",
+      "precipPercent": "42.1",
+      "longestDry": 15,
+      "longestWet": 7
+    },
+    "Subarctic Maritime": {
+      "latitudeBand": "subarctic",
+      "tempMin": 12,
+      "tempMax": 66,
+      "avgTemp": "39.6",
+      "expectedTemp": 40,
+      "tempDeviation": "-0.4",
+      "precipPercent": "59.9",
+      "longestDry": 8,
+      "longestWet": 23
+    },
+    "Peatland/Muskeg": {
+      "latitudeBand": "subarctic",
+      "tempMin": -26,
+      "tempMax": 80,
+      "avgTemp": "30.4",
+      "expectedTemp": 30,
+      "tempDeviation": "0.4",
+      "precipPercent": "41.5",
+      "longestDry": 12,
+      "longestWet": 18
+    },
+    "Maritime Forest": {
+      "latitudeBand": "temperate",
+      "tempMin": 29,
+      "tempMax": 77,
+      "avgTemp": "52.9",
+      "expectedTemp": 52,
+      "tempDeviation": "0.9",
+      "precipPercent": "65.2",
+      "longestDry": 9,
+      "longestWet": 22
+    },
+    "Mediterranean Coast": {
+      "latitudeBand": "temperate",
+      "tempMin": 44,
+      "tempMax": 88,
+      "avgTemp": "66.0",
+      "expectedTemp": 65,
+      "tempDeviation": "1.0",
+      "precipPercent": "35.2",
+      "longestDry": 18,
+      "longestWet": 7
+    },
+    "Continental Prairie": {
+      "latitudeBand": "temperate",
+      "tempMin": -6,
+      "tempMax": 101,
+      "avgTemp": "51.0",
+      "expectedTemp": 51,
+      "tempDeviation": "0.0",
+      "precipPercent": "37.8",
+      "longestDry": 12,
+      "longestWet": 6
+    },
+    "Temperate Highland": {
+      "latitudeBand": "temperate",
+      "tempMin": 6,
+      "tempMax": 88,
+      "avgTemp": "46.2",
+      "expectedTemp": 45,
+      "tempDeviation": "1.2",
+      "precipPercent": "26.6",
+      "longestDry": 13,
+      "longestWet": 4
+    },
+    "Temperate Desert": {
+      "latitudeBand": "temperate",
+      "tempMin": 14,
+      "tempMax": 110,
+      "avgTemp": "59.4",
+      "expectedTemp": 55,
+      "tempDeviation": "4.4",
+      "precipPercent": "20.1",
+      "longestDry": 21,
+      "longestWet": 5
+    },
+    "Temperate Rainforest": {
+      "latitudeBand": "temperate",
+      "tempMin": 27,
+      "tempMax": 78,
+      "avgTemp": "51.3",
+      "expectedTemp": 50,
+      "tempDeviation": "1.3",
+      "precipPercent": "72.3",
+      "longestDry": 8,
+      "longestWet": 20
+    },
+    "River Valley": {
+      "latitudeBand": "temperate",
+      "tempMin": 18,
+      "tempMax": 94,
+      "avgTemp": "54.8",
+      "expectedTemp": 55,
+      "tempDeviation": "-0.2",
+      "precipPercent": "41.1",
+      "longestDry": 15,
+      "longestWet": 12
+    },
+    "Seasonal Wetland": {
+      "latitudeBand": "temperate",
+      "tempMin": 27,
+      "tempMax": 93,
+      "avgTemp": "59.6",
+      "expectedTemp": 60,
+      "tempDeviation": "-0.4",
+      "precipPercent": "47.3",
+      "longestDry": 14,
+      "longestWet": 14
+    },
+    "Maritime Islands": {
+      "latitudeBand": "temperate",
+      "tempMin": 33,
+      "tempMax": 75,
+      "avgTemp": "54.8",
+      "expectedTemp": 55,
+      "tempDeviation": "-0.2",
+      "precipPercent": "55.0",
+      "longestDry": 9,
+      "longestWet": 19
+    },
+    "Monsoon Coast": {
+      "latitudeBand": "tropical",
+      "tempMin": 65,
+      "tempMax": 95,
+      "avgTemp": "79.7",
+      "expectedTemp": 80,
+      "tempDeviation": "-0.3",
+      "precipPercent": "60.5",
+      "longestDry": 21,
+      "longestWet": 36
+    },
+    "Tropical Savanna": {
+      "latitudeBand": "tropical",
+      "tempMin": 58,
+      "tempMax": 94,
+      "avgTemp": "78.3",
+      "expectedTemp": 78,
+      "tempDeviation": "0.3",
+      "precipPercent": "35.8",
+      "longestDry": 58,
+      "longestWet": 10
+    },
+    "Tropical Desert": {
+      "latitudeBand": "tropical",
+      "tempMin": 32,
+      "tempMax": 118,
+      "avgTemp": "76.3",
+      "expectedTemp": 74,
+      "tempDeviation": "2.3",
+      "precipPercent": "13.4",
+      "longestDry": 31,
+      "longestWet": 3
+    },
+    "Tropical Highland": {
+      "latitudeBand": "tropical",
+      "tempMin": 45,
+      "tempMax": 71,
+      "avgTemp": "57.8",
+      "expectedTemp": 58,
+      "tempDeviation": "-0.2",
+      "precipPercent": "46.6",
+      "longestDry": 16,
+      "longestWet": 15
+    },
+    "Tropical Deciduous Forest": {
+      "latitudeBand": "tropical",
+      "tempMin": 52,
+      "tempMax": 97,
+      "avgTemp": "75.4",
+      "expectedTemp": 75,
+      "tempDeviation": "0.4",
+      "precipPercent": "32.7",
+      "longestDry": 18,
+      "longestWet": 8
+    },
+    "Tropical Maritime": {
+      "latitudeBand": "tropical",
+      "tempMin": 65,
+      "tempMax": 94,
+      "avgTemp": "80.1",
+      "expectedTemp": 80,
+      "tempDeviation": "0.1",
+      "precipPercent": "68.4",
+      "longestDry": 9,
+      "longestWet": 18
+    },
+    "Mangrove Coast": {
+      "latitudeBand": "tropical",
+      "tempMin": 67,
+      "tempMax": 96,
+      "avgTemp": "81.7",
+      "expectedTemp": 82,
+      "tempDeviation": "-0.3",
+      "precipPercent": "58.8",
+      "longestDry": 9,
+      "longestWet": 13
+    },
+    "Rainforest Basin": {
+      "latitudeBand": "rim",
+      "tempMin": 68,
+      "tempMax": 91,
+      "avgTemp": "80.3",
+      "expectedTemp": 80,
+      "tempDeviation": "0.3",
+      "precipPercent": "65.0",
+      "longestDry": 12,
+      "longestWet": 16
+    },
+    "Equatorial Highland": {
+      "latitudeBand": "rim",
+      "tempMin": 58,
+      "tempMax": 82,
+      "avgTemp": "70.4",
+      "expectedTemp": 70,
+      "tempDeviation": "0.4",
+      "precipPercent": "41.8",
+      "longestDry": 12,
+      "longestWet": 13
+    },
+    "Island Archipelago": {
+      "latitudeBand": "rim",
+      "tempMin": 69,
+      "tempMax": 90,
+      "avgTemp": "80.5",
+      "expectedTemp": 80,
+      "tempDeviation": "0.5",
+      "precipPercent": "60.8",
+      "longestDry": 8,
+      "longestWet": 16
+    },
+    "Volcanic Zone": {
+      "latitudeBand": "rim",
+      "tempMin": 61,
+      "tempMax": 88,
+      "avgTemp": "74.4",
+      "expectedTemp": 75,
+      "tempDeviation": "-0.6",
+      "precipPercent": "49.2",
+      "longestDry": 14,
+      "longestWet": 8
+    },
+    "Equatorial Swamp": {
+      "latitudeBand": "rim",
+      "tempMin": 71,
+      "tempMax": 96,
+      "avgTemp": "83.7",
+      "expectedTemp": 84,
+      "tempDeviation": "-0.3",
+      "precipPercent": "74.8",
+      "longestDry": 7,
+      "longestWet": 27
+    },
+    "Mountain Microclimate": {
+      "latitudeBand": "special",
+      "tempMin": 25,
+      "tempMax": 76,
+      "avgTemp": "50.2",
+      "expectedTemp": 50,
+      "tempDeviation": "0.2",
+      "precipPercent": "39.7",
+      "longestDry": 13,
+      "longestWet": 8
+    },
+    "Geothermal Zone": {
+      "latitudeBand": "special",
+      "tempMin": 31,
+      "tempMax": 78,
+      "avgTemp": "54.0",
+      "expectedTemp": 55,
+      "tempDeviation": "-1.0",
+      "precipPercent": "45.1",
+      "longestDry": 11,
+      "longestWet": 11
+    },
+    "Convergence Zone": {
+      "latitudeBand": "special",
+      "tempMin": 10,
+      "tempMax": 91,
+      "avgTemp": "52.4",
+      "expectedTemp": 55,
+      "tempDeviation": "-2.6",
+      "precipPercent": "38.3",
+      "longestDry": 15,
+      "longestWet": 12
+    },
+    "Rain Shadow": {
+      "latitudeBand": "special",
+      "tempMin": 12,
+      "tempMax": 109,
+      "avgTemp": "59.0",
+      "expectedTemp": 60,
+      "tempDeviation": "-1.0",
+      "precipPercent": "5.8",
+      "longestDry": 62,
+      "longestWet": 3
+    },
+    "Coastal Desert": {
+      "latitudeBand": "special",
+      "tempMin": 47,
+      "tempMax": 82,
+      "avgTemp": "64.4",
+      "expectedTemp": 65,
+      "tempDeviation": "-0.6",
+      "precipPercent": "11.2",
+      "longestDry": 40,
+      "longestWet": 2
+    }
+  },
+  "validationAnomalies": [],
+  "transitionAnomalies": []
+}
