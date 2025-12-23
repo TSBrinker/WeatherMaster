@@ -8,7 +8,7 @@ import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
 import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
-import { TEST_CONFIG, THRESHOLDS } from './testConfig';
+import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG } from './testConfig';
 import { validateWeather } from './weatherValidation';
 
 /**
@@ -534,4 +534,206 @@ export const runTests = async (onProgress) => {
 
   onProgress(100);
   return stats;
+};
+
+/**
+ * Get biomes that experience freezing temperatures
+ * Filters to biomes where winter mean temp is at or below the freezing threshold
+ * @returns {Array} Array of {latitudeBand, templateId, template, biomeName, winterMean}
+ */
+const getColdClimateBiomes = () => {
+  const coldBiomes = [];
+  const threshold = PRECIP_ANALYSIS_CONFIG.freezingThreshold;
+
+  for (const latitudeBand of TEST_CONFIG.latitudeBands) {
+    const templates = regionTemplates[latitudeBand];
+    if (!templates) continue;
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      const winterMean = template.parameters?.temperatureProfile?.winter?.mean;
+
+      // Include biomes where winter mean is at or below freezing
+      if (winterMean !== undefined && winterMean <= threshold) {
+        coldBiomes.push({
+          latitudeBand,
+          templateId,
+          template,
+          biomeName: template.name,
+          winterMean
+        });
+      }
+    }
+  }
+
+  return coldBiomes;
+};
+
+/**
+ * Run precipitation and snow accumulation analysis
+ * Captures hourly time-series data for cold-climate biomes over 30 days
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results with time-series data per biome
+ */
+export const runPrecipitationAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const coldBiomes = getColdClimateBiomes();
+  const hoursToAnalyze = PRECIP_ANALYSIS_CONFIG.hoursToAnalyze;
+  const startDate = { ...PRECIP_ANALYSIS_CONFIG.startDate };
+
+  const results = {
+    config: {
+      hoursAnalyzed: hoursToAnalyze,
+      startDate: `${startDate.month}/${startDate.day} Year ${startDate.year}`,
+      freezingThreshold: PRECIP_ANALYSIS_CONFIG.freezingThreshold,
+      biomesAnalyzed: coldBiomes.length
+    },
+    biomes: {},
+    summary: {
+      totalPrecipTypeChanges: 0,
+      totalRainOnSnowEvents: 0,
+      maxSnowDepthObserved: 0,
+      biomesWithFullMelt: []
+    }
+  };
+
+  const weatherGen = new WeatherGenerator();
+  const snowService = new SnowAccumulationService();
+
+  let completedHours = 0;
+  const totalOperations = coldBiomes.length * hoursToAnalyze;
+
+  for (const biomeInfo of coldBiomes) {
+    const { latitudeBand, templateId, template, biomeName, winterMean } = biomeInfo;
+
+    // Create region object
+    const region = {
+      id: `precip-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    // Initialize biome results
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      winterMean,
+      timeSeries: [],
+      stats: {
+        hoursWithPrecip: 0,
+        precipTypeBreakdown: { snow: 0, sleet: 0, rain: 0, 'freezing-rain': 0, none: 0 },
+        precipTypeChanges: 0,
+        rainOnSnowEvents: 0,
+        maxSnowDepth: 0,
+        maxMeltRate: 0,
+        hoursAboveFreezing: 0,
+        hoursBelowFreezing: 0,
+        tempRange: { min: Infinity, max: -Infinity }
+      }
+    };
+
+    let currentDate = { ...startDate };
+    let previousPrecipType = null;
+    let previousSnowDepth = 0;
+
+    // Clear caches for clean run
+    weatherGen.clearCache();
+    snowService.clearCache();
+
+    // Run hour-by-hour analysis
+    for (let hour = 0; hour < hoursToAnalyze; hour++) {
+      try {
+        const weather = weatherGen.generateWeather(region, currentDate);
+        const snowAccum = snowService.getAccumulation(region, currentDate);
+
+        const precipType = weather.precipitation ? weather.precipitationType : 'none';
+        const snowDepth = snowAccum.snowDepth;
+        const meltAmount = previousSnowDepth > snowDepth ? previousSnowDepth - snowDepth : 0;
+
+        // Track time series entry
+        const entry = {
+          hour,
+          date: `${currentDate.month}/${currentDate.day} ${currentDate.hour}:00`,
+          temperature: weather.temperature,
+          precipType,
+          precipIntensity: weather.precipitationIntensity || null,
+          snowDepth,
+          snowDepthChange: snowDepth - previousSnowDepth,
+          meltAmount: Math.round(meltAmount * 100) / 100,
+          groundCondition: snowAccum.groundCondition.name
+        };
+        biomeResult.timeSeries.push(entry);
+
+        // Update stats
+        if (weather.precipitation) {
+          biomeResult.stats.hoursWithPrecip++;
+        }
+        biomeResult.stats.precipTypeBreakdown[precipType]++;
+
+        if (previousPrecipType !== null && previousPrecipType !== precipType &&
+            previousPrecipType !== 'none' && precipType !== 'none') {
+          biomeResult.stats.precipTypeChanges++;
+        }
+
+        // Detect rain-on-snow events (rain while snow on ground)
+        if (precipType === 'rain' && previousSnowDepth >= 0.5) {
+          biomeResult.stats.rainOnSnowEvents++;
+        }
+
+        biomeResult.stats.maxSnowDepth = Math.max(biomeResult.stats.maxSnowDepth, snowDepth);
+        biomeResult.stats.maxMeltRate = Math.max(biomeResult.stats.maxMeltRate, meltAmount);
+
+        if (weather.temperature > 32) {
+          biomeResult.stats.hoursAboveFreezing++;
+        } else {
+          biomeResult.stats.hoursBelowFreezing++;
+        }
+
+        biomeResult.stats.tempRange.min = Math.min(biomeResult.stats.tempRange.min, weather.temperature);
+        biomeResult.stats.tempRange.max = Math.max(biomeResult.stats.tempRange.max, weather.temperature);
+
+        previousPrecipType = precipType;
+        previousSnowDepth = snowDepth;
+
+      } catch (error) {
+        biomeResult.timeSeries.push({
+          hour,
+          date: `${currentDate.month}/${currentDate.day} ${currentDate.hour}:00`,
+          error: error.message
+        });
+      }
+
+      currentDate = advanceDate(currentDate, 1);
+      completedHours++;
+
+      // Update progress every 50 hours
+      if (completedHours % 50 === 0) {
+        onProgress((completedHours / totalOperations) * 100);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    // Check for complete melt events (had snow, then went to 0)
+    const hadSignificantSnow = biomeResult.stats.maxSnowDepth >= 5;
+    const endedWithNoSnow = biomeResult.timeSeries[biomeResult.timeSeries.length - 1]?.snowDepth < 0.5;
+    if (hadSignificantSnow && endedWithNoSnow) {
+      results.summary.biomesWithFullMelt.push(biomeName);
+    }
+
+    // Update summary stats
+    results.summary.totalPrecipTypeChanges += biomeResult.stats.precipTypeChanges;
+    results.summary.totalRainOnSnowEvents += biomeResult.stats.rainOnSnowEvents;
+    results.summary.maxSnowDepthObserved = Math.max(
+      results.summary.maxSnowDepthObserved,
+      biomeResult.stats.maxSnowDepth
+    );
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  onProgress(100);
+  return results;
 };

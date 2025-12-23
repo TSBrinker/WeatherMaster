@@ -18,6 +18,21 @@ export const TEST_CONFIG = {
   }
 };
 
+/**
+ * Configuration for precipitation/accumulation analysis
+ * Used to diagnose snow accumulation and melt rate issues
+ */
+export const PRECIP_ANALYSIS_CONFIG = {
+  // Duration of the analysis in hours (30 days = 720 hours)
+  hoursToAnalyze: 720,
+  // Start in mid-winter (January 15) for maximum cold weather exposure
+  startDate: { year: 1, month: 1, day: 15, hour: 0 },
+  // Only analyze biomes where winter mean temp is at or below this threshold
+  freezingThreshold: 32,
+  // Temperature threshold for snow vs rain transitions
+  precipTransitionZone: { low: 28, high: 38 }
+};
+
 export const THRESHOLDS = {
   temperature: { min: -100, max: 150 },
   humidity: { min: 0, max: 100 },

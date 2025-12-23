@@ -73,3 +73,52 @@ export const downloadProblemsReport = (results) => {
   a.click();
   URL.revokeObjectURL(url);
 };
+
+/**
+ * Download precipitation analysis results as JSON
+ * @param {Object} results - Precipitation analysis results object
+ */
+export const downloadPrecipAnalysis = (results) => {
+  if (!results) return;
+
+  const data = JSON.stringify(results, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `precip-analysis-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Download precipitation analysis summary (without full time-series)
+ * @param {Object} results - Precipitation analysis results object
+ */
+export const downloadPrecipSummary = (results) => {
+  if (!results) return;
+
+  const summaryReport = {
+    config: results.config,
+    summary: results.summary,
+    biomeStats: Object.fromEntries(
+      Object.entries(results.biomes).map(([name, data]) => [
+        name,
+        {
+          latitudeBand: data.latitudeBand,
+          winterMean: data.winterMean,
+          stats: data.stats
+        }
+      ])
+    )
+  };
+
+  const data = JSON.stringify(summaryReport, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `precip-summary-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
