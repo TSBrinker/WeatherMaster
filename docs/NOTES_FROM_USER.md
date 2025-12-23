@@ -5,3 +5,4 @@ Here is where I'll stow some thoughts so I don't interrupt you while you're work
 - THis has been noted, but logging here that it's still in progress: the Feels Like portion of the main display is still changing the box height as it adds and removes content
 - Can we try more descriptive words for the condition in the main display? Currently it says "mist," I'm curious about "misty." Or "Heavy snow" vs "Snowing Heavily".
 - In the same vein, under druidcraft it doubles up on the descriptors. Heavy snow (snow). Sleet (sleet). Rain (rain)
+- i'm curious about the background color of the main display, shifting via a fade transition. It would have to be configured in a way that didn't break if the transition was triggered again for the first one had finished, and that may be difficult. But it's on my interest list. 
