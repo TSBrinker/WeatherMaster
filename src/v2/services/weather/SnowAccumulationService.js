@@ -19,7 +19,7 @@
  */
 
 import { WeatherGenerator } from './WeatherGenerator';
-import { GroundTemperatureService } from './GroundTemperatureService';
+import { GroundTemperatureService, GROUND_TYPES } from './GroundTemperatureService';
 import { advanceDate } from '../../utils/dateUtils';
 
 /**
@@ -219,17 +219,32 @@ export class SnowAccumulationService {
       // Use GROUND temperature for melt calculations, not air temperature
       // This prevents brief warm spells from causing massive snow loss
 
+      // Get ground type melt modifier (sand melts fast, permafrost slow)
+      const groundTypeName = groundTempData.groundType;
+      const groundTypeData = GROUND_TYPES[groundTypeName] || GROUND_TYPES.soil;
+      const meltRateModifier = groundTypeData.meltRateModifier || 1.0;
+
+      // Get dryAir factor from region for enhanced sublimation/solar melt (Denver effect)
+      const dryAir = region.climate?.specialFactors?.dryAir ||
+                     region.specialFactors?.dryAir || 0;
+
       if (groundTemp > 32 && (snowDepth > 0 || iceAccumulation > 0)) {
         const degreesAboveFreezing = groundTemp - 32;
 
-        // Base melt rate (using ground temp)
-        let snowMelt = degreesAboveFreezing * MELT_CONSTANTS.snowMeltPerDegreeHour;
-        let iceMelt = degreesAboveFreezing * MELT_CONSTANTS.iceMeltPerDegreeHour;
+        // Base melt rate (using ground temp) * ground type modifier
+        let snowMelt = degreesAboveFreezing * MELT_CONSTANTS.snowMeltPerDegreeHour * meltRateModifier;
+        let iceMelt = degreesAboveFreezing * MELT_CONSTANTS.iceMeltPerDegreeHour * meltRateModifier;
 
         // Daytime solar bonus
         if (isDaytime) {
           snowMelt *= MELT_CONSTANTS.dayTimeMeltMultiplier;
           iceMelt *= MELT_CONSTANTS.dayTimeMeltMultiplier;
+
+          // Dry air enhances solar melt (Denver effect: intense sun + dry air = fast melt)
+          // Up to 40% faster melt in very dry climates during daytime
+          if (dryAir > 0) {
+            snowMelt *= (1 + dryAir * 0.4);
+          }
         }
 
         // Rain-on-snow event - effect modulated by ground temperature
@@ -261,10 +276,13 @@ export class SnowAccumulationService {
 
       // Sublimation in very cold, dry conditions (slow snow loss)
       // Uses air temperature since sublimation is an atmospheric process
+      // Dry air climates have enhanced sublimation
       const airTemp = weather.temperature;
-      if (airTemp < 20 && weather.humidity < 40 && snowDepth > 0) {
-        snowDepth = Math.max(0, snowDepth - MELT_CONSTANTS.sublimationRate);
-        snowWaterEquivalent = Math.max(0, snowWaterEquivalent - (MELT_CONSTANTS.sublimationRate / 10));
+      const sublimationThreshold = dryAir > 0.5 ? 25 : 20; // Dry climates sublimate at higher temps
+      const sublimationRate = MELT_CONSTANTS.sublimationRate * (1 + dryAir * 0.5); // Up to 50% faster
+      if (airTemp < sublimationThreshold && weather.humidity < 40 && snowDepth > 0) {
+        snowDepth = Math.max(0, snowDepth - sublimationRate);
+        snowWaterEquivalent = Math.max(0, snowWaterEquivalent - (sublimationRate / 10));
       }
 
       // === COMPACTION ===

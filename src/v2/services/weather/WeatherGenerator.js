@@ -25,9 +25,11 @@ const CONDITIONS = {
   LIGHT_RAIN: 'Light Rain',
   RAIN: 'Rain',
   HEAVY_RAIN: 'Heavy Rain',
+  THUNDERSTORM: 'Thunderstorm',
   LIGHT_SNOW: 'Light Snow',
   SNOW: 'Snow',
   HEAVY_SNOW: 'Heavy Snow',
+  BLIZZARD: 'Blizzard',
   SLEET: 'Sleet',
   FREEZING_RAIN: 'Freezing Rain',
   FOG: 'Fog',
@@ -94,19 +96,55 @@ export class WeatherGenerator {
     const feelsLike = Math.round(baseFeelsLike + atmosphericContribution);
 
     // Determine sky condition and final weather condition
-    const condition = this.determineCondition(region, pattern, precipitation, temperature, humidity, date);
+    const condition = this.determineCondition(region, pattern, precipitation, temperature, humidity, date, wind);
+
+    // Apply storm wind boost for thunderstorms and blizzards
+    // Base: 3d6 (3-18 mph) for all storms - represents basic gustiness
+    // Bonus: tornadoRisk × 6d6 for thunderstorms in tornado-prone regions
+    let finalWindSpeed = wind.speed;
+    if (condition === CONDITIONS.THUNDERSTORM || condition === CONDITIONS.BLIZZARD) {
+      const stormWindSeed = generateSeed(region.id, date, `stormwind-${date.hour}`);
+      const stormWindRng = new SeededRandom(stormWindSeed);
+
+      // Base boost: 3d6 (range 3-18, avg 10.5) - all storms are gusty
+      let windBoost = 0;
+      for (let i = 0; i < 3; i++) {
+        windBoost += 1 + Math.floor(stormWindRng.next() * 6);
+      }
+
+      // Tornado risk bonus for thunderstorms only (not blizzards)
+      // tornadoRisk × 6d6 represents intense updrafts/downdrafts in tornado-prone regions
+      if (condition === CONDITIONS.THUNDERSTORM) {
+        const params = region.climate || region.parameters || {};
+        const tornadoRisk = params.specialFactors?.tornadoRisk || 0;
+        if (tornadoRisk > 0) {
+          // Roll 6d6, then scale by tornadoRisk (e.g., 0.5 = use ~3 of the 6 dice worth)
+          let tornadoBoost = 0;
+          for (let i = 0; i < 6; i++) {
+            tornadoBoost += 1 + Math.floor(stormWindRng.next() * 6);
+          }
+          windBoost += Math.round(tornadoBoost * tornadoRisk);
+        }
+      }
+
+      finalWindSpeed = wind.speed + windBoost;
+    }
+
+    // Create wind object with potentially boosted speed for effects
+    const effectiveWind = { speed: finalWindSpeed, direction: wind.direction };
 
     // Get visibility
     const visibility = this.atmosphericService.getVisibility(cloudCover, precipitation, humidity);
 
-    // Generate any weather effects
-    const effects = this.generateEffects(condition, wind, temperature, precipitation);
+    // Generate any weather effects (including look-ahead for approaching storms)
+    // Use effectiveWind so storm severity thresholds account for boosted wind
+    const effects = this.generateEffects(condition, effectiveWind, temperature, precipitation, region, date);
 
     const weather = {
       temperature,
       feelsLike,
       condition,
-      windSpeed: wind.speed,
+      windSpeed: finalWindSpeed,
       windDirection: wind.direction,
       humidity,
       precipitation: precipitation.isOccurring,
@@ -296,22 +334,34 @@ export class WeatherGenerator {
    * @param {number} temperature - Temperature
    * @param {number} humidity - Humidity
    * @param {Object} date - Game date
+   * @param {Object} wind - Wind data {speed, direction}
    * @returns {string} Weather condition
    */
-  determineCondition(region, pattern, precipitation, temperature, humidity, date) {
+  determineCondition(region, pattern, precipitation, temperature, humidity, date, wind) {
     // Precipitation conditions take precedence
     if (precipitation.isOccurring) {
       const { type, intensity } = precipitation;
 
       if (type === 'rain') {
         if (intensity === 'light') return CONDITIONS.LIGHT_RAIN;
-        if (intensity === 'heavy') return CONDITIONS.HEAVY_RAIN;
+        if (intensity === 'heavy') {
+          // Check for thunderstorm conditions
+          const thunderstormCondition = this.checkThunderstorm(region, date, temperature, wind);
+          if (thunderstormCondition) return thunderstormCondition;
+          return CONDITIONS.HEAVY_RAIN;
+        }
         return CONDITIONS.RAIN;
       }
 
       if (type === 'snow') {
         if (intensity === 'light') return CONDITIONS.LIGHT_SNOW;
-        if (intensity === 'heavy') return CONDITIONS.HEAVY_SNOW;
+        if (intensity === 'heavy') {
+          // Check for blizzard conditions: heavy snow + wind >= 30 mph + temp <= 20°F
+          if (wind.speed >= 30 && temperature <= 20) {
+            return CONDITIONS.BLIZZARD;
+          }
+          return CONDITIONS.HEAVY_SNOW;
+        }
         return CONDITIONS.SNOW;
       }
 
@@ -339,14 +389,66 @@ export class WeatherGenerator {
   }
 
   /**
+   * Check if heavy rain should be a thunderstorm
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @param {number} temperature - Current temperature
+   * @param {Object} wind - Wind data {speed, direction}
+   * @returns {string|null} Thunderstorm condition or null
+   */
+  checkThunderstorm(region, date, temperature, wind) {
+    const params = region.climate || region.parameters || {};
+    const specialFactors = params.specialFactors || {};
+    const thunderstormFactor = specialFactors.thunderstorms || 0;
+
+    // No thunderstorm potential in this region
+    if (thunderstormFactor <= 0) return null;
+
+    // Thunderstorms need warm air for convection (at least 55°F)
+    if (temperature < 55) return null;
+
+    // Use seeded random for deterministic thunderstorm occurrence
+    const seed = generateSeed(region.id, date, 'thunderstorm');
+    const rng = new SeededRandom(seed);
+
+    // Base chance from thunderstorm factor (0.6-0.7 in templates)
+    let chance = thunderstormFactor * 0.6;
+
+    // Afternoon/evening bonus (peak convection time: 2pm-8pm)
+    if (date.hour >= 14 && date.hour <= 20) {
+      chance += 0.15;
+    }
+
+    // Summer months boost (more unstable air)
+    const month = date.month;
+    if (month >= 5 && month <= 8) {
+      chance += 0.1;
+    }
+
+    // Higher temperature = more convective energy
+    if (temperature >= 80) {
+      chance += 0.1;
+    }
+
+    // Roll for thunderstorm
+    if (rng.next() < chance) {
+      return CONDITIONS.THUNDERSTORM;
+    }
+
+    return null;
+  }
+
+  /**
    * Generate weather effects that impact gameplay
    * @param {string} condition - Weather condition
    * @param {Object} wind - Wind data
    * @param {number} temperature - Temperature
    * @param {Object} precipitation - Precipitation data
+   * @param {Object} region - Region data (for look-ahead)
+   * @param {Object} date - Current date (for look-ahead)
    * @returns {Array} Array of effect strings
    */
-  generateEffects(condition, wind, temperature, precipitation) {
+  generateEffects(condition, wind, temperature, precipitation, region, date) {
     const effects = [];
 
     // Temperature effects
@@ -387,7 +489,88 @@ export class WeatherGenerator {
       effects.push('Heavy Fog: Visibility severely limited');
     }
 
+    // Thunderstorm effects - severity tied to wind speed
+    if (condition === CONDITIONS.THUNDERSTORM) {
+      effects.push('Thunderstorm: Lightning risk, seek shelter');
+      effects.push('Disadvantage on Perception checks (thunder)');
+      if (wind.speed >= 40) {
+        effects.push('Severe Thunderstorm: Dangerous winds, flying debris');
+      } else if (wind.speed >= 25) {
+        effects.push('Strong Thunderstorm: Gusty winds');
+      }
+    }
+
+    // Blizzard effects
+    if (condition === CONDITIONS.BLIZZARD) {
+      effects.push('Blizzard: Whiteout conditions, visibility near zero');
+      effects.push('Travel extremely dangerous without shelter');
+      effects.push('Frostbite risk: CON save every hour exposed');
+    }
+
+    // Distant thunder - look ahead for approaching thunderstorms
+    if (condition !== CONDITIONS.THUNDERSTORM && region && date) {
+      const distantThunder = this.checkDistantThunder(region, date, temperature);
+      if (distantThunder) {
+        effects.push(distantThunder);
+      }
+    }
+
     return effects;
+  }
+
+  /**
+   * Check if a thunderstorm is approaching in the next 1-2 hours
+   * @param {Object} region - Region data
+   * @param {Object} date - Current date
+   * @param {number} currentTemp - Current temperature
+   * @returns {string|null} Distant thunder effect or null
+   */
+  checkDistantThunder(region, date, currentTemp) {
+    const params = region.climate || region.parameters || {};
+    const specialFactors = params.specialFactors || {};
+    const thunderstormFactor = specialFactors.thunderstorms || 0;
+
+    // No thunderstorm potential in this region
+    if (thunderstormFactor <= 0) return null;
+
+    // Check next 1-2 hours for thunderstorms
+    for (let hoursAhead = 1; hoursAhead <= 2; hoursAhead++) {
+      const futureHour = (date.hour + hoursAhead) % 24;
+      const futureDay = date.hour + hoursAhead >= 24 ? date.day + 1 : date.day;
+      const futureDate = { ...date, hour: futureHour, day: futureDay };
+
+      // Generate future weather to check for thunderstorm
+      // Use a simpler check to avoid recursion - just check if conditions favor thunderstorm
+      const seed = generateSeed(region.id, futureDate, 'thunderstorm');
+      const rng = new SeededRandom(seed);
+
+      // Estimate future temperature (assume similar to current for simplicity)
+      const estimatedTemp = currentTemp;
+
+      if (estimatedTemp < 55) continue;
+
+      // Calculate chance (same logic as checkThunderstorm)
+      let chance = thunderstormFactor * 0.6;
+      if (futureHour >= 14 && futureHour <= 20) chance += 0.15;
+      if (date.month >= 5 && date.month <= 8) chance += 0.1;
+      if (estimatedTemp >= 80) chance += 0.1;
+
+      // Also need precipitation to occur - check pattern
+      const pattern = this.patternService.getCurrentPattern(region, futureDate);
+      const precipSeed = generateSeed(region.id, futureDate, 'precipitation');
+      const willPrecipitate = this.patternService.shouldPrecipitate(pattern, region, futureDate, precipSeed);
+
+      if (willPrecipitate && rng.next() < chance) {
+        // Thunderstorm is coming!
+        if (hoursAhead === 1) {
+          return 'Distant thunder heard to the horizon';
+        } else {
+          return 'Faint rumbles of thunder in the distance';
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

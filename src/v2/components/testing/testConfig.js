@@ -8,7 +8,7 @@ export const TEST_CONFIG = {
   daysToTest: 365,
   hoursToTest: [0, 6, 12, 18], // Midnight, dawn, noon, dusk
   // Flat disc world latitude bands (center to edge)
-  latitudeBands: ['central', 'subarctic', 'temperate', 'tropical', 'rim', 'special'],
+  latitudeBands: ['polar', 'subarctic', 'boreal', 'temperate', 'subtropical', 'tropical', 'special'],
   // Seasonal transition windows (±5 days around each boundary)
   seasonalTransitionDays: {
     springEquinox: { center: 80, start: 75, end: 85 },
@@ -31,6 +31,24 @@ export const PRECIP_ANALYSIS_CONFIG = {
   freezingThreshold: 32,
   // Temperature threshold for snow vs rain transitions
   precipTransitionZone: { low: 28, high: 38 }
+};
+
+/**
+ * Configuration for thunderstorm analysis
+ * Tests thunderstorm-prone biomes during peak conditions
+ */
+export const THUNDERSTORM_CONFIG = {
+  // Test summer months (peak thunderstorm season)
+  startMonth: 6,
+  startDay: 1,
+  // 60 days covers June-July peak season
+  daysToAnalyze: 60,
+  // Focus on afternoon hours (peak convection)
+  hoursToTest: [12, 14, 16, 18, 20],
+  // Minimum thunderstorm factor to include biome
+  minThunderstormFactor: 0.5,
+  // Number of years to test (aggregates results for statistical validity)
+  yearsToTest: 5
 };
 
 export const THRESHOLDS = {

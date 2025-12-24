@@ -88,7 +88,7 @@ export const LATITUDE_BAND_RADIUS = {
   boreal:     3000,  // Midpoint of 2500-3500 mi (northern forests, snow persists)
   temperate:  4000,  // Midpoint of 3500-4500 mi (classic four seasons)
   subtropical: 5000, // Midpoint of 4500-5500 mi (mild winters)
-  tropical:   6250   // Midpoint of 5500-7000 mi (warm, humid paradise)
+  tropical:   6100   // Midpoint of 5500-6700 mi (warm, humid paradise)
 };
 
 /**
@@ -101,7 +101,7 @@ export const LATITUDE_BAND_RANGES = {
   boreal:     [2500, 3500],  // Northern forests, snow persists through winter
   temperate:  [3500, 4500],  // Classic four seasons, snow comes and goes
   subtropical: [4500, 5500], // Mild winters, warm summers, rare snow
-  tropical:   [5500, 7000]   // Warm and humid, fed by rim glacial melt
+  tropical:   [5500, 6700]   // Warm and humid, fed by rim glacial melt (6700 = habitable edge)
 };
 
 // ===== OBSERVER POSITION DEFAULTS =====

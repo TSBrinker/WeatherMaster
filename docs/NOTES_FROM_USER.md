@@ -1,9 +1,4 @@
 Here is where I'll stow some thoughts so I don't interrupt you while you're working. Once you've acknowledged a note, please migrate it to the appropriate place and delete it here (do not delete these instructions, please). This is how I know that the notes have been read/incorporated.
 
-- this new test should also have a button to export the data from that test specifically. maybe even a 'copy to clipboard' so I can get it into a doc here more easily, rather than saving, importing, renaming, etc.
-- wait what does 'highBiodiversity' mean in the biome template? Are there template factors that we have declared but aren't doing anything with?
-- i noticed one says 'high diurnal variation'. v1 tried to calculate temperature based on the sun's angle and daylight time. I wonder if it's worth trying to recreate this with the flat earth physics, since we have concrete numbers for the sun's illumination radius and distance from the disc at any point throughout the year. We'd just have to settle the actual heating physics I think? Maybe that's TOO crunchy. But I'm curious.
-- Wait. DO we have the calculations for the daylight time and distance? Or is does that live solely in the other visualization app that Claude put together? Maybe I need to bring that file in for examination...
-- How are we currently calculating rain and snow amounts? Is it random based on heavy vs light categories? that's probably fine and makes perfect sense, now that I'm noting it.
-- Noted - I'll export the summary from now on. Cause yeah, that's a HUGE file.
-- RE: snow accumulation, I'm thinking of Denver CO. My understanding is that snow will hit and then just kind of be gone the next day. I wonder why that is.
+- Currently, the polar region extends 1500 miles from the center. I'm thinking the first 500 is the magical twilight lands, which could probably just be its own fixed instance in the manager. This would leave Polar being 500-1500 miles, rather than starting at 0. - confirm, has this been implemented? if so, remove please :)
+- Biomes suggested by slate - For other bands: 4. Humid Subtropical (in subtropical) - the American South, Tokyo, Buenos Aires - hot humid summers, mild winters 5. Steppe (could go temperate or subtropical) - semi-arid grassland, drier than prairie

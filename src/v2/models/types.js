@@ -28,7 +28,7 @@
  * @property {string} id - Unique identifier (uuid)
  * @property {string} worldId - Parent world ID
  * @property {string} name - Region name
- * @property {string} latitudeBand - 'central' | 'subarctic' | 'temperate' | 'tropical' | 'rim'
+ * @property {string} latitudeBand - 'polar' | 'subarctic' | 'boreal' | 'temperate' | 'subtropical' | 'tropical'
  * @property {ClimateProfile} climate - Climate parameters
  * @property {string} [templateId] - Template used to create (if any)
  * @property {Location[]} locations - Locations within this region

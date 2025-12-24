@@ -113,14 +113,14 @@ export const WorldProvider = ({ children }) => {
     return newDate;
   }, [activeWorldId, updateWorldTime]);
 
-  const jumpToDate = useCallback((month, day) => {
+  const jumpToDate = useCallback((year, month, day, hour = 12) => {
     if (!activeWorld) return;
 
     const newDate = {
-      year: activeWorld.currentDate.year,
+      year: year ?? activeWorld.currentDate.year,
       month,
       day,
-      hour: 0
+      hour
     };
     updateWorldTime(newDate);
     return newDate;

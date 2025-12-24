@@ -20,46 +20,55 @@ import { WeatherGenerator } from './WeatherGenerator';
 import { advanceDate } from '../../utils/dateUtils';
 
 /**
- * Ground type thermal properties
+ * Ground type thermal and melt properties
  * - thermalInertia: How much the ground resists temperature change (0-1)
  *   Higher values = more lag, slower response to air temp changes
  * - effectiveLagHours: Approximate hours of temperature lag
+ * - meltRateModifier: Multiplier for snow melt rate (1.0 = baseline)
+ *   < 1.0 = slower melt (frozen ground, wet substrates)
+ *   > 1.0 = faster melt (absorbs solar heat, dry conditions)
  */
 const GROUND_TYPES = {
   permafrost: {
     thermalInertia: 0.98,
     effectiveLagHours: 72,
     minTemp: -40,  // Permafrost can get very cold
+    meltRateModifier: 0.5,  // Frozen substrate resists melting
     description: 'Permanently frozen ground'
   },
   rock: {
     thermalInertia: 0.95,
     effectiveLagHours: 48,
     minTemp: null,
+    meltRateModifier: 1.3,  // Dark rock absorbs solar heat
     description: 'Bedrock and rocky terrain'
   },
   clay: {
     thermalInertia: 0.90,
     effectiveLagHours: 36,
     minTemp: null,
+    meltRateModifier: 0.85,  // Retains moisture, stays cooler
     description: 'Clay-rich soil, river valleys'
   },
   soil: {
     thermalInertia: 0.85,
     effectiveLagHours: 24,
     minTemp: null,
+    meltRateModifier: 1.0,  // Baseline melt rate
     description: 'Standard soil, forests, grasslands'
   },
   peat: {
     thermalInertia: 0.85,
     effectiveLagHours: 24,
     minTemp: null,
+    meltRateModifier: 0.7,  // Wet, insulating, slow to warm
     description: 'Peat bogs and muskeg'
   },
   sand: {
     thermalInertia: 0.70,
     effectiveLagHours: 12,
     minTemp: null,
+    meltRateModifier: 1.5,  // Fast thermal response, low moisture retention
     description: 'Sandy soil, deserts, beaches'
   }
 };

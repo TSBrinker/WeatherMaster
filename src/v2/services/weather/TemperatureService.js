@@ -5,6 +5,7 @@
 
 import { HOURS_PER_DAY } from '../../models/constants';
 import { generateSeed, SeededRandom } from '../../utils/seedGenerator';
+import SunriseSunsetService from '../celestial/SunriseSunsetService';
 
 // Calendar constants for the game world
 const DAYS_PER_MONTH = 30;
@@ -153,6 +154,7 @@ export class TemperatureService {
 
   /**
    * Get daily temperature variation (warmer during day, cooler at night)
+   * Uses actual sunrise/sunset times from SunriseSunsetService
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @param {Object} tempProfile - Temperature profile
@@ -165,13 +167,33 @@ export class TemperatureService {
     // Daily temperature variation is typically ±50% of seasonal variance
     const dailyRange = variance * 0.5;
 
-    // Temperature peaks around 3 PM (hour 15), minimum around 5 AM (hour 5)
     const hoursSinceMidnight = date.hour;
 
-    // Shift cosine wave so minimum is at hour 5, maximum at hour 15
-    const peakHour = 15;
-    const minHour = 5;
-    const hourShift = (minHour + peakHour) / 2; // Center at 10
+    // Get actual sunrise/sunset times for this region and date
+    const latitudeBand = region.latitudeBand || 'temperate';
+    const sunData = SunriseSunsetService.getSunriseSunset(latitudeBand, date);
+
+    let minHour, maxHour;
+
+    if (sunData.sunriseHour !== null && sunData.sunsetHour !== null) {
+      // Normal day: min temp at sunrise, max temp ~3 hours after solar noon
+      minHour = sunData.sunriseHour;
+      const solarNoon = (sunData.sunriseHour + sunData.sunsetHour) / 2;
+      maxHour = solarNoon + 3; // Thermal lag: max temp ~3 hours after solar noon
+      if (maxHour >= HOURS_PER_DAY) maxHour -= HOURS_PER_DAY;
+    } else if (sunData.dayLengthHours >= 24) {
+      // Polar day (24hr sunlight): use gentle variation, warmest at "noon" equivalent
+      // Sun is always up, but still circles - use 12hr cycle centered on midnight sun
+      minHour = 0;  // Coolest at midnight (sun at lowest point in sky circuit)
+      maxHour = 12; // Warmest at noon (sun at highest point)
+    } else {
+      // Polar night (no sunrise): minimal variation, always cold
+      // Return reduced variation since there's no solar heating cycle
+      return dailyRange * 0.2 * Math.cos((hoursSinceMidnight / HOURS_PER_DAY) * 2 * Math.PI);
+    }
+
+    // Calculate center point for cosine wave
+    const hourShift = (minHour + maxHour) / 2;
 
     const dailyProgress = ((hoursSinceMidnight - hourShift) / HOURS_PER_DAY) * 2 * Math.PI;
     const dailyVariation = dailyRange * Math.cos(dailyProgress);

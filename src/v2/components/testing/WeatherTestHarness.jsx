@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Container, Button, Card, ProgressBar, Alert, Table, Badge } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow } from 'react-icons/bs';
+import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form } from 'react-bootstrap';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
-import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG } from './testConfig';
-import { runTests, runPrecipitationAnalysis } from './testRunner';
+import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG } from './testConfig';
+import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis } from './testRunner';
 import { downloadFullResults, downloadProblemsReport, downloadPrecipAnalysis, downloadPrecipSummary } from './resultExporters';
 import {
   BiomeStatsTable,
@@ -37,6 +37,16 @@ const getTotalBiomeCount = () => {
 };
 
 /**
+ * Count templates marked as new
+ */
+const getNewBiomeCount = () => {
+  return Object.values(regionTemplates).reduce(
+    (sum, band) => sum + Object.values(band).filter(t => t.isNew).length,
+    0
+  );
+};
+
+/**
  * WeatherTestHarness - Comprehensive weather generation testing
  *
  * Tests all biomes across a full year with validation
@@ -45,14 +55,22 @@ const WeatherTestHarness = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState(null);
+  const [newOnly, setNewOnly] = useState(false);
 
   // Precipitation analysis state
   const [isPrecipRunning, setIsPrecipRunning] = useState(false);
   const [precipProgress, setPrecipProgress] = useState(0);
   const [precipResults, setPrecipResults] = useState(null);
 
+  // Thunderstorm analysis state
+  const [isThunderstormRunning, setIsThunderstormRunning] = useState(false);
+  const [thunderstormProgress, setThunderstormProgress] = useState(0);
+  const [thunderstormResults, setThunderstormResults] = useState(null);
+
   const totalBiomes = getTotalBiomeCount();
-  const totalTests = totalBiomes * TEST_CONFIG.daysToTest * TEST_CONFIG.hoursToTest.length;
+  const newBiomes = getNewBiomeCount();
+  const activeBiomes = newOnly ? newBiomes : totalBiomes;
+  const totalTests = activeBiomes * TEST_CONFIG.daysToTest * TEST_CONFIG.hoursToTest.length;
 
   const handleRunTests = async () => {
     setIsRunning(true);
@@ -60,7 +78,7 @@ const WeatherTestHarness = () => {
 
     const testResults = await runTests((progressPercent) => {
       setProgress(progressPercent);
-    });
+    }, { newOnly });
 
     setResults(testResults);
     setIsRunning(false);
@@ -84,6 +102,18 @@ const WeatherTestHarness = () => {
   const handleExportPrecipFull = () => downloadPrecipAnalysis(precipResults);
   const handleExportPrecipSummary = () => downloadPrecipSummary(precipResults);
 
+  const handleRunThunderstormAnalysis = async () => {
+    setIsThunderstormRunning(true);
+    setThunderstormProgress(0);
+
+    const analysisResults = await runThunderstormAnalysis((progressPercent) => {
+      setThunderstormProgress(progressPercent);
+    });
+
+    setThunderstormResults(analysisResults);
+    setIsThunderstormRunning(false);
+  };
+
   return (
     <Container className="mt-5">
       {/* Back to App button */}
@@ -106,16 +136,28 @@ const WeatherTestHarness = () => {
         <Card.Body>
           <h5>Test Configuration</h5>
           <ul>
-            <li>Biomes: All {totalBiomes} templates</li>
+            <li>Biomes: {newOnly ? `${newBiomes} new templates` : `All ${totalBiomes} templates`}</li>
             <li>Days: {TEST_CONFIG.daysToTest} (full year)</li>
             <li>Hours per day: {TEST_CONFIG.hoursToTest.length} (midnight, 6am, noon, 6pm)</li>
             <li>Total tests: ~{totalTests.toLocaleString()}</li>
           </ul>
 
+          {newBiomes > 0 && (
+            <Form.Check
+              type="checkbox"
+              id="new-only-filter"
+              label={<span>New templates only <Badge bg="info">{newBiomes}</Badge></span>}
+              checked={newOnly}
+              onChange={(e) => setNewOnly(e.target.checked)}
+              className="mb-3"
+              disabled={isRunning}
+            />
+          )}
+
           <Button
             variant="primary"
             onClick={handleRunTests}
-            disabled={isRunning}
+            disabled={isRunning || (newOnly && newBiomes === 0)}
             size="lg"
           >
             {isRunning ? 'Running Tests...' : 'Run Test Harness'}
@@ -124,7 +166,7 @@ const WeatherTestHarness = () => {
           {isRunning && (
             <div className="mt-3">
               <ProgressBar now={progress} label={`${progress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">This may take 10-30 seconds...</small>
+              <small className="text-muted mt-2">{newOnly ? 'Testing new templates...' : 'This may take 10-30 seconds...'}</small>
             </div>
           )}
         </Card.Body>
@@ -162,6 +204,124 @@ const WeatherTestHarness = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Thunderstorm Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#ffc107' }}>
+        <Card.Body>
+          <h5><BsLightningCharge className="me-2" />Thunderstorm Analysis</h5>
+          <p className="text-muted">
+            Tests thunderstorm generation in biomes with thunderstorm potential during summer afternoons.
+          </p>
+          <ul>
+            <li>Duration: {THUNDERSTORM_CONFIG.daysToAnalyze} days (June-July)</li>
+            <li>Hours: Afternoon peak ({THUNDERSTORM_CONFIG.hoursToTest.join(', ')}:00)</li>
+            <li>Tracks: Thunderstorm rate, severity, conversion from heavy rain</li>
+          </ul>
+
+          <Button
+            variant="warning"
+            onClick={handleRunThunderstormAnalysis}
+            disabled={isThunderstormRunning || isRunning || isPrecipRunning}
+            size="lg"
+          >
+            <BsLightningCharge className="me-2" />
+            {isThunderstormRunning ? 'Analyzing...' : 'Run Thunderstorm Analysis'}
+          </Button>
+
+          {isThunderstormRunning && (
+            <div className="mt-3">
+              <ProgressBar variant="warning" now={thunderstormProgress} label={`${thunderstormProgress.toFixed(1)}%`} animated />
+              <small className="text-muted mt-2">Analyzing thunderstorm-prone biomes...</small>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Thunderstorm Analysis Results */}
+      {thunderstormResults && (
+        <>
+          <Alert variant="warning">
+            <Alert.Heading><BsLightningCharge className="me-2" />Thunderstorm Analysis Complete</Alert.Heading>
+            <p className="mb-0">
+              Analyzed {thunderstormResults.config.biomesAnalyzed} thunderstorm-prone biomes over {thunderstormResults.config.daysAnalyzed} days.
+              Overall thunderstorm rate: <strong>{thunderstormResults.summary.overallThunderstormRate.toFixed(1)}%</strong> of test hours.
+            </p>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Thunderstorm Summary</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Total Thunderstorm Hours</td>
+                    <td><Badge bg="warning" text="dark">{thunderstormResults.summary.totalThunderstorms}</Badge></td>
+                  </tr>
+                  <tr>
+                    <td>Total Heavy Rain Hours (non-thunderstorm)</td>
+                    <td>{thunderstormResults.summary.totalHeavyRain}</td>
+                  </tr>
+                  <tr>
+                    <td>Overall Thunderstorm Rate</td>
+                    <td>{thunderstormResults.summary.overallThunderstormRate.toFixed(1)}%</td>
+                  </tr>
+                  <tr>
+                    <td>Most Active Biome</td>
+                    <td>
+                      {thunderstormResults.summary.biomeWithMostThunderstorms}
+                      {' '}({thunderstormResults.summary.maxThunderstormsInBiome} hours)
+                    </td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              <h6 className="mt-4">Per-Biome Statistics</h6>
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered size="sm">
+                  <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Factor</th>
+                      <th>T-Storms</th>
+                      <th>Rate</th>
+                      <th>Conversion</th>
+                      <th>Avg Temp</th>
+                      <th>Severity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(thunderstormResults.biomes).map(([name, data]) => (
+                      <tr key={name}>
+                        <td>{name}</td>
+                        <td>{data.thunderstormFactor}</td>
+                        <td>
+                          <Badge bg={data.stats.thunderstormHours > 0 ? 'warning' : 'secondary'} text="dark">
+                            {data.stats.thunderstormHours}
+                          </Badge>
+                        </td>
+                        <td>{data.stats.thunderstormRate.toFixed(1)}%</td>
+                        <td>{data.stats.conversionRate.toFixed(0)}%</td>
+                        <td>{data.stats.avgTempDuringThunderstorms || '-'}°F</td>
+                        <td>
+                          {data.stats.severityBreakdown.severe > 0 && (
+                            <Badge bg="danger" className="me-1">{data.stats.severityBreakdown.severe} severe</Badge>
+                          )}
+                          {data.stats.severityBreakdown.strong > 0 && (
+                            <Badge bg="warning" text="dark" className="me-1">{data.stats.severityBreakdown.strong} strong</Badge>
+                          )}
+                          {data.stats.severityBreakdown.normal > 0 && (
+                            <Badge bg="secondary">{data.stats.severityBreakdown.normal} normal</Badge>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
 
       {/* Precipitation Analysis Results */}
       {precipResults && (

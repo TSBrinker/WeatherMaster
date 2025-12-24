@@ -26,6 +26,12 @@ import {
 } from './geometry.js';
 
 class SunriseSunsetService {
+  constructor() {
+    // Cache for sunrise/sunset calculations - keyed by "latitudeBand:month:day:θ_obs"
+    // Sunrise/sunset only depends on date (not hour), so we can cache per-day
+    this.cache = new Map();
+  }
+
   /**
    * Convert latitude band to observer distance from disc center
    * @param {string} latitudeBand - Latitude band key
@@ -163,30 +169,30 @@ class SunriseSunsetService {
   }
 
   /**
-   * Calculate sunrise and sunset hours for a given date
-   * @param {string} latitudeBand - Latitude band key
-   * @param {GameDate} gameDate - Date object {year, month, day, hour}
-   * @param {number} θ_obs - Observer angular position (default 0°)
-   * @returns {Object} Sunrise/sunset data
+   * Get cached daily sun data (sunrise/sunset hours, day length)
+   * This is the expensive calculation that only needs to run once per day per location
+   * @private
    */
-  getSunriseSunset(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE) {
+  getDailySunData(latitudeBand, gameDate, θ_obs) {
+    // Cache key doesn't include hour - sunrise/sunset is the same all day
+    const cacheKey = `${latitudeBand}:${gameDate.year}:${gameDate.month}:${gameDate.day}:${θ_obs}`;
+
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+
     const R_obs = this.getObserverRadius(latitudeBand);
-    console.log(`[SUN DEBUG] Band: ${latitudeBand}, R_obs: ${R_obs}, Date: ${gameDate.month}/${gameDate.day} ${gameDate.hour}:00`);
 
     // Special case: Disc center (R_obs = 0) is NEVER illuminated
-    if (R_obs < 100) { // Essentially at center
-      const currentDistance = this.getDistanceToSun(latitudeBand, gameDate, θ_obs);
-      const twilightLevel = this.getIlluminationState(currentDistance);
-
-      return {
+    if (R_obs < 100) {
+      const result = {
         sunriseHour: null,
         sunsetHour: null,
         dayLengthHours: 0,
-        isDaytime: false,
-        twilightLevel,
-        isPermanentNight: true,
-        distanceToSun: currentDistance
+        isPermanentNight: true
       };
+      this.cache.set(cacheKey, result);
+      return result;
     }
 
     // Find sunrise and sunset times (when sun crosses illumination radius)
@@ -196,8 +202,6 @@ class SunriseSunsetService {
     const sunsetHour = this.findDistanceCrossing(
       latitudeBand, gameDate, SUN_ILLUMINATION_RADIUS, false, θ_obs
     );
-
-    console.log(`[SUN DEBUG] Sunrise: ${sunriseHour}, Sunset: ${sunsetHour}`);
 
     // Calculate day length
     let dayLengthHours = 0;
@@ -214,18 +218,40 @@ class SunriseSunsetService {
       dayLengthHours = midnightDistance <= SUN_ILLUMINATION_RADIUS ? 24 : 0;
     }
 
-    // Get current state
+    const result = {
+      sunriseHour,
+      sunsetHour,
+      dayLengthHours,
+      isPermanentNight: false
+    };
+
+    this.cache.set(cacheKey, result);
+    return result;
+  }
+
+  /**
+   * Calculate sunrise and sunset hours for a given date
+   * @param {string} latitudeBand - Latitude band key
+   * @param {GameDate} gameDate - Date object {year, month, day, hour}
+   * @param {number} θ_obs - Observer angular position (default 0°)
+   * @returns {Object} Sunrise/sunset data
+   */
+  getSunriseSunset(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE) {
+    // Get cached daily data (the expensive part)
+    const dailyData = this.getDailySunData(latitudeBand, gameDate, θ_obs);
+
+    // Get current state (cheap - just one distance calculation)
     const currentDistance = this.getDistanceToSun(latitudeBand, gameDate, θ_obs);
     const twilightLevel = this.getIlluminationState(currentDistance);
     const isDaytime = twilightLevel === ILLUMINATION_STATE.DAYLIGHT;
 
     return {
-      sunriseHour,
-      sunsetHour,
-      dayLengthHours,
+      sunriseHour: dailyData.sunriseHour,
+      sunsetHour: dailyData.sunsetHour,
+      dayLengthHours: dailyData.dayLengthHours,
       isDaytime,
       twilightLevel,
-      isPermanentNight: false,
+      isPermanentNight: dailyData.isPermanentNight,
       distanceToSun: currentDistance
     };
   }

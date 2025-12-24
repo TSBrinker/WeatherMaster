@@ -2,13 +2,15 @@
 // Region templates organized by latitude band with parameters for weather generation
 
 // Maps latitude bands to human-readable labels and disc positions
-// NOTE: Flat disc world - Central = disc center, Rim = disc edge
+// NOTE: Flat disc world - Polar = disc center, Tropical = near rim (but not the uninhabitable edge)
+// Bands derived from physics-based daylight calculations (see Sprint 23)
 export const latitudeBands = {
-  "central": { label: "Central", range: "0-20% radius (center)" },
-  "subarctic": { label: "Subarctic", range: "20-40% radius" },
-  "temperate": { label: "Temperate", range: "40-60% radius" },
-  "tropical": { label: "Tropical", range: "60-80% radius" },
-  "rim": { label: "Rim", range: "80-100% radius (edge)" }
+  "polar": { label: "Polar", range: "0-1,500 mi (disc center)" },
+  "subarctic": { label: "Subarctic", range: "1,500-2,500 mi" },
+  "boreal": { label: "Boreal", range: "2,500-3,500 mi" },
+  "temperate": { label: "Temperate", range: "3,500-4,500 mi" },
+  "subtropical": { label: "Subtropical", range: "4,500-5,500 mi" },
+  "tropical": { label: "Tropical", range: "5,500-6,700 mi (near rim)" }
 };
 
 // Maps biome types to human-readable labels
@@ -20,13 +22,14 @@ export const biomeLabels = {
   "temperate-deciduous": "Temperate Deciduous Forest",
   "temperate-rainforest": "Temperate Rainforest",
   "boreal-forest": "Boreal Forest",
+  "boreal-grassland": "Boreal Grassland",
   "tundra": "Tundra"
 };
 
 // Region templates organized by latitude band
 export const regionTemplates = {
-  // FLAT DISC: Central (disc center, 0-20% radius) = coldest, shortest days
-  "central": {
+  // FLAT DISC: Polar (disc center, 0-1,500 mi) = magical twilight in summer, polar night in winter
+  "polar": {
     "tundra-plain": {
       name: "Tundra Plain",
       description: "Treeless plains with permanently frozen subsoil. Brief summer growing season with 24-hour daylight, followed by a long winter with extended darkness. Real-world examples: Utqiaġvik (Barrow) Alaska, Resolute Canada, Tiksi Russia.",
@@ -37,10 +40,6 @@ export const regionTemplates = {
         maritimeInfluence: 0.3,
         terrainRoughness: 0.4,
         specialFactors: {
-          permafrost: 0.9,
-          polarDay: true,
-          polarNight: true,
-          coldWinters: true,
           permanentIce: 0.3,
           groundType: 'permafrost',
         },
@@ -71,9 +70,6 @@ export const regionTemplates = {
         maritimeInfluence: 0.7,
         terrainRoughness: 0.5,
         specialFactors: {
-          seaIce: 0.8,
-          polarDay: true,
-          polarNight: true,
           highWinds: 0.7,
           groundType: 'permafrost',
         },
@@ -105,9 +101,6 @@ export const regionTemplates = {
         terrainRoughness: 0.4,
         specialFactors: {
           permanentIce: 0.9,
-          polarDay: true,
-          polarNight: true,
-          extremeCold: 0.9,
           groundType: 'permafrost',
         },
         temperatureProfile: {
@@ -137,9 +130,6 @@ export const regionTemplates = {
         maritimeInfluence: 0.1,
         terrainRoughness: 0.6,
         specialFactors: {
-          extremeCold: 0.8,
-          polarDay: true,
-          polarNight: true,
           dryAir: 0.8,
           groundType: 'permafrost',
         },
@@ -170,10 +160,7 @@ export const regionTemplates = {
         maritimeInfluence: 0.2,
         terrainRoughness: 0.9,
         specialFactors: {
-          extremeCold: 0.8,
           highWinds: 0.9,
-          polarDay: true,
-          polarNight: true,
           groundType: 'rock',
         },
         temperatureProfile: {
@@ -194,8 +181,8 @@ export const regionTemplates = {
       defaultBiome: "tundra"
     }
   },
-  // FLAT DISC: Tropical (60-80% radius)
-  "tropical": {
+  // FLAT DISC: Subtropical (4,500-5,500 mi) = mild winters, warm summers
+  "subtropical": {
     "monsoon-coast": {
       name: "Monsoon Coast",
       description: "Coastal regions with dramatic seasonal rainfall patterns. A distinct wet season brings torrential rains, while the dry season can be quite pleasant.",
@@ -305,7 +292,6 @@ export const regionTemplates = {
         terrainRoughness: 0.8,
         specialFactors: {
           hasFog: true,
-          highBiodiversity: true,
           volcanicActivity: 0.2,
           groundType: 'rock',
         },
@@ -404,7 +390,6 @@ export const regionTemplates = {
           tidalInfluence: 0.9,
           standingWater: 0.8,
           hurricaneRisk: 0.7,
-          highBiodiversity: true,
           groundType: 'clay',
         },
         temperatureProfile: {
@@ -423,42 +408,6 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "tropical-seasonal"
-    }
-  },
-  
-  // FLAT DISC: Temperate (40-60% radius)
-  "temperate": {
-    "maritime-forest": {
-      name: "Maritime Forest",
-      description: "Coastal forest regions with moderated temperatures due to ocean influence. Rainfall is common year-round with foggy conditions, especially in mornings. Real-world examples: Seattle, Portland Oregon, Vancouver BC.",
-      gameplayImpact: "Snow in winter is typically wet and heavy but melts quickly. Fog reduces visibility. Steady rainfall creates lush vegetation. Wind storms possible in fall/winter.",
-      parameters: {
-        latitude: 45,
-        elevation: 500,
-        maritimeInfluence: 0.8,
-        terrainRoughness: 0.5,
-        specialFactors: {
-          forestDensity: 0.8,
-          highRainfall: true,
-          hasFog: true,
-          groundType: 'soil',
-        },
-        temperatureProfile: {
-          annual: { mean: 52, variance: 20 },
-          winter: { mean: 41, variance: 10 },
-          spring: { mean: 50, variance: 12 },
-          summer: { mean: 66, variance: 10 },
-          fall: { mean: 55, variance: 12 }
-        },
-        humidityProfile: {
-          annual: { mean: 75, variance: 15 },
-          winter: { mean: 80, variance: 10 },
-          spring: { mean: 75, variance: 15 },
-          summer: { mean: 70, variance: 15 },
-          fall: { mean: 75, variance: 15 }
-        }
-      },
-      defaultBiome: "temperate-deciduous"
     },
     "mediterranean-coast": {
       name: "Mediterranean Coast",
@@ -488,6 +437,180 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 15 },
           summer: { mean: 50, variance: 10 }, // Dry season
           fall: { mean: 55, variance: 15 }
+        }
+      },
+      defaultBiome: "temperate-deciduous"
+    }
+  },
+
+  // FLAT DISC: Boreal (2,500-3,500 mi) = northern forests, snow persists through winter
+  "boreal": {
+    "boreal-forest": {
+      name: "Boreal Forest",
+      description: "Dense coniferous forests (taiga) with long, cold winters and short, mild summers. Snow persists from November through March. Real-world examples: Duluth Minnesota, Thunder Bay Ontario, southern Manitoba.",
+      gameplayImpact: "Deep snow accumulation in winter requires snowshoes or skis. Short growing season limits agriculture. Dense forest provides shelter but limits visibility. Mosquitoes and blackflies in summer.",
+      isNew: true,
+      parameters: {
+        latitude: 48,
+        elevation: 1200,
+        maritimeInfluence: 0.2,
+        terrainRoughness: 0.4,
+        specialFactors: {
+          forestDensity: 0.85,
+          groundType: 'soil',
+        },
+        temperatureProfile: {
+          annual: { mean: 38, variance: 40 },
+          winter: { mean: 10, variance: 15 },
+          spring: { mean: 38, variance: 18 },
+          summer: { mean: 68, variance: 12 },
+          fall: { mean: 40, variance: 18 }
+        },
+        humidityProfile: {
+          annual: { mean: 70, variance: 15 },
+          winter: { mean: 75, variance: 10 },
+          spring: { mean: 65, variance: 15 },
+          summer: { mean: 65, variance: 20 },
+          fall: { mean: 75, variance: 15 }
+        }
+      },
+      defaultBiome: "boreal-forest"
+    },
+
+    "cold-continental-prairie": {
+      name: "Cold Continental Prairie",
+      description: "Open grasslands with extreme seasonal temperature swings. Bitter winters with persistent snow cover and wind-driven drifting. Hot summers with thunderstorm risk. Real-world examples: Fargo North Dakota, Regina Saskatchewan, Bismarck North Dakota.",
+      gameplayImpact: "Blizzards with whiteout conditions in winter. No shelter from wind on open prairie. Severe thunderstorms and tornado risk in spring/summer. Grass fires in dry autumn.",
+      isNew: true,
+      parameters: {
+        latitude: 47,
+        elevation: 1400,
+        maritimeInfluence: 0.1,
+        terrainRoughness: 0.2,
+        specialFactors: {
+          grasslandDensity: 0.9,
+          highDiurnalVariation: true,
+          thunderstorms: 0.6,
+          tornadoRisk: 0.3,
+          highWinds: 0.6,
+          groundType: 'soil',
+        },
+        temperatureProfile: {
+          annual: { mean: 40, variance: 50 },
+          winter: { mean: 8, variance: 18 },
+          spring: { mean: 42, variance: 20 },
+          summer: { mean: 72, variance: 15 },
+          fall: { mean: 42, variance: 20 }
+        },
+        humidityProfile: {
+          annual: { mean: 60, variance: 20 },
+          winter: { mean: 70, variance: 15 },
+          spring: { mean: 55, variance: 20 },
+          summer: { mean: 55, variance: 25 },
+          fall: { mean: 60, variance: 20 }
+        }
+      },
+      defaultBiome: "boreal-grassland"
+    },
+
+    "boreal-lake-district": {
+      name: "Boreal Lake District",
+      description: "Landscape dotted with thousands of glacial lakes surrounded by mixed forest. Lakes moderate temperatures slightly and generate fog. Excellent fishing but challenging overland travel. Real-world examples: Boundary Waters Minnesota, northern Wisconsin, Muskoka Ontario.",
+      gameplayImpact: "Lake-effect snow in early winter. Ice fishing and frozen lake travel in deep winter. Fog common in spring and fall mornings. Mosquitoes intense near water in summer. Canoe/portage travel preferred.",
+      isNew: true,
+      parameters: {
+        latitude: 47,
+        elevation: 1300,
+        maritimeInfluence: 0.4,
+        terrainRoughness: 0.5,
+        specialFactors: {
+          forestDensity: 0.7,
+          hasFog: true,
+          standingWater: 0.6,
+          groundType: 'soil',
+        },
+        temperatureProfile: {
+          annual: { mean: 40, variance: 38 },
+          winter: { mean: 12, variance: 14 },
+          spring: { mean: 40, variance: 16 },
+          summer: { mean: 68, variance: 12 },
+          fall: { mean: 42, variance: 16 }
+        },
+        humidityProfile: {
+          annual: { mean: 75, variance: 15 },
+          winter: { mean: 78, variance: 10 },
+          spring: { mean: 72, variance: 15 },
+          summer: { mean: 70, variance: 18 },
+          fall: { mean: 78, variance: 12 }
+        }
+      },
+      defaultBiome: "boreal-forest"
+    },
+
+    "boreal-highland": {
+      name: "Boreal Highland",
+      description: "Mountain environments with significant elevation. Large temperature variations between day and night. Summer thunderstorms are common, winter brings significant snowfall that persists through the season.",
+      gameplayImpact: "Mountain passes closed by snow in winter. Lightning risk above treeline in summer. Avalanche risk in winter/spring. Higher UV exposure requiring protection.",
+      parameters: {
+        latitude: 42,
+        elevation: 7000,
+        maritimeInfluence: 0.2,
+        terrainRoughness: 0.9,
+        specialFactors: {
+          highDiurnalVariation: true,
+          thunderstorms: 0.6,
+          forestDensity: 0.6,
+          groundType: 'rock',
+        },
+        temperatureProfile: {
+          annual: { mean: 45, variance: 30 },
+          winter: { mean: 25, variance: 15 },
+          spring: { mean: 42, variance: 20 },
+          summer: { mean: 65, variance: 20 },
+          fall: { mean: 48, variance: 20 }
+        },
+        humidityProfile: {
+          annual: { mean: 50, variance: 25 },
+          winter: { mean: 60, variance: 20 },
+          spring: { mean: 55, variance: 25 },
+          summer: { mean: 40, variance: 25 },
+          fall: { mean: 45, variance: 25 }
+        }
+      },
+      defaultBiome: "boreal-forest"
+    }
+  },
+
+  // FLAT DISC: Temperate (3,500-4,500 mi) = classic four seasons, snow comes and goes
+  "temperate": {
+    "maritime-forest": {
+      name: "Maritime Forest",
+      description: "Coastal forest regions with moderated temperatures due to ocean influence. Rainfall is common year-round with foggy conditions, especially in mornings. Real-world examples: Seattle, Portland Oregon, Vancouver BC.",
+      gameplayImpact: "Snow in winter is typically wet and heavy but melts quickly. Fog reduces visibility. Steady rainfall creates lush vegetation. Wind storms possible in fall/winter.",
+      parameters: {
+        latitude: 45,
+        elevation: 500,
+        maritimeInfluence: 0.8,
+        terrainRoughness: 0.5,
+        specialFactors: {
+          forestDensity: 0.8,
+          highRainfall: true,
+          hasFog: true,
+          groundType: 'soil',
+        },
+        temperatureProfile: {
+          annual: { mean: 52, variance: 20 },
+          winter: { mean: 41, variance: 10 },
+          spring: { mean: 50, variance: 12 },
+          summer: { mean: 66, variance: 10 },
+          fall: { mean: 55, variance: 12 }
+        },
+        humidityProfile: {
+          annual: { mean: 75, variance: 15 },
+          winter: { mean: 80, variance: 10 },
+          spring: { mean: 75, variance: 15 },
+          summer: { mean: 70, variance: 15 },
+          fall: { mean: 75, variance: 15 }
         }
       },
       defaultBiome: "temperate-deciduous"
@@ -524,39 +647,6 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-grassland"
-    },
-    "temperate-highland": {
-      name: "Temperate Highland",
-      description: "Mountain environments with significant elevation. Large temperature variations between day and night. Summer thunderstorms are common, winter brings significant snowfall.",
-      gameplayImpact: "Mountain passes closed by snow in winter. Lightning risk above treeline in summer. Avalanche risk in winter/spring. Higher UV exposure requiring protection.",
-      parameters: {
-        latitude: 42,
-        elevation: 7000,
-        maritimeInfluence: 0.2,
-        terrainRoughness: 0.9,
-        specialFactors: {
-          snowpack: 0.8,
-          highDiurnalVariation: true,
-          thunderstorms: 0.6,
-          forestDensity: 0.6,
-          groundType: 'rock',
-        },
-        temperatureProfile: {
-          annual: { mean: 45, variance: 30 },
-          winter: { mean: 25, variance: 15 },
-          spring: { mean: 42, variance: 20 },
-          summer: { mean: 65, variance: 20 },
-          fall: { mean: 48, variance: 20 }
-        },
-        humidityProfile: {
-          annual: { mean: 50, variance: 25 },
-          winter: { mean: 60, variance: 20 },
-          spring: { mean: 55, variance: 25 },
-          summer: { mean: 40, variance: 25 },
-          fall: { mean: 45, variance: 25 }
-        }
-      },
-      defaultBiome: "boreal-forest"
     },
     "temperate-desert": {
       name: "Temperate Desert",
@@ -667,7 +757,6 @@ export const regionTemplates = {
         specialFactors: {
           seasonalFlooding: 0.9,
           standingWater: 0.7,
-          highBiodiversity: true,
           groundType: 'clay',
         },
         temperatureProfile: {
@@ -734,8 +823,6 @@ export const regionTemplates = {
         terrainRoughness: 0.6,
         specialFactors: {
           forestDensity: 0.8,
-          coniferousForest: true,
-          coldWinters: true,
           coastalStorms: 0.7,
           groundType: 'soil',
         },
@@ -767,9 +854,6 @@ export const regionTemplates = {
         terrainRoughness: 0.5,
         specialFactors: {
           forestDensity: 0.8,
-          coniferousForest: true,
-          coldWinters: true,
-          permafrost: 0.3,
           groundType: 'soil',
         },
         temperatureProfile: {
@@ -799,10 +883,7 @@ export const regionTemplates = {
         maritimeInfluence: 0.3,
         terrainRoughness: 0.9,
         specialFactors: {
-          snowpack: 0.9,
-          coldWinters: true,
           forestDensity: 0.4,
-          permafrost: 0.5,
           groundType: 'rock',
         },
         temperatureProfile: {
@@ -834,7 +915,6 @@ export const regionTemplates = {
         specialFactors: {
           grasslandDensity: 0.9,
           highDiurnalVariation: true,
-          coldWinters: true,
           groundType: 'soil',
         },
         temperatureProfile: {
@@ -866,7 +946,6 @@ export const regionTemplates = {
         specialFactors: {
           coastalStorms: 0.9,
           highWinds: 0.8,
-          coldWinters: true,
           groundType: 'rock',
         },
         temperatureProfile: {
@@ -897,7 +976,6 @@ export const regionTemplates = {
         terrainRoughness: 0.3,
         specialFactors: {
           standingWater: 0.7,
-          permafrost: 0.7,
           forestDensity: 0.4,
           groundType: 'peat',
         },
@@ -920,8 +998,8 @@ export const regionTemplates = {
     }
   },
   
-  // FLAT DISC: Rim (disc edge, 80-100% radius) = warmest, longest days
-  "rim": {
+  // FLAT DISC: Tropical (5,500-6,700 mi) = warm, humid, fed by rim glacial melt
+  "tropical": {
     "rainforest-basin": {
       name: "Rainforest Basin",
       description: "Dense, humid rainforests with consistent temperatures and rainfall throughout the year. Daily afternoon thunderstorms are common. Real-world examples: Singapore, Manaus Brazil, Iquitos Peru.",
@@ -935,7 +1013,6 @@ export const regionTemplates = {
           hasMonsoonSeason: true,
           highRainfall: true,
           forestDensity: 0.9,
-          highBiodiversity: true,
           groundType: 'soil',
         },
         temperatureProfile: {
@@ -965,7 +1042,6 @@ export const regionTemplates = {
         maritimeInfluence: 0.4,
         terrainRoughness: 0.7,
         specialFactors: {
-          highBiodiversity: true,
           hasFog: true,
           volcanicActivity: 0.3,
           groundType: 'rock',
@@ -997,7 +1073,6 @@ export const regionTemplates = {
         maritimeInfluence: 0.95,
         terrainRoughness: 0.5,
         specialFactors: {
-          highBiodiversity: true,
           highRainfall: true,
           coastalWinds: 0.7,
           volcanicActivity: 0.4,
@@ -1032,7 +1107,6 @@ export const regionTemplates = {
         specialFactors: {
           volcanicActivity: 0.8,
           tectonicActivity: 0.7,
-          highBiodiversity: true,
           hasFog: true,
           groundType: 'rock',
         },
@@ -1064,7 +1138,6 @@ export const regionTemplates = {
         terrainRoughness: 0.3,
         specialFactors: {
           highRainfall: true,
-          highBiodiversity: true,
           standingWater: 0.9,
           forestDensity: 0.7,
           groundType: 'clay',
@@ -1122,7 +1195,7 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-deciduous",
-      compatibleBands: ["temperate", "tropical", "subarctic"]
+      compatibleBands: ["temperate", "subtropical", "subarctic", "boreal"]
     },
     "geothermal-zone": {
       name: "Geothermal Zone",
@@ -1156,7 +1229,7 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-rainforest",
-      compatibleBands: ["central", "tropical", "temperate", "subarctic", "rim"]
+      compatibleBands: ["polar", "tropical", "subtropical", "temperate", "subarctic", "boreal"]
     },
     "convergence-zone": {
       name: "Convergence Zone",
@@ -1190,7 +1263,7 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-deciduous",
-      compatibleBands: ["tropical", "temperate", "subarctic"]
+      compatibleBands: ["subtropical", "temperate", "subarctic", "boreal"]
     },
     "rain-shadow": {
       name: "Rain Shadow",
@@ -1223,7 +1296,7 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "desert",
-      compatibleBands: ["tropical", "temperate", "subarctic"]
+      compatibleBands: ["subtropical", "temperate", "subarctic", "boreal"]
     },
     "coastal-desert": {
       name: "Coastal Desert",
@@ -1256,7 +1329,7 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "desert",
-      compatibleBands: ["tropical", "temperate"]
+      compatibleBands: ["subtropical", "temperate"]
     }
   }
 };

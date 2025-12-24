@@ -8,7 +8,7 @@ import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
 import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
-import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG } from './testConfig';
+import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG } from './testConfig';
 import { validateWeather } from './weatherValidation';
 
 /**
@@ -334,9 +334,12 @@ const identifyProblemBiomes = (stats) => {
 /**
  * Run the full test suite across all biomes
  * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @param {Object} options - Test options
+ * @param {boolean} options.newOnly - Only test templates with isNew flag
  * @returns {Promise<Object>} Test results
  */
-export const runTests = async (onProgress) => {
+export const runTests = async (onProgress, options = {}) => {
+  const { newOnly = false } = options;
   const stats = {
     totalTests: 0,
     successfulTests: 0,
@@ -356,9 +359,13 @@ export const runTests = async (onProgress) => {
   const snowService = new SnowAccumulationService();
   let completedTests = 0;
 
-  // Calculate total tests
+  // Calculate total tests (accounting for filter)
   const totalBiomes = TEST_CONFIG.latitudeBands.reduce((sum, band) => {
-    return sum + Object.keys(regionTemplates[band] || {}).length;
+    const templates = regionTemplates[band] || {};
+    if (newOnly) {
+      return sum + Object.values(templates).filter(t => t.isNew).length;
+    }
+    return sum + Object.keys(templates).length;
   }, 0);
   const totalTests = totalBiomes * TEST_CONFIG.daysToTest * TEST_CONFIG.hoursToTest.length;
 
@@ -369,6 +376,9 @@ export const runTests = async (onProgress) => {
 
     // Test each biome
     for (const [templateId, template] of Object.entries(templates)) {
+      // Skip non-new templates if filter is active
+      if (newOnly && !template.isNew) continue;
+
       const biomeName = template.name;
       const expectedAnnualTemp = template.parameters?.temperatureProfile?.annual?.mean;
 
@@ -733,6 +743,207 @@ export const runPrecipitationAnalysis = async (onProgress) => {
 
     results.biomes[biomeName] = biomeResult;
   }
+
+  onProgress(100);
+  return results;
+};
+
+/**
+ * Get biomes with thunderstorm potential
+ * @returns {Array} Array of biome info objects
+ */
+const getThunderstormBiomes = () => {
+  const thunderstormBiomes = [];
+  const minFactor = THUNDERSTORM_CONFIG.minThunderstormFactor;
+
+  for (const latitudeBand of TEST_CONFIG.latitudeBands) {
+    const templates = regionTemplates[latitudeBand];
+    if (!templates) continue;
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      const thunderstormFactor = template.parameters?.specialFactors?.thunderstorms || 0;
+
+      if (thunderstormFactor >= minFactor) {
+        thunderstormBiomes.push({
+          latitudeBand,
+          templateId,
+          template,
+          biomeName: template.name,
+          thunderstormFactor
+        });
+      }
+    }
+  }
+
+  return thunderstormBiomes;
+};
+
+/**
+ * Run thunderstorm analysis on biomes with thunderstorm potential
+ * Tests during summer afternoons for peak thunderstorm conditions
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results
+ */
+export const runThunderstormAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const thunderstormBiomes = getThunderstormBiomes();
+  const { daysToAnalyze, hoursToTest, startMonth, startDay, yearsToTest } = THUNDERSTORM_CONFIG;
+
+  const results = {
+    config: {
+      daysAnalyzed: daysToAnalyze,
+      hoursPerDay: hoursToTest.length,
+      yearsAnalyzed: yearsToTest,
+      startDate: `${startMonth}/${startDay} (Years 1-${yearsToTest})`,
+      biomesAnalyzed: thunderstormBiomes.length
+    },
+    biomes: {},
+    summary: {
+      totalThunderstorms: 0,
+      totalHeavyRain: 0,
+      totalTestHours: 0,
+      overallThunderstormRate: 0,
+      biomeWithMostThunderstorms: null,
+      maxThunderstormsInBiome: 0
+    }
+  };
+
+  const weatherGen = new WeatherGenerator();
+
+  let completedTests = 0;
+  const totalTests = thunderstormBiomes.length * daysToAnalyze * hoursToTest.length * yearsToTest;
+
+  for (const biomeInfo of thunderstormBiomes) {
+    const { latitudeBand, templateId, template, biomeName, thunderstormFactor } = biomeInfo;
+
+    const region = {
+      id: `thunderstorm-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      thunderstormFactor,
+      stats: {
+        totalHours: 0,
+        thunderstormHours: 0,
+        heavyRainHours: 0,
+        moderateRainHours: 0,
+        lightRainHours: 0,
+        noRainHours: 0,
+        thunderstormRate: 0,
+        conversionRate: 0, // % of heavy rain that became thunderstorms
+        avgTempDuringThunderstorms: 0,
+        thunderstormsByHour: {},
+        severityBreakdown: { normal: 0, strong: 0, severe: 0 }
+      },
+      thunderstormEvents: []
+    };
+
+    // Initialize hourly tracking
+    for (const hour of hoursToTest) {
+      biomeResult.stats.thunderstormsByHour[hour] = 0;
+    }
+
+    weatherGen.clearCache();
+
+    let thunderstormTemps = [];
+
+    // Test across multiple years for statistical validity
+    for (let year = 1; year <= yearsToTest; year++) {
+      let currentDate = { year, month: startMonth, day: startDay, hour: 0 };
+
+      for (let day = 0; day < daysToAnalyze; day++) {
+        for (const hour of hoursToTest) {
+          const testDate = { ...currentDate, hour };
+
+          try {
+            const weather = weatherGen.generateWeather(region, testDate);
+            biomeResult.stats.totalHours++;
+
+            if (weather.condition === 'Thunderstorm') {
+              biomeResult.stats.thunderstormHours++;
+              biomeResult.stats.thunderstormsByHour[hour]++;
+              thunderstormTemps.push(weather.temperature);
+
+              // Determine severity from effects
+              let severity = 'normal';
+              if (weather.effects.some(e => e.includes('Severe Thunderstorm'))) {
+                severity = 'severe';
+              } else if (weather.effects.some(e => e.includes('Strong Thunderstorm'))) {
+                severity = 'strong';
+              }
+              biomeResult.stats.severityBreakdown[severity]++;
+
+              biomeResult.thunderstormEvents.push({
+                date: `Y${year} ${testDate.month}/${testDate.day} ${hour}:00`,
+                temperature: weather.temperature,
+                windSpeed: weather.windSpeed,
+                severity
+              });
+            } else if (weather.condition === 'Heavy Rain') {
+              biomeResult.stats.heavyRainHours++;
+            } else if (weather.condition === 'Rain') {
+              biomeResult.stats.moderateRainHours++;
+            } else if (weather.condition === 'Light Rain') {
+              biomeResult.stats.lightRainHours++;
+            } else {
+              biomeResult.stats.noRainHours++;
+            }
+
+          } catch (error) {
+            console.warn(`Thunderstorm test error for ${biomeName}:`, error.message);
+          }
+
+          completedTests++;
+        }
+
+        // Advance to next day
+        currentDate = advanceDate({ ...currentDate, hour: 0 }, 24);
+
+        // Update progress periodically
+        if (completedTests % 100 === 0) {
+          onProgress((completedTests / totalTests) * 100);
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+    }
+
+    // Calculate rates
+    biomeResult.stats.thunderstormRate =
+      (biomeResult.stats.thunderstormHours / biomeResult.stats.totalHours) * 100;
+
+    const totalHeavyRainOpportunities =
+      biomeResult.stats.thunderstormHours + biomeResult.stats.heavyRainHours;
+    biomeResult.stats.conversionRate = totalHeavyRainOpportunities > 0
+      ? (biomeResult.stats.thunderstormHours / totalHeavyRainOpportunities) * 100
+      : 0;
+
+    biomeResult.stats.avgTempDuringThunderstorms = thunderstormTemps.length > 0
+      ? Math.round(thunderstormTemps.reduce((a, b) => a + b, 0) / thunderstormTemps.length)
+      : null;
+
+    // Update summary
+    results.summary.totalThunderstorms += biomeResult.stats.thunderstormHours;
+    results.summary.totalHeavyRain += biomeResult.stats.heavyRainHours;
+    results.summary.totalTestHours += biomeResult.stats.totalHours;
+
+    if (biomeResult.stats.thunderstormHours > results.summary.maxThunderstormsInBiome) {
+      results.summary.maxThunderstormsInBiome = biomeResult.stats.thunderstormHours;
+      results.summary.biomeWithMostThunderstorms = biomeName;
+    }
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  results.summary.overallThunderstormRate =
+    (results.summary.totalThunderstorms / results.summary.totalTestHours) * 100;
 
   onProgress(100);
   return results;

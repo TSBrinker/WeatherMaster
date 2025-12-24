@@ -1,6 +1,6 @@
 # WeatherMaster Roadmap
 
-**Last Updated**: 2025-12-23 (Sprint 21)
+**Last Updated**: 2025-12-24 (Sprint 26)
 
 This is the single source of truth for feature planning and priorities.
 
@@ -10,17 +10,18 @@ This is the single source of truth for feature planning and priorities.
 
 - **Check here** to understand what's been done and what's planned
 - **Update task status** as you complete work (change `[ ]` to `[x]`)
+- **Mark in-progress items** with `[~]` when you start working on something
 - **Add new items** under the appropriate category
 - **DO NOT** reorganize categories without Tyler's approval
 - **Reference HANDOFF.md** for the current active task
 
 ---
 
-## Current Priority: Ground Temperature System
+## Current Priority: Extreme Weather Events
 
 See [HANDOFF.md](HANDOFF.md) for implementation details.
 
-**Goal**: Add thermal inertia so ground temperature lags behind air temperature, preventing unrealistic snow flip-flopping in marginal biomes.
+**Goal**: Implement extreme weather events (hurricanes, blizzards, tornadoes, ice storms) using the preserved special factors in region templates.
 
 ---
 
@@ -43,15 +44,16 @@ See [HANDOFF.md](HANDOFF.md) for implementation details.
 - [x] Snow toggle preference *(Sprint 16)*
 - [x] Test harness integration *(Sprint 16)*
 
-**Phase B.5: Ground Temperature** - IN PROGRESS
-- [ ] Ground temperature service with thermal inertia
-- [ ] Integration with snow accumulation
-- [ ] Biome-specific ground types
+**Phase B.5: Ground Temperature** - COMPLETE ✅
+- [x] Ground temperature service with thermal inertia *(Sprint 22)*
+- [x] Integration with snow accumulation *(Sprint 22)*
+- [x] Biome-specific ground types *(Sprint 22)*
+- [x] Ground type melt rate modifiers (Denver effect) *(Sprint 26)*
 
 **Phase C: Extreme Weather Events** - NOT STARTED
 - [ ] Hurricanes/typhoons (tropical regions)
-- [ ] Blizzards (heavy snow + high wind)
-- [ ] Tornadoes (severe thunderstorm conditions)
+- [x] Blizzards (heavy snow + high wind)
+- [x] Tornadoes (severe thunderstorm conditions)
 - [ ] Ice storms (freezing rain accumulation)
 
 **Phase D: Wind System Enhancements** - NOT STARTED

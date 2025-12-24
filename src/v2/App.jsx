@@ -70,15 +70,17 @@ const AppContent = () => {
 
   return (
     <>
-      {/* New iOS-style header with time controls and hamburger */}
+      {/* iOS Lock Screen-style header with time controls and hamburger */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}
         onAdvanceTime={advanceTime}
+        onJumpToDate={jumpToDate}
         regions={activeWorld.regions}
         activeRegion={activeRegion}
         onSelectRegion={selectRegion}
         onAddLocation={() => setShowRegionCreator(true)}
         worldName={activeWorld.name}
+        celestialData={weatherData?.celestial}
       />
 
       {/* Main Content */}

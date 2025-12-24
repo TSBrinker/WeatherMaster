@@ -17,9 +17,9 @@ const BiomeStatsTable = ({ results }) => {
     });
   };
 
-  const SortHeader = ({ label, sortKey, width }) => (
+  const SortHeader = ({ label, sortKey, minWidth }) => (
     <th
-      style={{ cursor: 'pointer', width }}
+      style={{ cursor: 'pointer', minWidth, whiteSpace: 'nowrap' }}
       onClick={() => handleSort(sortKey)}
     >
       {label} {sortConfig.key === sortKey && (sortConfig.direction === 'asc' ? '↑' : '↓')}
@@ -76,7 +76,7 @@ const BiomeStatsTable = ({ results }) => {
               <SortHeader label="Wet" sortKey="wetStreak" />
             </tr>
           </thead>
-          <tbody>
+          <tbody style={{ color: '#212529' }}>
             {rows.map((row, idx) => (
               <tr key={row.name}>
                 <td style={{ color: '#6c757d' }}>{idx + 1}</td>
@@ -87,7 +87,7 @@ const BiomeStatsTable = ({ results }) => {
                 <td>{row.expectedTemp !== undefined ? `${row.expectedTemp}°` : '-'}</td>
                 <td style={{
                   color: row.deviation !== undefined && Math.abs(row.deviation) > THRESHOLDS.expectedTempDeviation
-                    ? '#dc3545'
+                    ? '#ff6b7a'
                     : 'inherit'
                 }}>
                   {row.deviation !== undefined ? `${row.deviation > 0 ? '+' : ''}${row.deviation.toFixed(1)}°` : '-'}
@@ -95,7 +95,7 @@ const BiomeStatsTable = ({ results }) => {
                 <td>{row.variance !== undefined ? row.variance.toFixed(1) : '-'}</td>
                 <td>{row.precip.toFixed(0)}%</td>
                 <td>{row.dryStreak}d</td>
-                <td style={{ color: row.wetStreak > 14 ? '#ffc107' : 'inherit' }}>{row.wetStreak}d</td>
+                <td style={{ color: row.wetStreak > 14 ? '#ffe066' : 'inherit' }}>{row.wetStreak}d</td>
               </tr>
             ))}
           </tbody>
