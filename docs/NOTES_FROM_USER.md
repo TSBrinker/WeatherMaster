@@ -1,3 +1,9 @@
 Here is where I'll stow some thoughts so I don't interrupt you while you're working. Once you've acknowledged a note, please migrate it to the roadmap and delete it here (do not delete these instructions, please)
 
 - this new test should also have a button to export the data from that test specifically. maybe even a 'copy to clipboard' so I can get it into a doc here more easily, rather than saving, importing, renaming, etc.
+- wait what does 'highBiodiversity' mean in the biome template? Are there template factors that we have declared but aren't doing anything with?
+- i noticed one says 'high diurnal variation'. v1 tried to calculate temperature based on the sun's angle and daylight time. I wonder if it's worth trying to recreate this with the flat earth physics, since we have concrete numbers for the sun's illumination radius and distance from the disc at any point throughout the year. We'd just have to settle the actual heating physics I think? Maybe that's TOO crunchy. But I'm curious.
+- Wait. DO we have the calculations for the daylight time and distance? Or is does that live solely in the other visualization app that Claude put together? Maybe I need to bring that file in for examination...
+- How are we currently calculating rain and snow amounts? Is it random based on heavy vs light categories? that's probably fine and makes perfect sense, now that I'm noting it.
+- Noted - I'll export the summary from now on. Cause yeah, that's a HUGE file.
+- RE: snow accumulation, I'm thinking of Denver CO. My understanding is that snow will hit and then just kind of be gone the next day. I wonder why that is.

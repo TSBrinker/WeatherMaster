@@ -1,0 +1,378 @@
+{
+  "config": {
+    "hoursAnalyzed": 720,
+    "startDate": "1/15 Year 1",
+    "freezingThreshold": 32,
+    "biomesAnalyzed": 15
+  },
+  "summary": {
+    "totalPrecipTypeChanges": 233,
+    "totalRainOnSnowEvents": 98,
+    "maxSnowDepthObserved": 75.1,
+    "biomesWithFullMelt": [
+      "Continental Prairie"
+    ]
+  },
+  "biomeStats": {
+    "Tundra Plain": {
+      "latitudeBand": "central",
+      "winterMean": -12,
+      "stats": {
+        "hoursWithPrecip": 414,
+        "precipTypeBreakdown": {
+          "snow": 414,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 306
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 75.1,
+        "maxMeltRate": 5.600000000000001,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -26,
+          "max": 8
+        }
+      }
+    },
+    "Polar Coast": {
+      "latitudeBand": "central",
+      "winterMean": -5,
+      "stats": {
+        "hoursWithPrecip": 326,
+        "precipTypeBreakdown": {
+          "snow": 326,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 394
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 75.1,
+        "maxMeltRate": 5.600000000000001,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -18,
+          "max": 14
+        }
+      }
+    },
+    "Ice Sheet": {
+      "latitudeBand": "central",
+      "winterMean": -40,
+      "stats": {
+        "hoursWithPrecip": 24,
+        "precipTypeBreakdown": {
+          "snow": 24,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 696
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 4.8,
+        "maxMeltRate": 0.3999999999999999,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -53,
+          "max": -23
+        }
+      }
+    },
+    "Polar Desert": {
+      "latitudeBand": "central",
+      "winterMean": -30,
+      "stats": {
+        "hoursWithPrecip": 55,
+        "precipTypeBreakdown": {
+          "snow": 55,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 665
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 7,
+        "maxMeltRate": 0.6000000000000005,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -46,
+          "max": -9
+        }
+      }
+    },
+    "Polar Highland": {
+      "latitudeBand": "central",
+      "winterMean": -35,
+      "stats": {
+        "hoursWithPrecip": 280,
+        "precipTypeBreakdown": {
+          "snow": 280,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 440
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 61,
+        "maxMeltRate": 4,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -48,
+          "max": -15
+        }
+      }
+    },
+    "Coastal Taiga": {
+      "latitudeBand": "subarctic",
+      "winterMean": 20,
+      "stats": {
+        "hoursWithPrecip": 391,
+        "precipTypeBreakdown": {
+          "snow": 344,
+          "sleet": 23,
+          "rain": 0,
+          "freezing-rain": 24,
+          "none": 329
+        },
+        "precipTypeChanges": 18,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 61.1,
+        "maxMeltRate": 4.700000000000003,
+        "hoursAboveFreezing": 18,
+        "hoursBelowFreezing": 702,
+        "tempRange": {
+          "min": 6,
+          "max": 34
+        }
+      }
+    },
+    "Continental Taiga": {
+      "latitudeBand": "subarctic",
+      "winterMean": -15,
+      "stats": {
+        "hoursWithPrecip": 247,
+        "precipTypeBreakdown": {
+          "snow": 247,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 473
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 65.3,
+        "maxMeltRate": 4.699999999999996,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -31,
+          "max": 9
+        }
+      }
+    },
+    "Subarctic Highland": {
+      "latitudeBand": "subarctic",
+      "winterMean": -15,
+      "stats": {
+        "hoursWithPrecip": 215,
+        "precipTypeBreakdown": {
+          "snow": 215,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 505
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 70.7,
+        "maxMeltRate": 5.100000000000001,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -28,
+          "max": 7
+        }
+      }
+    },
+    "Northern Grassland": {
+      "latitudeBand": "subarctic",
+      "winterMean": -10,
+      "stats": {
+        "hoursWithPrecip": 201,
+        "precipTypeBreakdown": {
+          "snow": 201,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 519
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 60.7,
+        "maxMeltRate": 2.6000000000000014,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -36,
+          "max": 18
+        }
+      }
+    },
+    "Subarctic Maritime": {
+      "latitudeBand": "subarctic",
+      "winterMean": 25,
+      "stats": {
+        "hoursWithPrecip": 391,
+        "precipTypeBreakdown": {
+          "snow": 314,
+          "sleet": 62,
+          "rain": 0,
+          "freezing-rain": 15,
+          "none": 329
+        },
+        "precipTypeChanges": 22,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 60.6,
+        "maxMeltRate": 3.799999999999997,
+        "hoursAboveFreezing": 120,
+        "hoursBelowFreezing": 600,
+        "tempRange": {
+          "min": 10,
+          "max": 42
+        }
+      }
+    },
+    "Peatland/Muskeg": {
+      "latitudeBand": "subarctic",
+      "winterMean": -10,
+      "stats": {
+        "hoursWithPrecip": 294,
+        "precipTypeBreakdown": {
+          "snow": 294,
+          "sleet": 0,
+          "rain": 0,
+          "freezing-rain": 0,
+          "none": 426
+        },
+        "precipTypeChanges": 0,
+        "rainOnSnowEvents": 0,
+        "maxSnowDepth": 51.4,
+        "maxMeltRate": 3.1000000000000014,
+        "hoursAboveFreezing": 0,
+        "hoursBelowFreezing": 720,
+        "tempRange": {
+          "min": -28,
+          "max": 11
+        }
+      }
+    },
+    "Continental Prairie": {
+      "latitudeBand": "temperate",
+      "winterMean": 20,
+      "stats": {
+        "hoursWithPrecip": 196,
+        "precipTypeBreakdown": {
+          "snow": 131,
+          "sleet": 36,
+          "rain": 16,
+          "freezing-rain": 13,
+          "none": 524
+        },
+        "precipTypeChanges": 24,
+        "rainOnSnowEvents": 16,
+        "maxSnowDepth": 44.4,
+        "maxMeltRate": 2.6000000000000014,
+        "hoursAboveFreezing": 127,
+        "hoursBelowFreezing": 593,
+        "tempRange": {
+          "min": -6,
+          "max": 44
+        }
+      }
+    },
+    "Temperate Highland": {
+      "latitudeBand": "temperate",
+      "winterMean": 25,
+      "stats": {
+        "hoursWithPrecip": 302,
+        "precipTypeBreakdown": {
+          "snow": 223,
+          "sleet": 49,
+          "rain": 14,
+          "freezing-rain": 16,
+          "none": 418
+        },
+        "precipTypeChanges": 23,
+        "rainOnSnowEvents": 14,
+        "maxSnowDepth": 43.9,
+        "maxMeltRate": 3.1999999999999993,
+        "hoursAboveFreezing": 154,
+        "hoursBelowFreezing": 566,
+        "tempRange": {
+          "min": 1,
+          "max": 48
+        }
+      }
+    },
+    "River Valley": {
+      "latitudeBand": "temperate",
+      "winterMean": 30,
+      "stats": {
+        "hoursWithPrecip": 535,
+        "precipTypeBreakdown": {
+          "snow": 265,
+          "sleet": 207,
+          "rain": 20,
+          "freezing-rain": 43,
+          "none": 185
+        },
+        "precipTypeChanges": 74,
+        "rainOnSnowEvents": 20,
+        "maxSnowDepth": 36.6,
+        "maxMeltRate": 2.1999999999999993,
+        "hoursAboveFreezing": 266,
+        "hoursBelowFreezing": 454,
+        "tempRange": {
+          "min": 14,
+          "max": 43
+        }
+      }
+    },
+    "Convergence Zone": {
+      "latitudeBand": "special",
+      "winterMean": 30,
+      "stats": {
+        "hoursWithPrecip": 391,
+        "precipTypeBreakdown": {
+          "snow": 193,
+          "sleet": 106,
+          "rain": 69,
+          "freezing-rain": 23,
+          "none": 329
+        },
+        "precipTypeChanges": 72,
+        "rainOnSnowEvents": 48,
+        "maxSnowDepth": 22.3,
+        "maxMeltRate": 1.2000000000000028,
+        "hoursAboveFreezing": 324,
+        "hoursBelowFreezing": 396,
+        "tempRange": {
+          "min": 12,
+          "max": 50
+        }
+      }
+    }
+  }
+}

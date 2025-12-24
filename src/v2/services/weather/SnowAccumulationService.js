@@ -19,6 +19,7 @@
  */
 
 import { WeatherGenerator } from './WeatherGenerator';
+import { GroundTemperatureService } from './GroundTemperatureService';
 import { advanceDate } from '../../utils/dateUtils';
 
 /**
@@ -102,6 +103,7 @@ const GROUND_CONDITIONS = {
 export class SnowAccumulationService {
   constructor() {
     this.weatherGenerator = new WeatherGenerator();
+    this.groundTempService = new GroundTemperatureService();
     this.accumulationCache = new Map();
   }
 
@@ -173,12 +175,30 @@ export class SnowAccumulationService {
         }
       }
 
+      // === GROUND TEMPERATURE ===
+      // Ground temp determines whether snow sticks and how fast it melts
+      const groundTempData = this.groundTempService.getGroundTemperature(region, checkDate, snowDepth);
+      const groundTemp = groundTempData.temperature;
+
       // === ACCUMULATION ===
 
-      // Snow accumulation
+      // Snow accumulation - now depends on ground temperature
       if (weather.precipitation && weather.precipitationType === 'snow') {
         const rate = SNOW_RATES[weather.precipitationIntensity] || SNOW_RATES.moderate;
-        const freshSnow = rate; // Per hour
+
+        // Snow sticking depends on ground temperature
+        // Ground ≤ 33°F: snow sticks fully
+        // Ground 33-38°F: partial sticking (some melts on contact)
+        // Ground > 38°F: snow melts on contact
+        let stickingFactor = 1.0;
+        if (groundTemp > 38) {
+          stickingFactor = 0; // Snow melts on contact
+        } else if (groundTemp > 33) {
+          // Linear interpolation: 33°F = 100%, 38°F = 0%
+          stickingFactor = 1 - ((groundTemp - 33) / 5);
+        }
+
+        const freshSnow = rate * stickingFactor;
         snowDepth += freshSnow;
         snowWaterEquivalent += freshSnow / 10; // 10:1 snow-to-water ratio
         snowAge = 0; // Reset age when fresh snow falls
@@ -186,20 +206,23 @@ export class SnowAccumulationService {
         snowAge++;
       }
 
-      // Ice accumulation (freezing rain)
+      // Ice accumulation (freezing rain) - requires frozen ground
       if (weather.precipitation && weather.precipitationType === 'freezing-rain') {
-        const rate = ICE_RATES[weather.precipitationIntensity] || ICE_RATES.moderate;
-        iceAccumulation += rate;
+        // Ice only accumulates if ground is at or below freezing
+        if (groundTemp <= 32) {
+          const rate = ICE_RATES[weather.precipitationIntensity] || ICE_RATES.moderate;
+          iceAccumulation += rate;
+        }
       }
 
       // === MELTING ===
+      // Use GROUND temperature for melt calculations, not air temperature
+      // This prevents brief warm spells from causing massive snow loss
 
-      const temp = weather.temperature;
+      if (groundTemp > 32 && (snowDepth > 0 || iceAccumulation > 0)) {
+        const degreesAboveFreezing = groundTemp - 32;
 
-      if (temp > 32 && (snowDepth > 0 || iceAccumulation > 0)) {
-        const degreesAboveFreezing = temp - 32;
-
-        // Base melt rate
+        // Base melt rate (using ground temp)
         let snowMelt = degreesAboveFreezing * MELT_CONSTANTS.snowMeltPerDegreeHour;
         let iceMelt = degreesAboveFreezing * MELT_CONSTANTS.iceMeltPerDegreeHour;
 
@@ -209,12 +232,24 @@ export class SnowAccumulationService {
           iceMelt *= MELT_CONSTANTS.dayTimeMeltMultiplier;
         }
 
-        // Rain-on-snow event (warm rain melts snow rapidly)
-        if (weather.precipitation && weather.precipitationType === 'rain') {
-          snowMelt *= MELT_CONSTANTS.rainOnSnowMultiplier;
-          // Rain also adds to water content, accelerating base melt
+        // Rain-on-snow event - effect modulated by ground temperature
+        // Frozen ground: rain freezes, minimal melt acceleration
+        // Thawing ground: moderate acceleration
+        // Warm ground: full rain-on-snow effect
+        if (weather.precipitation && weather.precipitationType === 'rain' && snowDepth > 0) {
+          let rainOnSnowFactor = 1.0;
+          if (groundTemp <= 32) {
+            rainOnSnowFactor = 0.2; // Frozen ground - rain mostly freezes
+          } else if (groundTemp <= 36) {
+            // Transition zone: 32°F = 20%, 36°F = 100%
+            rainOnSnowFactor = 0.2 + 0.8 * ((groundTemp - 32) / 4);
+          }
+
+          snowMelt *= (1 + (MELT_CONSTANTS.rainOnSnowMultiplier - 1) * rainOnSnowFactor);
+
+          // Heavy rain direct melt also modulated
           if (weather.precipitationIntensity === 'heavy') {
-            snowMelt += 0.5; // Heavy rain directly melts snow
+            snowMelt += 0.5 * rainOnSnowFactor;
           }
         }
 
@@ -225,7 +260,9 @@ export class SnowAccumulationService {
       }
 
       // Sublimation in very cold, dry conditions (slow snow loss)
-      if (temp < 20 && weather.humidity < 40 && snowDepth > 0) {
+      // Uses air temperature since sublimation is an atmospheric process
+      const airTemp = weather.temperature;
+      if (airTemp < 20 && weather.humidity < 40 && snowDepth > 0) {
         snowDepth = Math.max(0, snowDepth - MELT_CONSTANTS.sublimationRate);
         snowWaterEquivalent = Math.max(0, snowWaterEquivalent - (MELT_CONSTANTS.sublimationRate / 10));
       }
@@ -257,6 +294,9 @@ export class SnowAccumulationService {
       recentHistory
     );
 
+    // Get current ground temperature for display
+    const currentGroundTemp = this.groundTempService.getGroundTemperature(region, date, snowDepth);
+
     // Calculate visual fill percentage for UI (0-100)
     // 24 inches of snow = 100% fill (adjustable)
     const maxSnowForFullFill = 24;
@@ -270,6 +310,11 @@ export class SnowAccumulationService {
       groundCondition,
       snowFillPercent: Math.round(snowFillPercent),
 
+      // Ground temperature (new in Sprint 22)
+      groundTemperature: currentGroundTemp.temperature,
+      groundTempCondition: currentGroundTemp.condition,
+      canAccumulateSnow: currentGroundTemp.canAccumulateSnow,
+
       // Gameplay-relevant info
       isSnowCovered: snowDepth >= 0.5,
       isIcy: iceAccumulation >= 0.1,
@@ -280,7 +325,8 @@ export class SnowAccumulationService {
         lookbackHours: lookbackHours,
         hoursAboveFreezing,
         hoursBelowFreezing,
-        recentPrecipHours
+        recentPrecipHours,
+        groundTempDebug: currentGroundTemp._debug
       }
     };
   }
@@ -420,6 +466,7 @@ export class SnowAccumulationService {
   clearCache() {
     this.accumulationCache.clear();
     this.weatherGenerator.clearCache();
+    this.groundTempService.clearCache();
   }
 }
 

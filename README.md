@@ -1,6 +1,6 @@
 # WeatherMaster v2
 
-A deterministic weather generation system for D&D campaigns, featuring realistic atmospheric modeling and flat disc world celestial mechanics.
+A deterministic, physics-based weather generation system for D&D campaigns, featuring realistic atmospheric modeling, ground thermal dynamics, and flat disc world celestial mechanics.
 
 **Live Demo**: [https://tsbrinker.github.io/WeatherMaster](https://tsbrinker.github.io/WeatherMaster)
 
@@ -14,6 +14,7 @@ A deterministic weather generation system for D&D campaigns, featuring realistic
 - **30+ Climate Templates** - Real-world accuracy based on actual meteorological data (±3°F)
 - **Atmospheric Depth** - Pressure systems, cloud cover percentage, humidity, and visibility modeling
 - **Smart Temperature** - Seasonal variation, daily cycles, pattern influences, heat index, and wind chill
+- **Ground Thermal Dynamics** - Ground temperature with thermal inertia prevents unrealistic snow melt
 
 ### Flat Disc World Celestial Mechanics
 - **Distance-Based Sun** - Illumination based on observer distance (≤10,000 miles = daylight)
@@ -67,9 +68,10 @@ A deterministic weather generation system for D&D campaigns, featuring realistic
 - ✅ Proper Gregorian calendar (real month lengths, no leap years)
 - ✅ Environmental conditions tracking (drought, flooding, heat waves, cold snaps, wildfire risk)
 - ✅ Environmental alerts badge with detailed modal breakdown
+- ✅ Ground temperature system with thermal inertia (permafrost, rock, clay, soil, peat, sand)
 
 ### Next Features 🔜
-- **Phase B**: Snow/ice accumulation and ground conditions
+- **Snow Behavior Refinement**: Extended testing, biome granularity options
 - **Phase C**: Extreme weather events (hurricanes, blizzards, tornadoes, ice storms)
 - **Phase D**: Sophisticated wind patterns
 - **Wanderers**: Falling star events for Marai setting
@@ -292,8 +294,8 @@ This project is primarily developed for Tyler's personal Marai campaign setting,
 5. **Follow commit format** - See [docs/WORKING_WITH_TYLER.md](docs/WORKING_WITH_TYLER.md)
 
 ### Design Principles
+- **Physically realistic** - Weather based on real meteorological principles (thermal inertia, pressure systems, etc.)
 - **Simplicity over complexity** - Only add features that enhance gameplay
-- **Realism with pragmatism** - Accurate weather without overwhelming simulation
 - **Deterministic behavior** - Same inputs = same outputs (no surprises)
 - **Performance first** - Cache aggressively, calculate efficiently
 - **Clear documentation** - Every decision explained, every formula sourced
@@ -326,18 +328,19 @@ See [DEPENDENCIES.md](DEPENDENCIES.md) for complete workstation setup instructio
 ## Roadmap
 
 ### Completed Sprints ✅
-21 sprints completed through December 2025, including:
+22 sprints completed through December 2025, including:
 - Core weather generation with deterministic seed-based randomness
 - iOS Weather-inspired UI with dynamic gradients
 - Flat disc celestial mechanics
 - Environmental conditions (drought, flooding, heat waves, cold snaps, wildfire risk)
 - Snow & ice accumulation with visual display
+- Ground temperature system with thermal inertia
 - Comprehensive test harness for validation
 
 See `docs/sprint-logs/` for detailed sprint documentation.
 
 ### Current Focus 🔜
-- **Ground Temperature System** - Thermal inertia for realistic snow behavior
+- **Snow Behavior Refinement** - Extended testing, biome granularity
 - **Extreme Weather Events** - Hurricanes, blizzards, tornadoes
 - **Wanderers** - Falling star events for Marai setting
 
@@ -355,8 +358,8 @@ This project is built for personal use in Tyler's D&D campaigns. Feel free to us
 
 **Original Development**: Tyler Brinker (TSBrinker)
 
-**AI Development Team** (21 sprints and counting):
-Cedar, Elderwood, Willow, Sage, Rowan, Ash, Birch, Maple, Hawthorn, Juniper, Larch, Spruce, Fern, Hemlock, Alder, Oak, Pine, Opus, Ember, Sequoia, and more...
+**AI Development Team** (22 sprints and counting):
+Cedar, Elderwood, Willow, Sage, Rowan, Ash, Birch, Maple, Hawthorn, Juniper, Larch, Spruce, Fern, Hemlock, Alder, Oak, Pine, Opus, Ember, Sequoia, Cypress, and more...
 
 See `docs/sprint-logs/` for individual sprint contributions.
 

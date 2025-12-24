@@ -42,6 +42,7 @@ export const regionTemplates = {
           polarNight: true,
           coldWinters: true,
           permanentIce: 0.3,
+          groundType: 'permafrost',
         },
         temperatureProfile: {
           annual: { mean: 14, variance: 40 },
@@ -73,7 +74,8 @@ export const regionTemplates = {
           seaIce: 0.8,
           polarDay: true,
           polarNight: true,
-          highWinds: 0.7
+          highWinds: 0.7,
+          groundType: 'permafrost',
         },
         temperatureProfile: {
           annual: { mean: 20, variance: 35 },
@@ -105,7 +107,8 @@ export const regionTemplates = {
           permanentIce: 0.9,
           polarDay: true,
           polarNight: true,
-          extremeCold: 0.9
+          extremeCold: 0.9,
+          groundType: 'permafrost',
         },
         temperatureProfile: {
           annual: { mean: -15, variance: 30 },
@@ -137,7 +140,8 @@ export const regionTemplates = {
           extremeCold: 0.8,
           polarDay: true,
           polarNight: true,
-          dryAir: 0.8
+          dryAir: 0.8,
+          groundType: 'permafrost',
         },
         temperatureProfile: {
           annual: { mean: -5, variance: 35 },
@@ -169,7 +173,8 @@ export const regionTemplates = {
           extremeCold: 0.8,
           highWinds: 0.9,
           polarDay: true,
-          polarNight: true
+          polarNight: true,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: -10, variance: 35 },
@@ -204,7 +209,8 @@ export const regionTemplates = {
           hasMonsoonSeason: true,
           highRainfall: true,
           forestDensity: 0.7,
-          seasonalFlooding: 0.9
+          seasonalFlooding: 0.9,
+          groundType: 'clay',
         },
         temperatureProfile: {
           annual: { mean: 80, variance: 8 },
@@ -236,7 +242,8 @@ export const regionTemplates = {
           hasDrySeason: true,
           hasMonsoonSeason: true,
           grasslandDensity: 0.8,
-          forestDensity: 0.3
+          forestDensity: 0.3,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 78, variance: 12 },
@@ -267,7 +274,8 @@ export const regionTemplates = {
         specialFactors: {
           hasDrySeason: true,
           highDiurnalVariation: true,
-          dustStorms: 0.7
+          dustStorms: 0.7,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 74, variance: 35 },
@@ -298,7 +306,8 @@ export const regionTemplates = {
         specialFactors: {
           hasFog: true,
           highBiodiversity: true,
-          volcanicActivity: 0.2
+          volcanicActivity: 0.2,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 58, variance: 10 },
@@ -329,7 +338,8 @@ export const regionTemplates = {
         specialFactors: {
           hasDrySeason: true,
           deciduousForest: true,
-          forestDensity: 0.8
+          forestDensity: 0.8,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 75, variance: 15 },
@@ -361,7 +371,8 @@ export const regionTemplates = {
           coastalWinds: 0.8,
           hurricaneRisk: 0.7,
           tradeWinds: true,
-          highRainfall: true
+          highRainfall: true,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 80, variance: 7 },
@@ -393,7 +404,8 @@ export const regionTemplates = {
           tidalInfluence: 0.9,
           standingWater: 0.8,
           hurricaneRisk: 0.7,
-          highBiodiversity: true
+          highBiodiversity: true,
+          groundType: 'clay',
         },
         temperatureProfile: {
           annual: { mean: 82, variance: 6 },
@@ -428,7 +440,8 @@ export const regionTemplates = {
         specialFactors: {
           forestDensity: 0.8,
           highRainfall: true,
-          hasFog: true
+          hasFog: true,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 52, variance: 20 },
@@ -459,7 +472,8 @@ export const regionTemplates = {
         specialFactors: {
           hasDrySeason: true,
           coastalWinds: 0.6,
-          wildfire: 0.5
+          wildfire: 0.5,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 65, variance: 15 },
@@ -491,7 +505,8 @@ export const regionTemplates = {
           grasslandDensity: 0.9,
           highDiurnalVariation: true,
           thunderstorms: 0.7,
-          tornadoRisk: 0.5
+          tornadoRisk: 0.5,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 51, variance: 40 },
@@ -523,7 +538,8 @@ export const regionTemplates = {
           snowpack: 0.8,
           highDiurnalVariation: true,
           thunderstorms: 0.6,
-          forestDensity: 0.6
+          forestDensity: 0.6,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 45, variance: 30 },
@@ -554,7 +570,8 @@ export const regionTemplates = {
         specialFactors: {
           hasDrySeason: true,
           highDiurnalVariation: true,
-          dustStorms: 0.5
+          dustStorms: 0.5,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 55, variance: 35 },
@@ -585,7 +602,8 @@ export const regionTemplates = {
         specialFactors: {
           highRainfall: true,
           hasFog: true,
-          forestDensity: 0.9
+          forestDensity: 0.9,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 50, variance: 15 },
@@ -617,7 +635,8 @@ export const regionTemplates = {
           seasonalFlooding: 0.7,
           hasFog: true,
           forestDensity: 0.6,
-          fertileFloodplain: true
+          fertileFloodplain: true,
+          groundType: 'clay',
         },
         temperatureProfile: {
           annual: { mean: 55, variance: 30 },
@@ -648,7 +667,8 @@ export const regionTemplates = {
         specialFactors: {
           seasonalFlooding: 0.9,
           standingWater: 0.7,
-          highBiodiversity: true
+          highBiodiversity: true,
+          groundType: 'clay',
         },
         temperatureProfile: {
           annual: { mean: 60, variance: 25 },
@@ -679,7 +699,8 @@ export const regionTemplates = {
         specialFactors: {
           coastalWinds: 0.8,
           islandEffect: true,
-          stormSurge: 0.6
+          stormSurge: 0.6,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 55, variance: 15 },
@@ -715,7 +736,8 @@ export const regionTemplates = {
           forestDensity: 0.8,
           coniferousForest: true,
           coldWinters: true,
-          coastalStorms: 0.7
+          coastalStorms: 0.7,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 35, variance: 30 },
@@ -747,7 +769,8 @@ export const regionTemplates = {
           forestDensity: 0.8,
           coniferousForest: true,
           coldWinters: true,
-          permafrost: 0.3
+          permafrost: 0.3,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 28, variance: 60 },
@@ -779,7 +802,8 @@ export const regionTemplates = {
           snowpack: 0.9,
           coldWinters: true,
           forestDensity: 0.4,
-          permafrost: 0.5
+          permafrost: 0.5,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 20, variance: 45 },
@@ -810,7 +834,8 @@ export const regionTemplates = {
         specialFactors: {
           grasslandDensity: 0.9,
           highDiurnalVariation: true,
-          coldWinters: true
+          coldWinters: true,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 30, variance: 50 },
@@ -841,7 +866,8 @@ export const regionTemplates = {
         specialFactors: {
           coastalStorms: 0.9,
           highWinds: 0.8,
-          coldWinters: true
+          coldWinters: true,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 40, variance: 25 },
@@ -872,7 +898,8 @@ export const regionTemplates = {
         specialFactors: {
           standingWater: 0.7,
           permafrost: 0.7,
-          forestDensity: 0.4
+          forestDensity: 0.4,
+          groundType: 'peat',
         },
         temperatureProfile: {
           annual: { mean: 30, variance: 45 },
@@ -908,7 +935,8 @@ export const regionTemplates = {
           hasMonsoonSeason: true,
           highRainfall: true,
           forestDensity: 0.9,
-          highBiodiversity: true
+          highBiodiversity: true,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 80, variance: 4 },
@@ -939,7 +967,8 @@ export const regionTemplates = {
         specialFactors: {
           highBiodiversity: true,
           hasFog: true,
-          volcanicActivity: 0.3
+          volcanicActivity: 0.3,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 70, variance: 5 },
@@ -971,7 +1000,8 @@ export const regionTemplates = {
           highBiodiversity: true,
           highRainfall: true,
           coastalWinds: 0.7,
-          volcanicActivity: 0.4
+          volcanicActivity: 0.4,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 80, variance: 3 },
@@ -1003,7 +1033,8 @@ export const regionTemplates = {
           volcanicActivity: 0.8,
           tectonicActivity: 0.7,
           highBiodiversity: true,
-          hasFog: true
+          hasFog: true,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 75, variance: 7 },
@@ -1035,7 +1066,8 @@ export const regionTemplates = {
           highRainfall: true,
           highBiodiversity: true,
           standingWater: 0.9,
-          forestDensity: 0.7
+          forestDensity: 0.7,
+          groundType: 'clay',
         },
         temperatureProfile: {
           annual: { mean: 84, variance: 5 },
@@ -1071,7 +1103,8 @@ export const regionTemplates = {
         specialFactors: {
           microclimateFactor: 0.9,
           hasFog: true,
-          lowAtmosphericPressure: 0.7
+          lowAtmosphericPressure: 0.7,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 50, variance: 15 }, // Values depend on base climate
@@ -1104,7 +1137,8 @@ export const regionTemplates = {
           volcanicActivity: 0.8,
           geothermalFeatures: 0.9,
           tectonicActivity: 0.7,
-          sulphurVents: 0.6
+          sulphurVents: 0.6,
+          groundType: 'rock',
         },
         temperatureProfile: {
           annual: { mean: 55, variance: 15 }, // Local heating effects
@@ -1137,7 +1171,8 @@ export const regionTemplates = {
           weatherConvergence: 0.9,
           highWeatherVariability: 0.8,
           thunderstorms: 0.7,
-          strongSeasonalShifts: 0.7
+          strongSeasonalShifts: 0.7,
+          groundType: 'soil',
         },
         temperatureProfile: {
           annual: { mean: 55, variance: 40 }, // High variance
@@ -1169,7 +1204,8 @@ export const regionTemplates = {
         specialFactors: {
           rainShadowEffect: 0.9,
           hasDrySeason: true,
-          highDiurnalVariation: true
+          highDiurnalVariation: true,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 60, variance: 35 },
@@ -1201,7 +1237,8 @@ export const regionTemplates = {
         specialFactors: {
           coldOceanCurrent: 0.9,
           coastalFog: 0.8,
-          hasDrySeason: true
+          hasDrySeason: true,
+          groundType: 'sand',
         },
         temperatureProfile: {
           annual: { mean: 65, variance: 15 }, // Moderated by ocean
