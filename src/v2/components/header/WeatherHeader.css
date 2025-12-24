@@ -1,6 +1,6 @@
 /**
  * WeatherHeader - iOS Weather-inspired header
- * Clean, minimal header with time and controls
+ * Redesigned with date line, hero time display, and floating menu
  */
 
 .weather-header {
@@ -11,7 +11,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 1rem 0;
+  padding: 0.75rem 0 1rem;
 }
 
 .header-row {
@@ -20,44 +20,95 @@
   justify-content: center;
   position: relative;
   flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Date line - top row with date and next event */
+.date-line {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* Time display - center */
-.time-display-section {
-  text-align: center;
+.compact-date {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.current-time {
-  font-size: 1rem;
-  font-weight: 300;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
+.date-separator {
+  color: rgba(255, 255, 255, 0.4);
 }
 
-/* Time controls - center below */
-.time-controls-section {
+.next-event {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Time row - hero time with controls on both sides */
+.time-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.time-controls-left,
+.time-controls-right {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
+/* Hero time display - large, clickable */
+.time-display-hero {
+  font-size: 3.5rem;
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.time-display-hero:hover {
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.time-display-hero:active {
+  transform: scale(0.98);
+}
+
+/* Time control buttons */
 .time-control-btn {
   font-size: 1.5rem;
   font-weight: 300;
-  color: var(--text-primary);
-  text-decoration: none;
+  color: rgba(255, 255, 255, 0.6) !important;
+  text-decoration: none !important;
   padding: 0.25rem 0.75rem;
   line-height: 1;
+  background: transparent;
+  border: none;
   transition: color 0.2s, transform 0.1s;
 }
 
 .time-control-btn:hover {
-  color: var(--accent-primary);
-  transform: scale(1.1);
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-decoration: none !important;
+  transform: scale(1.15);
+}
+
+.time-control-btn:focus {
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .time-control-btn:active {
+  color: #fff !important;
   transform: scale(0.95);
 }
 
@@ -92,10 +143,57 @@
   transform: scale(1.05);
 }
 
+/* Date Picker Modal */
+.date-picker-modal .modal-content {
+  background: var(--card-bg, #1a1f2e);
+  color: var(--text-primary, #fff);
+}
+
+.date-picker-modal .modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.date-picker-modal .modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.date-picker-modal .form-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.date-picker-modal .form-control,
+.date-picker-modal .form-select {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary, #fff);
+}
+
+.date-picker-modal .form-control:focus,
+.date-picker-modal .form-select:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+  color: var(--text-primary, #fff);
+}
+
+.date-picker-modal .form-select option {
+  background: #1a1f2e;
+  color: #fff;
+}
+
 /* Responsive */
 @media (max-width: 576px) {
-  .current-time {
-    font-size: 0.9rem;
+  .time-row {
+    gap: 0.5rem;
+  }
+
+  .time-display-hero {
+    font-size: 2.5rem;
+  }
+
+  .date-line {
+    font-size: 0.8rem;
   }
 
   .time-control-btn {

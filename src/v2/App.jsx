@@ -74,6 +74,7 @@ const AppContent = () => {
       <WeatherHeader
         currentDate={activeWorld.currentDate}
         onAdvanceTime={advanceTime}
+        onSetDate={jumpToDate}
         regions={activeWorld.regions}
         activeRegion={activeRegion}
         onSelectRegion={selectRegion}
