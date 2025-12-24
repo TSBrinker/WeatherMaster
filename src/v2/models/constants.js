@@ -71,26 +71,37 @@ export const TWILIGHT_ASTRONOMICAL = 13000;
  * These represent the midpoint of each band's range.
  *
  * FLAT DISC GEOMETRY (INVERSE of Earth):
- * - Central (disc center) = shortest days / permanent night
- * - Rim (disc edge) = longest days
+ * - Polar (disc center, Amon Astra region) = magical twilight in summer, polar night in winter
+ * - Tropical (near disc edge) = warm, humid, fed by glacial melt from superheated/frozen rim
+ *
+ * Bands are derived from physics-based daylight calculations:
+ * - Polar: 24hr summer day / 0hr winter day (magically moderated)
+ * - Subarctic: 24hr summer day / 6-7hr winter day (extreme swing)
+ * - Boreal: 16-18hr summer day / 8hr winter day (big seasonal variation)
+ * - Temperate: 13-15hr summer day / 8-9hr winter day (moderate seasons)
+ * - Subtropical: 12-13hr summer day / 8-9hr winter day (mild variation)
+ * - Tropical: 11-12hr summer day / 8-9hr winter day (consistent warmth)
  */
 export const LATITUDE_BAND_RADIUS = {
-  central:    700,   // 10% of disc radius (center region) - shortest days
-  subarctic:  2100,  // 30% of disc radius
-  temperate:  3500,  // 50% of disc radius
-  tropical:   4900,  // 70% of disc radius
-  rim:        6300   // 90% of disc radius (edge region) - longest days
+  polar:      750,   // Midpoint of 0-1500 mi (disc center, Amon Astra)
+  subarctic:  2000,  // Midpoint of 1500-2500 mi
+  boreal:     3000,  // Midpoint of 2500-3500 mi (northern forests, snow persists)
+  temperate:  4000,  // Midpoint of 3500-4500 mi (classic four seasons)
+  subtropical: 5000, // Midpoint of 4500-5500 mi (mild winters)
+  tropical:   6250   // Midpoint of 5500-7000 mi (warm, humid paradise)
 };
 
 /**
  * Maps latitude band names to their range boundaries [min, max] in miles from disc center.
+ * Boundaries derived from physics-based daylight hour calculations.
  */
 export const LATITUDE_BAND_RANGES = {
-  central:    [0,    1400],  // 0% - 20% of radius
-  subarctic:  [1400, 2800],  // 20% - 40%
-  temperate:  [2800, 4200],  // 40% - 60%
-  tropical:   [4200, 5600],  // 60% - 80%
-  rim:        [5600, 7000]   // 80% - 100%
+  polar:      [0,    1500],  // Extreme polar conditions, magical twilight intervention
+  subarctic:  [1500, 2500],  // Midnight sun territory, extreme seasonal swing
+  boreal:     [2500, 3500],  // Northern forests, snow persists through winter
+  temperate:  [3500, 4500],  // Classic four seasons, snow comes and goes
+  subtropical: [4500, 5500], // Mild winters, warm summers, rare snow
+  tropical:   [5500, 7000]   // Warm and humid, fed by rim glacial melt
 };
 
 // ===== OBSERVER POSITION DEFAULTS =====

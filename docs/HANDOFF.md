@@ -1,114 +1,149 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-23
-**Previous Agent**: Cypress (Sprint 22)
-**Current Sprint Count**: 22 (next agent creates `SPRINT_23_*.md`)
-**Status**: Ground Temperature System complete and tested
+**Previous Agent**: Flint (Sprint 23)
+**Current Sprint Count**: 23 (next agent creates `SPRINT_24_*.md`)
+**Status**: Latitude band restructuring IN PROGRESS - constants updated, templates need migration
 
 ---
 
 ## Where We Left Off
 
-Sprint 22 implemented the **Ground Temperature System** to fix unrealistic mid-winter snow melt:
+Sprint 23 restructured the latitude band system from arbitrary 20% slices to physics-based divisions derived from actual daylight hour calculations. This was prompted by the "Minnesota vs Kansas" snow persistence problem.
 
-1. **Added `groundType` to all 30+ biome templates** in `region-templates.js`
-   - permafrost, rock, clay, soil, peat, sand
+**What's done:**
+- Analyzed daylight hours at various distances from disc center
+- Defined 6 physics-based latitude bands with Tyler
+- Updated `src/v2/models/constants.js` with new band definitions
 
-2. **Created `GroundTemperatureService.js`** with EWMA algorithm
-   - Thermal inertia creates lagged temperature response
-   - Snow insulation effect (>6" snow stabilizes ground near 32°F)
-
-3. **Modified `SnowAccumulationService.js`**
-   - Uses ground temp for snow sticking factor
-   - Uses ground temp for melt calculations
-   - Rain-on-snow modulated by ground temp
-
-4. **Updated README.md** to reflect realistic physics-based weather generation
+**What's NOT done:**
+- `src/v2/data/region-templates.js` still uses old band names (`central`, `rim`)
+- New bands (`boreal`, `subtropical`) don't exist in templates yet
+- Haven't searched for other code references to old band names
 
 ---
 
-## Test Results
+## Immediate Next Steps
 
-**Convergence Zone improved significantly:**
-- Max snow depth: 10.5" → 22.3" (no more complete mid-winter melt!)
+### Step 1: Update region-templates.js
 
-**Continental Prairie still shows complete melt** but with higher max depth (42.9" → 44.4")
+**1a. Replace `latitudeBands` object (lines 6-12):**
+```javascript
+export const latitudeBands = {
+  "polar": { label: "Polar", range: "0-1,500 mi (disc center)" },
+  "subarctic": { label: "Subarctic", range: "1,500-2,500 mi" },
+  "boreal": { label: "Boreal", range: "2,500-3,500 mi" },
+  "temperate": { label: "Temperate", range: "3,500-4,500 mi" },
+  "subtropical": { label: "Subtropical", range: "4,500-5,500 mi" },
+  "tropical": { label: "Tropical", range: "5,500-7,000 mi (near rim)" }
+};
+```
 
-**Note**: Precip type changes (233) unchanged - expected, since air temp determines what falls from sky, ground temp only affects accumulation/melt.
+**1b. Rename band keys in `regionTemplates`:**
+- Line ~29: `"central": {` → `"polar": {`
+- Line ~924: `"rim": {` → `"tropical": {`
+
+**1c. Add empty sections for new bands:**
+```javascript
+"boreal": {
+  // Templates to be migrated here later
+},
+"subtropical": {
+  // Templates to be migrated here later
+},
+```
+
+**1d. Update `compatibleBands` arrays in special templates (~lines 1125-1260):**
+- Replace `"central"` with `"polar"`
+- Replace `"rim"` with `"tropical"`
+- Consider adding `"boreal"` and `"subtropical"` where appropriate
+
+### Step 2: Search for Other References
+
+```bash
+grep -r "central\|rim" src/v2/ --include="*.js"
+```
+
+Key files to check:
+- `SunriseSunsetService.js` - uses `LATITUDE_BAND_RADIUS`
+- Any UI components that display band names
+
+### Step 3: Test the Application
+
+```bash
+npm start
+```
+Then visit `localhost:3000?test=true` and verify:
+- Region dropdown shows correct band names
+- Weather generation works for all bands
+- No console errors about missing bands
 
 ---
 
-## Discussion Points (from conversation with Tyler)
+## The New Latitude Bands
 
-### 1. Extended Testing Period
-Current test: 30 days (January). Tyler suggested 60-90 days to see WHEN melt occurs:
-- Mid-winter melt = problem
-- Early spring melt = expected
+| # | Code Key | Distance from Center | Climate Character |
+|---|----------|---------------------|-------------------|
+| 1 | `polar` | 0-1,500 mi | Magical twilight in summer, polar night in winter |
+| 2 | `subarctic` | 1,500-2,500 mi | Midnight sun, extreme seasonal swing |
+| 3 | `boreal` | 2,500-3,500 mi | Northern forests, snow persists (Minnesota) |
+| 4 | `temperate` | 3,500-4,500 mi | Classic four seasons, snow comes and goes (Kansas) |
+| 5 | `subtropical` | 4,500-5,500 mi | Mild winters, warm summers |
+| 6 | `tropical` | 5,500-7,000 mi | Warm, humid, fed by rim glacial melt |
 
-### 2. Biome Granularity
-Tyler asked if we need more granular temperate biomes:
-- "Cold Continental" (Minnesota) - stays snow-covered
-- "Warm Continental" (Kansas) - snow comes and goes
+These are derived from physics - see Sprint 23 log for daylight hour calculations.
 
-**Answer**: Easy to implement - just add new templates. No code changes needed.
+---
+
+## Future Work (After Migration Complete)
+
+### Reassign Templates to New Bands
+Once `boreal` and `subtropical` exist, consider moving templates:
+
+**To `boreal`:**
+- A "Cold Continental Prairie" variant (snow persists)
+- Temperate Highland
+- Possibly some subarctic templates
+
+**To `subtropical`:**
+- Mediterranean Coast
+- Tropical Highland
+- Tropical Deciduous Forest
+
+### Wire Daylight to Temperature
+The long-term goal: connect `SunriseSunsetService` to `TemperatureService` so temperature naturally responds to actual daylight hours. Currently `TemperatureService` uses hardcoded 5 AM min / 3 PM max regardless of latitude band.
 
 ---
 
 ## Outstanding Items from NOTES_FROM_USER.md
 
-1. **Export button for precip test** - Add "Copy to Clipboard" for easier data extraction from test harness
-2. **Unused template factors** - Investigate what `highBiodiversity` does. Are there template factors that aren't being used?
-3. **Diurnal variation** - Consider calculating temperature from flat disc sun physics (distance and angle). May be "too crunchy" per Tyler.
-4. **Precipitation amounts** - Confirmed: random based on intensity categories. This is working as expected.
-5. **Denver snow behavior** - Tyler noted Denver snow "is gone the next day" - worth investigating sublimation, altitude effects, or intense sunshine at elevation.
-
----
-
-## Current System State
-
-| Component | Status |
-|-----------|--------|
-| Ground Temperature System | COMPLETE |
-| Snow Accumulation | ENHANCED (uses ground temp) |
-| Precipitation Analysis Test | FUNCTIONAL |
-| Phase B (Snow & Ice) | MOSTLY COMPLETE |
-| Phase C (Extreme Weather) | NOT STARTED |
+1. **Export button for precip test** - Add "Copy to Clipboard" for test harness
+2. **Unused template factors** - What does `highBiodiversity` do?
+3. **Diurnal variation** - Wire up flat-disc sun physics to temperature (discussed this sprint)
+4. **Denver snow behavior** - Why does it disappear so quickly?
 
 ---
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/v2/services/weather/GroundTemperatureService.js` | NEW - thermal inertia calculations |
-| `src/v2/services/weather/SnowAccumulationService.js` | Modified - uses ground temp |
-| `src/v2/data/region-templates.js` | Modified - added groundType to all biomes |
-| `docs/testing-results/precip-summary-1.json` | Baseline test data |
-| `docs/testing-results/precip-summary-2.json` | Post-implementation test data |
+| File | Status |
+|------|--------|
+| `src/v2/models/constants.js` | UPDATED - has new 6-band system |
+| `src/v2/data/region-templates.js` | NEEDS UPDATE - still uses old band names |
+| `docs/sprint-logs/SPRINT_23_FLINT.md` | NEW - detailed notes on this work |
+| `docs/imports/discVisualizationAndCalc.md` | NEW - Tyler's visualization app for reference |
 
 ---
 
-## Git State
+## Cosmology Quick Reference
 
-- **Branch**: main
-- **Status**: Changes not yet committed (ground temp implementation + README updates)
-- **Files to commit**:
-  - `src/v2/data/region-templates.js`
-  - `src/v2/services/weather/GroundTemperatureService.js` (new)
-  - `src/v2/services/weather/SnowAccumulationService.js`
-  - `README.md`
-  - `docs/sprint-logs/SPRINT_22_CYPRESS.md` (new)
-  - `docs/HANDOFF.md`
-
----
-
-## Suggested Next Steps
-
-1. **Commit Sprint 22 work** - Ground temperature implementation
-2. **Extended testing** - Run 60-90 day tests to see when melt occurs
-3. **Biome granularity** - Consider adding cold/warm continental variants
-4. **Export button** - Add clipboard functionality to test harness
-5. **Phase C planning** - Extreme weather events (hurricanes, blizzards, tornadoes)
+- **Disc radius**: 7,000 miles
+- **Sun illumination radius**: 10,000 miles
+- **Sun orbit (summer)**: 8,000 mi from center (1,000 mi from edge)
+- **Sun orbit (winter)**: 11,000 mi from center (4,000 mi from edge)
+- **Rim superheating**: Edge experiences extreme heat/cold cycles, shattering into void
+- **Tropical paradise**: Fed by glacial melt from frozen rim edge
+- **Polar twilight**: Center would have 24hr summer day, but magically moderated
 
 ---
 

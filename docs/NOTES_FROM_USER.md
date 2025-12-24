@@ -1,4 +1,4 @@
-Here is where I'll stow some thoughts so I don't interrupt you while you're working. Once you've acknowledged a note, please migrate it to the roadmap and delete it here (do not delete these instructions, please)
+Here is where I'll stow some thoughts so I don't interrupt you while you're working. Once you've acknowledged a note, please migrate it to the appropriate place and delete it here (do not delete these instructions, please). This is how I know that the notes have been read/incorporated.
 
 - this new test should also have a button to export the data from that test specifically. maybe even a 'copy to clipboard' so I can get it into a doc here more easily, rather than saving, importing, renaming, etc.
 - wait what does 'highBiodiversity' mean in the biome template? Are there template factors that we have declared but aren't doing anything with?
