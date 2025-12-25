@@ -203,30 +203,99 @@ export class EnvironmentalConditionsService {
   }
 
   /**
-   * Calculate flooding conditions by detecting excess precipitation
+   * Calculate flooding conditions
+   *
+   * Flood risk comes from LIQUID water, not frozen precipitation:
+   * - Rain (especially heavy rain) increases flood risk
+   * - Snow accumulating in freezing temps does NOT increase flood risk
+   * - Rapid snow melt DOES increase flood risk (water release)
+   * - Rain-on-snow events are particularly dangerous
+   *
    * @param {Object} region - Region data
    * @param {Object} date - Current date
    * @returns {Object} Flooding assessment
    */
   calculateFlooding(region, date) {
-    const lookbackDays = 14; // Shorter window for flooding (more immediate)
-    const { actualPrecipDays, expectedPrecipDays, heavyPrecipDays } = this.getPrecipitationHistory(region, date, lookbackDays);
+    // Get current conditions
+    const currentWeather = this.weatherGenerator.generateWeather(region, { ...date, hour: 12 });
+    const currentTemp = currentWeather.temperature;
+    const snowData = this.snowService.getAccumulation(region, date);
+    const snowDepth = snowData.snowDepth;
 
-    // Calculate precipitation excess as a percentage
-    const precipExcess = expectedPrecipDays > 0
-      ? ((actualPrecipDays - expectedPrecipDays) / expectedPrecipDays) * 100
-      : (actualPrecipDays > 0 ? 100 : 0);
+    const isFreezing = currentTemp <= 32;
+    const hasSignificantSnow = snowDepth >= 2; // 2+ inches
 
-    // Factor in heavy precipitation (more likely to cause flooding)
+    // Get precipitation history (still useful for rain events)
+    const lookbackDays = 14;
+    const { actualPrecipDays, expectedPrecipDays, heavyPrecipDays, liquidPrecipDays } =
+      this.getPrecipitationHistoryDetailed(region, date, lookbackDays);
+
+    // Calculate snow melt over last 3 days (proxy for water release)
+    const snowMelt3Day = this.getSnowMeltRate(region, date, 3);
+
+    // Check for rain-on-snow (current conditions)
+    const isRainOnSnow = currentWeather.precipitation &&
+      currentWeather.precipitationType === 'rain' &&
+      hasSignificantSnow;
+
+    // SUPPRESSION: If it's freezing with snow on ground and no rain,
+    // water is locked up - minimal flood risk regardless of precip days
+    if (isFreezing && hasSignificantSnow && !isRainOnSnow) {
+      return {
+        ...FLOOD_LEVELS.NONE,
+        precipExcessPercent: 0,
+        actualPrecipDays,
+        expectedPrecipDays,
+        heavyPrecipDays,
+        lookbackDays,
+        suppressedByFrozenConditions: true,
+        gameplayImpacts: []
+      };
+    }
+
+    // Calculate flood risk score (0-100)
+    let floodScore = 0;
+
+    // Factor 1: Liquid precipitation excess (0-40 points)
+    // Only count liquid precip days, not snow
+    const liquidPrecipExcess = expectedPrecipDays > 0
+      ? ((liquidPrecipDays - expectedPrecipDays) / expectedPrecipDays) * 100
+      : (liquidPrecipDays > 0 ? 50 : 0);
+    floodScore += Math.min(40, Math.max(0, liquidPrecipExcess * 0.4));
+
+    // Factor 2: Heavy precipitation (0-20 points)
     const heavyPrecipFactor = heavyPrecipDays / lookbackDays;
+    floodScore += heavyPrecipFactor * 40; // Up to 20 points if half the days were heavy
 
-    // Determine flood level
+    // Factor 3: Snow melt contribution (0-30 points)
+    // Rapid melt releases stored water quickly
+    if (snowMelt3Day >= 10) {
+      floodScore += 30; // Extreme melt (10+ inches in 3 days)
+    } else if (snowMelt3Day >= 5) {
+      floodScore += 20; // Rapid melt
+    } else if (snowMelt3Day >= 2) {
+      floodScore += 10; // Moderate melt
+    }
+
+    // Factor 4: Rain-on-snow bonus (0-20 points)
+    // This is particularly dangerous - rain + melt together
+    if (isRainOnSnow) {
+      floodScore += 20;
+      if (currentWeather.precipitationIntensity === 'heavy') {
+        floodScore += 10; // Extra for heavy rain on snow
+      }
+    }
+
+    // Clamp score
+    floodScore = Math.max(0, Math.min(100, floodScore));
+
+    // Determine flood level from score
     let floodLevel;
-    if (precipExcess < 30 && heavyPrecipFactor < 0.2) {
+    if (floodScore < 20) {
       floodLevel = FLOOD_LEVELS.NONE;
-    } else if (precipExcess < 60 || heavyPrecipFactor < 0.3) {
+    } else if (floodScore < 40) {
       floodLevel = FLOOD_LEVELS.ELEVATED;
-    } else if (precipExcess < 100 || heavyPrecipFactor < 0.5) {
+    } else if (floodScore < 70) {
       floodLevel = FLOOD_LEVELS.MODERATE;
     } else {
       floodLevel = FLOOD_LEVELS.HIGH;
@@ -234,13 +303,61 @@ export class EnvironmentalConditionsService {
 
     return {
       ...floodLevel,
-      precipExcessPercent: Math.round(precipExcess),
+      floodScore,
+      precipExcessPercent: Math.round(liquidPrecipExcess),
       actualPrecipDays,
+      liquidPrecipDays,
       expectedPrecipDays,
       heavyPrecipDays,
+      snowMelt3Day: Math.round(snowMelt3Day * 10) / 10,
+      isRainOnSnow,
       lookbackDays,
       gameplayImpacts: this.getFloodingGameplayImpacts(floodLevel)
     };
+  }
+
+  /**
+   * Get detailed precipitation history including liquid vs frozen breakdown
+   */
+  getPrecipitationHistoryDetailed(region, date, days) {
+    let actualPrecipDays = 0;
+    let heavyPrecipDays = 0;
+    let liquidPrecipDays = 0; // Rain only, not snow/sleet
+
+    const expectedPrecipRate = this.getExpectedPrecipitationRate(region, date);
+    const expectedPrecipDays = Math.round(days * expectedPrecipRate);
+
+    for (let i = 0; i < days; i++) {
+      const checkDate = advanceDate(date, -i * 24);
+      const dayWeather = this.weatherGenerator.generateWeather(region, { ...checkDate, hour: 12 });
+
+      if (dayWeather.precipitation) {
+        actualPrecipDays++;
+        if (dayWeather.precipitationIntensity === 'heavy') {
+          heavyPrecipDays++;
+        }
+        // Only count rain as liquid precip (not snow, sleet, freezing rain)
+        if (dayWeather.precipitationType === 'rain') {
+          liquidPrecipDays++;
+        }
+      }
+    }
+
+    return { actualPrecipDays, expectedPrecipDays, heavyPrecipDays, liquidPrecipDays };
+  }
+
+  /**
+   * Calculate snow melt rate over N days
+   * Returns inches of snow melted (positive = melt occurred)
+   */
+  getSnowMeltRate(region, date, days) {
+    // Get snow depth N days ago vs now
+    const pastDate = advanceDate(date, -days * 24);
+    const pastSnow = this.snowService.getAccumulation(region, pastDate);
+    const currentSnow = this.snowService.getAccumulation(region, date);
+
+    // Melt = past depth - current depth (only if positive, negative means accumulation)
+    return Math.max(0, pastSnow.snowDepth - currentSnow.snowDepth);
   }
 
   /**
@@ -656,6 +773,7 @@ export class EnvironmentalConditionsService {
   clearCache() {
     this.conditionsCache.clear();
     this.weatherGenerator.clearCache();
+    this.snowService.clearCache();
   }
 }
 

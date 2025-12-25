@@ -51,6 +51,36 @@ export const THUNDERSTORM_CONFIG = {
   yearsToTest: 5
 };
 
+/**
+ * Configuration for flood risk analysis
+ * Tests flood calculation accuracy across different scenarios:
+ * - Winter with snow accumulation (should NOT trigger flood alerts)
+ * - Spring thaw with rapid snow melt (SHOULD trigger flood alerts)
+ * - Rain-on-snow events (SHOULD trigger flood alerts)
+ * - Normal rainfall periods (depends on amount)
+ */
+export const FLOOD_ANALYSIS_CONFIG = {
+  // Test late winter through spring (Jan 15 - Apr 15) to capture thaw
+  startDate: { year: 1, month: 1, day: 15, hour: 0 },
+  // 90 days covers deep winter through spring thaw
+  daysToAnalyze: 90,
+  // Check at noon daily for consistency
+  hourToCheck: 12,
+  // Only analyze biomes that can have snow (winter mean <= 40°F)
+  winterTempThreshold: 40,
+  // Thresholds for flagging issues
+  thresholds: {
+    // Snow depth above which flood alerts are suspicious if temp is freezing
+    snowDepthForSuppression: 2, // inches
+    // Temp below which flood alerts during snowfall are suspicious
+    freezingTemp: 32,
+    // Melt rate (inches/day) that should increase flood risk
+    significantMeltRate: 3,
+    // Snow depth drop that indicates rapid melt
+    rapidMeltThreshold: 5 // inches in lookback period
+  }
+};
+
 export const THRESHOLDS = {
   temperature: { min: -100, max: 150 },
   humidity: { min: 0, max: 100 },

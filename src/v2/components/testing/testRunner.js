@@ -8,7 +8,7 @@ import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
 import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
-import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG } from './testConfig';
+import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG } from './testConfig';
 import { validateWeather } from './weatherValidation';
 
 /**
@@ -944,6 +944,311 @@ export const runThunderstormAnalysis = async (onProgress) => {
 
   results.summary.overallThunderstormRate =
     (results.summary.totalThunderstorms / results.summary.totalTestHours) * 100;
+
+  onProgress(100);
+  return results;
+};
+
+/**
+ * Get biomes that can experience snow/freezing conditions
+ * @returns {Array} Array of biome info objects
+ */
+const getSnowCapableBiomes = () => {
+  const snowBiomes = [];
+  const threshold = FLOOD_ANALYSIS_CONFIG.winterTempThreshold;
+
+  for (const latitudeBand of TEST_CONFIG.latitudeBands) {
+    const templates = regionTemplates[latitudeBand];
+    if (!templates) continue;
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      const winterMean = template.parameters?.temperatureProfile?.winter?.mean;
+
+      if (winterMean !== undefined && winterMean <= threshold) {
+        snowBiomes.push({
+          latitudeBand,
+          templateId,
+          template,
+          biomeName: template.name,
+          winterMean
+        });
+      }
+    }
+  }
+
+  return snowBiomes;
+};
+
+/**
+ * Run flood risk analysis
+ * Validates that flood alerts correlate with actual flood-causing conditions
+ *
+ * Tracks:
+ * - Flood alerts triggered while snow is accumulating (FALSE POSITIVES)
+ * - Rapid snow melt without flood alerts (MISSED ALERTS)
+ * - Rain-on-snow events and their flood response
+ * - Correlation between flood level and actual water release
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results
+ */
+export const runFloodAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const snowBiomes = getSnowCapableBiomes();
+  const { daysToAnalyze, hourToCheck, startDate, thresholds } = FLOOD_ANALYSIS_CONFIG;
+
+  const results = {
+    config: {
+      daysAnalyzed: daysToAnalyze,
+      startDate: `${startDate.month}/${startDate.day} Year ${startDate.year}`,
+      biomesAnalyzed: snowBiomes.length,
+      thresholds
+    },
+    biomes: {},
+    summary: {
+      totalDaysAnalyzed: 0,
+      totalFloodAlerts: 0,
+      suspiciousAlerts: 0,        // Flood alerts when conditions don't warrant them
+      missedAlerts: 0,            // Rapid melt without flood alert
+      correctAlerts: 0,           // Flood alerts that seem appropriate
+      correctNoAlerts: 0,         // No alert when conditions are stable
+      falsePositiveRate: 0,
+      missedAlertRate: 0
+    },
+    issues: []  // Specific problematic scenarios found
+  };
+
+  const weatherGen = new WeatherGenerator();
+  const envService = new EnvironmentalConditionsService();
+  const snowService = new SnowAccumulationService();
+
+  let completedDays = 0;
+  const totalOperations = snowBiomes.length * daysToAnalyze;
+
+  for (const biomeInfo of snowBiomes) {
+    const { latitudeBand, templateId, template, biomeName, winterMean } = biomeInfo;
+
+    const region = {
+      id: `flood-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      winterMean,
+      timeSeries: [],
+      stats: {
+        daysWithFloodAlert: 0,
+        daysWithSnowAccumulating: 0,
+        daysWithRapidMelt: 0,
+        daysWithRainOnSnow: 0,
+        suspiciousAlerts: 0,      // Alert when snow accumulating & frozen
+        missedAlerts: 0,          // Rapid melt with no alert
+        correctAlerts: 0,
+        correctNoAlerts: 0
+      },
+      suspiciousEvents: [],
+      missedEvents: []
+    };
+
+    // Clear caches
+    weatherGen.clearCache();
+    envService.clearCache();
+    snowService.clearCache();
+
+    let currentDate = { ...startDate };
+    let previousSnowDepth = 0;
+    const recentSnowDepths = []; // Track last 3 days for melt rate
+
+    for (let day = 0; day < daysToAnalyze; day++) {
+      const testDate = { ...currentDate, hour: hourToCheck };
+
+      try {
+        const weather = weatherGen.generateWeather(region, testDate);
+        const envConditions = envService.getEnvironmentalConditions(region, testDate);
+        const snowAccum = snowService.getAccumulation(region, testDate);
+
+        const temp = weather.temperature;
+        const snowDepth = snowAccum.snowDepth;
+        const floodLevel = envConditions.flooding.level;
+        const precipType = weather.precipitation ? weather.precipitationType : 'none';
+
+        // Calculate melt rate (snow depth change over last 3 days)
+        recentSnowDepths.push(snowDepth);
+        if (recentSnowDepths.length > 3) recentSnowDepths.shift();
+
+        const meltRate = recentSnowDepths.length >= 2
+          ? Math.max(0, recentSnowDepths[0] - snowDepth)
+          : 0;
+
+        const snowDepthDrop3Day = recentSnowDepths.length >= 3
+          ? Math.max(0, recentSnowDepths[0] - snowDepth)
+          : 0;
+
+        // Analyze conditions
+        const isFreezing = temp <= thresholds.freezingTemp;
+        const hasSignificantSnow = snowDepth >= thresholds.snowDepthForSuppression;
+        const isSnowAccumulating = snowDepth > previousSnowDepth && isFreezing;
+        const isRapidMelt = snowDepthDrop3Day >= thresholds.rapidMeltThreshold;
+        const isRainOnSnow = precipType === 'rain' && hasSignificantSnow;
+
+        // Determine if alert is appropriate
+        let alertAssessment = 'unknown';
+
+        if (floodLevel > 0) {
+          biomeResult.stats.daysWithFloodAlert++;
+
+          // SUSPICIOUS: Flood alert while snow is accumulating and it's freezing
+          if (isSnowAccumulating && isFreezing && !isRainOnSnow) {
+            alertAssessment = 'suspicious';
+            biomeResult.stats.suspiciousAlerts++;
+            biomeResult.suspiciousEvents.push({
+              date: `${testDate.month}/${testDate.day}`,
+              floodLevel,
+              temp,
+              snowDepth,
+              precipType,
+              reason: 'Flood alert while snow accumulating in freezing temps'
+            });
+          }
+          // SUSPICIOUS: Flood alert with heavy snow on ground and freezing, no melt
+          else if (hasSignificantSnow && isFreezing && meltRate === 0 && !isRainOnSnow) {
+            alertAssessment = 'suspicious';
+            biomeResult.stats.suspiciousAlerts++;
+            biomeResult.suspiciousEvents.push({
+              date: `${testDate.month}/${testDate.day}`,
+              floodLevel,
+              temp,
+              snowDepth,
+              precipType,
+              reason: 'Flood alert with frozen snow cover, no melt occurring'
+            });
+          }
+          // CORRECT: Flood alert during rapid melt or rain-on-snow
+          else if (isRapidMelt || isRainOnSnow) {
+            alertAssessment = 'correct';
+            biomeResult.stats.correctAlerts++;
+          }
+          // CORRECT: Flood alert when above freezing with precipitation
+          else if (!isFreezing && weather.precipitation) {
+            alertAssessment = 'correct';
+            biomeResult.stats.correctAlerts++;
+          }
+          // Unclear - count as correct (benefit of doubt)
+          else {
+            alertAssessment = 'correct';
+            biomeResult.stats.correctAlerts++;
+          }
+        } else {
+          // No flood alert
+
+          // MISSED: Rapid melt happening but no alert
+          if (isRapidMelt && !isFreezing) {
+            alertAssessment = 'missed';
+            biomeResult.stats.missedAlerts++;
+            biomeResult.missedEvents.push({
+              date: `${testDate.month}/${testDate.day}`,
+              temp,
+              snowDepth,
+              snowDepthDrop3Day,
+              reason: `Rapid melt (${snowDepthDrop3Day.toFixed(1)}" in 3 days) with no flood alert`
+            });
+          }
+          // MISSED: Heavy rain on significant snow
+          else if (isRainOnSnow && weather.precipitationIntensity === 'heavy') {
+            alertAssessment = 'missed';
+            biomeResult.stats.missedAlerts++;
+            biomeResult.missedEvents.push({
+              date: `${testDate.month}/${testDate.day}`,
+              temp,
+              snowDepth,
+              precipType,
+              reason: 'Heavy rain on snow with no flood alert'
+            });
+          }
+          // CORRECT: No alert when conditions are stable
+          else {
+            alertAssessment = 'correct-none';
+            biomeResult.stats.correctNoAlerts++;
+          }
+        }
+
+        // Track other stats
+        if (isSnowAccumulating) biomeResult.stats.daysWithSnowAccumulating++;
+        if (isRapidMelt) biomeResult.stats.daysWithRapidMelt++;
+        if (isRainOnSnow) biomeResult.stats.daysWithRainOnSnow++;
+
+        // Record time series entry
+        biomeResult.timeSeries.push({
+          day,
+          date: `${testDate.month}/${testDate.day}`,
+          temp,
+          snowDepth: Math.round(snowDepth * 10) / 10,
+          snowChange: Math.round((snowDepth - previousSnowDepth) * 10) / 10,
+          precipType,
+          floodLevel,
+          floodName: envConditions.flooding.name,
+          alertAssessment
+        });
+
+        previousSnowDepth = snowDepth;
+
+      } catch (error) {
+        biomeResult.timeSeries.push({
+          day,
+          date: `${currentDate.month}/${currentDate.day}`,
+          error: error.message
+        });
+      }
+
+      currentDate = advanceDate(currentDate, 24);
+      completedDays++;
+
+      if (completedDays % 50 === 0) {
+        onProgress((completedDays / totalOperations) * 100);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    // Add to summary
+    results.summary.totalDaysAnalyzed += daysToAnalyze;
+    results.summary.totalFloodAlerts += biomeResult.stats.daysWithFloodAlert;
+    results.summary.suspiciousAlerts += biomeResult.stats.suspiciousAlerts;
+    results.summary.missedAlerts += biomeResult.stats.missedAlerts;
+    results.summary.correctAlerts += biomeResult.stats.correctAlerts;
+    results.summary.correctNoAlerts += biomeResult.stats.correctNoAlerts;
+
+    // Flag biomes with significant issues
+    if (biomeResult.stats.suspiciousAlerts > 5 || biomeResult.stats.missedAlerts > 3) {
+      results.issues.push({
+        biomeName,
+        suspiciousAlerts: biomeResult.stats.suspiciousAlerts,
+        missedAlerts: biomeResult.stats.missedAlerts,
+        sampleSuspicious: biomeResult.suspiciousEvents.slice(0, 3),
+        sampleMissed: biomeResult.missedEvents.slice(0, 3)
+      });
+    }
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  // Calculate rates
+  const totalAlerts = results.summary.totalFloodAlerts;
+  const totalMeltOpportunities = Object.values(results.biomes)
+    .reduce((sum, b) => sum + b.stats.daysWithRapidMelt + b.stats.daysWithRainOnSnow, 0);
+
+  results.summary.falsePositiveRate = totalAlerts > 0
+    ? (results.summary.suspiciousAlerts / totalAlerts) * 100
+    : 0;
+
+  results.summary.missedAlertRate = totalMeltOpportunities > 0
+    ? (results.summary.missedAlerts / totalMeltOpportunities) * 100
+    : 0;
 
   onProgress(100);
   return results;

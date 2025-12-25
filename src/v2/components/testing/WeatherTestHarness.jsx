@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge } from 'react-icons/bs';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
-import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG } from './testConfig';
-import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis } from './testRunner';
+import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG } from './testConfig';
+import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis } from './testRunner';
 import { downloadFullResults, downloadProblemsReport, downloadPrecipAnalysis, downloadPrecipSummary } from './resultExporters';
 import {
   BiomeStatsTable,
@@ -67,6 +67,11 @@ const WeatherTestHarness = () => {
   const [thunderstormProgress, setThunderstormProgress] = useState(0);
   const [thunderstormResults, setThunderstormResults] = useState(null);
 
+  // Flood analysis state
+  const [isFloodRunning, setIsFloodRunning] = useState(false);
+  const [floodProgress, setFloodProgress] = useState(0);
+  const [floodResults, setFloodResults] = useState(null);
+
   const totalBiomes = getTotalBiomeCount();
   const newBiomes = getNewBiomeCount();
   const activeBiomes = newOnly ? newBiomes : totalBiomes;
@@ -112,6 +117,18 @@ const WeatherTestHarness = () => {
 
     setThunderstormResults(analysisResults);
     setIsThunderstormRunning(false);
+  };
+
+  const handleRunFloodAnalysis = async () => {
+    setIsFloodRunning(true);
+    setFloodProgress(0);
+
+    const analysisResults = await runFloodAnalysis((progressPercent) => {
+      setFloodProgress(progressPercent);
+    });
+
+    setFloodResults(analysisResults);
+    setIsFloodRunning(false);
   };
 
   return (
@@ -236,6 +253,134 @@ const WeatherTestHarness = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Flood Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#0dcaf0' }}>
+        <Card.Body>
+          <h5><BsWater className="me-2" />Flood Risk Analysis</h5>
+          <p className="text-muted">
+            Validates flood alert accuracy by checking if alerts correlate with actual flood-causing conditions.
+            Flags false positives (alerts during frozen conditions) and missed alerts (rapid melt without warning).
+          </p>
+          <ul>
+            <li>Duration: {FLOOD_ANALYSIS_CONFIG.daysToAnalyze} days (Jan 15 - Apr 15, winter through spring thaw)</li>
+            <li>Tracks: Snow depth, melt rate, precipitation type, flood alerts</li>
+            <li>Validates: Alert appropriateness based on physical conditions</li>
+          </ul>
+
+          <Button
+            variant="info"
+            onClick={handleRunFloodAnalysis}
+            disabled={isFloodRunning || isRunning || isPrecipRunning || isThunderstormRunning}
+            size="lg"
+          >
+            <BsWater className="me-2" />
+            {isFloodRunning ? 'Analyzing...' : 'Run Flood Analysis'}
+          </Button>
+
+          {isFloodRunning && (
+            <div className="mt-3">
+              <ProgressBar variant="info" now={floodProgress} label={`${floodProgress.toFixed(1)}%`} animated />
+              <small className="text-muted mt-2">Analyzing flood alert accuracy...</small>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Flood Analysis Results */}
+      {floodResults && (
+        <>
+          <Alert variant={floodResults.summary.falsePositiveRate > 20 ? 'danger' : floodResults.summary.falsePositiveRate > 10 ? 'warning' : 'success'}>
+            <Alert.Heading><BsWater className="me-2" />Flood Analysis Complete</Alert.Heading>
+            <p className="mb-0">
+              Analyzed {floodResults.config.biomesAnalyzed} biomes over {floodResults.config.daysAnalyzed} days.
+              False positive rate: <strong>{floodResults.summary.falsePositiveRate.toFixed(1)}%</strong>
+              {floodResults.summary.falsePositiveRate > 20 && ' - Needs attention!'}
+            </p>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Summary</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Total Flood Alerts</td>
+                    <td>{floodResults.summary.totalFloodAlerts}</td>
+                  </tr>
+                  <tr>
+                    <td>Suspicious Alerts (false positives)</td>
+                    <td>
+                      <Badge bg={floodResults.summary.suspiciousAlerts > 10 ? 'danger' : 'secondary'}>
+                        {floodResults.summary.suspiciousAlerts}
+                      </Badge>
+                      {' '}({floodResults.summary.falsePositiveRate.toFixed(1)}%)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Missed Alerts</td>
+                    <td>
+                      <Badge bg={floodResults.summary.missedAlerts > 5 ? 'warning' : 'secondary'}>
+                        {floodResults.summary.missedAlerts}
+                      </Badge>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Correct Alerts</td>
+                    <td><Badge bg="success">{floodResults.summary.correctAlerts}</Badge></td>
+                  </tr>
+                  <tr>
+                    <td>Correct No-Alerts</td>
+                    <td>{floodResults.summary.correctNoAlerts}</td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              {/* Problem Biomes */}
+              {floodResults.issues.length > 0 && (
+                <>
+                  <h6 className="mt-4 text-danger">Biomes with Issues</h6>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    <Table striped bordered size="sm">
+                      <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                        <tr>
+                          <th>Biome</th>
+                          <th>Suspicious</th>
+                          <th>Missed</th>
+                          <th>Sample Issues</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {floodResults.issues.map((issue) => (
+                          <tr key={issue.biomeName}>
+                            <td>{issue.biomeName}</td>
+                            <td><Badge bg="danger">{issue.suspiciousAlerts}</Badge></td>
+                            <td><Badge bg="warning" text="dark">{issue.missedAlerts}</Badge></td>
+                            <td style={{ fontSize: '0.8em' }}>
+                              {issue.sampleSuspicious.slice(0, 1).map((s, i) => (
+                                <div key={i}>{s.date}: {s.reason}</div>
+                              ))}
+                              {issue.sampleMissed.slice(0, 1).map((m, i) => (
+                                <div key={i}>{m.date}: {m.reason}</div>
+                              ))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                </>
+              )}
+
+              {floodResults.issues.length === 0 && (
+                <Alert variant="success" className="mt-3 mb-0">
+                  No significant flood alert issues detected across any biomes.
+                </Alert>
+              )}
+            </Card.Body>
+          </Card>
+        </>
+      )}
 
       {/* Thunderstorm Analysis Results */}
       {thunderstormResults && (
