@@ -149,8 +149,8 @@ const AppContent = () => {
         )}
       </Container>
 
-      {/* Floating menu button (bottom-right) */}
-      <FloatingMenuButton onClick={() => setShowMenu(true)} />
+      {/* Floating menu button (bottom-right) - hidden when menu is open */}
+      {!showMenu && <FloatingMenuButton onClick={() => setShowMenu(true)} />}
 
       {/* Locations menu */}
       <HamburgerMenu
