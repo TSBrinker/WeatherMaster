@@ -1,68 +1,56 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-25
-**Previous Agent**: Marble (Sprint 32)
-**Current Sprint Count**: 32 (next agent creates `SPRINT_33_*.md`)
-**Status**: UI/UX improvements - Floating menu button, location cards, edit mode
+**Previous Agent**: Marble II (Sprint 33)
+**Current Sprint Count**: 33 (next agent creates `SPRINT_34_*.md`)
+**Status**: Full-page locations menu + mobile fixes
 
 ---
 
 ## Where We Left Off
 
-Sprint 32 focused on iOS Weather-inspired UI improvements to the Locations menu:
+Sprint 33 converted the locations menu from a slide-out panel to a full-page overlay:
 
-### 1. Floating Menu Button (DONE)
-**Goal**: Move hamburger menu trigger from header to floating pill button
+### 1. Full-Page Locations Menu (DONE)
+**Goal**: Fix scrollability bug + improve UX for region deletion scenarios
 **Implementation**:
-- Created `FloatingMenuButton` component with frosted glass effect
-- Positioned fixed bottom-right corner
-- Removed hamburger from `WeatherHeader`
-- Fixed body scroll shift when modal/offcanvas opens
+- Replaced Bootstrap Offcanvas with fixed full-screen overlay
+- Back button (chevron) - disabled when no active region
+- Dedicated scroll area fixes list scrollability
+- FloatingMenuButton hidden when menu is open
+- Improved empty state messaging
 
-### 2. Location Cards Enhancement (DONE)
-**Goal**: Show weather preview on each location in the menu
-**Implementation**:
-- Each location now shows current temperature, condition, and H/L
-- Calculates daily high/low by sampling all 24 hours
-- Removed climate band display (cleaner layout)
-- Fixed legibility/theme issues throughout the offcanvas
-
-### 3. Edit List Mode (DONE)
-**Goal**: Replace "Nuke All Regions" with granular deletion
-**Implementation**:
-- "Edit List" button in settings panel
-- Checkboxes on each location when in edit mode
-- "Select All" option
-- "Delete Selected (n)" with confirmation
-- Removed "Nuke All Regions" from SettingsMenu (kept "Nuke All Data")
-
-### 4. Form Styling (DONE)
-- Comprehensive dark theme styling for all modal forms
-- WorldSetup and RegionCreator now fully themed
-- Alert boxes, form controls, help text all properly styled
+### 2. Mobile Styling Fixes (DONE)
+- Settings trigger (⋯) no longer shows as blue hyperlink
+- Temperature display stays on same row as location name (was wrapping)
 
 ---
 
 ## Suggested Next Tasks
 
-### Visual Polish (from this sprint's discussions)
-- [ ] Background gradient fade transitions between weather conditions
-- [ ] Biome color themes for location cards (stretch goal noted)
-- [ ] Search/filter for locations list (stretch goal)
-- [ ] Drag-to-reorder locations (would need react-beautiful-dnd or @dnd-kit)
+### Quick Fixes (from Tyler's mobile notes)
+- [ ] Time arrow position shifts with digit width - give time fixed width
+- [ ] Hamburger menu icon slightly off-center vertically in its circle
+- [ ] Feels Like section causes layout shifts when data appears/disappears
+- [ ] Time control improvements: day jump buttons (<<< / >>>), larger hitboxes
 
-### UX Improvements (from ROADMAP)
-- [ ] Export/Import Worlds as JSON
-- [ ] Fix Feels Like section height shifts
-- [ ] °C/°F toggle in settings
-- [ ] Miles/Km units toggle
+### Investigation Needed
+- [ ] Cloud % changes mostly at midnight - need to check cloud transition logic
+- [ ] Verify polar twilight lands implementation (first 500 miles as separate zone)
 
-### Phase C: Extreme Weather (remaining)
-- [ ] Ice Storm severity tiers
-- [ ] Hurricanes (complex, save for later)
+### Features/UX Ideas
+- [ ] "X condition in Y hours" forecast teaser on main display
+- [ ] Preferences menu restructure:
+  - Edit Locations
+  - Preferences (units, phrasing, snow accumulation, theme)
+  - Help & Resources
+  - Manage Data (clear cache, nuke, export/import)
+- [ ] Edit world name functionality
 
-### Cleanup
-- [ ] Remove unused TimeDisplay.jsx and TimeControls.jsx
+### Stretch Goals
+- [ ] Multiple worlds per user
+- [ ] Continent hierarchy for location grouping
+- [ ] New biomes: Humid Subtropical, Steppe
 
 ---
 
@@ -70,14 +58,16 @@ Sprint 32 focused on iOS Weather-inspired UI improvements to the Locations menu:
 
 | File | Changes |
 |------|---------|
-| `src/v2/components/menu/FloatingMenuButton.jsx` | NEW - Floating pill button |
-| `src/v2/components/menu/FloatingMenuButton.css` | NEW - Frosted glass styling |
-| `src/v2/components/menu/HamburgerMenu.jsx` | Weather preview, edit mode |
-| `src/v2/components/menu/HamburgerMenu.css` | Complete restyle + edit mode |
-| `src/v2/components/menu/SettingsMenu.jsx` | Removed Nuke All Regions |
-| `src/v2/components/header/WeatherHeader.jsx` | Removed hamburger button |
-| `src/v2/App.jsx` | FloatingMenuButton + HamburgerMenu integration |
-| `src/v2/styles/app.css` | Modal form styling, scroll shift fix |
+| `src/v2/components/menu/HamburgerMenu.jsx` | Full-page overlay, back button, IoChevronBack |
+| `src/v2/components/menu/HamburgerMenu.css` | Complete restyle for full-page layout |
+| `src/v2/App.jsx` | Hide FloatingMenuButton when menu open |
+
+---
+
+## Notes Files
+
+- `docs/NOTES_FROM_USER.md` - Tyler's main scratchpad (items still need addressing)
+- `docs/USER_NOTES_MOBILE.md` - Mobile testing observations
 
 ---
 
