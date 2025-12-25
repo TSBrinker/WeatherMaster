@@ -245,20 +245,42 @@ export class EnvironmentalConditionsService {
 
   /**
    * Calculate heat wave conditions
+   * Heat waves are about dangerous heat for humans, so we require:
+   * 1. Absolute temperature threshold (must actually be hot)
+   * 2. Temperatures significantly above seasonal norm (so 95°F in Arizona summer isn't a "heat wave")
    * @param {Object} region - Region data
    * @param {Object} date - Current date
    * @returns {Object} Heat wave assessment
    */
   calculateHeatWave(region, date) {
+    // Get current temperature to check absolute threshold
+    const currentWeather = this.weatherGenerator.generateWeather(region, { ...date, hour: 14 });
+    const currentTemp = currentWeather.temperature;
+
+    // Absolute temperature thresholds - heat waves require actually dangerous heat
+    const HEAT_ADVISORY_FLOOR = 85;  // Minimum temp for any heat advisory
+    const HEAT_WARNING_FLOOR = 90;   // Minimum temp for heat warning
+    const HEAT_EXTREME_FLOOR = 95;   // Minimum temp for extreme heat
+
+    // If it's not actually hot, no heat wave regardless of deviation from normal
+    if (currentTemp < HEAT_ADVISORY_FLOOR) {
+      return {
+        ...HEAT_WAVE_LEVELS.NONE,
+        consecutiveDays: 0,
+        degreesAboveNormal: 0,
+        gameplayImpacts: []
+      };
+    }
+
     const { consecutiveHotDays, tempAboveNormal } = this.getTemperatureHistory(region, date, 'hot');
 
-    // Determine heat wave level based on consecutive days and severity
+    // Determine heat wave level based on consecutive days, severity, AND absolute temp
     let heatLevel;
     if (consecutiveHotDays < 3) {
       heatLevel = HEAT_WAVE_LEVELS.NONE;
-    } else if (consecutiveHotDays < 5 || tempAboveNormal < 10) {
+    } else if (currentTemp < HEAT_WARNING_FLOOR || consecutiveHotDays < 5 || tempAboveNormal < 10) {
       heatLevel = HEAT_WAVE_LEVELS.ADVISORY;
-    } else if (consecutiveHotDays < 7 || tempAboveNormal < 15) {
+    } else if (currentTemp < HEAT_EXTREME_FLOOR || consecutiveHotDays < 7 || tempAboveNormal < 15) {
       heatLevel = HEAT_WAVE_LEVELS.WARNING;
     } else {
       heatLevel = HEAT_WAVE_LEVELS.EXTREME;
@@ -274,20 +296,42 @@ export class EnvironmentalConditionsService {
 
   /**
    * Calculate cold snap conditions
+   * Cold snaps are about dangerous cold for humans (frostbite, hypothermia), so we require:
+   * 1. Absolute temperature threshold (must actually be dangerously cold)
+   * 2. Temperatures significantly below seasonal norm (so 10°F in Minnesota winter isn't a "cold snap")
    * @param {Object} region - Region data
    * @param {Object} date - Current date
    * @returns {Object} Cold snap assessment
    */
   calculateColdSnap(region, date) {
+    // Get current temperature to check absolute threshold
+    const currentWeather = this.weatherGenerator.generateWeather(region, { ...date, hour: 6 }); // Early morning coldest
+    const currentTemp = currentWeather.temperature;
+
+    // Absolute temperature thresholds - cold snaps require actually dangerous cold
+    const COLD_ADVISORY_CEILING = 25;  // Maximum temp for any cold advisory
+    const COLD_WARNING_CEILING = 10;   // Maximum temp for cold warning
+    const COLD_EXTREME_CEILING = 0;    // Maximum temp for extreme cold
+
+    // If it's not actually cold, no cold snap regardless of deviation from normal
+    if (currentTemp > COLD_ADVISORY_CEILING) {
+      return {
+        ...COLD_SNAP_LEVELS.NONE,
+        consecutiveDays: 0,
+        degreesBelowNormal: 0,
+        gameplayImpacts: []
+      };
+    }
+
     const { consecutiveColdDays, tempBelowNormal } = this.getTemperatureHistory(region, date, 'cold');
 
-    // Determine cold snap level
+    // Determine cold snap level based on consecutive days, severity, AND absolute temp
     let coldLevel;
     if (consecutiveColdDays < 3) {
       coldLevel = COLD_SNAP_LEVELS.NONE;
-    } else if (consecutiveColdDays < 5 || tempBelowNormal < 10) {
+    } else if (currentTemp > COLD_WARNING_CEILING || consecutiveColdDays < 5 || tempBelowNormal < 10) {
       coldLevel = COLD_SNAP_LEVELS.ADVISORY;
-    } else if (consecutiveColdDays < 7 || tempBelowNormal < 15) {
+    } else if (currentTemp > COLD_EXTREME_CEILING || consecutiveColdDays < 7 || tempBelowNormal < 15) {
       coldLevel = COLD_SNAP_LEVELS.WARNING;
     } else {
       coldLevel = COLD_SNAP_LEVELS.EXTREME;
