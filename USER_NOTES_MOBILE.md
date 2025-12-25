@@ -1,0 +1,8 @@
+Here is where I'll log my observations while on my phone and away from my workstation. Please treat these as though they are part of NOTES_FROM_USER. 
+
+- when deleting a region, it’s possible to go back to a “no regions” page. Proposed fix- make the locations menu its own page (instead of a slide out), and remove the X to close it. Only back to regions if you select another region. There are other issues I think that’ll solve too but I don’t remember what they are right now as I type this note on my phone
+- “x condition in y hours” may be helpful on the primary display. Quick knowledge at a glance to start telegraphing changes. 
+- The feels like being not persistent makes the data display shift around when it comes and goes. The container stays, but the info within moves around to make room. Could we give it a dedicated line that only displays anything if there’s data to display? Like just one line below the temperature or something
+- Time arrow position moves based on the Time numbers (1 is narrow, 10s digits expand it, etc.) Give time a fixed width?
+- The hamburger menu icon appears to be slightly lower than centered within its circle. Like its center of gravity is in the top line. 
+- Cloud logic should be blended. Maybe. It’s hard because we only measure at the top of the hour and a lot CAN change in an hour. But the reason I bring it up is that one night at midnight it jumped from 35 to 62%. Wait. Do clouds not change dynamically through the day? I’m noticing it only shifts at midnight. So maybe not blended, but it DOES need attention. 
