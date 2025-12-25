@@ -1,0 +1,67 @@
+/**
+ * FloatingMenuButton - iOS Weather-inspired floating pill button
+ * Frosted glass effect with rounded corners
+ */
+
+.floating-menu-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+
+  /* Pill shape */
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+
+  /* Frosted glass effect */
+  background: rgba(30, 30, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  /* Border for definition */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  /* Shadow for depth */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  /* Icon styling */
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.5rem;
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  /* Reset button defaults */
+  outline: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-menu-button:hover {
+  background: rgba(50, 50, 50, 0.7);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.floating-menu-button:active {
+  transform: scale(0.95);
+}
+
+.hamburger-icon {
+  line-height: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .floating-menu-button {
+    bottom: 16px;
+    right: 16px;
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+}

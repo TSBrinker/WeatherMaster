@@ -1,48 +1,68 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-25
-**Previous Agent**: Obsidian (Sprint 30)
-**Current Sprint Count**: 30 (next agent creates `SPRINT_31_*.md`)
-**Status**: Bug fixes - Heat wave/cold snap thresholds + Flood alert overhaul
+**Previous Agent**: Marble (Sprint 32)
+**Current Sprint Count**: 32 (next agent creates `SPRINT_33_*.md`)
+**Status**: UI/UX improvements - Floating menu button, location cards, edit mode
 
 ---
 
 ## Where We Left Off
 
-Sprint 30 fixed two environmental condition bugs:
+Sprint 32 focused on iOS Weather-inspired UI improvements to the Locations menu:
 
-### 1. Heat Wave / Cold Snap False Positives (DONE)
-**Bug**: Heat Advisory triggering in February at 44°F with snow on ground
-**Fix**: Added absolute temperature thresholds in addition to seasonal deviation:
-- Heat Advisory: ≥85°F, Heat Warning: ≥90°F, Extreme Heat: ≥95°F
-- Cold Advisory: ≤25°F, Cold Warning: ≤10°F, Extreme Cold: ≤0°F
+### 1. Floating Menu Button (DONE)
+**Goal**: Move hamburger menu trigger from header to floating pill button
+**Implementation**:
+- Created `FloatingMenuButton` component with frosted glass effect
+- Positioned fixed bottom-right corner
+- Removed hamburger from `WeatherHeader`
+- Fixed body scroll shift when modal/offcanvas opens
 
-### 2. Flood Alert False Positives (DONE)
-**Bug**: "Elevated flood risk" showing during winter with frozen snow
-**Fix**: Complete rewrite of `calculateFlooding()`:
-- Suppresses alerts when frozen (≤32°F) with significant snow (≥2")
-- Only counts liquid precipitation, not frozen
-- Added snow melt rate as major factor (up to 30 points)
-- Detects rain-on-snow events (20-30 bonus points)
-- New helpers: `getPrecipitationHistoryDetailed()`, `getSnowMeltRate()`
+### 2. Location Cards Enhancement (DONE)
+**Goal**: Show weather preview on each location in the menu
+**Implementation**:
+- Each location now shows current temperature, condition, and H/L
+- Calculates daily high/low by sampling all 24 hours
+- Removed climate band display (cleaner layout)
+- Fixed legibility/theme issues throughout the offcanvas
 
-**Results**: False positive rate reduced from 33.9% to 0%
+### 3. Edit List Mode (DONE)
+**Goal**: Replace "Nuke All Regions" with granular deletion
+**Implementation**:
+- "Edit List" button in settings panel
+- Checkboxes on each location when in edit mode
+- "Select All" option
+- "Delete Selected (n)" with confirmation
+- Removed "Nuke All Regions" from SettingsMenu (kept "Nuke All Data")
+
+### 4. Form Styling (DONE)
+- Comprehensive dark theme styling for all modal forms
+- WorldSetup and RegionCreator now fully themed
+- Alert boxes, form controls, help text all properly styled
 
 ---
 
 ## Suggested Next Tasks
 
+### Visual Polish (from this sprint's discussions)
+- [ ] Background gradient fade transitions between weather conditions
+- [ ] Biome color themes for location cards (stretch goal noted)
+- [ ] Search/filter for locations list (stretch goal)
+- [ ] Drag-to-reorder locations (would need react-beautiful-dnd or @dnd-kit)
+
 ### UX Improvements (from ROADMAP)
 - [ ] Export/Import Worlds as JSON
 - [ ] Fix Feels Like section height shifts
-- [ ] Background gradient fade transitions
+- [ ] °C/°F toggle in settings
+- [ ] Miles/Km units toggle
 
 ### Phase C: Extreme Weather (remaining)
-- [ ] Ice Storm severity tiers (infrastructure exists in SnowAccumulationService)
+- [ ] Ice Storm severity tiers
 - [ ] Hurricanes (complex, save for later)
 
 ### Cleanup
-- [ ] Remove unused TimeDisplay.jsx and TimeControls.jsx (functionality now in WeatherHeader)
+- [ ] Remove unused TimeDisplay.jsx and TimeControls.jsx
 
 ---
 
@@ -50,10 +70,14 @@ Sprint 30 fixed two environmental condition bugs:
 
 | File | Changes |
 |------|---------|
-| `src/v2/services/weather/EnvironmentalConditionsService.js` | Heat/cold thresholds + flood rewrite |
-| `src/v2/components/testing/testConfig.js` | Added FLOOD_ANALYSIS_CONFIG |
-| `src/v2/components/testing/testRunner.js` | Added runFloodAnalysis() |
-| `src/v2/components/testing/WeatherTestHarness.jsx` | Flood analysis UI |
+| `src/v2/components/menu/FloatingMenuButton.jsx` | NEW - Floating pill button |
+| `src/v2/components/menu/FloatingMenuButton.css` | NEW - Frosted glass styling |
+| `src/v2/components/menu/HamburgerMenu.jsx` | Weather preview, edit mode |
+| `src/v2/components/menu/HamburgerMenu.css` | Complete restyle + edit mode |
+| `src/v2/components/menu/SettingsMenu.jsx` | Removed Nuke All Regions |
+| `src/v2/components/header/WeatherHeader.jsx` | Removed hamburger button |
+| `src/v2/App.jsx` | FloatingMenuButton + HamburgerMenu integration |
+| `src/v2/styles/app.css` | Modal form styling, scroll shift fix |
 
 ---
 

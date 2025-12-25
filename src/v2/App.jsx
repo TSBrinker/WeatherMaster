@@ -6,6 +6,8 @@ import { WorldProvider, useWorld } from './contexts/WorldContext';
 import WorldSetup from './components/world/WorldSetup';
 import RegionCreator from './components/region/RegionCreator';
 import WeatherHeader from './components/header/WeatherHeader';
+import FloatingMenuButton from './components/menu/FloatingMenuButton';
+import HamburgerMenu from './components/menu/HamburgerMenu';
 import PrimaryDisplay from './components/weather/PrimaryDisplay';
 import ConditionsCard from './components/weather/ConditionsCard';
 import CelestialCard from './components/weather/CelestialCard';
@@ -26,9 +28,10 @@ const isTestMode = urlParams.get('test') === 'true';
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   // REAL weather and celestial data
   const [weatherData, setWeatherData] = useState(null);
@@ -70,16 +73,11 @@ const AppContent = () => {
 
   return (
     <>
-      {/* iOS Lock Screen-style header with time controls and hamburger */}
+      {/* iOS Lock Screen-style header with time controls */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}
         onAdvanceTime={advanceTime}
         onJumpToDate={jumpToDate}
-        regions={activeWorld.regions}
-        activeRegion={activeRegion}
-        onSelectRegion={selectRegion}
-        onAddLocation={() => setShowRegionCreator(true)}
-        worldName={activeWorld.name}
         celestialData={weatherData?.celestial}
       />
 
@@ -150,6 +148,22 @@ const AppContent = () => {
           </>
         )}
       </Container>
+
+      {/* Floating menu button (bottom-right) */}
+      <FloatingMenuButton onClick={() => setShowMenu(true)} />
+
+      {/* Locations menu */}
+      <HamburgerMenu
+        show={showMenu}
+        onHide={() => setShowMenu(false)}
+        regions={activeWorld.regions}
+        activeRegion={activeRegion}
+        onSelectRegion={selectRegion}
+        onAddLocation={() => setShowRegionCreator(true)}
+        onDeleteRegions={deleteRegion}
+        worldName={activeWorld.name}
+        currentDate={activeWorld.currentDate}
+      />
 
       {/* Modals */}
       <RegionCreator

@@ -2,3 +2,5 @@ Here is where I'll stow some thoughts so I don't interrupt you while you're work
 
 - Currently, the polar region extends 1500 miles from the center. I'm thinking the first 500 is the magical twilight lands, which could probably just be its own fixed instance in the manager. This would leave Polar being 500-1500 miles, rather than starting at 0. - confirm, has this been implemented? if so, remove please :)
 - Biomes suggested by slate - For other bands: 4. Humid Subtropical (in subtropical) - the American South, Tokyo, Buenos Aires - hot humid summers, mild winters 5. Steppe (could go temperate or subtropical) - semi-arid grassland, drier than prairie
+- Noting for future that the actual interaction of the slide over menu, and then the settings menu pushing that menu down, gets a little weird. May be worth reconsidering. 
+- We'll want to put some things in a preferences menu. Phrasing, future addition of unit switching (c/f, miles/km)

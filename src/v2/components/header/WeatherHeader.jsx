@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Container, Button, Modal, Form, Row, Col } from 'react-bootstrap';
-import HamburgerMenu from '../menu/HamburgerMenu';
 import './WeatherHeader.css';
 
 /**
@@ -12,14 +11,8 @@ const WeatherHeader = ({
   currentDate,
   onAdvanceTime,
   onJumpToDate,
-  regions,
-  activeRegion,
-  onSelectRegion,
-  onAddLocation,
-  worldName,
   celestialData
 }) => {
-  const [showMenu, setShowMenu] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [jumpYear, setJumpYear] = useState(currentDate?.year || 1);
   const [jumpMonth, setJumpMonth] = useState(currentDate?.month || 1);
@@ -162,14 +155,6 @@ const WeatherHeader = ({
               </div>
             </div>
 
-            {/* Hamburger menu - RIGHT */}
-            <Button
-              variant="link"
-              className="hamburger-toggle"
-              onClick={() => setShowMenu(true)}
-            >
-              &#x2630;
-            </Button>
           </div>
         </Container>
       </div>
@@ -251,16 +236,6 @@ const WeatherHeader = ({
         </Modal.Footer>
       </Modal>
 
-      {/* Hamburger menu offcanvas */}
-      <HamburgerMenu
-        show={showMenu}
-        onHide={() => setShowMenu(false)}
-        regions={regions}
-        activeRegion={activeRegion}
-        onSelectRegion={onSelectRegion}
-        onAddLocation={onAddLocation}
-        worldName={worldName}
-      />
     </>
   );
 };
