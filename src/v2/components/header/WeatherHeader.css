@@ -190,12 +190,17 @@
 /* Responsive */
 @media (max-width: 576px) {
   .time-row {
-    gap: 0.25rem;
+    gap: 0.2rem;
+  }
+
+  .time-controls-left,
+  .time-controls-right {
+    gap: 0.2rem;
   }
 
   .time-display-hero {
-    font-size: 2.25rem;
-    width: 11rem;
+    font-size: 2rem;
+    width: 9rem;
     line-height: 1;
   }
 
@@ -204,9 +209,10 @@
   }
 
   .time-control-btn {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.5rem;
-    min-width: 2.5rem;
+    font-size: 0.65rem;
+    padding: 0.3rem 0.35rem;
+    min-width: 2rem;
+    letter-spacing: -0.02em;
   }
 
   .hamburger-toggle {
