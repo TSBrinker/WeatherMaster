@@ -117,7 +117,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(-24)}
                   title="Back 1 day"
                 >
-                  -1d
+                  -24<span className="btn-unit">h</span>
                 </Button>
                 <Button
                   variant="link"
@@ -125,7 +125,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(-4)}
                   title="Back 4 hours"
                 >
-                  -4h
+                  -4<span className="btn-unit">h</span>
                 </Button>
                 <Button
                   variant="link"
@@ -133,7 +133,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(-1)}
                   title="Back 1 hour"
                 >
-                  -1h
+                  -1<span className="btn-unit">h</span>
                 </Button>
               </div>
 
@@ -154,7 +154,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(1)}
                   title="Forward 1 hour"
                 >
-                  +1h
+                  +1<span className="btn-unit">h</span>
                 </Button>
                 <Button
                   variant="link"
@@ -162,7 +162,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(4)}
                   title="Forward 4 hours"
                 >
-                  +4h
+                  +4<span className="btn-unit">h</span>
                 </Button>
                 <Button
                   variant="link"
@@ -170,7 +170,7 @@ const WeatherHeader = ({
                   onClick={() => onAdvanceTime(24)}
                   title="Forward 1 day"
                 >
-                  +1d
+                  +24<span className="btn-unit">h</span>
                 </Button>
               </div>
             </div>
