@@ -114,16 +114,26 @@ const WeatherHeader = ({
                 <Button
                   variant="link"
                   className="time-control-btn"
-                  onClick={() => onAdvanceTime(-4)}
+                  onClick={() => onAdvanceTime(-24)}
+                  title="Back 1 day"
                 >
-                  &#x226A;
+                  -1d
+                </Button>
+                <Button
+                  variant="link"
+                  className="time-control-btn"
+                  onClick={() => onAdvanceTime(-4)}
+                  title="Back 4 hours"
+                >
+                  -4h
                 </Button>
                 <Button
                   variant="link"
                   className="time-control-btn"
                   onClick={() => onAdvanceTime(-1)}
+                  title="Back 1 hour"
                 >
-                  &#x2039;
+                  -1h
                 </Button>
               </div>
 
@@ -142,15 +152,25 @@ const WeatherHeader = ({
                   variant="link"
                   className="time-control-btn"
                   onClick={() => onAdvanceTime(1)}
+                  title="Forward 1 hour"
                 >
-                  &#x203A;
+                  +1h
                 </Button>
                 <Button
                   variant="link"
                   className="time-control-btn"
                   onClick={() => onAdvanceTime(4)}
+                  title="Forward 4 hours"
                 >
-                  &#x226B;
+                  +4h
+                </Button>
+                <Button
+                  variant="link"
+                  className="time-control-btn"
+                  onClick={() => onAdvanceTime(24)}
+                  title="Forward 1 day"
+                >
+                  +1d
                 </Button>
               </div>
             </div>
