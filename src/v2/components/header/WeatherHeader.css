@@ -194,19 +194,19 @@
   }
 
   .time-display-hero {
-    font-size: 2.75rem;
-    width: 13rem;
+    font-size: 2.25rem;
+    width: 11rem;
     line-height: 1;
   }
 
   .date-line {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .time-control-btn {
-    font-size: 0.875rem;
-    padding: 0.4rem 0.6rem;
-    min-width: 3rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+    min-width: 2.5rem;
   }
 
   .hamburger-toggle {
