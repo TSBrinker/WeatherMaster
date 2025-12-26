@@ -55,7 +55,10 @@ export const WorldProvider = ({ children }) => {
         day: 1,
         hour: 12
       },
-      regions: []
+      regions: [],
+      // Map configuration (optional)
+      mapImage: null,           // base64 string or null
+      mapScale: null            // { milesPerPixel, topEdgeDistanceFromCenter } or null
     };
 
     setWorlds(prev => [...prev, newWorld]);
@@ -84,6 +87,16 @@ export const WorldProvider = ({ children }) => {
     // Clear active region when switching worlds
     setActiveRegionId(null);
   }, []);
+
+  const updateWorldMap = useCallback((mapImage, mapScale) => {
+    if (!activeWorldId) return;
+
+    setWorlds(prev => prev.map(world =>
+      world.id === activeWorldId
+        ? { ...world, mapImage, mapScale }
+        : world
+    ));
+  }, [activeWorldId]);
 
   // ===== TIME MANAGEMENT =====
 
@@ -269,6 +282,7 @@ export const WorldProvider = ({ children }) => {
     updateWorld,
     deleteWorld,
     selectWorld,
+    updateWorldMap,
 
     // Time methods
     updateWorldTime,

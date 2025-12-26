@@ -1,0 +1,261 @@
+/* MapConfigModal.css */
+
+.map-config-modal .modal-content {
+  background: var(--surface-dark, #1a1a1a);
+  color: var(--text-primary, #ffffff);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.map-config-modal .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.map-config-modal .modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.map-config-modal .btn-close {
+  filter: invert(1);
+}
+
+.map-config-modal .modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Upload Section */
+.upload-section h5,
+.scale-section h5 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary, #ffffff);
+}
+
+.upload-dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.upload-dropzone:hover {
+  border-color: rgba(66, 165, 245, 0.6);
+  background: rgba(66, 165, 245, 0.1);
+}
+
+.upload-icon {
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 1rem;
+}
+
+.upload-text {
+  font-size: 1rem;
+  color: var(--text-primary, #ffffff);
+  margin-bottom: 0.5rem;
+}
+
+.upload-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #aaa);
+  margin: 0;
+}
+
+/* Map Preview */
+.map-preview-container {
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.remove-map-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background: rgba(244, 67, 54, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: background 0.2s ease;
+}
+
+.remove-map-btn:hover {
+  background: rgba(244, 67, 54, 1);
+}
+
+.map-preview-wrapper {
+  position: relative;
+  max-height: 400px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.map-preview-image {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+}
+
+.image-dimensions {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #aaa);
+}
+
+/* Band Overlay Preview */
+.band-overlay-preview {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.band-overlay-preview:last-child {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.band-label {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Scale Section */
+.scale-section {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.scale-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary, #ffffff);
+  max-width: 200px;
+}
+
+.scale-input:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(66, 165, 245, 0.5);
+  color: var(--text-primary, #ffffff);
+  box-shadow: 0 0 0 0.2rem rgba(66, 165, 245, 0.25);
+}
+
+.map-config-modal .form-text {
+  font-size: 0.8rem;
+}
+
+/* Distance Slider */
+.distance-slider {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+}
+
+.distance-slider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted, #888);
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Coverage Info */
+.coverage-info {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coverage-info h6 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #ffffff);
+}
+
+.coverage-info ul {
+  margin: 0 0 1rem 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary, #ccc);
+  font-size: 0.9rem;
+}
+
+.coverage-info li {
+  margin-bottom: 0.25rem;
+}
+
+.coverage-info strong {
+  color: var(--text-primary, #ffffff);
+}
+
+/* Band Chips */
+.visible-bands-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.band-chip {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid;
+  border-radius: 999px;
+  color: var(--text-primary, #ffffff);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .map-config-modal .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .upload-dropzone {
+    padding: 2rem 1rem;
+  }
+
+  .map-preview-wrapper {
+    max-height: 300px;
+  }
+
+  .map-preview-image {
+    max-height: 300px;
+  }
+
+  .scale-input {
+    max-width: 100%;
+  }
+}

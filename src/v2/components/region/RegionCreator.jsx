@@ -8,11 +8,11 @@ import {
   extractClimateProfile
 } from '../../data/templateHelpers';
 
-const RegionCreator = ({ show, onHide }) => {
+const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition = null }) => {
   const { createRegion } = useWorld();
 
   // Form state
-  const [latitudeBand, setLatitudeBand] = useState('temperate');
+  const [latitudeBand, setLatitudeBand] = useState(initialLatitudeBand || 'temperate');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [regionName, setRegionName] = useState('');
 
@@ -21,6 +21,13 @@ const RegionCreator = ({ show, onHide }) => {
   const selectedTemplate = selectedTemplateId
     ? getTemplate(latitudeBand, selectedTemplateId)
     : null;
+
+  // Update latitude band when initialLatitudeBand changes (e.g., from map click)
+  useEffect(() => {
+    if (show && initialLatitudeBand) {
+      setLatitudeBand(initialLatitudeBand);
+    }
+  }, [show, initialLatitudeBand]);
 
   // Auto-select first template when latitude changes
   useEffect(() => {
@@ -45,13 +52,23 @@ const RegionCreator = ({ show, onHide }) => {
     // Extract climate data from template
     const climateProfile = extractClimateProfile(selectedTemplate);
 
-    // Create the region
-    createRegion({
+    // Create the region (include map position if provided)
+    const regionData = {
       name: regionName.trim(),
       latitudeBand,
       climate: climateProfile,
       templateId: selectedTemplateId
-    });
+    };
+
+    // Add map position if region was created via map click
+    if (mapPosition) {
+      regionData.mapPosition = {
+        x: mapPosition.x,
+        y: mapPosition.y
+      };
+    }
+
+    createRegion(regionData);
 
     // Reset form and close
     setRegionName('');

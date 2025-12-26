@@ -2,8 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { ListGroup, Button, Form } from 'react-bootstrap';
 import { HiLocationMarker } from 'react-icons/hi';
 import { IoChevronBack } from 'react-icons/io5';
+import { Map } from 'lucide-react';
 import SettingsMenu from './SettingsMenu';
+import WorldMapView from '../map/WorldMapView';
+import RegionCreator from '../region/RegionCreator';
 import weatherService from '../../services/weather/WeatherService';
+import { useWorld } from '../../contexts/WorldContext';
 import './HamburgerMenu.css';
 
 /**
@@ -15,9 +19,13 @@ import './HamburgerMenu.css';
  * Users exit by selecting a location (no close X button).
  */
 const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, onAddLocation, onDeleteRegions, worldName, currentDate }) => {
+  const { activeWorld } = useWorld();
   const [showSettings, setShowSettings] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState(new Set());
+  const [showMapView, setShowMapView] = useState(false);
+  const [showRegionCreator, setShowRegionCreator] = useState(false);
+  const [mapClickData, setMapClickData] = useState(null); // { x, y, latitudeBand }
 
   // Get weather data for all regions (memoized to avoid recalculating on every render)
   const regionWeather = useMemo(() => {
@@ -55,6 +63,20 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setShowSettings(false);
     setEditMode(false);
     setSelectedRegions(new Set());
+    setShowMapView(false);
+    setMapClickData(null);
+  };
+
+  // Handle placing a location from the map
+  const handleMapPlaceLocation = (clickData) => {
+    setMapClickData(clickData);
+    setShowRegionCreator(true);
+  };
+
+  // Handle region creator close
+  const handleRegionCreatorClose = () => {
+    setShowRegionCreator(false);
+    setMapClickData(null);
   };
 
   const handleRegionClick = (regionId) => {
@@ -124,6 +146,40 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
 
   if (!show) return null;
 
+  // If showing map view, render that instead of location list
+  if (showMapView) {
+    return (
+      <div className="locations-fullpage">
+        {/* Map Header */}
+        <div className="locations-header">
+          <button
+            className="back-button"
+            onClick={() => setShowMapView(false)}
+            aria-label="Back to locations"
+          >
+            <IoChevronBack />
+          </button>
+          <h1 className="locations-title">World Map</h1>
+          <div className="header-spacer" />
+        </div>
+
+        {/* Map View */}
+        <div className="map-view-container">
+          <WorldMapView onPlaceLocation={handleMapPlaceLocation} />
+        </div>
+
+        {/* Region Creator Modal (for map-placed locations) */}
+        <RegionCreator
+          show={showRegionCreator}
+          onHide={handleRegionCreatorClose}
+          initialLatitudeBand={mapClickData?.latitudeBand}
+          mapPosition={mapClickData}
+        />
+      </div>
+    );
+  }
+
+  // Default: show location list
   return (
     <div className="locations-fullpage">
       {/* Header */}
@@ -152,7 +208,19 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
       {/* Settings panel (slide down when active) */}
       {showSettings && (
         <div className="settings-panel">
-          {/* Edit List button at top of settings */}
+          {/* World Map button */}
+          <Button
+            variant="outline-primary"
+            className="w-100 mb-2"
+            onClick={() => {
+              setShowSettings(false);
+              setShowMapView(true);
+            }}
+          >
+            <Map size={16} className="me-2" />
+            World Map
+          </Button>
+          {/* Edit List button */}
           {regions && regions.length > 0 && (
             <Button
               variant="outline-secondary"
@@ -270,6 +338,14 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
           </Button>
         )}
       </div>
+
+      {/* Region Creator Modal (for map-placed locations) */}
+      <RegionCreator
+        show={showRegionCreator}
+        onHide={handleRegionCreatorClose}
+        initialLatitudeBand={mapClickData?.latitudeBand}
+        mapPosition={mapClickData}
+      />
     </div>
   );
 };

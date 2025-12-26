@@ -351,6 +351,14 @@
   opacity: 0.6;
 }
 
+/* ===== MAP VIEW CONTAINER ===== */
+.map-view-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 576px) {
   .location-item-temp {
