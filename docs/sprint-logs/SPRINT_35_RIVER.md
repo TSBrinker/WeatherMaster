@@ -68,10 +68,28 @@ This keeps the user's mental model consistent with their source image.
 - [x] Update PreferencesContext for async storage
 - [x] Add image compression utility
 - [x] Refactor MapConfigModal compression to use original dimensions for UI
-- [ ] Test map persistence after reload
+- [x] Test map persistence after reload (Tyler confirmed working)
+- [x] Design continent architecture with Tyler
+- [x] Write detailed implementation plan
 
 ---
 
 ## Notes for Next Agent
 
-(to be filled at end of session)
+### Priority: Continent Architecture
+Tyler wants to restructure maps around **Continents**. Full plan is at:
+`C:\Users\Tyler\.claude\plans\glimmering-finding-pudding.md`
+
+The gist:
+- Maps move from World to Continent
+- Regions can belong to a continent (or be "Uncategorized")
+- Location list becomes collapsible by continent
+- Click pins to navigate to locations
+- Create locations by clicking the map
+
+This is a substantial feature (~10-14 hours across multiple sprints). Start with Phase 1: Data Layer.
+
+### Technical Notes
+- IndexedDB now handles all storage (localStorage deprecated)
+- Image compression is transparent to user - they enter scale based on original dimensions
+- Migration from localStorage runs automatically on first load
