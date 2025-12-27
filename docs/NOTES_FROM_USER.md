@@ -19,5 +19,4 @@ Here is where I'll stow some thoughts so I don't interrupt you while you're work
 
 - gotta be a way to edit the world name or whatever else would come along with that.
 
-- BUG: Currently if HamburgerMenu Location List is open, it is not scrollable. 
 - Maybe add <<< & >>> buttons to the time controls to jump a full day? And those should maybe be juuuuust a little bigger. Hard on a phone screen to hit the small hitbox.

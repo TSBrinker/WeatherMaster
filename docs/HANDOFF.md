@@ -1,32 +1,87 @@
 # Handoff Document
 
-**Last Updated**: 2025-12-25
-**Previous Agent**: Marble II (Sprint 33)
-**Current Sprint Count**: 33 (next agent creates `SPRINT_34_*.md`)
-**Status**: Full-page locations menu + mobile fixes
+**Last Updated**: 2025-12-27
+**Previous Agent**: Sprint 34 (unnamed - short session)
+**Current Sprint Count**: 34 (next agent creates `SPRINT_35_*.md`)
+**Status**: Map persistence bug identified, solution designed but not implemented
 
 ---
 
-## Where We Left Off
+## CRITICAL: Map Persistence Bug
 
-Sprint 33 converted the locations menu from a slide-out panel to a full-page overlay:
+### The Problem
+Maps uploaded via the World Map feature **do not persist** after page reload. The map image and any regions created from the map screen disappear.
 
-### 1. Full-Page Locations Menu (DONE)
-**Goal**: Fix scrollability bug + improve UX for region deletion scenarios
-**Implementation**:
-- Replaced Bootstrap Offcanvas with fixed full-screen overlay
-- Back button (chevron) - disabled when no active region
-- Dedicated scroll area fixes list scrollability
-- FloatingMenuButton hidden when menu is open
-- Improved empty state messaging
+### Root Cause
+**localStorage quota exceeded**. The map image is stored as a base64 data URL directly in the world object. A typical map image is 2-5MB, and base64 encoding adds ~33% overhead. localStorage has a ~5MB limit per domain.
 
-### 2. Mobile Styling Fixes (DONE)
-- Settings trigger (⋯) no longer shows as blue hyperlink
-- Temperature display stays on same row as location name (was wrapping)
+When `saveWorlds()` tries to save the world with the large map image, it **silently fails** (the error is caught and logged to console in `localStorage.js:24-27`, but nothing notifies the user). On reload, `loadWorlds()` returns the old data without the map.
+
+### The Solution (NOT YET IMPLEMENTED)
+
+**Two-part fix:**
+
+#### Part 1: Switch to IndexedDB
+- IndexedDB is a browser-native database (free, local, offline-capable - just like localStorage)
+- Has 50MB+ storage limit (vs localStorage's 5MB)
+- Replace `src/v2/services/storage/localStorage.js` with IndexedDB implementation
+- Can use `idb` or `Dexie.js` library to simplify the async API
+- Data structure stays the same, just the storage mechanism changes
+
+#### Part 2: Auto-compress images with scale adjustment
+When user uploads a large image:
+1. Detect if image exceeds threshold (e.g., 2000px on longest edge)
+2. Compress to target size, calculate scale factor
+3. **Automatically adjust `milesPerPixel`** to maintain accurate distances:
+   ```
+   newMilesPerPixel = originalMilesPerPixel × (originalWidth / newWidth)
+   ```
+4. Adjust any existing pin positions:
+   ```
+   newX = originalX × (newWidth / originalWidth)
+   newY = originalY × (newHeight / originalHeight)
+   ```
+5. Show user a notice: "Image compressed from 4000×3000 to 2000×1500. Scale adjusted automatically."
+
+**Why auto-adjust matters**: Tyler calculates scale at full resolution (e.g., 4K map at 1px = 1 mile). If we compress without adjusting, his calculations break. The math preserves real-world distances.
+
+### Files to Modify
+| File | Changes Needed |
+|------|----------------|
+| `src/v2/services/storage/localStorage.js` | Replace with IndexedDB implementation (or create new `indexedDB.js`) |
+| `src/v2/contexts/WorldContext.jsx` | Update imports if storage file changes |
+| `src/v2/components/map/MapConfigModal.jsx` | Add image compression on upload, scale adjustment logic, user notice |
+| `src/v2/utils/imageUtils.js` | NEW FILE - image compression utility functions |
+
+---
+
+## What Was Done This Sprint
+
+### 1. Committed Previous Agent's Work
+The previous agent (Sprint 33 - Marble II) had uncommitted changes implementing the **World Map System**:
+- `WorldMapView.jsx/css` - Interactive map display with curved latitude band overlays
+- `MapConfigModal.jsx/css` - Upload and configure map with scale settings
+- `mapUtils.js` - Band calculation and coordinate conversion utilities
+- Integration with HamburgerMenu, RegionCreator, WorldContext
+
+### 2. Fixed Overlay Positioning Bug
+The latitude band overlays and pins were visually bunched at the top of the map instead of spreading across it.
+
+**Cause**: SVG overlay was positioned relative to the scroll container, not the actual image dimensions.
+
+**Fix**:
+- Added `.map-image-wrapper` div around image and overlays
+- Changed `preserveAspectRatio` from `"none"` to `"xMidYMid meet"`
+- Wrapper uses `position: relative; display: inline-block; width: 100%` to match image size exactly
+
+**Commit**: `e2b9926` - "Add world map system with latitude band overlays"
 
 ---
 
 ## Suggested Next Tasks
+
+### HIGH PRIORITY: Fix Map Persistence
+See detailed solution above. This blocks the map feature from being usable.
 
 ### Quick Fixes (from Tyler's mobile notes)
 - [ ] Time arrow position shifts with digit width - give time fixed width
@@ -40,11 +95,7 @@ Sprint 33 converted the locations menu from a slide-out panel to a full-page ove
 
 ### Features/UX Ideas
 - [ ] "X condition in Y hours" forecast teaser on main display
-- [ ] Preferences menu restructure:
-  - Edit Locations
-  - Preferences (units, phrasing, snow accumulation, theme)
-  - Help & Resources
-  - Manage Data (clear cache, nuke, export/import)
+- [ ] Preferences menu restructure (Edit Locations, Preferences, Help, Manage Data)
 - [ ] Edit world name functionality
 
 ### Stretch Goals
@@ -54,20 +105,22 @@ Sprint 33 converted the locations menu from a slide-out panel to a full-page ove
 
 ---
 
-## Key Files Modified This Sprint
+## Key Files Reference
 
-| File | Changes |
+### Map System (new this sprint)
+| File | Purpose |
 |------|---------|
-| `src/v2/components/menu/HamburgerMenu.jsx` | Full-page overlay, back button, IoChevronBack |
-| `src/v2/components/menu/HamburgerMenu.css` | Complete restyle for full-page layout |
-| `src/v2/App.jsx` | Hide FloatingMenuButton when menu open |
+| `src/v2/components/map/WorldMapView.jsx` | Interactive map display, band overlays, pins |
+| `src/v2/components/map/WorldMapView.css` | Map styling |
+| `src/v2/components/map/MapConfigModal.jsx` | Upload/configure map |
+| `src/v2/components/map/MapConfigModal.css` | Config modal styling |
+| `src/v2/utils/mapUtils.js` | Band calculations, coordinate conversions |
 
----
-
-## Notes Files
-
-- `docs/NOTES_FROM_USER.md` - Tyler's main scratchpad (items still need addressing)
-- `docs/USER_NOTES_MOBILE.md` - Mobile testing observations
+### Storage (needs updating for persistence fix)
+| File | Purpose |
+|------|---------|
+| `src/v2/services/storage/localStorage.js` | Current storage - has 5MB limit issue |
+| `src/v2/contexts/WorldContext.jsx` | Uses storage, has `updateWorldMap()` method |
 
 ---
 
