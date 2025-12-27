@@ -359,6 +359,119 @@
   overflow: hidden;
 }
 
+/* ===== CONTINENT GROUPING ===== */
+.continent-group {
+  margin-bottom: 0;
+}
+
+.continent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.continent-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.continent-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.collapse-icon {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.continent-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.continent-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.continent-map-btn {
+  padding: 0.25rem 0.5rem !important;
+  color: var(--text-muted) !important;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.continent-map-btn:hover {
+  color: var(--accent-primary) !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Regions within a continent are indented */
+.location-list-item.continent-region {
+  padding-left: 2rem;
+}
+
+/* Uncategorized section */
+.uncategorized-header {
+  cursor: default;
+  padding-left: 1.5rem;
+}
+
+.uncategorized-header:hover {
+  background: var(--bg-secondary);
+}
+
+/* Add Continent section */
+.add-continent-section {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.add-continent-btn {
+  color: var(--text-muted) !important;
+  font-size: 0.875rem;
+  padding: 0 !important;
+  text-decoration: none !important;
+}
+
+.add-continent-btn:hover {
+  color: var(--accent-primary) !important;
+}
+
+.new-continent-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.new-continent-input .form-control {
+  flex: 1;
+  background: var(--bg-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.new-continent-input .form-control::placeholder {
+  color: var(--text-muted);
+}
+
+.new-continent-input .form-control:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 576px) {
   .location-item-temp {

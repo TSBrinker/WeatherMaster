@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { ListGroup, Button, Form } from 'react-bootstrap';
 import { HiLocationMarker } from 'react-icons/hi';
-import { IoChevronBack } from 'react-icons/io5';
-import { Map } from 'lucide-react';
+import { IoChevronBack, IoChevronDown, IoChevronForward } from 'react-icons/io5';
+import { Map, Plus } from 'lucide-react';
 import SettingsMenu from './SettingsMenu';
 import WorldMapView from '../map/WorldMapView';
 import RegionCreator from '../region/RegionCreator';
@@ -15,17 +15,29 @@ import './HamburgerMenu.css';
  * iOS Weather-inspired navigation with live weather preview
  * Includes edit mode for bulk region deletion
  *
+ * Regions are now grouped by continent with collapsible headers.
+ * Each continent has a "Map" link to view its map.
+ *
  * Now renders as a full-page overlay instead of an Offcanvas.
  * Users exit by selecting a location (no close X button).
  */
 const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, onAddLocation, onDeleteRegions, worldName, currentDate }) => {
-  const { activeWorld } = useWorld();
+  const {
+    activeWorld,
+    worldContinents,
+    groupedRegions,
+    toggleContinentCollapsed,
+    createContinent,
+  } = useWorld();
+
   const [showSettings, setShowSettings] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState(new Set());
-  const [showMapView, setShowMapView] = useState(false);
+  const [viewingContinent, setViewingContinent] = useState(null); // Continent being viewed on map
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [mapClickData, setMapClickData] = useState(null); // { x, y, latitudeBand }
+  const [newContinentName, setNewContinentName] = useState('');
+  const [showNewContinentInput, setShowNewContinentInput] = useState(false);
 
   // Get weather data for all regions (memoized to avoid recalculating on every render)
   const regionWeather = useMemo(() => {
@@ -63,13 +75,19 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setShowSettings(false);
     setEditMode(false);
     setSelectedRegions(new Set());
-    setShowMapView(false);
+    setViewingContinent(null);
     setMapClickData(null);
+    setShowNewContinentInput(false);
+    setNewContinentName('');
   };
 
   // Handle placing a location from the map
   const handleMapPlaceLocation = (clickData) => {
-    setMapClickData(clickData);
+    // Include the continent ID for the region creator
+    setMapClickData({
+      ...clickData,
+      continentId: viewingContinent?.id,
+    });
     setShowRegionCreator(true);
   };
 
@@ -77,6 +95,22 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   const handleRegionCreatorClose = () => {
     setShowRegionCreator(false);
     setMapClickData(null);
+  };
+
+  // Handle selecting a region from the map pin
+  const handleMapSelectRegion = (regionId) => {
+    onSelectRegion(regionId);
+    resetMenuState();
+    onHide();
+  };
+
+  // Handle creating a new continent
+  const handleCreateContinent = () => {
+    if (newContinentName.trim()) {
+      createContinent(newContinentName.trim());
+      setNewContinentName('');
+      setShowNewContinentInput(false);
+    }
   };
 
   const handleRegionClick = (regionId) => {
@@ -146,26 +180,30 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
 
   if (!show) return null;
 
-  // If showing map view, render that instead of location list
-  if (showMapView) {
+  // If viewing a continent's map, render that instead of location list
+  if (viewingContinent) {
     return (
       <div className="locations-fullpage">
         {/* Map Header */}
         <div className="locations-header">
           <button
             className="back-button"
-            onClick={() => setShowMapView(false)}
+            onClick={() => setViewingContinent(null)}
             aria-label="Back to locations"
           >
             <IoChevronBack />
           </button>
-          <h1 className="locations-title">World Map</h1>
+          <h1 className="locations-title">{viewingContinent.name}</h1>
           <div className="header-spacer" />
         </div>
 
         {/* Map View */}
         <div className="map-view-container">
-          <WorldMapView onPlaceLocation={handleMapPlaceLocation} />
+          <WorldMapView
+            continent={viewingContinent}
+            onPlaceLocation={handleMapPlaceLocation}
+            onSelectRegion={handleMapSelectRegion}
+          />
         </div>
 
         {/* Region Creator Modal (for map-placed locations) */}
@@ -174,6 +212,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
           onHide={handleRegionCreatorClose}
           initialLatitudeBand={mapClickData?.latitudeBand}
           mapPosition={mapClickData}
+          initialContinentId={mapClickData?.continentId}
         />
       </div>
     );
@@ -208,18 +247,6 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
       {/* Settings panel (slide down when active) */}
       {showSettings && (
         <div className="settings-panel">
-          {/* World Map button */}
-          <Button
-            variant="outline-primary"
-            className="w-100 mb-2"
-            onClick={() => {
-              setShowSettings(false);
-              setShowMapView(true);
-            }}
-          >
-            <Map size={16} className="me-2" />
-            World Map
-          </Button>
           {/* Edit List button */}
           {regions && regions.length > 0 && (
             <Button
@@ -250,57 +277,197 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
         )}
       </div>
 
-      {/* Locations list */}
+      {/* Locations list grouped by continent */}
       <div className="locations-scroll-area">
         <ListGroup variant="flush" className="location-list">
-          {regions && regions.length > 0 ? (
-            regions.map(region => {
-              const weather = regionWeather[region.id];
-              const isSelected = selectedRegions.has(region.id);
-              return (
-                <ListGroup.Item
-                  key={region.id}
-                  action
-                  active={!editMode && activeRegion?.id === region.id}
-                  onClick={() => handleRegionClick(region.id)}
-                  className={`location-list-item ${editMode ? 'edit-mode' : ''} ${isSelected ? 'selected' : ''}`}
+          {/* Render each continent with its regions */}
+          {worldContinents.map(continent => {
+            const continentRegions = groupedRegions.byContinent[continent.id] || [];
+            return (
+              <div key={continent.id} className="continent-group">
+                {/* Continent header */}
+                <div
+                  className="continent-header"
+                  onClick={() => !editMode && toggleContinentCollapsed(continent.id)}
                 >
-                  {editMode && (
-                    <Form.Check
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}}
-                      className="edit-checkbox"
-                    />
+                  <div className="continent-header-left">
+                    {continent.isCollapsed ? (
+                      <IoChevronForward className="collapse-icon" />
+                    ) : (
+                      <IoChevronDown className="collapse-icon" />
+                    )}
+                    <span className="continent-name">{continent.name}</span>
+                    <span className="continent-count">({continentRegions.length})</span>
+                  </div>
+                  {!editMode && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="continent-map-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewingContinent(continent);
+                      }}
+                    >
+                      <Map size={14} />
+                    </Button>
                   )}
-                  <div className="location-item-content">
-                    <div className="location-item-name">
-                      {region.name}
-                      {!editMode && activeRegion?.id === region.id && (
-                        <span className="active-indicator">✓</span>
+                </div>
+
+                {/* Continent's regions (if not collapsed) */}
+                {!continent.isCollapsed && continentRegions.map(region => {
+                  const weather = regionWeather[region.id];
+                  const isSelected = selectedRegions.has(region.id);
+                  return (
+                    <ListGroup.Item
+                      key={region.id}
+                      action
+                      active={!editMode && activeRegion?.id === region.id}
+                      onClick={() => handleRegionClick(region.id)}
+                      className={`location-list-item continent-region ${editMode ? 'edit-mode' : ''} ${isSelected ? 'selected' : ''}`}
+                    >
+                      {editMode && (
+                        <Form.Check
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="edit-checkbox"
+                        />
+                      )}
+                      <div className="location-item-content">
+                        <div className="location-item-name">
+                          {region.name}
+                          {!editMode && activeRegion?.id === region.id && (
+                            <span className="active-indicator">✓</span>
+                          )}
+                        </div>
+                        {weather && (
+                          <div className="location-item-condition">{weather.condition}</div>
+                        )}
+                      </div>
+                      {!editMode && weather && (
+                        <div className="location-item-weather">
+                          <div className="location-item-temp">{weather.temp}°</div>
+                          <div className="location-item-highlow">
+                            <span className="high">H:{weather.high}°</span>
+                            {' '}
+                            <span className="low">L:{weather.low}°</span>
+                          </div>
+                        </div>
+                      )}
+                    </ListGroup.Item>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          {/* Uncategorized regions (no continent) */}
+          {groupedRegions.uncategorized.length > 0 && (
+            <div className="continent-group uncategorized">
+              <div className="continent-header uncategorized-header">
+                <span className="continent-name">Uncategorized</span>
+                <span className="continent-count">({groupedRegions.uncategorized.length})</span>
+              </div>
+              {groupedRegions.uncategorized.map(region => {
+                const weather = regionWeather[region.id];
+                const isSelected = selectedRegions.has(region.id);
+                return (
+                  <ListGroup.Item
+                    key={region.id}
+                    action
+                    active={!editMode && activeRegion?.id === region.id}
+                    onClick={() => handleRegionClick(region.id)}
+                    className={`location-list-item ${editMode ? 'edit-mode' : ''} ${isSelected ? 'selected' : ''}`}
+                  >
+                    {editMode && (
+                      <Form.Check
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="edit-checkbox"
+                      />
+                    )}
+                    <div className="location-item-content">
+                      <div className="location-item-name">
+                        {region.name}
+                        {!editMode && activeRegion?.id === region.id && (
+                          <span className="active-indicator">✓</span>
+                        )}
+                      </div>
+                      {weather && (
+                        <div className="location-item-condition">{weather.condition}</div>
                       )}
                     </div>
-                    {weather && (
-                      <div className="location-item-condition">{weather.condition}</div>
-                    )}
-                  </div>
-                  {!editMode && weather && (
-                    <div className="location-item-weather">
-                      <div className="location-item-temp">{weather.temp}°</div>
-                      <div className="location-item-highlow">
-                        <span className="high">H:{weather.high}°</span>
-                        {' '}
-                        <span className="low">L:{weather.low}°</span>
+                    {!editMode && weather && (
+                      <div className="location-item-weather">
+                        <div className="location-item-temp">{weather.temp}°</div>
+                        <div className="location-item-highlow">
+                          <span className="high">H:{weather.high}°</span>
+                          {' '}
+                          <span className="low">L:{weather.low}°</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </ListGroup.Item>
-              );
-            })
-          ) : (
+                    )}
+                  </ListGroup.Item>
+                );
+              })}
+            </div>
+          )}
+
+          {/* No locations message */}
+          {regions && regions.length === 0 && worldContinents.length === 0 && (
             <div className="no-locations">
               <p>No locations yet</p>
-              <p className="no-locations-hint">Add your first location to get started</p>
+              <p className="no-locations-hint">Add a continent or location to get started</p>
+            </div>
+          )}
+
+          {/* Add Continent section */}
+          {!editMode && (
+            <div className="add-continent-section">
+              {showNewContinentInput ? (
+                <div className="new-continent-input">
+                  <Form.Control
+                    type="text"
+                    placeholder="Continent name..."
+                    value={newContinentName}
+                    onChange={(e) => setNewContinentName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreateContinent();
+                      if (e.key === 'Escape') setShowNewContinentInput(false);
+                    }}
+                    autoFocus
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleCreateContinent}
+                    disabled={!newContinentName.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewContinentInput(false);
+                      setNewContinentName('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="link"
+                  className="add-continent-btn"
+                  onClick={() => setShowNewContinentInput(true)}
+                >
+                  <Plus size={14} className="me-1" />
+                  Add Continent
+                </Button>
+              )}
             </div>
           )}
         </ListGroup>

@@ -7,16 +7,21 @@ import { compressImage } from '../../utils/imageUtils';
 import './MapConfigModal.css';
 
 /**
- * MapConfigModal - Upload and configure a world map with scale settings
+ * MapConfigModal - Upload and configure a continent map with scale settings
  *
  * Compression strategy:
  * - Large images are compressed for storage (to fit in IndexedDB)
  * - BUT the user configures scale based on their ORIGINAL image dimensions
  * - On save, we adjust milesPerPixel to account for the compression
  * - This way the user's mental model stays consistent with their source image
+ *
+ * Props:
+ * - continent: The continent object to configure (required)
+ * - show: Whether the modal is visible
+ * - onHide: Callback when modal is closed
  */
-const MapConfigModal = ({ show, onHide }) => {
-  const { activeWorld, updateWorldMap } = useWorld();
+const MapConfigModal = ({ show, onHide, continent }) => {
+  const { updateContinentMap } = useWorld();
   const fileInputRef = useRef(null);
 
   // Local state for editing
@@ -33,20 +38,20 @@ const MapConfigModal = ({ show, onHide }) => {
   const [scaleFactor, setScaleFactor] = useState(1);
   const [wasCompressed, setWasCompressed] = useState(false);
 
-  // Initialize from activeWorld when modal opens
+  // Initialize from continent when modal opens
   useEffect(() => {
-    if (show && activeWorld) {
-      setMapImage(activeWorld.mapImage || null);
-      if (activeWorld.mapScale) {
+    if (show && continent) {
+      setMapImage(continent.mapImage || null);
+      if (continent.mapScale) {
         // Use userMilesPerPixel if available (new format), otherwise fall back to stored milesPerPixel
         // This ensures the user sees the value they originally entered
-        setMilesPerPixel(activeWorld.mapScale.userMilesPerPixel || activeWorld.mapScale.milesPerPixel || 0.5);
-        setTopEdgeDistance(activeWorld.mapScale.topEdgeDistanceFromCenter || 0);
+        setMilesPerPixel(continent.mapScale.userMilesPerPixel || continent.mapScale.milesPerPixel || 0.5);
+        setTopEdgeDistance(continent.mapScale.topEdgeDistanceFromCenter || 0);
         // For existing maps, use stored originalSize if available
-        if (activeWorld.mapScale.originalSize) {
-          setOriginalSize(activeWorld.mapScale.originalSize);
-          setScaleFactor(activeWorld.mapScale.scaleFactor || 1);
-          setWasCompressed(activeWorld.mapScale.scaleFactor && activeWorld.mapScale.scaleFactor !== 1);
+        if (continent.mapScale.originalSize) {
+          setOriginalSize(continent.mapScale.originalSize);
+          setScaleFactor(continent.mapScale.scaleFactor || 1);
+          setWasCompressed(continent.mapScale.scaleFactor && continent.mapScale.scaleFactor !== 1);
         } else {
           // Legacy map without originalSize - will be set by handleImageLoad
           setOriginalSize({ width: 0, height: 0 });
@@ -61,7 +66,7 @@ const MapConfigModal = ({ show, onHide }) => {
         setWasCompressed(false);
       }
     }
-  }, [show, activeWorld]);
+  }, [show, continent]);
 
   // Recalculate visible bands when settings change
   // Use ORIGINAL dimensions so user's scale inputs make sense
@@ -113,8 +118,10 @@ const MapConfigModal = ({ show, onHide }) => {
   };
 
   const handleSave = () => {
+    if (!continent) return;
+
     if (!mapImage) {
-      updateWorldMap(null, null);
+      updateContinentMap(continent.id, null, null);
       onHide();
       return;
     }
@@ -135,7 +142,7 @@ const MapConfigModal = ({ show, onHide }) => {
       userMilesPerPixel: userMilesPerPixel,
     };
 
-    updateWorldMap(mapImage, mapScale);
+    updateContinentMap(continent.id, mapImage, mapScale);
     onHide();
   };
 
@@ -162,7 +169,7 @@ const MapConfigModal = ({ show, onHide }) => {
       <Modal.Header closeButton>
         <Modal.Title>
           <Map className="me-2" size={24} style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
-          World Map Configuration
+          {continent?.name || 'Continent'} Map
         </Modal.Title>
       </Modal.Header>
 

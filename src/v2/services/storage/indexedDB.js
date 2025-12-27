@@ -2,19 +2,26 @@
  * IndexedDB storage - Replaces localStorage for larger storage capacity
  * Uses idb library for cleaner async/await API
  * All data stored in 'weathermaster' database
+ *
+ * Version History:
+ * - v1: Initial IndexedDB migration from localStorage
+ * - v2: Added continents support (maps moved from World to Continent)
  */
 
 import { openDB } from 'idb';
+import { v4 as uuidv4 } from 'uuid';
 
 const DB_NAME = 'weathermaster';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'data';
 
 // Storage keys (same as before)
 export const STORAGE_KEYS = {
   WORLDS: 'worlds',
+  CONTINENTS: 'continents',
   ACTIVE_WORLD_ID: 'active-world-id',
   ACTIVE_REGION_ID: 'active-region-id',
+  ACTIVE_CONTINENT_ID: 'active-continent-id',
   PREFERENCES: 'preferences',
   SETUP_COMPLETE: 'setup-complete',
 };
@@ -24,15 +31,21 @@ let dbPromise = null;
 
 /**
  * Get or create the database connection
+ * Handles migrations between versions
  */
 const getDB = () => {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        // Create a simple key-value store
+      upgrade(db, oldVersion, newVersion, transaction) {
+        // Create a simple key-value store (v1)
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME);
         }
+
+        // v1 -> v2 migration: Move maps from World to Continent
+        // This happens automatically when the app first loads with the new code
+        // The actual data migration is handled in migrateWorldMapsToContinent()
+        // because we need async access to the data
       },
     });
   }
@@ -121,6 +134,24 @@ export const loadActiveRegionId = async () => {
   return load(STORAGE_KEYS.ACTIVE_REGION_ID, null);
 };
 
+// === CONTINENTS ===
+
+export const saveContinents = async (continents) => {
+  return save(STORAGE_KEYS.CONTINENTS, continents);
+};
+
+export const loadContinents = async () => {
+  return load(STORAGE_KEYS.CONTINENTS, []);
+};
+
+export const saveActiveContinentId = async (continentId) => {
+  return save(STORAGE_KEYS.ACTIVE_CONTINENT_ID, continentId);
+};
+
+export const loadActiveContinentId = async () => {
+  return load(STORAGE_KEYS.ACTIVE_CONTINENT_ID, null);
+};
+
 // === PREFERENCES ===
 
 export const savePreferences = async (preferences) => {
@@ -154,12 +185,14 @@ export const isSetupComplete = async () => {
  */
 export const exportAllData = async () => {
   return {
-    version: '2.0',
+    version: '2.1',
     exportDate: new Date().toISOString(),
     worlds: await loadWorlds(),
+    continents: await loadContinents(),
     preferences: await loadPreferences(),
     activeWorldId: await loadActiveWorldId(),
     activeRegionId: await loadActiveRegionId(),
+    activeContinentId: await loadActiveContinentId(),
   };
 };
 
@@ -169,9 +202,11 @@ export const exportAllData = async () => {
 export const importAllData = async (data) => {
   try {
     if (data.worlds) await saveWorlds(data.worlds);
+    if (data.continents) await saveContinents(data.continents);
     if (data.preferences) await savePreferences(data.preferences);
     if (data.activeWorldId) await saveActiveWorldId(data.activeWorldId);
     if (data.activeRegionId) await saveActiveRegionId(data.activeRegionId);
+    if (data.activeContinentId) await saveActiveContinentId(data.activeContinentId);
     return true;
   } catch (error) {
     console.error('Error importing data:', error);
@@ -184,7 +219,81 @@ export const importAllData = async (data) => {
  */
 export const clearAllData = clearAll;
 
-// === MIGRATION ===
+// === CONTINENT MIGRATION ===
+
+/**
+ * Migrate world maps to continents (v1 -> v2 data migration)
+ * - Creates a default continent for each world that has a map
+ * - Moves the mapImage/mapScale to the continent
+ * - Assigns regions with mapPosition to that continent
+ * - Clears mapImage/mapScale from world
+ *
+ * Returns { worlds, continents } with migrated data
+ */
+export const migrateWorldMapsToContinent = async () => {
+  try {
+    const worlds = await loadWorlds();
+    const existingContinents = await loadContinents();
+
+    // If we already have continents, no migration needed
+    if (existingContinents.length > 0) {
+      return { migrated: false, worlds, continents: existingContinents };
+    }
+
+    // Check if any world has a map to migrate
+    const worldsWithMaps = worlds.filter(w => w.mapImage);
+    if (worldsWithMaps.length === 0) {
+      return { migrated: false, worlds, continents: [] };
+    }
+
+    console.log('Migrating world maps to continents...');
+
+    const newContinents = [];
+    const updatedWorlds = worlds.map(world => {
+      if (!world.mapImage) {
+        return world; // No map to migrate
+      }
+
+      // Create a default continent for this world's map
+      const continent = {
+        id: uuidv4(),
+        worldId: world.id,
+        name: 'Main Continent',
+        mapImage: world.mapImage,
+        mapScale: world.mapScale,
+        isCollapsed: false,
+      };
+      newContinents.push(continent);
+
+      // Update regions with mapPosition to belong to this continent
+      const updatedRegions = world.regions.map(region => {
+        if (region.mapPosition) {
+          return { ...region, continentId: continent.id };
+        }
+        return region; // No mapPosition = uncategorized (continentId: undefined)
+      });
+
+      // Return world without map data (it's now on the continent)
+      const { mapImage, mapScale, ...worldWithoutMap } = world;
+      return {
+        ...worldWithoutMap,
+        regions: updatedRegions,
+      };
+    });
+
+    // Save the migrated data
+    await saveWorlds(updatedWorlds);
+    await saveContinents(newContinents);
+
+    console.log(`Migration complete: created ${newContinents.length} continent(s)`);
+    return { migrated: true, worlds: updatedWorlds, continents: newContinents };
+  } catch (error) {
+    console.error('Error migrating world maps to continents:', error);
+    return { migrated: false, worlds: await loadWorlds(), continents: [] };
+  }
+};
+
+// === LOCALSTORAGE MIGRATION ===
 
 /**
  * Migrate data from localStorage to IndexedDB (one-time operation)
@@ -250,6 +359,10 @@ export default {
   loadActiveWorldId,
   saveActiveRegionId,
   loadActiveRegionId,
+  saveContinents,
+  loadContinents,
+  saveActiveContinentId,
+  loadActiveContinentId,
   savePreferences,
   loadPreferences,
   markSetupComplete,
@@ -258,4 +371,5 @@ export default {
   importAllData,
   clearAllData,
   migrateFromLocalStorage,
+  migrateWorldMapsToContinent,
 };

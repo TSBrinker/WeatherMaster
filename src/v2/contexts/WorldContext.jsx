@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   saveWorlds,
@@ -7,7 +7,12 @@ import {
   loadActiveWorldId,
   saveActiveRegionId,
   loadActiveRegionId,
+  saveContinents,
+  loadContinents,
+  saveActiveContinentId,
+  loadActiveContinentId,
   migrateFromLocalStorage,
+  migrateWorldMapsToContinent,
 } from '../services/storage/indexedDB';
 import { advanceDate as advanceDateUtil } from '../utils/dateUtils';
 
@@ -23,32 +28,81 @@ export const useWorld = () => {
 
 export const WorldProvider = ({ children }) => {
   const [worlds, setWorlds] = useState([]);
+  const [continents, setContinents] = useState([]);
   const [activeWorldId, setActiveWorldId] = useState(null);
   const [activeRegionId, setActiveRegionId] = useState(null);
+  const [activeContinentId, setActiveContinentId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const isInitialized = useRef(false);
 
   // Derived state
   const activeWorld = worlds.find(w => w.id === activeWorldId) || null;
   const activeRegion = activeWorld?.regions.find(r => r.id === activeRegionId) || null;
+  const activeContinent = continents.find(c => c.id === activeContinentId) || null;
 
-  // Load data from IndexedDB on mount (with migration from localStorage)
+  // Get continents for the active world
+  const worldContinents = useMemo(() => {
+    if (!activeWorldId) return [];
+    return continents.filter(c => c.worldId === activeWorldId);
+  }, [continents, activeWorldId]);
+
+  // Group regions by continent for the active world
+  const groupedRegions = useMemo(() => {
+    if (!activeWorld) return { uncategorized: [], byContinent: {} };
+
+    const byContinent = {};
+    const uncategorized = [];
+
+    // Initialize continent groups
+    worldContinents.forEach(c => {
+      byContinent[c.id] = [];
+    });
+
+    // Sort regions into groups
+    activeWorld.regions.forEach(region => {
+      if (region.continentId && byContinent[region.continentId]) {
+        byContinent[region.continentId].push(region);
+      } else {
+        uncategorized.push(region);
+      }
+    });
+
+    return { uncategorized, byContinent };
+  }, [activeWorld, worldContinents]);
+
+  // Load data from IndexedDB on mount (with migrations)
   useEffect(() => {
     const initializeStorage = async () => {
       try {
         // First, try to migrate any existing localStorage data
         await migrateFromLocalStorage();
 
-        // Then load from IndexedDB
-        const [loadedWorlds, loadedActiveWorldId, loadedActiveRegionId] = await Promise.all([
-          loadWorlds(),
+        // Then run continent migration (moves maps from World to Continent)
+        const migrationResult = await migrateWorldMapsToContinent();
+
+        // Load from IndexedDB (or use migrated data)
+        let loadedWorlds, loadedContinents;
+        if (migrationResult.migrated) {
+          loadedWorlds = migrationResult.worlds;
+          loadedContinents = migrationResult.continents;
+        } else {
+          [loadedWorlds, loadedContinents] = await Promise.all([
+            loadWorlds(),
+            loadContinents(),
+          ]);
+        }
+
+        const [loadedActiveWorldId, loadedActiveRegionId, loadedActiveContinentId] = await Promise.all([
           loadActiveWorldId(),
           loadActiveRegionId(),
+          loadActiveContinentId(),
         ]);
 
         setWorlds(loadedWorlds);
+        setContinents(loadedContinents);
         setActiveWorldId(loadedActiveWorldId);
         setActiveRegionId(loadedActiveRegionId);
+        setActiveContinentId(loadedActiveContinentId);
         isInitialized.current = true;
       } catch (error) {
         console.error('Error initializing storage:', error);
@@ -61,12 +115,18 @@ export const WorldProvider = ({ children }) => {
     initializeStorage();
   }, []);
 
-  // Save to IndexedDB whenever worlds change (skip initial load)
+  // Save to IndexedDB whenever state changes (skip initial load)
   useEffect(() => {
     if (isInitialized.current) {
       saveWorlds(worlds);
     }
   }, [worlds]);
+
+  useEffect(() => {
+    if (isInitialized.current) {
+      saveContinents(continents);
+    }
+  }, [continents]);
 
   useEffect(() => {
     if (isInitialized.current) {
@@ -79,6 +139,12 @@ export const WorldProvider = ({ children }) => {
       saveActiveRegionId(activeRegionId);
     }
   }, [activeRegionId]);
+
+  useEffect(() => {
+    if (isInitialized.current) {
+      saveActiveContinentId(activeContinentId);
+    }
+  }, [activeContinentId]);
 
   // ===== WORLD MANAGEMENT =====
 
@@ -94,9 +160,7 @@ export const WorldProvider = ({ children }) => {
         hour: 12
       },
       regions: [],
-      // Map configuration (optional)
-      mapImage: null,           // base64 string or null
-      mapScale: null            // { milesPerPixel, topEdgeDistanceFromCenter } or null
+      // Note: Maps are now stored on Continents, not on World
     };
 
     setWorlds(prev => [...prev, newWorld]);
@@ -113,28 +177,88 @@ export const WorldProvider = ({ children }) => {
   }, []);
 
   const deleteWorld = useCallback((worldId) => {
+    // Also delete all continents for this world
+    setContinents(prev => prev.filter(c => c.worldId !== worldId));
     setWorlds(prev => prev.filter(w => w.id !== worldId));
     if (activeWorldId === worldId) {
       setActiveWorldId(null);
       setActiveRegionId(null);
+      setActiveContinentId(null);
     }
   }, [activeWorldId]);
 
   const selectWorld = useCallback((worldId) => {
     setActiveWorldId(worldId);
-    // Clear active region when switching worlds
+    // Clear active region and continent when switching worlds
     setActiveRegionId(null);
+    setActiveContinentId(null);
   }, []);
 
-  const updateWorldMap = useCallback((mapImage, mapScale) => {
-    if (!activeWorldId) return;
+  // ===== CONTINENT MANAGEMENT =====
 
-    setWorlds(prev => prev.map(world =>
-      world.id === activeWorldId
-        ? { ...world, mapImage, mapScale }
-        : world
-    ));
+  const createContinent = useCallback((name) => {
+    if (!activeWorldId) return null;
+
+    const newContinent = {
+      id: uuidv4(),
+      worldId: activeWorldId,
+      name,
+      mapImage: null,
+      mapScale: null,
+      isCollapsed: false,
+    };
+
+    setContinents(prev => [...prev, newContinent]);
+    setActiveContinentId(newContinent.id);
+    return newContinent;
   }, [activeWorldId]);
+
+  const updateContinent = useCallback((continentId, updates) => {
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, ...updates }
+        : continent
+    ));
+  }, []);
+
+  const deleteContinent = useCallback((continentId) => {
+    // Move all regions in this continent to uncategorized (remove continentId)
+    setWorlds(prev => prev.map(world => ({
+      ...world,
+      regions: world.regions.map(region =>
+        region.continentId === continentId
+          ? { ...region, continentId: undefined, mapPosition: undefined }
+          : region
+      )
+    })));
+
+    // Delete the continent
+    setContinents(prev => prev.filter(c => c.id !== continentId));
+
+    if (activeContinentId === continentId) {
+      setActiveContinentId(null);
+    }
+  }, [activeContinentId]);
+
+  const selectContinent = useCallback((continentId) => {
+    setActiveContinentId(continentId);
+  }, []);
+
+  const toggleContinentCollapsed = useCallback((continentId) => {
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, isCollapsed: !continent.isCollapsed }
+        : continent
+    ));
+  }, []);
+
+  const updateContinentMap = useCallback((continentId, mapImage, mapScale) => {
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, mapImage, mapScale }
+        : continent
+    ));
+  }, []);
 
   // ===== TIME MANAGEMENT =====
 
@@ -310,18 +434,32 @@ export const WorldProvider = ({ children }) => {
   const contextValue = {
     // State
     worlds,
+    continents,
     activeWorld,
     activeRegion,
+    activeContinent,
     activeWorldId,
     activeRegionId,
+    activeContinentId,
     isLoading,
+
+    // Derived state
+    worldContinents,
+    groupedRegions,
 
     // World methods
     createWorld,
     updateWorld,
     deleteWorld,
     selectWorld,
-    updateWorldMap,
+
+    // Continent methods
+    createContinent,
+    updateContinent,
+    deleteContinent,
+    selectContinent,
+    toggleContinentCollapsed,
+    updateContinentMap,
 
     // Time methods
     updateWorldTime,

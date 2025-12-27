@@ -14,17 +14,21 @@ import './WorldMapView.css';
 
 /**
  * WorldMapView - Interactive map display with latitude band overlay and location pins
+ *
+ * Props:
+ * - continent: The continent object to display (has mapImage, mapScale)
+ * - onPlaceLocation: Callback when user clicks to place a new location
+ * - onSelectRegion: Callback when user clicks on a region pin
  */
-const WorldMapView = ({ onPlaceLocation }) => {
-  const { activeWorld } = useWorld();
+const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
+  const { activeWorld, groupedRegions } = useWorld();
   const mapContainerRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [showConfig, setShowConfig] = useState(false);
-  const [clickPosition, setClickPosition] = useState(null);
   const [hoveredBand, setHoveredBand] = useState(null);
 
-  const mapImage = activeWorld?.mapImage;
-  const mapScale = activeWorld?.mapScale;
+  const mapImage = continent?.mapImage;
+  const mapScale = continent?.mapScale;
 
   // Calculate visible bands (flat for legend) and curved bands (for SVG overlay)
   const visibleBands = mapScale && imageSize.height > 0
@@ -35,8 +39,10 @@ const WorldMapView = ({ onPlaceLocation }) => {
     ? calculateCurvedBands(imageSize.width, imageSize.height, mapScale)
     : [];
 
-  // Get all regions with map positions
-  const regionsWithPositions = activeWorld?.regions.filter(r => r.mapPosition) || [];
+  // Get regions for this continent that have map positions
+  const regionsWithPositions = continent
+    ? (groupedRegions.byContinent[continent.id] || []).filter(r => r.mapPosition)
+    : [];
 
   const handleImageLoad = (e) => {
     setImageSize({ width: e.target.naturalWidth, height: e.target.naturalHeight });
@@ -89,18 +95,37 @@ const WorldMapView = ({ onPlaceLocation }) => {
     setHoveredBand(null);
   };
 
-  // No map configured
+  // Handle clicking on a region pin
+  const handlePinClick = (e, region) => {
+    e.stopPropagation(); // Don't trigger map click
+    if (onSelectRegion) {
+      onSelectRegion(region.id);
+    }
+  };
+
+  // No continent provided
+  if (!continent) {
+    return (
+      <div className="world-map-empty">
+        <MapPin size={48} className="empty-icon" />
+        <h5>No Continent Selected</h5>
+        <p>Select a continent to view its map.</p>
+      </div>
+    );
+  }
+
+  // No map configured for this continent
   if (!mapImage) {
     return (
       <div className="world-map-empty">
         <MapPin size={48} className="empty-icon" />
         <h5>No Map Configured</h5>
-        <p>Upload a map image to visualize your world's geography and place locations.</p>
+        <p>Upload a map image for {continent.name} to visualize its geography and place locations.</p>
         <Button variant="primary" onClick={() => setShowConfig(true)}>
           <Plus size={18} className="me-2" />
-          Add World Map
+          Add Map
         </Button>
-        <MapConfigModal show={showConfig} onHide={() => setShowConfig(false)} />
+        <MapConfigModal show={showConfig} onHide={() => setShowConfig(false)} continent={continent} />
       </div>
     );
   }
@@ -108,7 +133,7 @@ const WorldMapView = ({ onPlaceLocation }) => {
   return (
     <div className="world-map-view">
       <div className="map-header">
-        <h5>World Map</h5>
+        <h5>{continent.name}</h5>
         <Button
           variant="outline-secondary"
           size="sm"
@@ -179,12 +204,13 @@ const WorldMapView = ({ onPlaceLocation }) => {
           {regionsWithPositions.map((region) => (
             <div
               key={region.id}
-              className="location-pin"
+              className={`location-pin ${onSelectRegion ? 'clickable' : ''}`}
               style={{
                 left: `${(region.mapPosition.x / imageSize.width) * 100}%`,
                 top: `${(region.mapPosition.y / imageSize.height) * 100}%`
               }}
               title={region.name}
+              onClick={(e) => handlePinClick(e, region)}
             >
               <MapPin size={24} className="pin-icon" />
               <span className="pin-label">{region.name}</span>
@@ -221,7 +247,7 @@ const WorldMapView = ({ onPlaceLocation }) => {
         </div>
       )}
 
-      <MapConfigModal show={showConfig} onHide={() => setShowConfig(false)} />
+      <MapConfigModal show={showConfig} onHide={() => setShowConfig(false)} continent={continent} />
     </div>
   );
 };

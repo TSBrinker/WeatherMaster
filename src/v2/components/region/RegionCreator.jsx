@@ -8,13 +8,14 @@ import {
   extractClimateProfile
 } from '../../data/templateHelpers';
 
-const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition = null }) => {
-  const { createRegion } = useWorld();
+const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition = null, initialContinentId = null }) => {
+  const { createRegion, worldContinents } = useWorld();
 
   // Form state
   const [latitudeBand, setLatitudeBand] = useState(initialLatitudeBand || 'temperate');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [regionName, setRegionName] = useState('');
+  const [continentId, setContinentId] = useState(initialContinentId || '');
 
   // Get available templates for selected latitude
   const availableTemplates = getTemplatesByLatitude(latitudeBand);
@@ -28,6 +29,13 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
       setLatitudeBand(initialLatitudeBand);
     }
   }, [show, initialLatitudeBand]);
+
+  // Update continent when initialContinentId changes (e.g., from map click)
+  useEffect(() => {
+    if (show && initialContinentId) {
+      setContinentId(initialContinentId);
+    }
+  }, [show, initialContinentId]);
 
   // Auto-select first template when latitude changes
   useEffect(() => {
@@ -52,13 +60,18 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     // Extract climate data from template
     const climateProfile = extractClimateProfile(selectedTemplate);
 
-    // Create the region (include map position if provided)
+    // Create the region (include map position and continent if provided)
     const regionData = {
       name: regionName.trim(),
       latitudeBand,
       climate: climateProfile,
       templateId: selectedTemplateId
     };
+
+    // Add continent if selected
+    if (continentId) {
+      regionData.continentId = continentId;
+    }
 
     // Add map position if region was created via map click
     if (mapPosition) {
@@ -73,6 +86,7 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     // Reset form and close
     setRegionName('');
     setLatitudeBand('temperate');
+    setContinentId('');
     onHide();
   };
 
@@ -96,6 +110,27 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
               autoFocus
             />
           </Form.Group>
+
+          {/* Continent Selection (only show if continents exist) */}
+          {worldContinents.length > 0 && (
+            <Form.Group className="mb-3">
+              <Form.Label>Continent</Form.Label>
+              <Form.Select
+                value={continentId}
+                onChange={(e) => setContinentId(e.target.value)}
+              >
+                <option value="">Uncategorized</option>
+                {worldContinents.map(continent => (
+                  <option key={continent.id} value={continent.id}>
+                    {continent.name}
+                  </option>
+                ))}
+              </Form.Select>
+              <Form.Text className="text-muted">
+                Group this location under a continent for organization
+              </Form.Text>
+            </Form.Group>
+          )}
 
           {/* Latitude Band Selection */}
           <Form.Group className="mb-3">
