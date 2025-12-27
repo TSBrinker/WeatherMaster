@@ -3,7 +3,10 @@
 ## Your First Steps (Do These In Order)
 
 ### 1. Choose Your Name
-Pick a **unique** name for yourself! Check `docs/sprint-logs/` to see names already taken. Early agents chose tree names (Elderwood, Willow, Cedar...) but you're welcome to break tradition. Introduce yourself to Tyler when ready.
+Pick a **unique** name for yourself! Check the list below for names already taken. Early agents chose tree/nature names (Elderwood, Willow, Cedar, Granite, Obsidian...) but you're welcome to break tradition. **Once you've chosen, add your name to the list below** and introduce yourself to Tyler.
+
+#### Names Already Taken
+> ALDER, ASH, BASALT, BIRCH, CEDAR, COBALT, CYPRESS, ELDERWOOD, EMBER, FERN, FLINT, GRANITE, HAWTHORN, HEMLOCK, JUNIPER, LARCH, MAPLE, MARBLE, OAK, OBSIDIAN, ONYX, OPUS, PINE, QUARTZ, ROWAN, SAGE, SEQUOIA, SHALE, SLATE, SPRUCE, WILLOW
 
 ### 2. Create Your Sprint Log
 Create `docs/sprint-logs/SPRINT_XX_YOURNAME.md` immediately (XX = next number).
@@ -52,4 +55,4 @@ Check existing logs to find the current count. Document as you work.
 | Your sprint log | **Yes** - Add your work | N/A (your document) |
 | WORKING_WITH_TYLER.md | **Add** new observations | **No** - Keep existing sections |
 | ROADMAP.md | **Update** task status | **No** - Keep category structure |
-| START_HERE.md | **No** - Unless workflow changes | **No** - Tyler maintains this |
+| START_HERE.md | **Add your name** to the taken list | **No** - Tyler maintains structure |
