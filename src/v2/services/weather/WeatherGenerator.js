@@ -74,13 +74,12 @@ export class WeatherGenerator {
     // Generate wind
     const wind = this.generateWind(region, date, pattern);
 
-    // Generate base humidity
-    const baseHumidity = this.generateHumidity(region, date, pattern);
+    // Generate dew point (the physically-based moisture metric)
+    const dewPoint = this.generateDewPoint(region, date, pattern);
 
-    // Enhance humidity with atmospheric effects
-    const humidity = this.atmosphericService.getEnhancedHumidity(
-      region, date, pattern, pressure, baseHumidity
-    );
+    // Calculate humidity from temperature and dew point (Magnus formula)
+    // This ensures physically realistic humidity values
+    const humidity = this.calculateHumidityFromDewPoint(temperature, dewPoint);
 
     // Determine precipitation
     const precipitation = this.generatePrecipitation(region, date, pattern, temperature);
@@ -147,6 +146,7 @@ export class WeatherGenerator {
       windSpeed: finalWindSpeed,
       windDirection: wind.direction,
       humidity,
+      dewPoint,
       precipitation: precipitation.isOccurring,
       precipitationType: precipitation.type,
       precipitationIntensity: precipitation.intensity,
@@ -167,8 +167,8 @@ export class WeatherGenerator {
         temperatureBreakdown: this.tempService.getTemperatureDebug(region, date),
         atmospheric: {
           pressure: pressure._debug,
-          baseHumidity,
-          enhancedHumidity: humidity,
+          dewPoint,
+          humidity,
           cloudCover: cloudCover._debug,
           atmosphericFeelsLikeContribution: atmosphericContribution
         }
@@ -245,6 +245,125 @@ export class WeatherGenerator {
     const humidityBoost = patternPrecipChance * 10;
 
     return Math.max(0, Math.min(100, Math.round(humidity + humidityBoost)));
+  }
+
+  /**
+   * Generate dew point temperature based on regional moisture availability
+   * Dew point is the key constraint on humidity - it represents actual moisture in the air
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @param {Object} pattern - Current weather pattern
+   * @returns {number} Dew point temperature in °F
+   */
+  generateDewPoint(region, date, pattern) {
+    const params = region.climate || region.parameters || {};
+    const dewPointProfile = params.dewPointProfile;
+
+    // If no dew point profile, fall back to estimating from humidity profile
+    if (!dewPointProfile) {
+      return this.estimateDewPointFromHumidity(region, date, pattern);
+    }
+
+    const season = this.getSeason(date.month);
+    const seasonalDewPoint = dewPointProfile[season] || dewPointProfile.annual;
+
+    if (!seasonalDewPoint) {
+      return this.estimateDewPointFromHumidity(region, date, pattern);
+    }
+
+    const seed = generateSeed(region.id, date, 'dewpoint');
+    const rng = new SeededRandom(seed);
+
+    // Base dew point from seasonal mean with variance
+    const variance = seasonalDewPoint.variance || 8;
+    let dewPoint = seasonalDewPoint.mean + rng.range(-variance, variance);
+
+    // Precipitation chance increases moisture (raises dew point)
+    const precipChance = pattern.characteristics.precipitation || 0;
+    const moistureBoost = precipChance * 8; // Up to +8°F dew point during storms
+    dewPoint += moistureBoost;
+
+    // Cap at regional maximum (physical limit based on moisture sources)
+    const maxDewPoint = seasonalDewPoint.max || (seasonalDewPoint.mean + 15);
+    dewPoint = Math.min(dewPoint, maxDewPoint);
+
+    // Dew point can never exceed air temperature (would mean supersaturation)
+    // This is handled in the humidity calculation, not here
+
+    return Math.round(dewPoint);
+  }
+
+  /**
+   * Estimate dew point from humidity profile (fallback for regions without dew point profile)
+   * Uses a rough approximation based on typical humidity-dewpoint relationships
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @param {Object} pattern - Current weather pattern
+   * @returns {number} Estimated dew point in °F
+   */
+  estimateDewPointFromHumidity(region, date, pattern) {
+    const params = region.climate || region.parameters || {};
+    const humidityProfile = params.humidityProfile;
+    const tempProfile = params.temperatureProfile;
+
+    if (!humidityProfile || !tempProfile) {
+      return 55; // Default moderate dew point
+    }
+
+    const season = this.getSeason(date.month);
+    const seasonalHumidity = humidityProfile[season] || humidityProfile.annual;
+    const seasonalTemp = tempProfile[season] || tempProfile.annual;
+
+    if (!seasonalHumidity || !seasonalTemp) {
+      return 55;
+    }
+
+    // Rough estimate: dew point depression is larger when humidity is lower
+    // At 100% RH, dewpoint = temperature
+    // At 50% RH, dewpoint ≈ temperature - 20°F
+    // At 20% RH, dewpoint ≈ temperature - 45°F
+    const avgHumidity = seasonalHumidity.mean;
+    const avgTemp = seasonalTemp.mean;
+
+    // Approximate dew point depression based on humidity
+    const dewPointDepression = (100 - avgHumidity) * 0.45;
+    const baseDewPoint = avgTemp - dewPointDepression;
+
+    const seed = generateSeed(region.id, date, 'dewpoint-est');
+    const rng = new SeededRandom(seed);
+    const variance = 6;
+    let dewPoint = baseDewPoint + rng.range(-variance, variance);
+
+    // Add moisture boost during precipitation
+    const precipChance = pattern.characteristics.precipitation || 0;
+    dewPoint += precipChance * 6;
+
+    return Math.round(dewPoint);
+  }
+
+  /**
+   * Calculate relative humidity from temperature and dew point using Magnus formula
+   * This is the physically accurate way to determine humidity
+   * @param {number} tempF - Air temperature in °F
+   * @param {number} dewPointF - Dew point temperature in °F
+   * @returns {number} Relative humidity percentage (0-100)
+   */
+  calculateHumidityFromDewPoint(tempF, dewPointF) {
+    // Dew point cannot exceed temperature (would mean supersaturation)
+    const effectiveDewPoint = Math.min(dewPointF, tempF);
+
+    // Convert to Celsius for Magnus formula
+    const T = (tempF - 32) * 5 / 9;
+    const Td = (effectiveDewPoint - 32) * 5 / 9;
+
+    // Magnus formula coefficients (valid for -45°C to 60°C)
+    const a = 17.625;
+    const b = 243.04;
+
+    // Calculate relative humidity
+    const RH = 100 * Math.exp((a * Td) / (b + Td)) / Math.exp((a * T) / (b + T));
+
+    return Math.min(100, Math.max(0, Math.round(RH)));
   }
 
   /**
