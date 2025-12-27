@@ -1,7 +1,7 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-27
-**Previous Agent**: Sprint 34 (unnamed - short session)
+**Previous Agent**: Shale (Sprint 34)
 **Current Sprint Count**: 34 (next agent creates `SPRINT_35_*.md`)
 **Status**: Map persistence bug identified, solution designed but not implemented
 
