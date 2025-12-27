@@ -212,6 +212,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 15 },
           summer: { mean: 85, variance: 10 }, // Wet season
           fall: { mean: 75, variance: 15 }
+        },
+        // Tropical monsoon: very high dew points, especially during wet season
+        dewPointProfile: {
+          annual: { mean: 72, variance: 6, max: 82 },
+          winter: { mean: 65, variance: 8, max: 75 },
+          spring: { mean: 72, variance: 6, max: 80 },
+          summer: { mean: 76, variance: 4, max: 82 },
+          fall: { mean: 72, variance: 6, max: 78 }
         }
       },
       defaultBiome: "tropical-seasonal"
@@ -245,6 +253,14 @@ export const regionTemplates = {
           spring: { mean: 60, variance: 20 },
           summer: { mean: 75, variance: 15 }, // Wet season
           fall: { mean: 65, variance: 20 }
+        },
+        // Tropical savanna: moderate dew points, very seasonal
+        dewPointProfile: {
+          annual: { mean: 58, variance: 10, max: 75 },
+          winter: { mean: 45, variance: 10, max: 58 },
+          spring: { mean: 58, variance: 10, max: 72 },
+          summer: { mean: 68, variance: 6, max: 78 },
+          fall: { mean: 60, variance: 8, max: 72 }
         }
       },
       defaultBiome: "temperate-grassland"
@@ -277,6 +293,14 @@ export const regionTemplates = {
           spring: { mean: 20, variance: 15 },
           summer: { mean: 15, variance: 10 },
           fall: { mean: 20, variance: 15 }
+        },
+        // Tropical desert: extremely low dew points due to lack of moisture sources
+        dewPointProfile: {
+          annual: { mean: 32, variance: 12, max: 55 },
+          winter: { mean: 30, variance: 10, max: 48 },
+          spring: { mean: 28, variance: 12, max: 52 },
+          summer: { mean: 35, variance: 12, max: 58 },
+          fall: { mean: 32, variance: 10, max: 52 }
         }
       },
       defaultBiome: "desert"
@@ -644,6 +668,16 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 20 },
           summer: { mean: 55, variance: 25 },
           fall: { mean: 55, variance: 20 }
+        },
+        // Dew point profiles based on Great Plains meteorological data
+        // Summer: Gulf moisture can push dew points to 70s, max 75 in severe storms
+        // Winter: Very dry continental air, dew points often below freezing
+        dewPointProfile: {
+          annual: { mean: 42, variance: 12, max: 70 },
+          winter: { mean: 18, variance: 10, max: 35 },
+          spring: { mean: 45, variance: 12, max: 68 },
+          summer: { mean: 62, variance: 8, max: 75 },
+          fall: { mean: 45, variance: 10, max: 65 }
         }
       },
       defaultBiome: "temperate-grassland"
@@ -676,6 +710,14 @@ export const regionTemplates = {
           spring: { mean: 30, variance: 15 },
           summer: { mean: 20, variance: 10 },
           fall: { mean: 30, variance: 15 }
+        },
+        // Temperate desert: low dew points, continental aridity
+        dewPointProfile: {
+          annual: { mean: 28, variance: 10, max: 50 },
+          winter: { mean: 22, variance: 8, max: 38 },
+          spring: { mean: 28, variance: 10, max: 48 },
+          summer: { mean: 38, variance: 10, max: 55 },
+          fall: { mean: 28, variance: 10, max: 48 }
         }
       },
       defaultBiome: "desert"

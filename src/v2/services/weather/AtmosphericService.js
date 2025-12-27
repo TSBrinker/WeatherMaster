@@ -222,9 +222,8 @@ export class AtmosphericService {
       humidity -= 5; // Rising pressure = decreasing humidity
     }
 
-    // Pattern influences humidity
-    const precipChance = pattern.characteristics.precipitation || 0;
-    humidity += precipChance * 15; // Higher precip chance = higher humidity
+    // Note: Precipitation humidity boost is already applied in WeatherGenerator.generateHumidity()
+    // so we don't add it again here to avoid double-dipping
 
     // Clamp to valid range
     return Math.max(10, Math.min(100, Math.round(humidity)));
