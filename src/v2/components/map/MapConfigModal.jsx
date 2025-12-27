@@ -1,12 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { Map, Upload, X } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
 import { calculateVisibleBands, BAND_COLORS, BAND_LABELS } from '../../utils/mapUtils';
+import { compressImage } from '../../utils/imageUtils';
 import './MapConfigModal.css';
 
 /**
  * MapConfigModal - Upload and configure a world map with scale settings
+ *
+ * Compression strategy:
+ * - Large images are compressed for storage (to fit in IndexedDB)
+ * - BUT the user configures scale based on their ORIGINAL image dimensions
+ * - On save, we adjust milesPerPixel to account for the compression
+ * - This way the user's mental model stays consistent with their source image
  */
 const MapConfigModal = ({ show, onHide }) => {
   const { activeWorld, updateWorldMap } = useWorld();
@@ -16,54 +23,89 @@ const MapConfigModal = ({ show, onHide }) => {
   const [mapImage, setMapImage] = useState(null);
   const [milesPerPixel, setMilesPerPixel] = useState(0.5);
   const [topEdgeDistance, setTopEdgeDistance] = useState(0);
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [previewBands, setPreviewBands] = useState([]);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  // Track original vs compressed dimensions
+  // originalSize: what the user thinks about (their source image)
+  // scaleFactor: ratio of compressed to original (1 = no compression)
+  const [originalSize, setOriginalSize] = useState({ width: 0, height: 0 });
+  const [scaleFactor, setScaleFactor] = useState(1);
+  const [wasCompressed, setWasCompressed] = useState(false);
 
   // Initialize from activeWorld when modal opens
   useEffect(() => {
     if (show && activeWorld) {
       setMapImage(activeWorld.mapImage || null);
       if (activeWorld.mapScale) {
-        setMilesPerPixel(activeWorld.mapScale.milesPerPixel || 0.5);
+        // Use userMilesPerPixel if available (new format), otherwise fall back to stored milesPerPixel
+        // This ensures the user sees the value they originally entered
+        setMilesPerPixel(activeWorld.mapScale.userMilesPerPixel || activeWorld.mapScale.milesPerPixel || 0.5);
         setTopEdgeDistance(activeWorld.mapScale.topEdgeDistanceFromCenter || 0);
+        // For existing maps, use stored originalSize if available
+        if (activeWorld.mapScale.originalSize) {
+          setOriginalSize(activeWorld.mapScale.originalSize);
+          setScaleFactor(activeWorld.mapScale.scaleFactor || 1);
+          setWasCompressed(activeWorld.mapScale.scaleFactor && activeWorld.mapScale.scaleFactor !== 1);
+        } else {
+          // Legacy map without originalSize - will be set by handleImageLoad
+          setOriginalSize({ width: 0, height: 0 });
+          setScaleFactor(1);
+          setWasCompressed(false);
+        }
       } else {
         setMilesPerPixel(0.5);
         setTopEdgeDistance(0);
+        setOriginalSize({ width: 0, height: 0 });
+        setScaleFactor(1);
+        setWasCompressed(false);
       }
     }
   }, [show, activeWorld]);
 
   // Recalculate visible bands when settings change
+  // Use ORIGINAL dimensions so user's scale inputs make sense
   useEffect(() => {
-    if (imageSize.height > 0) {
+    if (originalSize.height > 0) {
       const mapScale = { milesPerPixel, topEdgeDistanceFromCenter: topEdgeDistance };
-      const bands = calculateVisibleBands(imageSize.height, mapScale);
+      const bands = calculateVisibleBands(originalSize.height, mapScale);
       setPreviewBands(bands);
     }
-  }, [milesPerPixel, topEdgeDistance, imageSize.height]);
+  }, [milesPerPixel, topEdgeDistance, originalSize.height]);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target.result;
-      setMapImage(base64);
+    setIsCompressing(true);
 
-      // Get image dimensions
-      const img = new Image();
-      img.onload = () => {
-        setImageSize({ width: img.width, height: img.height });
-      };
-      img.src = base64;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const originalBase64 = event.target.result;
+
+        // Compress image if needed
+        const result = await compressImage(originalBase64);
+
+        setMapImage(result.dataUrl);
+        // Store ORIGINAL dimensions - this is what the user thinks about
+        setOriginalSize({ width: result.originalWidth, height: result.originalHeight });
+        setScaleFactor(result.scaleFactor);
+        setWasCompressed(result.wasCompressed);
+      } catch (error) {
+        console.error('Error processing image:', error);
+      } finally {
+        setIsCompressing(false);
+      }
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemoveMap = () => {
     setMapImage(null);
-    setImageSize({ width: 0, height: 0 });
+    setOriginalSize({ width: 0, height: 0 });
+    setScaleFactor(1);
+    setWasCompressed(false);
     setPreviewBands([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -71,21 +113,42 @@ const MapConfigModal = ({ show, onHide }) => {
   };
 
   const handleSave = () => {
-    const mapScale = mapImage ? {
-      milesPerPixel: parseFloat(milesPerPixel) || 0.5,
-      topEdgeDistanceFromCenter: parseFloat(topEdgeDistance) || 0
-    } : null;
+    if (!mapImage) {
+      updateWorldMap(null, null);
+      onHide();
+      return;
+    }
+
+    // User entered milesPerPixel based on ORIGINAL image dimensions
+    // We need to adjust for compression: if image was shrunk by half,
+    // each pixel in the compressed image represents 2x the distance
+    const userMilesPerPixel = parseFloat(milesPerPixel) || 0.5;
+    const adjustedMilesPerPixel = userMilesPerPixel / scaleFactor;
+
+    const mapScale = {
+      milesPerPixel: adjustedMilesPerPixel,
+      topEdgeDistanceFromCenter: parseFloat(topEdgeDistance) || 0,
+      // Store original info so we can reconstruct the user's perspective when editing
+      originalSize: originalSize,
+      scaleFactor: scaleFactor,
+      // Also store the user's original input for display purposes
+      userMilesPerPixel: userMilesPerPixel,
+    };
 
     updateWorldMap(mapImage, mapScale);
     onHide();
   };
 
   const handleImageLoad = (e) => {
-    setImageSize({ width: e.target.naturalWidth, height: e.target.naturalHeight });
+    // For legacy maps without originalSize stored, use the actual image dimensions
+    // (This means legacy maps will use compressed dimensions, but that's the best we can do)
+    if (originalSize.width === 0 && originalSize.height === 0) {
+      setOriginalSize({ width: e.target.naturalWidth, height: e.target.naturalHeight });
+    }
   };
 
-  // Calculate map coverage info
-  const mapHeightMiles = imageSize.height * milesPerPixel;
+  // Calculate map coverage info (based on original dimensions)
+  const mapHeightMiles = originalSize.height * milesPerPixel;
   const bottomEdgeMiles = topEdgeDistance + mapHeightMiles;
 
   return (
@@ -104,10 +167,21 @@ const MapConfigModal = ({ show, onHide }) => {
       </Modal.Header>
 
       <Modal.Body>
+        {/* Compression notice - shown when image was compressed for storage */}
+        {wasCompressed && (
+          <Alert variant="info" className="mb-3">
+            Your image was compressed for storage. Enter scale values based on your original image dimensions ({originalSize.width} × {originalSize.height} px) - we'll handle the rest automatically.
+          </Alert>
+        )}
+
         {/* File Upload Section */}
         <div className="upload-section mb-4">
           <h5>Map Image</h5>
-          {!mapImage ? (
+          {isCompressing ? (
+            <div className="upload-dropzone">
+              <p className="upload-text">Compressing image...</p>
+            </div>
+          ) : !mapImage ? (
             <div
               className="upload-dropzone"
               onClick={() => fileInputRef.current?.click()}
@@ -132,14 +206,14 @@ const MapConfigModal = ({ show, onHide }) => {
                   className="map-preview-image"
                   onLoad={handleImageLoad}
                 />
-                {/* Band overlay preview */}
+                {/* Band overlay preview - positioned as % of original dimensions */}
                 {previewBands.map((band) => (
                   <div
                     key={band.name}
                     className="band-overlay-preview"
                     style={{
-                      top: `${(band.topPx / imageSize.height) * 100}%`,
-                      height: `${(band.heightPx / imageSize.height) * 100}%`,
+                      top: `${(band.topPx / originalSize.height) * 100}%`,
+                      height: `${(band.heightPx / originalSize.height) * 100}%`,
                       backgroundColor: band.color
                     }}
                   >
@@ -147,9 +221,10 @@ const MapConfigModal = ({ show, onHide }) => {
                   </div>
                 ))}
               </div>
-              {imageSize.width > 0 && (
+              {originalSize.width > 0 && (
                 <p className="image-dimensions">
-                  {imageSize.width} × {imageSize.height} px
+                  {originalSize.width} × {originalSize.height} px
+                  {wasCompressed && <span className="compressed-badge"> (compressed for storage)</span>}
                 </p>
               )}
             </div>

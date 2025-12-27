@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   saveWorlds,
@@ -7,7 +7,8 @@ import {
   loadActiveWorldId,
   saveActiveRegionId,
   loadActiveRegionId,
-} from '../services/storage/localStorage';
+  migrateFromLocalStorage,
+} from '../services/storage/indexedDB';
 import { advanceDate as advanceDateUtil } from '../utils/dateUtils';
 
 const WorldContext = createContext();
@@ -21,25 +22,62 @@ export const useWorld = () => {
 };
 
 export const WorldProvider = ({ children }) => {
-  const [worlds, setWorlds] = useState(() => loadWorlds());
-  const [activeWorldId, setActiveWorldId] = useState(() => loadActiveWorldId());
-  const [activeRegionId, setActiveRegionId] = useState(() => loadActiveRegionId());
+  const [worlds, setWorlds] = useState([]);
+  const [activeWorldId, setActiveWorldId] = useState(null);
+  const [activeRegionId, setActiveRegionId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const isInitialized = useRef(false);
 
   // Derived state
   const activeWorld = worlds.find(w => w.id === activeWorldId) || null;
   const activeRegion = activeWorld?.regions.find(r => r.id === activeRegionId) || null;
 
-  // Save to localStorage whenever worlds change
+  // Load data from IndexedDB on mount (with migration from localStorage)
   useEffect(() => {
-    saveWorlds(worlds);
+    const initializeStorage = async () => {
+      try {
+        // First, try to migrate any existing localStorage data
+        await migrateFromLocalStorage();
+
+        // Then load from IndexedDB
+        const [loadedWorlds, loadedActiveWorldId, loadedActiveRegionId] = await Promise.all([
+          loadWorlds(),
+          loadActiveWorldId(),
+          loadActiveRegionId(),
+        ]);
+
+        setWorlds(loadedWorlds);
+        setActiveWorldId(loadedActiveWorldId);
+        setActiveRegionId(loadedActiveRegionId);
+        isInitialized.current = true;
+      } catch (error) {
+        console.error('Error initializing storage:', error);
+        isInitialized.current = true;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeStorage();
+  }, []);
+
+  // Save to IndexedDB whenever worlds change (skip initial load)
+  useEffect(() => {
+    if (isInitialized.current) {
+      saveWorlds(worlds);
+    }
   }, [worlds]);
 
   useEffect(() => {
-    saveActiveWorldId(activeWorldId);
+    if (isInitialized.current) {
+      saveActiveWorldId(activeWorldId);
+    }
   }, [activeWorldId]);
 
   useEffect(() => {
-    saveActiveRegionId(activeRegionId);
+    if (isInitialized.current) {
+      saveActiveRegionId(activeRegionId);
+    }
   }, [activeRegionId]);
 
   // ===== WORLD MANAGEMENT =====
@@ -276,6 +314,7 @@ export const WorldProvider = ({ children }) => {
     activeRegion,
     activeWorldId,
     activeRegionId,
+    isLoading,
 
     // World methods
     createWorld,

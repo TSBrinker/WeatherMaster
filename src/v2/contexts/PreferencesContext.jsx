@@ -1,7 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { savePreferences, loadPreferences } from '../services/storage/localStorage';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { savePreferences, loadPreferences } from '../services/storage/indexedDB';
 
 const PreferencesContext = createContext();
+
+const DEFAULT_PREFERENCES = {
+  temperatureUnit: 'F',
+  windSpeedUnit: 'mph',
+  timeFormat: 12,
+  showFeelsLike: true,
+  debugMode: false,
+  conditionPhrasing: 'standard',
+  showSnowAccumulation: true,
+};
 
 export const usePreferences = () => {
   const context = useContext(PreferencesContext);
@@ -12,11 +22,33 @@ export const usePreferences = () => {
 };
 
 export const PreferencesProvider = ({ children }) => {
-  const [preferences, setPreferences] = useState(() => loadPreferences());
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [isLoading, setIsLoading] = useState(true);
+  const isInitialized = useRef(false);
 
-  // Save to localStorage whenever preferences change
+  // Load preferences from IndexedDB on mount
   useEffect(() => {
-    savePreferences(preferences);
+    const initializePreferences = async () => {
+      try {
+        const loaded = await loadPreferences();
+        setPreferences({ ...DEFAULT_PREFERENCES, ...loaded });
+        isInitialized.current = true;
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+        isInitialized.current = true;
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializePreferences();
+  }, []);
+
+  // Save to IndexedDB whenever preferences change (skip initial load)
+  useEffect(() => {
+    if (isInitialized.current) {
+      savePreferences(preferences);
+    }
   }, [preferences]);
 
   const updatePreference = (key, value) => {
@@ -27,16 +59,7 @@ export const PreferencesProvider = ({ children }) => {
   };
 
   const resetPreferences = () => {
-    const defaults = {
-      temperatureUnit: 'F',
-      windSpeedUnit: 'mph',
-      timeFormat: 12,
-      showFeelsLike: true,
-      debugMode: false,
-      conditionPhrasing: 'standard',
-      showSnowAccumulation: true,
-    };
-    setPreferences(defaults);
+    setPreferences(DEFAULT_PREFERENCES);
   };
 
   const setConditionPhrasing = (phrasing) => {
