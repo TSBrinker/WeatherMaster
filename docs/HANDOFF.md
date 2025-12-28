@@ -1,85 +1,88 @@
 # Handoff Document
 
-**Last Updated**: 2025-12-27
-**Previous Agent**: Summit (Sprint 39)
-**Current Sprint Count**: 39 (next agent creates `SPRINT_40_*.md`)
-**Status**: MVP #2 and #3 Complete - Ready for Time Controls
+**Last Updated**: 2025-12-28
+**Previous Agent**: Vale (Sprint 40)
+**Current Sprint Count**: 40 (next agent creates `SPRINT_41_*.md`)
+**Status**: MVP #4 and #5 Complete - Core MVP Sprint Done!
 
 ---
 
 ## What Was Done This Sprint
 
-### MVP #2: CRUD UI for Editing - COMPLETE
-Added full edit functionality for locations, continents, and worlds:
+### MVP #4: Time Control Improvements - COMPLETE
 
-- **Region Editing**: Pencil icon on each region in HamburgerMenu opens RegionEditor modal. Can change name, continent, latitude band, and template.
-- **Continent Editing**: Pencil icon on continent headers enables inline editing. Save/Cancel/Delete buttons. Enter to save, Escape to cancel.
-- **World Editing**: "Edit World Name" button in Settings menu (both inline and dropdown) opens WorldEditor modal.
+Added day-jump functionality and improved mobile usability:
 
-Files created:
-- `src/v2/components/region/RegionEditor.jsx`
-- `src/v2/components/world/WorldEditor.jsx`
+- **Day jump chevrons**: Subtle `‹` / `›` buttons flank the date line for ±1 day
+- **44px touch targets**: All buttons meet Apple's accessibility recommendations
+- **Clickable sunrise/sunset**: Tap "Sunset 7:05 PM" to jump to that hour
+- **Fixed tomorrow's sunrise**: Clicking sunrise after sunset correctly advances to next day
 
-Files modified:
-- `src/v2/components/menu/HamburgerMenu.jsx`
-- `src/v2/components/menu/HamburgerMenu.css`
-- `src/v2/components/menu/SettingsMenu.jsx`
+Layout:
+```
+     ‹  Mar 15 • Sunset 6:42 PM  ›      <- day jumps + clickable event
+       [-4h] [-1h]  11:04  [+1h] [+4h]   <- hour controls flank time
+```
 
-### MVP #3: Special Biomes in Location Modal - COMPLETE
-Fixed 5 special biomes not appearing in RegionCreator dropdown.
+### MVP #5: Layout Stability Fixes - COMPLETE
 
-**Root cause**: `templateHelpers.js` only looked at `regionTemplates[latitudeBand]`, ignoring special templates with `compatibleBands`.
-
-**Fix**: Updated `getTemplatesByLatitude()` and `getTemplate()` in `templateHelpers.js` to include special templates when their `compatibleBands` includes the selected latitude band.
-
-Special biomes now available:
-- Mountain Microclimate, Geothermal Zone, Convergence Zone, Rain Shadow, Coastal Desert
+- **Hamburger icon centering**: Fixed vertical alignment of ☰ character
+- **Feels Like shift**: Always renders (visibility: hidden when not shown) to reserve space
+- **Button width consistency**: Fixed width instead of min-width prevents micro-shifts
 
 ---
 
-## Next Up: MVP #4 - Time Control Improvements
-
-**Goal**: Add day jump buttons (<<< / >>>) and improve hitbox sizes for mobile.
-
-From NOTES_FROM_USER.md:
-> Maybe add <<< & >>> buttons to the time controls to jump a full day? And those should maybe be juuuuust a little bigger. Hard on a phone screen to hit the small hitbox.
-
-### Key Files
-- `src/v2/components/time/TimeControls.jsx` - Main time control buttons
-- `src/v2/components/header/WeatherHeader.jsx` - Contains TimeControls
-- WorldContext has `advanceTime(hours)` method - use with 24/-24 for day jumps
-
-### Implementation Notes
-- Add `<<<` and `>>>` buttons flanking existing `<` and `>` hour buttons
-- Increase touch target sizes (min 44px for accessibility)
-- Consider visual hierarchy - day jumps should be visually distinct but not dominant
-
----
-
-## MVP Sprint Plan (SINGLE SOURCE OF TRUTH)
+## MVP Sprint Plan Status
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
 | 1 | Cloud % midnight transitions | `[x]` | Fixed by Coral |
 | 2 | CRUD UI for editing | `[x]` | Fixed by Summit |
 | 3 | Special biomes in location modal | `[x]` | Fixed by Summit |
-| 4 | **Time control improvements** | `[ ]` | **START HERE** - Day jump buttons, larger hitboxes |
-| 5 | Layout stability fixes | `[ ]` | Time display width, Feels Like section shifts |
-| 6 | Hamburger menu centering | `[ ]` | Icon slightly off-center vertically |
+| 4 | Time control improvements | `[x]` | Fixed by Vale |
+| 5 | Layout stability fixes | `[x]` | Fixed by Vale |
+| 6 | Hamburger menu centering | `[x]` | Included in #5 |
+
+**All MVP items complete!**
 
 ---
 
-## Key Reference
+## What's Next
 
-### Test Harness
+### Ideas From This Sprint (Tyler mentioned)
+- **Zoomable container** for continent map - pinch/zoom when placing pins without zooming the whole app
+- **Dashboard layout revisit** - reconsider what's shown and overall structure
+
+### From NOTES_FROM_USER.md (pending items)
+- Polar region/twilight lands (first 500 miles as magical zone)
+- New biomes: Humid Subtropical, Steppe
+- Menu interaction improvements
+- Preferences menu structure
+- Multi-world support (stretch goal)
+
+### From ROADMAP.md
+Check ROADMAP.md for the full feature roadmap and priorities.
+
+---
+
+## Key Files Reference
+
+### Time Controls
+- `src/v2/components/header/WeatherHeader.jsx` - Header with time display and controls
+- `src/v2/components/header/WeatherHeader.css` - Styling for iOS lock screen aesthetic
+
+### Primary Display
+- `src/v2/components/weather/PrimaryDisplay.jsx` - Main weather hero component
+- `src/v2/components/weather/PrimaryDisplay.css` - Layout and visual effects
+
+### Menu
+- `src/v2/components/menu/FloatingMenuButton.jsx` - Floating hamburger button
+- `src/v2/components/menu/HamburgerMenu.jsx` - Full-page menu overlay
+
+---
+
+## Test Harness
 Access via `localhost:3000?test=true`
-
-### WorldContext Time Methods
-```javascript
-advanceTime(hours)      // Move time forward/backward by hours
-setSpecificTime(year, month, day, hour)
-jumpToDate(year, month, day, hour = 12)
-```
 
 ---
 

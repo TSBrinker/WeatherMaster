@@ -15,12 +15,4 @@ Here is where I'll stow some thoughts so I don't interrupt you while you're work
 
 - Stretch goal: more than one world per user. For DMs who run multiple games if they wanna use it for multiple instances
 
-- gotta be a way to edit the world name or whatever else would come along with that.
-
-- Maybe add <<< & >>> buttons to the time controls to jump a full day? And those should maybe be juuuuust a little bigger. Hard on a phone screen to hit the small hitbox.
-
-- No way to edit existing locations, continents, or worlds (fix typos, rename, reassign locations to different continents, etc.) - needs CRUD UI
-
-- Special biomes (Mountain Microclimate, Geothermal Zone, Convergence Zone, Rain Shadow, Coastal Desert) don't appear in the location creation modal
-
 - Consider a dedicated 'create location' modal triggered from the app (discuss specifics later)
