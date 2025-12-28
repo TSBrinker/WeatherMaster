@@ -56,6 +56,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 15 },
           summer: { mean: 65, variance: 15 },
           fall: { mean: 70, variance: 15 }
+        },
+        // Tundra: Very low dew points due to cold air holding little moisture
+        dewPointProfile: {
+          annual: { mean: 5, variance: 15, max: 45 },
+          winter: { mean: -20, variance: 10, max: 10 },
+          spring: { mean: 5, variance: 12, max: 35 },
+          summer: { mean: 35, variance: 8, max: 50 },
+          fall: { mean: 5, variance: 10, max: 35 }
         }
       },
       defaultBiome: "tundra"
@@ -86,6 +94,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 15 },
           summer: { mean: 70, variance: 15 },
           fall: { mean: 75, variance: 15 }
+        },
+        // Polar coast: Maritime influence adds some moisture, but still very cold
+        dewPointProfile: {
+          annual: { mean: 10, variance: 15, max: 48 },
+          winter: { mean: -15, variance: 10, max: 15 },
+          spring: { mean: 8, variance: 12, max: 38 },
+          summer: { mean: 38, variance: 8, max: 52 },
+          fall: { mean: 15, variance: 10, max: 40 }
         }
       },
       defaultBiome: "tundra"
@@ -116,6 +132,14 @@ export const regionTemplates = {
           spring: { mean: 60, variance: 10 },
           summer: { mean: 55, variance: 10 },
           fall: { mean: 60, variance: 10 }
+        },
+        // Ice sheet: Extremely dry, coldest temps mean very low dew points
+        dewPointProfile: {
+          annual: { mean: -25, variance: 15, max: 20 },
+          winter: { mean: -45, variance: 10, max: -10 },
+          spring: { mean: -30, variance: 12, max: 10 },
+          summer: { mean: 0, variance: 8, max: 25 },
+          fall: { mean: -20, variance: 10, max: 15 }
         }
       },
       defaultBiome: "tundra"
@@ -146,6 +170,14 @@ export const regionTemplates = {
           spring: { mean: 40, variance: 15 },
           summer: { mean: 35, variance: 15 },
           fall: { mean: 40, variance: 15 }
+        },
+        // Polar desert: Very arid, minimal moisture available
+        dewPointProfile: {
+          annual: { mean: -10, variance: 15, max: 30 },
+          winter: { mean: -35, variance: 10, max: 0 },
+          spring: { mean: -15, variance: 12, max: 20 },
+          summer: { mean: 15, variance: 8, max: 35 },
+          fall: { mean: -10, variance: 10, max: 25 }
         }
       },
       defaultBiome: "tundra"
@@ -176,6 +208,14 @@ export const regionTemplates = {
           spring: { mean: 50, variance: 20 },
           summer: { mean: 45, variance: 20 },
           fall: { mean: 50, variance: 20 }
+        },
+        // Polar highland: Cold and dry, elevation reduces moisture
+        dewPointProfile: {
+          annual: { mean: -5, variance: 15, max: 35 },
+          winter: { mean: -35, variance: 10, max: 5 },
+          spring: { mean: -10, variance: 12, max: 25 },
+          summer: { mean: 18, variance: 10, max: 40 },
+          fall: { mean: -5, variance: 10, max: 30 }
         }
       },
       defaultBiome: "tundra"
@@ -332,6 +372,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 15 },
           summer: { mean: 75, variance: 15 },
           fall: { mean: 65, variance: 15 }
+        },
+        // Tropical highland: Elevation keeps temps and dew points moderate year-round
+        dewPointProfile: {
+          annual: { mean: 48, variance: 8, max: 62 },
+          winter: { mean: 45, variance: 8, max: 58 },
+          spring: { mean: 50, variance: 8, max: 62 },
+          summer: { mean: 50, variance: 8, max: 62 },
+          fall: { mean: 46, variance: 8, max: 58 }
         }
       },
       defaultBiome: "temperate-rainforest"
@@ -364,6 +412,14 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 15 },
           summer: { mean: 80, variance: 15 }, // Wet season
           fall: { mean: 65, variance: 15 }
+        },
+        // Tropical deciduous: Hot and humid in wet season, moderate in dry
+        dewPointProfile: {
+          annual: { mean: 62, variance: 10, max: 78 },
+          winter: { mean: 50, variance: 10, max: 62 },
+          spring: { mean: 62, variance: 10, max: 75 },
+          summer: { mean: 72, variance: 6, max: 80 },
+          fall: { mean: 62, variance: 8, max: 75 }
         }
       },
       defaultBiome: "temperate-deciduous"
@@ -397,6 +453,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 10 },
           summer: { mean: 80, variance: 10 },
           fall: { mean: 75, variance: 10 }
+        },
+        // Tropical maritime: Ocean provides steady moisture, high dew points year-round
+        dewPointProfile: {
+          annual: { mean: 70, variance: 6, max: 80 },
+          winter: { mean: 66, variance: 6, max: 75 },
+          spring: { mean: 70, variance: 5, max: 78 },
+          summer: { mean: 74, variance: 4, max: 82 },
+          fall: { mean: 72, variance: 5, max: 80 }
         }
       },
       defaultBiome: "tropical-seasonal"
@@ -429,6 +493,14 @@ export const regionTemplates = {
           spring: { mean: 85, variance: 8 },
           summer: { mean: 88, variance: 8 },
           fall: { mean: 87, variance: 8 }
+        },
+        // Mangrove coast: Very high moisture, tidal wetlands, oppressive humidity
+        dewPointProfile: {
+          annual: { mean: 74, variance: 5, max: 84 },
+          winter: { mean: 70, variance: 5, max: 78 },
+          spring: { mean: 74, variance: 5, max: 82 },
+          summer: { mean: 78, variance: 4, max: 85 },
+          fall: { mean: 76, variance: 5, max: 84 }
         }
       },
       defaultBiome: "tropical-seasonal"
@@ -461,6 +533,14 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 15 },
           summer: { mean: 50, variance: 10 }, // Dry season
           fall: { mean: 55, variance: 15 }
+        },
+        // Mediterranean: Dry summers limit dew points despite coastal location
+        dewPointProfile: {
+          annual: { mean: 48, variance: 10, max: 65 },
+          winter: { mean: 48, variance: 8, max: 58 },
+          spring: { mean: 50, variance: 8, max: 62 },
+          summer: { mean: 52, variance: 8, max: 68 },
+          fall: { mean: 48, variance: 8, max: 62 }
         }
       },
       defaultBiome: "temperate-deciduous"
@@ -496,6 +576,14 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 15 },
           summer: { mean: 65, variance: 20 },
           fall: { mean: 75, variance: 15 }
+        },
+        // Boreal forest: Cold limits moisture capacity, humid but low dew points
+        dewPointProfile: {
+          annual: { mean: 28, variance: 15, max: 62 },
+          winter: { mean: 0, variance: 10, max: 20 },
+          spring: { mean: 28, variance: 12, max: 50 },
+          summer: { mean: 55, variance: 8, max: 68 },
+          fall: { mean: 30, variance: 12, max: 52 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -532,6 +620,14 @@ export const regionTemplates = {
           spring: { mean: 55, variance: 20 },
           summer: { mean: 55, variance: 25 },
           fall: { mean: 60, variance: 20 }
+        },
+        // Cold continental prairie: Dry continental air, Gulf moisture in summer storms
+        dewPointProfile: {
+          annual: { mean: 25, variance: 15, max: 68 },
+          winter: { mean: -5, variance: 10, max: 18 },
+          spring: { mean: 30, variance: 12, max: 58 },
+          summer: { mean: 55, variance: 10, max: 72 },
+          fall: { mean: 28, variance: 12, max: 55 }
         }
       },
       defaultBiome: "boreal-grassland"
@@ -566,6 +662,14 @@ export const regionTemplates = {
           spring: { mean: 72, variance: 15 },
           summer: { mean: 70, variance: 18 },
           fall: { mean: 78, variance: 12 }
+        },
+        // Boreal lake district: Lakes add moisture, higher dew points than dry boreal
+        dewPointProfile: {
+          annual: { mean: 32, variance: 15, max: 65 },
+          winter: { mean: 2, variance: 10, max: 22 },
+          spring: { mean: 32, variance: 12, max: 52 },
+          summer: { mean: 58, variance: 8, max: 70 },
+          fall: { mean: 35, variance: 10, max: 55 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -599,6 +703,14 @@ export const regionTemplates = {
           spring: { mean: 55, variance: 25 },
           summer: { mean: 40, variance: 25 },
           fall: { mean: 45, variance: 25 }
+        },
+        // Boreal highland: Elevation and cold limit moisture
+        dewPointProfile: {
+          annual: { mean: 22, variance: 15, max: 55 },
+          winter: { mean: -5, variance: 10, max: 20 },
+          spring: { mean: 22, variance: 12, max: 45 },
+          summer: { mean: 48, variance: 10, max: 62 },
+          fall: { mean: 25, variance: 12, max: 48 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -635,6 +747,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 15 },
           summer: { mean: 70, variance: 15 },
           fall: { mean: 75, variance: 15 }
+        },
+        // Maritime forest: Ocean moderates everything, steady moisture year-round
+        dewPointProfile: {
+          annual: { mean: 42, variance: 10, max: 62 },
+          winter: { mean: 35, variance: 8, max: 48 },
+          spring: { mean: 42, variance: 8, max: 55 },
+          summer: { mean: 52, variance: 8, max: 65 },
+          fall: { mean: 45, variance: 8, max: 58 }
         }
       },
       defaultBiome: "temperate-deciduous"
@@ -750,6 +870,14 @@ export const regionTemplates = {
           spring: { mean: 80, variance: 10 },
           summer: { mean: 75, variance: 12 },
           fall: { mean: 80, variance: 10 }
+        },
+        // Temperate rainforest: Constant rainfall keeps dew points high
+        dewPointProfile: {
+          annual: { mean: 45, variance: 8, max: 62 },
+          winter: { mean: 38, variance: 6, max: 48 },
+          spring: { mean: 44, variance: 6, max: 55 },
+          summer: { mean: 54, variance: 6, max: 65 },
+          fall: { mean: 48, variance: 6, max: 58 }
         }
       },
       defaultBiome: "temperate-rainforest"
@@ -783,6 +911,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 15 },
           summer: { mean: 60, variance: 20 },
           fall: { mean: 60, variance: 15 }
+        },
+        // River valley: River moisture adds to summer humidity, fog-prone
+        dewPointProfile: {
+          annual: { mean: 45, variance: 12, max: 72 },
+          winter: { mean: 25, variance: 10, max: 40 },
+          spring: { mean: 45, variance: 10, max: 62 },
+          summer: { mean: 62, variance: 8, max: 75 },
+          fall: { mean: 45, variance: 10, max: 62 }
         }
       },
       defaultBiome: "temperate-deciduous"
@@ -814,6 +950,14 @@ export const regionTemplates = {
           spring: { mean: 80, variance: 10 }, // Flooding season
           summer: { mean: 70, variance: 15 },
           fall: { mean: 75, variance: 15 }
+        },
+        // Seasonal wetland: Standing water increases evaporation, high summer dew points
+        dewPointProfile: {
+          annual: { mean: 52, variance: 12, max: 75 },
+          winter: { mean: 35, variance: 10, max: 48 },
+          spring: { mean: 55, variance: 8, max: 68 },
+          summer: { mean: 65, variance: 8, max: 78 },
+          fall: { mean: 50, variance: 10, max: 65 }
         }
       },
       defaultBiome: "temperate-grassland"
@@ -846,12 +990,20 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 15 },
           summer: { mean: 65, variance: 15 },
           fall: { mean: 70, variance: 15 }
+        },
+        // Maritime islands: Ocean-moderated, steady moderate dew points
+        dewPointProfile: {
+          annual: { mean: 45, variance: 8, max: 60 },
+          winter: { mean: 40, variance: 6, max: 50 },
+          spring: { mean: 44, variance: 6, max: 55 },
+          summer: { mean: 52, variance: 6, max: 62 },
+          fall: { mean: 48, variance: 6, max: 58 }
         }
       },
       defaultBiome: "temperate-rainforest"
     }
   },
-  
+
   // FLAT DISC: Subarctic (20-40% radius)
   "subarctic": {
     "coastal-taiga": {
@@ -881,6 +1033,14 @@ export const regionTemplates = {
           spring: { mean: 75, variance: 15 },
           summer: { mean: 70, variance: 15 },
           fall: { mean: 75, variance: 15 }
+        },
+        // Coastal taiga: Maritime influence adds moisture, but cold limits dew points
+        dewPointProfile: {
+          annual: { mean: 25, variance: 15, max: 58 },
+          winter: { mean: 8, variance: 10, max: 25 },
+          spring: { mean: 25, variance: 12, max: 45 },
+          summer: { mean: 50, variance: 8, max: 62 },
+          fall: { mean: 30, variance: 10, max: 50 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -911,6 +1071,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 15 },
           summer: { mean: 65, variance: 20 },
           fall: { mean: 70, variance: 15 }
+        },
+        // Continental taiga: Extreme cold = very low winter dew points, warm summers
+        dewPointProfile: {
+          annual: { mean: 15, variance: 20, max: 58 },
+          winter: { mean: -25, variance: 12, max: 5 },
+          spring: { mean: 15, variance: 15, max: 40 },
+          summer: { mean: 52, variance: 10, max: 65 },
+          fall: { mean: 18, variance: 15, max: 42 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -941,6 +1109,14 @@ export const regionTemplates = {
           spring: { mean: 65, variance: 20 },
           summer: { mean: 55, variance: 20 },
           fall: { mean: 60, variance: 20 }
+        },
+        // Subarctic highland: Cold and elevated, very low moisture capacity
+        dewPointProfile: {
+          annual: { mean: 8, variance: 18, max: 48 },
+          winter: { mean: -25, variance: 12, max: 0 },
+          spring: { mean: 8, variance: 15, max: 35 },
+          summer: { mean: 42, variance: 10, max: 55 },
+          fall: { mean: 10, variance: 12, max: 38 }
         }
       },
       defaultBiome: "tundra"
@@ -972,6 +1148,14 @@ export const regionTemplates = {
           spring: { mean: 60, variance: 20 },
           summer: { mean: 50, variance: 20 },
           fall: { mean: 55, variance: 20 }
+        },
+        // Northern grassland: Dry continental air, some Gulf moisture in summer
+        dewPointProfile: {
+          annual: { mean: 18, variance: 18, max: 62 },
+          winter: { mean: -18, variance: 12, max: 8 },
+          spring: { mean: 20, variance: 15, max: 48 },
+          summer: { mean: 52, variance: 10, max: 68 },
+          fall: { mean: 22, variance: 12, max: 48 }
         }
       },
       defaultBiome: "temperate-grassland"
@@ -1003,6 +1187,14 @@ export const regionTemplates = {
           spring: { mean: 80, variance: 15 },
           summer: { mean: 75, variance: 15 },
           fall: { mean: 80, variance: 15 }
+        },
+        // Subarctic maritime: Ocean adds moisture but cold limits dew points
+        dewPointProfile: {
+          annual: { mean: 32, variance: 12, max: 55 },
+          winter: { mean: 18, variance: 8, max: 32 },
+          spring: { mean: 30, variance: 10, max: 45 },
+          summer: { mean: 48, variance: 8, max: 58 },
+          fall: { mean: 35, variance: 10, max: 50 }
         }
       },
       defaultBiome: "boreal-forest"
@@ -1034,12 +1226,20 @@ export const regionTemplates = {
           spring: { mean: 80, variance: 15 },
           summer: { mean: 70, variance: 20 },
           fall: { mean: 70, variance: 15 }
+        },
+        // Peatland muskeg: Wet but cold, summer evaporation adds moisture
+        dewPointProfile: {
+          annual: { mean: 22, variance: 18, max: 60 },
+          winter: { mean: -15, variance: 10, max: 10 },
+          spring: { mean: 22, variance: 12, max: 45 },
+          summer: { mean: 55, variance: 10, max: 68 },
+          fall: { mean: 28, variance: 12, max: 50 }
         }
       },
       defaultBiome: "tundra"
     }
   },
-  
+
   // FLAT DISC: Tropical (5,500-6,700 mi) = warm, humid, fed by rim glacial melt
   "tropical": {
     "rainforest-basin": {
@@ -1070,6 +1270,14 @@ export const regionTemplates = {
           spring: { mean: 86, variance: 8 },
           summer: { mean: 84, variance: 10 },
           fall: { mean: 85, variance: 8 }
+        },
+        // Rainforest basin: Constant high moisture, oppressively humid year-round
+        dewPointProfile: {
+          annual: { mean: 74, variance: 4, max: 82 },
+          winter: { mean: 74, variance: 4, max: 82 },
+          spring: { mean: 75, variance: 4, max: 83 },
+          summer: { mean: 74, variance: 4, max: 82 },
+          fall: { mean: 74, variance: 4, max: 82 }
         }
       },
       defaultBiome: "tropical-rainforest"
@@ -1101,6 +1309,14 @@ export const regionTemplates = {
           spring: { mean: 78, variance: 15 },
           summer: { mean: 74, variance: 15 },
           fall: { mean: 73, variance: 15 }
+        },
+        // Equatorial highland: Elevation keeps dew points moderate despite tropics
+        dewPointProfile: {
+          annual: { mean: 55, variance: 6, max: 68 },
+          winter: { mean: 54, variance: 6, max: 66 },
+          spring: { mean: 56, variance: 6, max: 68 },
+          summer: { mean: 55, variance: 6, max: 68 },
+          fall: { mean: 54, variance: 6, max: 66 }
         }
       },
       defaultBiome: "tropical-rainforest"
@@ -1133,6 +1349,14 @@ export const regionTemplates = {
           spring: { mean: 80, variance: 8 },
           summer: { mean: 80, variance: 8 },
           fall: { mean: 80, variance: 8 }
+        },
+        // Island archipelago: Warm ocean provides high but steady dew points
+        dewPointProfile: {
+          annual: { mean: 72, variance: 4, max: 80 },
+          winter: { mean: 71, variance: 4, max: 78 },
+          spring: { mean: 72, variance: 4, max: 80 },
+          summer: { mean: 73, variance: 4, max: 81 },
+          fall: { mean: 72, variance: 4, max: 80 }
         }
       },
       defaultBiome: "tropical-rainforest"
@@ -1165,6 +1389,14 @@ export const regionTemplates = {
           spring: { mean: 72, variance: 20 },
           summer: { mean: 68, variance: 20 },
           fall: { mean: 70, variance: 20 }
+        },
+        // Volcanic zone: Elevation moderates tropical moisture
+        dewPointProfile: {
+          annual: { mean: 62, variance: 8, max: 75 },
+          winter: { mean: 61, variance: 8, max: 74 },
+          spring: { mean: 63, variance: 8, max: 76 },
+          summer: { mean: 62, variance: 8, max: 75 },
+          fall: { mean: 62, variance: 8, max: 75 }
         }
       },
       defaultBiome: "tropical-rainforest"
@@ -1197,13 +1429,21 @@ export const regionTemplates = {
           spring: { mean: 90, variance: 5 },
           summer: { mean: 90, variance: 5 },
           fall: { mean: 90, variance: 5 }
+        },
+        // Equatorial swamp: Extreme moisture, near-saturation year-round
+        dewPointProfile: {
+          annual: { mean: 78, variance: 3, max: 86 },
+          winter: { mean: 77, variance: 3, max: 85 },
+          spring: { mean: 78, variance: 3, max: 86 },
+          summer: { mean: 79, variance: 3, max: 87 },
+          fall: { mean: 78, variance: 3, max: 86 }
         }
       },
       defaultBiome: "tropical-seasonal"
     }
   },
-  
-  
+
+
   // Special/Unusual templates (available in multiple latitude bands)
   "special": {
     "mountain-microclimate": {
@@ -1234,6 +1474,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 25 },
           summer: { mean: 60, variance: 30 },
           fall: { mean: 65, variance: 25 }
+        },
+        // Mountain microclimate: Varies by location, moderate dew points
+        dewPointProfile: {
+          annual: { mean: 38, variance: 12, max: 60 },
+          winter: { mean: 25, variance: 10, max: 42 },
+          spring: { mean: 38, variance: 12, max: 55 },
+          summer: { mean: 52, variance: 10, max: 65 },
+          fall: { mean: 40, variance: 10, max: 55 }
         }
       },
       defaultBiome: "temperate-deciduous",
@@ -1268,6 +1516,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 20 },
           summer: { mean: 65, variance: 20 },
           fall: { mean: 70, variance: 20 }
+        },
+        // Geothermal zone: Local steam adds moisture, higher dew points than surroundings
+        dewPointProfile: {
+          annual: { mean: 45, variance: 12, max: 62 },
+          winter: { mean: 38, variance: 10, max: 52 },
+          spring: { mean: 44, variance: 12, max: 58 },
+          summer: { mean: 52, variance: 10, max: 65 },
+          fall: { mean: 46, variance: 10, max: 58 }
         }
       },
       defaultBiome: "temperate-rainforest",
@@ -1302,6 +1558,14 @@ export const regionTemplates = {
           spring: { mean: 70, variance: 35 },
           summer: { mean: 60, variance: 40 },
           fall: { mean: 65, variance: 35 }
+        },
+        // Convergence zone: Highly variable, can swing from dry to humid
+        dewPointProfile: {
+          annual: { mean: 42, variance: 18, max: 72 },
+          winter: { mean: 25, variance: 15, max: 48 },
+          spring: { mean: 42, variance: 18, max: 68 },
+          summer: { mean: 58, variance: 15, max: 75 },
+          fall: { mean: 42, variance: 15, max: 65 }
         }
       },
       defaultBiome: "temperate-deciduous",
@@ -1335,6 +1599,14 @@ export const regionTemplates = {
           spring: { mean: 30, variance: 15 },
           summer: { mean: 20, variance: 10 },
           fall: { mean: 30, variance: 15 }
+        },
+        // Rain shadow: Very dry, mountains block moisture
+        dewPointProfile: {
+          annual: { mean: 28, variance: 12, max: 52 },
+          winter: { mean: 18, variance: 10, max: 35 },
+          spring: { mean: 28, variance: 12, max: 48 },
+          summer: { mean: 40, variance: 10, max: 58 },
+          fall: { mean: 28, variance: 10, max: 48 }
         }
       },
       defaultBiome: "desert",
@@ -1368,6 +1640,14 @@ export const regionTemplates = {
           spring: { mean: 60, variance: 25 },
           summer: { mean: 55, variance: 25 },
           fall: { mean: 60, variance: 25 }
+        },
+        // Coastal desert: Cold current keeps dew points moderate despite humidity
+        dewPointProfile: {
+          annual: { mean: 50, variance: 8, max: 62 },
+          winter: { mean: 48, variance: 6, max: 58 },
+          spring: { mean: 50, variance: 6, max: 60 },
+          summer: { mean: 54, variance: 6, max: 65 },
+          fall: { mean: 52, variance: 6, max: 62 }
         }
       },
       defaultBiome: "desert",
