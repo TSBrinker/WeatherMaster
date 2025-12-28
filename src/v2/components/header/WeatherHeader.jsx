@@ -63,11 +63,11 @@ const WeatherHeader = ({
 
     // Determine which event is next
     if (sunriseHour !== null && currentHour < sunriseHour) {
-      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour };
+      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour, isTomorrow: false };
     } else if (sunsetHour !== null && currentHour < sunsetHour) {
-      return { label: `Sunset ${sunsetTime}`, hour: sunsetHour };
+      return { label: `Sunset ${sunsetTime}`, hour: sunsetHour, isTomorrow: false };
     } else if (sunriseHour !== null) {
-      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour }; // Tomorrow's sunrise
+      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour, isTomorrow: true };
     }
     return null;
   };
@@ -77,7 +77,11 @@ const WeatherHeader = ({
   // Jump to the next celestial event's hour
   const handleJumpToEvent = () => {
     if (nextEvent && onAdvanceTime) {
-      const hoursToJump = nextEvent.hour - currentDate.hour;
+      let hoursToJump = nextEvent.hour - currentDate.hour;
+      // If it's tomorrow's event, add 24 hours
+      if (nextEvent.isTomorrow) {
+        hoursToJump += 24;
+      }
       onAdvanceTime(hoursToJump);
     }
   };
