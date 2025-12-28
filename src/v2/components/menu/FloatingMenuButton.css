@@ -53,6 +53,8 @@
 
 .hamburger-icon {
   line-height: 1;
+  /* Fix vertical centering - the ☰ character sits slightly high */
+  margin-top: 2px;
 }
 
 /* Responsive adjustments */

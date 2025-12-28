@@ -143,8 +143,11 @@
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.5rem;
-  min-width: 3.5rem;
+  width: 3.5rem; /* Fixed width to prevent layout shifts */
   font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .time-control-btn:hover {

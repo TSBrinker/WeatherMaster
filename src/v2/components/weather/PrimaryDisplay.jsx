@@ -286,12 +286,10 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
           )}
         </div>
 
-        {/* Feels Like - if different */}
-        {showFeelsLike && (
-          <div className="feels-like-hero">
-            Feels like {Math.round(feelsLike)}°
-          </div>
-        )}
+        {/* Feels Like - always rendered, visibility controlled via CSS to prevent layout shift */}
+        <div className={`feels-like-hero ${showFeelsLike ? '' : 'feels-like-hidden'}`}>
+          {showFeelsLike ? `Feels like ${Math.round(feelsLike)}°` : '\u00A0'}
+        </div>
 
         {/* Info Badges Section */}
         <div className="info-badges">
