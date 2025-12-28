@@ -81,6 +81,26 @@ export const FLOOD_ANALYSIS_CONFIG = {
   }
 };
 
+/**
+ * Configuration for heat index / dew point analysis
+ * Tests that dew point-based humidity system produces realistic heat indices
+ */
+export const HEAT_INDEX_CONFIG = {
+  // Test summer months (peak heat season)
+  startMonth: 6,
+  startDay: 1,
+  // 60 days covers June-July peak season
+  daysToAnalyze: 60,
+  // Test hours throughout the day, focusing on heat of day
+  hoursToTest: [6, 10, 12, 14, 16, 18, 20],
+  // Only analyze biomes where summer temps can exceed 80°F (heat index threshold)
+  minSummerMean: 70,
+  // Threshold for showing "Feels Like" in UI
+  feelsLikeDifferenceThreshold: 3,
+  // Number of years to test
+  yearsToTest: 3
+};
+
 export const THRESHOLDS = {
   temperature: { min: -100, max: 150 },
   humidity: { min: 0, max: 100 },

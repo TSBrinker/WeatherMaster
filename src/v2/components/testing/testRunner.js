@@ -8,7 +8,7 @@ import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
 import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
-import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG } from './testConfig';
+import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG } from './testConfig';
 import { validateWeather } from './weatherValidation';
 
 /**
@@ -1249,6 +1249,275 @@ export const runFloodAnalysis = async (onProgress) => {
   results.summary.missedAlertRate = totalMeltOpportunities > 0
     ? (results.summary.missedAlerts / totalMeltOpportunities) * 100
     : 0;
+
+  onProgress(100);
+  return results;
+};
+
+/**
+ * Get biomes that can have significant heat (summer mean >= threshold)
+ * These are biomes where heat index matters
+ */
+const getHotClimateBiomes = () => {
+  const hotBiomes = [];
+  const threshold = HEAT_INDEX_CONFIG.minSummerMean;
+
+  for (const latitudeBand of TEST_CONFIG.latitudeBands) {
+    const templates = regionTemplates[latitudeBand];
+    if (!templates) continue;
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      const summerMean = template.parameters?.temperatureProfile?.summer?.mean;
+      const hasDewPointProfile = !!template.parameters?.dewPointProfile;
+
+      if (summerMean !== undefined && summerMean >= threshold) {
+        hotBiomes.push({
+          latitudeBand,
+          templateId,
+          template,
+          biomeName: template.name,
+          summerMean,
+          hasDewPointProfile
+        });
+      }
+    }
+  }
+
+  return hotBiomes;
+};
+
+/**
+ * Run heat index / dew point analysis
+ * Tests that the dew point-based humidity system produces realistic heat indices
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results
+ */
+export const runHeatIndexAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const hotBiomes = getHotClimateBiomes();
+  const { daysToAnalyze, hoursToTest, startMonth, startDay, yearsToTest, feelsLikeDifferenceThreshold } = HEAT_INDEX_CONFIG;
+
+  const results = {
+    config: {
+      daysAnalyzed: daysToAnalyze,
+      hoursPerDay: hoursToTest.length,
+      yearsAnalyzed: yearsToTest,
+      startDate: `${startMonth}/${startDay} (Years 1-${yearsToTest})`,
+      biomesAnalyzed: hotBiomes.length,
+      feelsLikeThreshold: feelsLikeDifferenceThreshold
+    },
+    biomes: {},
+    summary: {
+      totalTestHours: 0,
+      hoursAbove80F: 0,
+      hoursWithHeatIndex: 0,
+      hoursShowingFeelsLike: 0,
+      maxHeatIndex: 0,
+      maxHeatIndexBiome: null,
+      avgHumidityWhenHot: 0,
+      avgDewPointWhenHot: 0,
+      biomesWithNoFeelsLike: []
+    }
+  };
+
+  const weatherGen = new WeatherGenerator();
+
+  let completedTests = 0;
+  const totalTests = hotBiomes.length * daysToAnalyze * hoursToTest.length * yearsToTest;
+
+  // Track global stats
+  let totalHotHours = 0;
+  let totalHumidityWhenHot = 0;
+  let totalDewPointWhenHot = 0;
+
+  for (const biomeInfo of hotBiomes) {
+    const { latitudeBand, templateId, template, biomeName, summerMean, hasDewPointProfile } = biomeInfo;
+
+    const region = {
+      id: `heatindex-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      summerMean,
+      hasDewPointProfile,
+      stats: {
+        totalHours: 0,
+        hoursAbove80F: 0,
+        hoursAbove90F: 0,
+        hoursAbove100F: 0,
+        hoursWithFeelsLikeShowing: 0,
+        maxTemp: 0,
+        maxHeatIndex: 0,
+        maxHeatIndexDiff: 0,
+        avgHumidityWhenHot: 0,
+        avgDewPointWhenHot: 0,
+        humidityRange: { min: 100, max: 0 },
+        dewPointRange: { min: 100, max: -50 },
+        heatIndexRange: { min: 200, max: 0 }
+      },
+      significantHeatEvents: [], // Times when feels like showed
+      hotDryEvents: [], // Hot but low humidity (no heat index boost)
+      samples: [] // Sample data points for debugging
+    };
+
+    weatherGen.clearCache();
+
+    let hotHumiditySum = 0;
+    let hotDewPointSum = 0;
+    let hotHoursCount = 0;
+
+    for (let year = 1; year <= yearsToTest; year++) {
+      let currentDate = { year, month: startMonth, day: startDay, hour: 0 };
+
+      for (let day = 0; day < daysToAnalyze; day++) {
+        for (const hour of hoursToTest) {
+          const testDate = { ...currentDate, hour };
+
+          try {
+            const weather = weatherGen.generateWeather(region, testDate);
+            biomeResult.stats.totalHours++;
+
+            const temp = weather.temperature;
+            const humidity = weather.humidity;
+            const dewPoint = weather.dewPoint;
+            const feelsLike = weather.feelsLike;
+            const heatIndexDiff = feelsLike - temp;
+
+            // Track humidity/dewpoint ranges
+            biomeResult.stats.humidityRange.min = Math.min(biomeResult.stats.humidityRange.min, humidity);
+            biomeResult.stats.humidityRange.max = Math.max(biomeResult.stats.humidityRange.max, humidity);
+            biomeResult.stats.dewPointRange.min = Math.min(biomeResult.stats.dewPointRange.min, dewPoint);
+            biomeResult.stats.dewPointRange.max = Math.max(biomeResult.stats.dewPointRange.max, dewPoint);
+
+            // Track temps above 80F (heat index threshold)
+            if (temp >= 80) {
+              biomeResult.stats.hoursAbove80F++;
+              hotHumiditySum += humidity;
+              hotDewPointSum += dewPoint;
+              hotHoursCount++;
+
+              // Track heat index range
+              biomeResult.stats.heatIndexRange.min = Math.min(biomeResult.stats.heatIndexRange.min, feelsLike);
+              biomeResult.stats.heatIndexRange.max = Math.max(biomeResult.stats.heatIndexRange.max, feelsLike);
+
+              if (temp >= 90) biomeResult.stats.hoursAbove90F++;
+              if (temp >= 100) biomeResult.stats.hoursAbove100F++;
+
+              // Would "Feels Like" show in UI?
+              if (heatIndexDiff >= feelsLikeDifferenceThreshold) {
+                biomeResult.stats.hoursWithFeelsLikeShowing++;
+                results.summary.hoursShowingFeelsLike++;
+
+                // Record significant heat events (limit to avoid huge arrays)
+                if (biomeResult.significantHeatEvents.length < 20) {
+                  biomeResult.significantHeatEvents.push({
+                    date: `Y${year} ${testDate.month}/${testDate.day} ${hour}:00`,
+                    temp,
+                    humidity,
+                    dewPoint,
+                    feelsLike,
+                    diff: heatIndexDiff
+                  });
+                }
+              } else if (temp >= 90 && biomeResult.hotDryEvents.length < 10) {
+                // Hot but no significant heat index - record for debugging
+                biomeResult.hotDryEvents.push({
+                  date: `Y${year} ${testDate.month}/${testDate.day} ${hour}:00`,
+                  temp,
+                  humidity,
+                  dewPoint,
+                  feelsLike,
+                  diff: heatIndexDiff,
+                  reason: humidity < 40 ? 'Low humidity' : 'Moderate humidity'
+                });
+              }
+            }
+
+            // Track max values
+            if (temp > biomeResult.stats.maxTemp) {
+              biomeResult.stats.maxTemp = temp;
+            }
+            if (feelsLike > biomeResult.stats.maxHeatIndex) {
+              biomeResult.stats.maxHeatIndex = feelsLike;
+            }
+            if (heatIndexDiff > biomeResult.stats.maxHeatIndexDiff) {
+              biomeResult.stats.maxHeatIndexDiff = heatIndexDiff;
+            }
+
+            // Sample some data points
+            if (biomeResult.samples.length < 10 && temp >= 85 && day % 10 === 0) {
+              biomeResult.samples.push({
+                date: `Y${year} ${testDate.month}/${testDate.day} ${hour}:00`,
+                temp, humidity, dewPoint, feelsLike, diff: heatIndexDiff
+              });
+            }
+
+          } catch (error) {
+            console.warn(`Heat index test error for ${biomeName}:`, error.message);
+          }
+
+          completedTests++;
+          if (completedTests % 500 === 0) {
+            onProgress((completedTests / totalTests) * 100);
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+
+        currentDate = advanceDate(currentDate, 24);
+      }
+    }
+
+    // Calculate averages for this biome
+    if (hotHoursCount > 0) {
+      biomeResult.stats.avgHumidityWhenHot = Math.round(hotHumiditySum / hotHoursCount);
+      biomeResult.stats.avgDewPointWhenHot = Math.round(hotDewPointSum / hotHoursCount);
+    }
+
+    // Update global stats
+    results.summary.totalTestHours += biomeResult.stats.totalHours;
+    results.summary.hoursAbove80F += biomeResult.stats.hoursAbove80F;
+    totalHotHours += hotHoursCount;
+    totalHumidityWhenHot += hotHumiditySum;
+    totalDewPointWhenHot += hotDewPointSum;
+
+    if (biomeResult.stats.maxHeatIndex > results.summary.maxHeatIndex) {
+      results.summary.maxHeatIndex = biomeResult.stats.maxHeatIndex;
+      results.summary.maxHeatIndexBiome = biomeName;
+    }
+
+    // Flag biomes that never showed "Feels Like"
+    if (biomeResult.stats.hoursAbove80F > 100 && biomeResult.stats.hoursWithFeelsLikeShowing === 0) {
+      results.summary.biomesWithNoFeelsLike.push({
+        biomeName,
+        hoursAbove80F: biomeResult.stats.hoursAbove80F,
+        maxTemp: biomeResult.stats.maxTemp,
+        maxHeatIndex: biomeResult.stats.maxHeatIndex,
+        avgHumidity: biomeResult.stats.avgHumidityWhenHot,
+        avgDewPoint: biomeResult.stats.avgDewPointWhenHot
+      });
+    }
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  // Calculate global averages
+  if (totalHotHours > 0) {
+    results.summary.avgHumidityWhenHot = Math.round(totalHumidityWhenHot / totalHotHours);
+    results.summary.avgDewPointWhenHot = Math.round(totalDewPointWhenHot / totalHotHours);
+  }
+
+  results.summary.hoursWithHeatIndex = results.summary.hoursAbove80F;
+  results.summary.feelsLikeShowRate = results.summary.hoursAbove80F > 0
+    ? ((results.summary.hoursShowingFeelsLike / results.summary.hoursAbove80F) * 100).toFixed(1) + '%'
+    : '0%';
 
   onProgress(100);
   return results;

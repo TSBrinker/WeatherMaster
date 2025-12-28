@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater } from 'react-icons/bs';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
-import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG } from './testConfig';
-import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis } from './testRunner';
+import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG } from './testConfig';
+import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis, runHeatIndexAnalysis } from './testRunner';
 import { downloadFullResults, downloadProblemsReport, downloadPrecipAnalysis, downloadPrecipSummary } from './resultExporters';
 import {
   BiomeStatsTable,
@@ -72,6 +72,11 @@ const WeatherTestHarness = () => {
   const [floodProgress, setFloodProgress] = useState(0);
   const [floodResults, setFloodResults] = useState(null);
 
+  // Heat index analysis state
+  const [isHeatIndexRunning, setIsHeatIndexRunning] = useState(false);
+  const [heatIndexProgress, setHeatIndexProgress] = useState(0);
+  const [heatIndexResults, setHeatIndexResults] = useState(null);
+
   const totalBiomes = getTotalBiomeCount();
   const newBiomes = getNewBiomeCount();
   const activeBiomes = newOnly ? newBiomes : totalBiomes;
@@ -129,6 +134,18 @@ const WeatherTestHarness = () => {
 
     setFloodResults(analysisResults);
     setIsFloodRunning(false);
+  };
+
+  const handleRunHeatIndexAnalysis = async () => {
+    setIsHeatIndexRunning(true);
+    setHeatIndexProgress(0);
+
+    const analysisResults = await runHeatIndexAnalysis((progressPercent) => {
+      setHeatIndexProgress(progressPercent);
+    });
+
+    setHeatIndexResults(analysisResults);
+    setIsHeatIndexRunning(false);
   };
 
   return (
@@ -286,6 +303,164 @@ const WeatherTestHarness = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Heat Index Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#dc3545' }}>
+        <Card.Body>
+          <h5><BsThermometerHigh className="me-2" />Heat Index / Dew Point Analysis</h5>
+          <p className="text-muted">
+            Validates the dew point-based humidity system by checking heat index calculations across hot climates.
+            Ensures "Feels Like" appears when it should and uses realistic dew point values.
+          </p>
+          <ul>
+            <li>Duration: {HEAT_INDEX_CONFIG.daysToAnalyze} days x {HEAT_INDEX_CONFIG.yearsToTest} years (summer months)</li>
+            <li>Tracks: Temperature, dew point, humidity, heat index, "Feels Like" display threshold</li>
+            <li>Flags: Biomes that never show "Feels Like" despite hot temperatures</li>
+          </ul>
+
+          <Button
+            variant="danger"
+            onClick={handleRunHeatIndexAnalysis}
+            disabled={isHeatIndexRunning || isRunning || isPrecipRunning || isThunderstormRunning || isFloodRunning}
+            size="lg"
+          >
+            <BsThermometerHigh className="me-2" />
+            {isHeatIndexRunning ? 'Analyzing...' : 'Run Heat Index Analysis'}
+          </Button>
+
+          {isHeatIndexRunning && (
+            <div className="mt-3">
+              <ProgressBar variant="danger" now={heatIndexProgress} label={`${heatIndexProgress.toFixed(1)}%`} animated />
+              <small className="text-muted mt-2">Analyzing heat index and dew point values...</small>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Heat Index Analysis Results */}
+      {heatIndexResults && (
+        <>
+          <Alert variant={heatIndexResults.summary.biomesWithNoFeelsLike.length > 0 ? 'warning' : 'success'}>
+            <Alert.Heading><BsThermometerHigh className="me-2" />Heat Index Analysis Complete</Alert.Heading>
+            <p className="mb-0">
+              Analyzed {heatIndexResults.config.biomesAnalyzed} hot-climate biomes over {heatIndexResults.config.daysAnalyzed} summer days x {heatIndexResults.config.yearsAnalyzed} years.
+              "Feels Like" shown: <strong>{heatIndexResults.summary.feelsLikeShowRate}</strong> of hours above 80°F.
+              Max heat index: <strong>{heatIndexResults.summary.maxHeatIndex}°F</strong> ({heatIndexResults.summary.maxHeatIndexBiome}).
+            </p>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Heat Index Summary</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Total Test Hours</td>
+                    <td>{heatIndexResults.summary.totalTestHours.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td>Hours Above 80°F</td>
+                    <td><Badge bg="warning" text="dark">{heatIndexResults.summary.hoursAbove80F.toLocaleString()}</Badge></td>
+                  </tr>
+                  <tr>
+                    <td>Hours "Feels Like" Displayed</td>
+                    <td>
+                      <Badge bg={heatIndexResults.summary.hoursShowingFeelsLike > 0 ? 'success' : 'danger'}>
+                        {heatIndexResults.summary.hoursShowingFeelsLike.toLocaleString()}
+                      </Badge>
+                      {' '}({heatIndexResults.summary.feelsLikeShowRate})
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Average Humidity When Hot</td>
+                    <td>{heatIndexResults.summary.avgHumidityWhenHot}%</td>
+                  </tr>
+                  <tr>
+                    <td>Average Dew Point When Hot</td>
+                    <td>{heatIndexResults.summary.avgDewPointWhenHot}°F</td>
+                  </tr>
+                  <tr>
+                    <td>Max Heat Index</td>
+                    <td><Badge bg="danger">{heatIndexResults.summary.maxHeatIndex}°F</Badge> ({heatIndexResults.summary.maxHeatIndexBiome})</td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              {/* Biomes that never showed Feels Like */}
+              {heatIndexResults.summary.biomesWithNoFeelsLike.length > 0 && (
+                <>
+                  <h6 className="mt-4 text-warning">Biomes That Never Showed "Feels Like"</h6>
+                  <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                    <Table striped bordered size="sm">
+                      <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                        <tr>
+                          <th>Biome</th>
+                          <th>Hours &gt;80°F</th>
+                          <th>Max Temp</th>
+                          <th>Max Heat Index</th>
+                          <th>Avg Humidity</th>
+                          <th>Avg Dew Point</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {heatIndexResults.summary.biomesWithNoFeelsLike.map((b, i) => (
+                          <tr key={i}>
+                            <td>{b.biomeName}</td>
+                            <td>{b.hoursAbove80F}</td>
+                            <td>{b.maxTemp}°F</td>
+                            <td>{b.maxHeatIndex}°F</td>
+                            <td>{b.avgHumidity}%</td>
+                            <td>{b.avgDewPoint}°F</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                </>
+              )}
+
+              {/* Per-biome details */}
+              <h6 className="mt-4">Per-Biome Results</h6>
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered size="sm">
+                  <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Has Dew Pt Profile</th>
+                      <th>&gt;80°F</th>
+                      <th>&gt;90°F</th>
+                      <th>Feels Like Shown</th>
+                      <th>Max Temp</th>
+                      <th>Max Heat Idx</th>
+                      <th>Humidity Range</th>
+                      <th>Dew Pt Range</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.values(heatIndexResults.biomes).map((b, i) => (
+                      <tr key={i}>
+                        <td>{b.biomeName}</td>
+                        <td>{b.hasDewPointProfile ? <Badge bg="success">Yes</Badge> : <Badge bg="secondary">No</Badge>}</td>
+                        <td>{b.stats.hoursAbove80F}</td>
+                        <td>{b.stats.hoursAbove90F}</td>
+                        <td>
+                          <Badge bg={b.stats.hoursWithFeelsLikeShowing > 0 ? 'success' : 'warning'}>
+                            {b.stats.hoursWithFeelsLikeShowing}
+                          </Badge>
+                        </td>
+                        <td>{b.stats.maxTemp}°F</td>
+                        <td>{b.stats.maxHeatIndex}°F</td>
+                        <td>{b.stats.humidityRange.min}-{b.stats.humidityRange.max}%</td>
+                        <td>{b.stats.dewPointRange.min}-{b.stats.dewPointRange.max}°F</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
 
       {/* Flood Analysis Results */}
       {floodResults && (
