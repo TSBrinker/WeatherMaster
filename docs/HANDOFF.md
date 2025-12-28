@@ -1,46 +1,69 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-27
-**Previous Agent**: Coral (Sprint 38)
-**Current Sprint Count**: 38 (next agent creates `SPRINT_39_*.md`)
-**Status**: Cloud Cover Fix Complete - Ready for CRUD UI
+**Previous Agent**: Summit (Sprint 39)
+**Current Sprint Count**: 39 (next agent creates `SPRINT_40_*.md`)
+**Status**: MVP #2 and #3 Complete - Ready for Time Controls
 
 ---
 
 ## What Was Done This Sprint
 
-### MVP Sprint Plan Created
-Established definitive execution order in ROADMAP.md as single source of truth. Work items in order, Tyler greenlights each before moving to next.
+### MVP #2: CRUD UI for Editing - COMPLETE
+Added full edit functionality for locations, continents, and worlds:
 
-### Cloud Cover Midnight Transitions - FIXED (MVP #1)
-**Problem**: Cloud cover was identical for all 24 hours of a day, only changing at midnight.
+- **Region Editing**: Pencil icon on each region in HamburgerMenu opens RegionEditor modal. Can change name, continent, latitude band, and template.
+- **Continent Editing**: Pencil icon on continent headers enables inline editing. Save/Cancel/Delete buttons. Enter to save, Escape to cancel.
+- **World Editing**: "Edit World Name" button in Settings menu (both inline and dropdown) opens WorldEditor modal.
 
-**Root cause**: `generateSeed()` in seedGenerator.js only uses year-month-day (no hour), so cloud cover got the same random value all day.
+Files created:
+- `src/v2/components/region/RegionEditor.jsx`
+- `src/v2/components/world/WorldEditor.jsx`
 
-**Fix** in `AtmosphericService.getCloudCover()`:
-- Generate cloud "anchor points" every 4 hours (0, 4, 8, 12, 16, 20)
-- Each anchor gets unique seed including the hour
-- Interpolate between anchors using smoothstep function
-- Handles day rollover (hour 24 = hour 0 next day)
+Files modified:
+- `src/v2/components/menu/HamburgerMenu.jsx`
+- `src/v2/components/menu/HamburgerMenu.css`
+- `src/v2/components/menu/SettingsMenu.jsx`
 
-Now clouds build up, dissipate, and change naturally throughout the day.
+### MVP #3: Special Biomes in Location Modal - COMPLETE
+Fixed 5 special biomes not appearing in RegionCreator dropdown.
+
+**Root cause**: `templateHelpers.js` only looked at `regionTemplates[latitudeBand]`, ignoring special templates with `compatibleBands`.
+
+**Fix**: Updated `getTemplatesByLatitude()` and `getTemplate()` in `templateHelpers.js` to include special templates when their `compatibleBands` includes the selected latitude band.
+
+Special biomes now available:
+- Mountain Microclimate, Geothermal Zone, Convergence Zone, Rain Shadow, Coastal Desert
 
 ---
 
-## Next Up: MVP #2 - CRUD UI for Editing
+## Next Up: MVP #4 - Time Control Improvements
 
-**Goal**: Allow users to edit existing locations, continents, and worlds (fix typos, rename, reassign locations to different continents).
+**Goal**: Add day jump buttons (<<< / >>>) and improve hitbox sizes for mobile.
 
-Currently you can create but not edit. This is a significant usability gap.
+From NOTES_FROM_USER.md:
+> Maybe add <<< & >>> buttons to the time controls to jump a full day? And those should maybe be juuuuust a little bigger. Hard on a phone screen to hit the small hitbox.
 
-### MVP Sprint Plan (SINGLE SOURCE OF TRUTH)
+### Key Files
+- `src/v2/components/time/TimeControls.jsx` - Main time control buttons
+- `src/v2/components/header/WeatherHeader.jsx` - Contains TimeControls
+- WorldContext has `advanceTime(hours)` method - use with 24/-24 for day jumps
+
+### Implementation Notes
+- Add `<<<` and `>>>` buttons flanking existing `<` and `>` hour buttons
+- Increase touch target sizes (min 44px for accessibility)
+- Consider visual hierarchy - day jumps should be visually distinct but not dominant
+
+---
+
+## MVP Sprint Plan (SINGLE SOURCE OF TRUTH)
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Cloud % midnight transitions | `[x]` | FIXED |
-| 2 | **CRUD UI for editing** | `[ ]` | **START HERE** - Edit locations, continents, worlds |
-| 3 | Special biomes in location modal | `[ ]` | 5 biomes defined but not appearing in UI |
-| 4 | Time control improvements | `[ ]` | Day jump buttons (<<< / >>>), larger hitboxes |
+| 1 | Cloud % midnight transitions | `[x]` | Fixed by Coral |
+| 2 | CRUD UI for editing | `[x]` | Fixed by Summit |
+| 3 | Special biomes in location modal | `[x]` | Fixed by Summit |
+| 4 | **Time control improvements** | `[ ]` | **START HERE** - Day jump buttons, larger hitboxes |
 | 5 | Layout stability fixes | `[ ]` | Time display width, Feels Like section shifts |
 | 6 | Hamburger menu centering | `[ ]` | Icon slightly off-center vertically |
 
@@ -48,22 +71,15 @@ Currently you can create but not edit. This is a significant usability gap.
 
 ## Key Reference
 
-### WorldContext Methods (for CRUD work)
-```javascript
-// Continent operations
-createContinent(name)
-updateContinent(continentId, updates)
-deleteContinent(continentId)
-selectContinent(continentId)
-
-// Derived state
-worldContinents          // Continents for active world
-groupedRegions           // { uncategorized: [], byContinent: {} }
-activeContinent          // Currently selected continent
-```
-
 ### Test Harness
 Access via `localhost:3000?test=true`
+
+### WorldContext Time Methods
+```javascript
+advanceTime(hours)      // Move time forward/backward by hours
+setSpecificTime(year, month, day, hour)
+jumpToDate(year, month, day, hour = 12)
+```
 
 ---
 

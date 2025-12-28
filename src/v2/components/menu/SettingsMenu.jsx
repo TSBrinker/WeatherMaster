@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Dropdown, Modal, Button, Form } from 'react-bootstrap';
 import { FaBomb } from 'react-icons/fa';
-import { Cloud, Shield, RefreshCw } from 'lucide-react';
+import { Cloud, Shield, RefreshCw, Globe } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import WeatherPrimerModal from '../modals/WeatherPrimerModal';
 import GameplayMechanicsModal from '../modals/GameplayMechanicsModal';
+import WorldEditor from '../world/WorldEditor';
 import weatherService from '../../services/weather/WeatherService';
 import { getPhrasingExample } from '../../utils/conditionPhrasing';
 
@@ -19,6 +20,7 @@ const SettingsMenu = ({ inline = false }) => {
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
   const [showGameplayMechanics, setShowGameplayMechanics] = useState(false);
+  const [showWorldEditor, setShowWorldEditor] = useState(false);
 
   // Get all regions from all worlds (for display in nuke confirmation)
   const allRegions = worlds.flatMap(world => world.regions);
@@ -94,6 +96,13 @@ const SettingsMenu = ({ inline = false }) => {
               </Form.Text>
             </div>
             <Button
+              variant="outline-primary"
+              onClick={() => setShowWorldEditor(true)}
+            >
+              <Globe size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+              Edit World Name
+            </Button>
+            <Button
               variant="outline-secondary"
               onClick={handleClearWeatherCache}
             >
@@ -121,6 +130,12 @@ const SettingsMenu = ({ inline = false }) => {
         <GameplayMechanicsModal
           show={showGameplayMechanics}
           onHide={() => setShowGameplayMechanics(false)}
+        />
+
+        {/* World Editor Modal */}
+        <WorldEditor
+          show={showWorldEditor}
+          onHide={() => setShowWorldEditor(false)}
         />
 
         {/* Confirmation Modal */}
@@ -173,6 +188,10 @@ const SettingsMenu = ({ inline = false }) => {
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Header>Settings</Dropdown.Header>
+          <Dropdown.Item onClick={() => setShowWorldEditor(true)}>
+            <Globe size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Edit World Name
+          </Dropdown.Item>
           <Dropdown.Item
             onClick={() => setConditionPhrasing(conditionPhrasing === 'standard' ? 'descriptive' : 'standard')}
           >
@@ -201,6 +220,12 @@ const SettingsMenu = ({ inline = false }) => {
       <GameplayMechanicsModal
         show={showGameplayMechanics}
         onHide={() => setShowGameplayMechanics(false)}
+      />
+
+      {/* World Editor Modal */}
+      <WorldEditor
+        show={showWorldEditor}
+        onHide={() => setShowWorldEditor(false)}
       />
 
       {/* Nuke All Data Confirmation */}

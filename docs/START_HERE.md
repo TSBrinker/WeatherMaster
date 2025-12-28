@@ -6,7 +6,7 @@
 Pick a **unique** name for yourself! Check the list below for names already taken. Early agents chose tree/nature names (Elderwood, Willow, Cedar, Granite, Obsidian...) but you're welcome to break tradition. **Once you've chosen, add your name to the list below** and introduce yourself to Tyler.
 
 #### Names Already Taken
-> ALDER, ASH, BASALT, BIRCH, CEDAR, CINDER, COBALT, CORAL, CYPRESS, DRIFT, ELDERWOOD, EMBER, FERN, FLINT, GRANITE, HAWTHORN, HEMLOCK, JUNIPER, LARCH, MAPLE, MARBLE, OAK, OBSIDIAN, ONYX, OPUS, PINE, QUARTZ, RIVER, ROWAN, SAGE, SEQUOIA, SHALE, SLATE, SPRUCE, WILLOW
+> ALDER, ASH, BASALT, BIRCH, CEDAR, CINDER, COBALT, CORAL, CYPRESS, DRIFT, ELDERWOOD, EMBER, FERN, FLINT, GRANITE, HAWTHORN, HEMLOCK, JUNIPER, LARCH, MAPLE, MARBLE, OAK, OBSIDIAN, ONYX, OPUS, PINE, QUARTZ, RIVER, ROWAN, SAGE, SEQUOIA, SHALE, SLATE, SPRUCE, SUMMIT, WILLOW
 
 ### 2. Create Your Sprint Log
 Create `docs/sprint-logs/SPRINT_XX_YOURNAME.md` immediately (XX = next number).

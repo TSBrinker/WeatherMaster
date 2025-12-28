@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { ListGroup, Button, Form } from 'react-bootstrap';
 import { HiLocationMarker } from 'react-icons/hi';
 import { IoChevronBack, IoChevronDown, IoChevronForward } from 'react-icons/io5';
-import { Map, Plus } from 'lucide-react';
+import { Map, Plus, Pencil, Trash2 } from 'lucide-react';
 import SettingsMenu from './SettingsMenu';
 import WorldMapView from '../map/WorldMapView';
 import RegionCreator from '../region/RegionCreator';
+import RegionEditor from '../region/RegionEditor';
 import weatherService from '../../services/weather/WeatherService';
 import { useWorld } from '../../contexts/WorldContext';
 import './HamburgerMenu.css';
@@ -28,6 +29,8 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     groupedRegions,
     toggleContinentCollapsed,
     createContinent,
+    updateContinent,
+    deleteContinent,
   } = useWorld();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -38,6 +41,9 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   const [mapClickData, setMapClickData] = useState(null); // { x, y, latitudeBand }
   const [newContinentName, setNewContinentName] = useState('');
   const [showNewContinentInput, setShowNewContinentInput] = useState(false);
+  const [editingRegion, setEditingRegion] = useState(null); // Region being edited
+  const [editingContinentId, setEditingContinentId] = useState(null); // Continent being renamed
+  const [editingContinentName, setEditingContinentName] = useState(''); // New name for continent
 
   // Get weather data for all regions (memoized to avoid recalculating on every render)
   const regionWeather = useMemo(() => {
@@ -79,6 +85,9 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setMapClickData(null);
     setShowNewContinentInput(false);
     setNewContinentName('');
+    setEditingRegion(null);
+    setEditingContinentId(null);
+    setEditingContinentName('');
   };
 
   // Handle placing a location from the map
@@ -110,6 +119,34 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
       createContinent(newContinentName.trim());
       setNewContinentName('');
       setShowNewContinentInput(false);
+    }
+  };
+
+  // Start editing a continent name
+  const handleStartEditContinent = (continent) => {
+    setEditingContinentId(continent.id);
+    setEditingContinentName(continent.name);
+  };
+
+  // Save continent name edit
+  const handleSaveContinentEdit = () => {
+    if (editingContinentName.trim() && editingContinentId) {
+      updateContinent(editingContinentId, { name: editingContinentName.trim() });
+      setEditingContinentId(null);
+      setEditingContinentName('');
+    }
+  };
+
+  // Cancel continent name edit
+  const handleCancelContinentEdit = () => {
+    setEditingContinentId(null);
+    setEditingContinentName('');
+  };
+
+  // Delete a continent
+  const handleDeleteContinent = (continentId, continentName) => {
+    if (window.confirm(`Delete "${continentName}"? Locations will be moved to Uncategorized.`)) {
+      deleteContinent(continentId);
     }
   };
 
@@ -283,36 +320,95 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
           {/* Render each continent with its regions */}
           {worldContinents.map(continent => {
             const continentRegions = groupedRegions.byContinent[continent.id] || [];
+            const isEditingThisContinent = editingContinentId === continent.id;
             return (
               <div key={continent.id} className="continent-group">
                 {/* Continent header */}
-                <div
-                  className="continent-header"
-                  onClick={() => !editMode && toggleContinentCollapsed(continent.id)}
-                >
-                  <div className="continent-header-left">
-                    {continent.isCollapsed ? (
-                      <IoChevronForward className="collapse-icon" />
-                    ) : (
-                      <IoChevronDown className="collapse-icon" />
-                    )}
-                    <span className="continent-name">{continent.name}</span>
-                    <span className="continent-count">({continentRegions.length})</span>
-                  </div>
-                  {!editMode && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="continent-map-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setViewingContinent(continent);
+                {isEditingThisContinent ? (
+                  <div className="continent-header continent-header-editing">
+                    <Form.Control
+                      type="text"
+                      value={editingContinentName}
+                      onChange={(e) => setEditingContinentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveContinentEdit();
+                        if (e.key === 'Escape') handleCancelContinentEdit();
                       }}
-                    >
-                      <Map size={14} />
-                    </Button>
-                  )}
-                </div>
+                      autoFocus
+                      className="continent-edit-input"
+                    />
+                    <div className="continent-edit-actions">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveContinentEdit}
+                        disabled={!editingContinentName.trim()}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={handleCancelContinentEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => handleDeleteContinent(continent.id, continent.name)}
+                        title="Delete continent"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="continent-header"
+                    onClick={() => !editMode && toggleContinentCollapsed(continent.id)}
+                  >
+                    <div className="continent-header-left">
+                      {continent.isCollapsed ? (
+                        <IoChevronForward className="collapse-icon" />
+                      ) : (
+                        <IoChevronDown className="collapse-icon" />
+                      )}
+                      <span className="continent-name">{continent.name}</span>
+                      <span className="continent-count">({continentRegions.length})</span>
+                    </div>
+                    <div className="continent-header-right">
+                      {!editMode && (
+                        <>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="continent-edit-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditContinent(continent);
+                            }}
+                            title="Edit continent"
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="continent-map-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingContinent(continent);
+                            }}
+                            title="View map"
+                          >
+                            <Map size={14} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Continent's regions (if not collapsed) */}
                 {!continent.isCollapsed && continentRegions.map(region => {
@@ -354,6 +450,19 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
                             <span className="low">L:{weather.low}°</span>
                           </div>
                         </div>
+                      )}
+                      {!editMode && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="region-edit-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingRegion(region);
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </Button>
                       )}
                     </ListGroup.Item>
                   );
@@ -408,6 +517,19 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
                           <span className="low">L:{weather.low}°</span>
                         </div>
                       </div>
+                    )}
+                    {!editMode && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="region-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingRegion(region);
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </Button>
                     )}
                   </ListGroup.Item>
                 );
@@ -512,6 +634,13 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
         onHide={handleRegionCreatorClose}
         initialLatitudeBand={mapClickData?.latitudeBand}
         mapPosition={mapClickData}
+      />
+
+      {/* Region Editor Modal */}
+      <RegionEditor
+        show={!!editingRegion}
+        onHide={() => setEditingRegion(null)}
+        region={editingRegion}
       />
     </div>
   );
