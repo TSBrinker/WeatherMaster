@@ -46,6 +46,33 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* Day chevrons - subtle buttons flanking the date line */
+.day-chevron {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.25rem;
+  font-weight: 300;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.1s;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-chevron:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.day-chevron:active {
+  color: rgba(255, 255, 255, 1);
+  transform: scale(0.95);
+}
+
 /* Large time display - iOS lock screen style */
 .time-display-hero {
   font-size: 3.5rem;
@@ -70,23 +97,6 @@
 
 .time-display-hero:active {
   transform: scale(0.98);
-}
-
-/* Day jump row - compact row above time */
-.day-jump-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
-}
-
-.day-jump-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(147, 197, 253, 0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* Time row - arrows flanking the time */
@@ -136,18 +146,6 @@
   color: rgba(255, 255, 255, 1) !important;
 }
 
-/* Day jump buttons - visually distinct */
-.time-control-btn.day-jump {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.4) !important;
-  color: rgba(147, 197, 253, 0.9) !important;
-}
-
-.time-control-btn.day-jump:hover {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.6) !important;
-  color: rgba(191, 219, 254, 1) !important;
-}
 
 /* Hamburger - RIGHT (absolute positioned) */
 .hamburger-toggle {

@@ -96,8 +96,15 @@ const WeatherHeader = ({
       <div className="weather-header">
         <Container fluid>
           <div className="header-row">
-            {/* Compact date line with next celestial event */}
+            {/* Compact date line with day-jump chevrons */}
             <div className="date-line">
+              <button
+                className="day-chevron"
+                onClick={() => onAdvanceTime(-24)}
+                title="Back 1 day"
+              >
+                ‹
+              </button>
               <span className="compact-date">{formatCompactDate(currentDate)}</span>
               {nextEvent && (
                 <>
@@ -105,27 +112,13 @@ const WeatherHeader = ({
                   <span className="next-event">{nextEvent}</span>
                 </>
               )}
-            </div>
-
-            {/* Day jump row - separate row for ±1 day */}
-            <div className="day-jump-row">
-              <Button
-                variant="link"
-                className="time-control-btn day-jump"
-                onClick={() => onAdvanceTime(-24)}
-                title="Back 1 day"
-              >
-                -1<span className="btn-unit">d</span>
-              </Button>
-              <span className="day-jump-label">Day</span>
-              <Button
-                variant="link"
-                className="time-control-btn day-jump"
+              <button
+                className="day-chevron"
                 onClick={() => onAdvanceTime(24)}
                 title="Forward 1 day"
               >
-                +1<span className="btn-unit">d</span>
-              </Button>
+                ›
+              </button>
             </div>
 
             {/* Time row: hour arrows flanking the time */}
