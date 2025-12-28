@@ -119,6 +119,19 @@
   color: rgba(255, 255, 255, 1) !important;
 }
 
+/* Day jump buttons - visually distinct */
+.time-control-btn.day-jump {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: rgba(147, 197, 253, 0.9) !important;
+}
+
+.time-control-btn.day-jump:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  color: rgba(191, 219, 254, 1) !important;
+}
+
 /* Hamburger - RIGHT (absolute positioned) */
 .hamburger-toggle {
   position: absolute;
@@ -198,10 +211,10 @@
     gap: 0.5rem;
   }
 
-  /* Hide ±24h buttons on mobile */
-  .time-controls-left .time-control-btn:first-child,
-  .time-controls-right .time-control-btn:last-child {
-    display: none;
+  /* Show all buttons on mobile - tighten gaps to fit */
+  .time-controls-left,
+  .time-controls-right {
+    gap: 0.25rem;
   }
 
   .time-display-hero {
