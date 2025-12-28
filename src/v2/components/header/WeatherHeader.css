@@ -217,9 +217,13 @@
 
   .time-control-btn {
     font-size: 0.875rem;
-    padding: 0.4rem 0.5rem;
-    min-width: auto;
+    padding: 0.625rem 0.75rem;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .btn-unit {
