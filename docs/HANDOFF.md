@@ -1,91 +1,69 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-27
-**Previous Agent**: Drift (Sprint 37)
-**Current Sprint Count**: 37 (next agent creates `SPRINT_38_*.md`)
-**Status**: Dew Point Profiles Complete for All Biomes
+**Previous Agent**: Coral (Sprint 38)
+**Current Sprint Count**: 38 (next agent creates `SPRINT_39_*.md`)
+**Status**: Cloud Cover Fix Complete - Ready for CRUD UI
 
 ---
 
 ## What Was Done This Sprint
 
-### Dew Point Profiles for All Biomes (COMPLETE)
+### MVP Sprint Plan Created
+Established definitive execution order in ROADMAP.md as single source of truth. Work items in order, Tyler greenlights each before moving to next.
 
-Added explicit dew point profiles to all 42 biomes in `region-templates.js`. Previously only 5 biomes had profiles; the rest used a fallback that produced unrealistic humidity values.
+### Cloud Cover Midnight Transitions - FIXED (MVP #1)
+**Problem**: Cloud cover was identical for all 24 hours of a day, only changing at midnight.
 
-**Key changes**:
-- Cold biomes: Very low dew points (-45°F to 50°F range)
-- Desert biomes: Low dew points creating "dry heat" where heat index < air temp
-- Tropical wet biomes: High dew points (75-87°F) creating oppressive conditions
-- Maritime biomes: Steady moderate dew points year-round
-- Seasonal biomes: Variable dew points matching wet/dry seasons
+**Root cause**: `generateSeed()` in seedGenerator.js only uses year-month-day (no hour), so cloud cover got the same random value all day.
 
-### Heat Index Test Harness (CHERRY-PICKED)
+**Fix** in `AtmosphericService.getCloudCover()`:
+- Generate cloud "anchor points" every 4 hours (0, 4, 8, 12, 16, 20)
+- Each anchor gets unique seed including the hour
+- Interpolate between anchors using smoothstep function
+- Handles day rollover (hour 24 = hour 0 next day)
 
-Brought in commit `ddb34d1` from `origin/claude/review-sprint-status-jjN2C` - adds a heat index analysis test accessible via `localhost:3000?test=true` → "Run Heat Index Analysis"
+Now clouds build up, dissipate, and change naturally throughout the day.
 
 ---
 
-## Outstanding Items
+## Next Up: MVP #2 - CRUD UI for Editing
 
-### Bugs to Fix
+**Goal**: Allow users to edit existing locations, continents, and worlds (fix typos, rename, reassign locations to different continents).
 
-- [ ] **Special biomes not in location modal** - Mountain Microclimate, Geothermal Zone, Convergence Zone, Rain Shadow, Coastal Desert are defined in `region-templates.js` but don't appear in the location creation UI
+Currently you can create but not edit. This is a significant usability gap.
 
-- [ ] **No CRUD UI for editing** - Can't edit existing locations, continents, or worlds (fix typos, rename, reassign locations to different continents)
+### MVP Sprint Plan (SINGLE SOURCE OF TRUTH)
 
-### Quick Fixes (from previous handoff)
-- [ ] Time arrow position shifts with digit width - give time fixed width
-- [ ] Hamburger menu icon slightly off-center vertically in its circle
-- [ ] Feels Like section causes layout shifts when data appears/disappears
-- [ ] Time control improvements: day jump buttons (<<< / >>>), larger hitboxes
-
-### Investigation Needed
-- [ ] Cloud % changes mostly at midnight - need to check cloud transition logic
-- [ ] Verify polar twilight lands implementation (first 500 miles as separate zone)
-
-### From NOTES_FROM_USER.md
-- Polar twilight lands (first 500 miles) - confirm if implemented
-- New biome suggestions from Slate (Humid Subtropical, Steppe)
-- Menu UX concerns (slide-over + settings interaction)
-- Preferences menu structure ideas
-- Edit world name functionality
-- Multiple worlds per user (stretch goal)
-- Dedicated 'create location' modal (to discuss)
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Cloud % midnight transitions | `[x]` | FIXED |
+| 2 | **CRUD UI for editing** | `[ ]` | **START HERE** - Edit locations, continents, worlds |
+| 3 | Special biomes in location modal | `[ ]` | 5 biomes defined but not appearing in UI |
+| 4 | Time control improvements | `[ ]` | Day jump buttons (<<< / >>>), larger hitboxes |
+| 5 | Layout stability fixes | `[ ]` | Time display width, Feels Like section shifts |
+| 6 | Hamburger menu centering | `[ ]` | Icon slightly off-center vertically |
 
 ---
 
 ## Key Reference
 
-### Test Harness
-Access via `localhost:3000?test=true`:
-1. Main Test Harness - Full year, all biomes (~30 sec)
-2. Precipitation Analysis - Cold biomes, 30 days hourly
-3. Thunderstorm Analysis - Thunder-prone biomes, 60 summer days x 5 years
-4. Flood Analysis - Snow-capable biomes, 90 days (Jan 15 - Apr 15)
-5. **Heat Index Analysis** - Hot biomes, 60 summer days x 3 years
-
-### Dew Point System
-- `WeatherGenerator.generateDewPoint()` - Uses regional profiles
-- `WeatherGenerator.calculateHumidityFromDewPoint()` - Magnus formula
-- Profiles in `region-templates.js` under `dewPointProfile` for each biome
-- Format: `{ mean, variance, max }` per season
-
-### Context Methods (WorldContext)
+### WorldContext Methods (for CRUD work)
 ```javascript
 // Continent operations
 createContinent(name)
 updateContinent(continentId, updates)
 deleteContinent(continentId)
 selectContinent(continentId)
-toggleContinentCollapsed(continentId)
-updateContinentMap(continentId, mapImage, mapScale)
 
 // Derived state
 worldContinents          // Continents for active world
 groupedRegions           // { uncategorized: [], byContinent: {} }
 activeContinent          // Currently selected continent
 ```
+
+### Test Harness
+Access via `localhost:3000?test=true`
 
 ---
 

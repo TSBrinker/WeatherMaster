@@ -1,6 +1,6 @@
 # WeatherMaster Roadmap
 
-**Last Updated**: 2025-12-24 (Sprint 26)
+**Last Updated**: 2025-12-27 (Sprint 38)
 
 This is the single source of truth for feature planning and priorities.
 
@@ -17,9 +17,29 @@ This is the single source of truth for feature planning and priorities.
 
 ---
 
-## Current Priority: Extreme Weather Events
+## 🚀 MVP Sprint Plan (SINGLE SOURCE OF TRUTH)
 
-See [HANDOFF.md](HANDOFF.md) for implementation details.
+**This is the execution order. Work items top-to-bottom. When Tyler greenlights an item as complete, move to the next. Other notes/bugs are lower priority unless Tyler explicitly elevates them.**
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | **Investigate cloud % midnight transitions** | `[x]` | FIXED: Added smooth hourly cloud transitions |
+| 2 | **CRUD UI for editing** | `[ ]` | Edit locations, continents, worlds (rename, reassign, fix typos) |
+| 3 | **Special biomes in location modal** | `[ ]` | 5 biomes defined but not appearing in UI |
+| 4 | **Time control improvements** | `[ ]` | Day jump buttons (<<< / >>>), larger hitboxes |
+| 5 | **Layout stability fixes** | `[ ]` | Time display width, Feels Like section shifts |
+| 6 | **Hamburger menu centering** | `[ ]` | Icon slightly off-center vertically |
+
+### Post-MVP / Future
+- New biomes (Humid Subtropical, Steppe)
+- Menu/preferences restructuring
+- Multiple worlds per user
+- Dedicated create location modal
+- Polar twilight lands verification
+
+---
+
+## Previous Priority: Extreme Weather Events
 
 **Goal**: Implement extreme weather events (hurricanes, blizzards, tornadoes, ice storms) using the preserved special factors in region templates.
 

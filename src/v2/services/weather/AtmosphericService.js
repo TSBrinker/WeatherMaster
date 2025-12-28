@@ -136,6 +136,7 @@ export class AtmosphericService {
 
   /**
    * Get cloud cover percentage and type
+   * Cloud cover now varies throughout the day with smooth hourly transitions.
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @param {Object} pattern - Current weather pattern
@@ -162,17 +163,38 @@ export class AtmosphericService {
       };
     }
 
-    // Generate cloud cover based on clear skies probability
-    const seed = generateSeed(region.id, date, 'clouds');
-    const rng = new SeededRandom(seed);
+    // Generate hourly cloud cover with smooth transitions
+    // We generate "anchor points" every 4 hours and interpolate between them
+    const anchorHours = [0, 4, 8, 12, 16, 20, 24]; // 24 wraps to 0 next day
+    const currentHour = Math.floor(date.hour);
 
-    // High clear skies probability = low cloud cover
-    // Low clear skies probability = high cloud cover
-    const baseCloudiness = (1 - patternClearSkies) * 100;
+    // Find which anchor interval we're in
+    let anchorBefore = 0;
+    let anchorAfter = 4;
+    for (let i = 0; i < anchorHours.length - 1; i++) {
+      if (currentHour >= anchorHours[i] && currentHour < anchorHours[i + 1]) {
+        anchorBefore = anchorHours[i];
+        anchorAfter = anchorHours[i + 1];
+        break;
+      }
+    }
 
-    // Add variation (±20%)
-    const variation = rng.range(-20, 20);
-    const percentage = Math.max(0, Math.min(100, Math.round(baseCloudiness + variation)));
+    // Generate cloud values at anchor points
+    const cloudAtBefore = this.generateCloudAtHour(region, date, anchorBefore, patternClearSkies);
+
+    // For the "after" anchor, handle day rollover (hour 24 = hour 0 next day)
+    let cloudAtAfter;
+    if (anchorAfter === 24) {
+      const nextDay = { ...date, day: date.day + 1, hour: 0 };
+      cloudAtAfter = this.generateCloudAtHour(region, nextDay, 0, patternClearSkies);
+    } else {
+      cloudAtAfter = this.generateCloudAtHour(region, date, anchorAfter, patternClearSkies);
+    }
+
+    // Interpolate between anchors using smoothstep for natural transitions
+    const t = (currentHour - anchorBefore) / (anchorAfter - anchorBefore);
+    const smoothT = t * t * (3 - 2 * t); // Smoothstep function
+    const percentage = Math.round(cloudAtBefore + (cloudAtAfter - cloudAtBefore) * smoothT);
 
     // Determine cloud cover type
     let type = 'CLEAR';
@@ -189,13 +211,38 @@ export class AtmosphericService {
       description: CLOUD_COVER_TYPES[type].description,
       _debug: {
         patternClearSkies,
-        baseCloudiness,
-        variation
+        anchorBefore,
+        anchorAfter,
+        cloudAtBefore,
+        cloudAtAfter,
+        interpolation: smoothT
       }
     };
 
     this.cloudCoverCache.set(cacheKey, result);
     return result;
+  }
+
+  /**
+   * Generate cloud cover value at a specific anchor hour
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @param {number} hour - Hour to generate for (0, 4, 8, 12, 16, 20)
+   * @param {number} patternClearSkies - Clear skies probability from pattern
+   * @returns {number} Cloud cover percentage
+   */
+  generateCloudAtHour(region, date, hour, patternClearSkies) {
+    // Include hour in seed so each anchor point is different
+    const seed = generateSeed(region.id, { ...date, hour }, `clouds-${hour}`);
+    const rng = new SeededRandom(seed);
+
+    // Base cloudiness from pattern
+    const baseCloudiness = (1 - patternClearSkies) * 100;
+
+    // Add variation (±25% for more interesting changes throughout the day)
+    const variation = rng.range(-25, 25);
+
+    return Math.max(0, Math.min(100, baseCloudiness + variation));
   }
 
   /**
