@@ -72,6 +72,23 @@
   transform: scale(0.98);
 }
 
+/* Day jump row - compact row above time */
+.day-jump-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.day-jump-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(147, 197, 253, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Time row - arrows flanking the time */
 .time-row {
   display: flex;
@@ -209,12 +226,6 @@
   .time-controls-left,
   .time-controls-right {
     gap: 0.5rem;
-  }
-
-  /* Show all buttons on mobile - tighten gaps to fit */
-  .time-controls-left,
-  .time-controls-right {
-    gap: 0.25rem;
   }
 
   .time-display-hero {

@@ -107,18 +107,31 @@ const WeatherHeader = ({
               )}
             </div>
 
-            {/* Time row: arrows flanking the time */}
+            {/* Day jump row - separate row for ±1 day */}
+            <div className="day-jump-row">
+              <Button
+                variant="link"
+                className="time-control-btn day-jump"
+                onClick={() => onAdvanceTime(-24)}
+                title="Back 1 day"
+              >
+                -1<span className="btn-unit">d</span>
+              </Button>
+              <span className="day-jump-label">Day</span>
+              <Button
+                variant="link"
+                className="time-control-btn day-jump"
+                onClick={() => onAdvanceTime(24)}
+                title="Forward 1 day"
+              >
+                +1<span className="btn-unit">d</span>
+              </Button>
+            </div>
+
+            {/* Time row: hour arrows flanking the time */}
             <div className="time-row">
               {/* Left arrows (back) */}
               <div className="time-controls-left">
-                <Button
-                  variant="link"
-                  className="time-control-btn day-jump"
-                  onClick={() => onAdvanceTime(-24)}
-                  title="Back 1 day"
-                >
-                  -1<span className="btn-unit">d</span>
-                </Button>
                 <Button
                   variant="link"
                   className="time-control-btn"
@@ -163,14 +176,6 @@ const WeatherHeader = ({
                   title="Forward 4 hours"
                 >
                   +4<span className="btn-unit">h</span>
-                </Button>
-                <Button
-                  variant="link"
-                  className="time-control-btn day-jump"
-                  onClick={() => onAdvanceTime(24)}
-                  title="Forward 1 day"
-                >
-                  +1<span className="btn-unit">d</span>
                 </Button>
               </div>
             </div>
