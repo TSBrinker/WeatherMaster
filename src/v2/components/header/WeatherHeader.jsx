@@ -38,24 +38,24 @@ const WeatherHeader = ({
     return `${monthNames[dateObj.month - 1]} ${dateObj.day}`;
   };
 
-  // Get next celestial event (sunrise or sunset)
+  // Parse times like "6:42 AM" to hour
+  const parseTime = (timeStr) => {
+    if (!timeStr || timeStr === 'Never' || timeStr === 'Always') return null;
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return null;
+    let hour = parseInt(match[1]);
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    return hour;
+  };
+
+  // Get next celestial event (sunrise or sunset) with hour for jumping
   const getNextCelestialEvent = () => {
     if (!celestialData || !currentDate) return null;
 
     const { sunriseTime, sunsetTime } = celestialData;
     if (!sunriseTime || !sunsetTime) return null;
-
-    // Parse times like "6:42 AM" to hour
-    const parseTime = (timeStr) => {
-      if (!timeStr || timeStr === 'Never' || timeStr === 'Always') return null;
-      const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if (!match) return null;
-      let hour = parseInt(match[1]);
-      const period = match[3].toUpperCase();
-      if (period === 'PM' && hour !== 12) hour += 12;
-      if (period === 'AM' && hour === 12) hour = 0;
-      return hour;
-    };
 
     const sunriseHour = parseTime(sunriseTime);
     const sunsetHour = parseTime(sunsetTime);
@@ -63,16 +63,24 @@ const WeatherHeader = ({
 
     // Determine which event is next
     if (sunriseHour !== null && currentHour < sunriseHour) {
-      return `Sunrise ${sunriseTime}`;
+      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour };
     } else if (sunsetHour !== null && currentHour < sunsetHour) {
-      return `Sunset ${sunsetTime}`;
+      return { label: `Sunset ${sunsetTime}`, hour: sunsetHour };
     } else if (sunriseHour !== null) {
-      return `Sunrise ${sunriseTime}`; // Tomorrow's sunrise
+      return { label: `Sunrise ${sunriseTime}`, hour: sunriseHour }; // Tomorrow's sunrise
     }
     return null;
   };
 
   const nextEvent = getNextCelestialEvent();
+
+  // Jump to the next celestial event's hour
+  const handleJumpToEvent = () => {
+    if (nextEvent && onAdvanceTime) {
+      const hoursToJump = nextEvent.hour - currentDate.hour;
+      onAdvanceTime(hoursToJump);
+    }
+  };
 
   // Open date picker with current values
   const handleOpenDatePicker = () => {
@@ -109,7 +117,13 @@ const WeatherHeader = ({
               {nextEvent && (
                 <>
                   <span className="date-separator">•</span>
-                  <span className="next-event">{nextEvent}</span>
+                  <button
+                    className="next-event"
+                    onClick={handleJumpToEvent}
+                    title={`Jump to ${nextEvent.label}`}
+                  >
+                    {nextEvent.label}
+                  </button>
                 </>
               )}
               <button
