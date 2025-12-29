@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Button, Modal, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { WiMoonNew, WiMoonWaxingCrescent3, WiMoonFirstQuarter, WiMoonWaxingGibbous3, WiMoonFull, WiMoonWaningGibbous3, WiMoonThirdQuarter, WiMoonWaningCrescent3 } from 'react-icons/wi';
+import CelestialTrackDisplay from './CelestialTrackDisplay';
 import './WeatherHeader.css';
 
 /**
@@ -10,9 +11,11 @@ import './WeatherHeader.css';
  */
 const WeatherHeader = ({
   currentDate,
+  previousDate,
   onAdvanceTime,
   onJumpToDate,
-  celestialData
+  celestialData,
+  condition
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [jumpYear, setJumpYear] = useState(currentDate?.year || 1);
@@ -249,6 +252,13 @@ const WeatherHeader = ({
                 </Button>
               </div>
             </div>
+
+            {/* Celestial Track Display - sun/moon positions */}
+            <CelestialTrackDisplay
+              currentDate={currentDate}
+              previousDate={previousDate}
+              celestialData={celestialData}
+            />
 
           </div>
         </Container>

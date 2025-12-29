@@ -1,82 +1,76 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-29
-**Previous Agent**: Brook (Sprint 44)
-**Current Sprint Count**: 44 (next agent creates `SPRINT_45_*.md`)
-**Status**: Main Page Layout Redesign Complete
+**Previous Agent**: Terra (Sprint 45)
+**Current Sprint Count**: 45 (next agent creates `SPRINT_46_*.md`)
+**Status**: Celestial Header Display Implemented
 
 ---
 
 ## What Was Done This Sprint
 
-### Loading Screen Simplification
-- Removed d20 wireframe SVG (wasn't visually working)
-- Kept simple text-only loading screen with random phrases
+### Celestial Header Display
+Implemented Tyler's request for a visual sun/moon position display in the header:
 
-### Roadmap Audit
-- Verified and updated all MVP items to [x] complete
-- Clarified that CRUD UI and special biomes were already done
+1. **CelestialTrackDisplay Component** (NEW)
+   - Two horizontal track rows below the time controls
+   - Sun track: shows sun position during daylight (0% sunrise, 50% noon, 100% sunset)
+   - Moon track: shows moon position when above horizon
+   - Moon is dimmed gray when sun is up, opaque white at night
+   - "Below horizon" label when celestial body is not visible
 
-### Main Page Layout Redesign
-Complete redesign for better at-a-glance usefulness during D&D sessions:
+2. **Circuit Animations**
+   - When crossing day boundaries, sun/moon animate off one edge and in from the other
+   - Exit direction matches time direction (forward = exit right, backward = exit left)
+   - Animations skipped for jumps > 30 days
+   - Timing: 300ms exit, 300ms enter
 
-1. **WeekForecastStrip** (NEW)
-   - Always-visible horizontal 7-day forecast below the hero
-   - Shows date (fantasy calendar format), weather icon, high/low temps, precip indicator
-   - Uses "Today", "Tmrw", then "Dec 31", "Jan 1" format (no weekday names)
-   - Tap to expand for full details
+3. **Full-Screen Sky Gradient**
+   - Sky color gradient now covers entire screen background
+   - Gradient changes based on time of day and weather conditions
+   - Smooth 0.5s transitions between gradient states
 
-2. **Wind in Hero Area**
-   - Added wind speed + direction to PrimaryDisplay
-   - Centered below temperature (not side-by-side for better visual balance)
-   - Responsive sizing on mobile
+4. **Frosted Glass Cards**
+   - All content cards now have frosted glass appearance
+   - Uses `backdrop-filter: blur(20px)` with semi-transparent background
+   - Applies to: PrimaryDisplay, DetailsCard, WeekForecastStrip, DruidcraftForecast
 
-3. **Moon Indicator in Header**
-   - Moon phase icon in the date line
-   - Golden when visible (above horizon), dimmed when below
-   - Tooltip shows phase name + visibility status
-
-4. **DetailsCard** (NEW)
-   - Combined ConditionsCard + CelestialCard into single collapsible section
-   - Collapsed by default with "Show Details" toggle
-   - Conditions: humidity, pressure, clouds, visibility
-   - Celestial: sunrise, sunset, daylight, moonrise, moonset
-
-5. **DMForecastPanel Removed**
-   - Was redundant with WeekForecastStrip
+5. **Architecture Improvements**
+   - Extracted gradient logic to `skyGradientUtils.js` for reuse
+   - Added `previousDate` tracking in WorldContext for animation direction
+   - Created `useCelestialAnimation` hook for animation state machine
 
 ---
 
 ## Key Files
 
 ### Created This Sprint
-- `src/v2/components/weather/WeekForecastStrip.jsx` - 7-day horizontal strip
-- `src/v2/components/weather/WeekForecastStrip.css`
-- `src/v2/components/weather/DetailsCard.jsx` - Combined conditions/celestial
-- `src/v2/components/weather/DetailsCard.css`
+- `src/v2/utils/skyGradientUtils.js` - Shared gradient calculation utilities
+- `src/v2/hooks/useCelestialAnimation.js` - Animation state machine hook
+- `src/v2/components/header/CelestialTrackDisplay.jsx` - Sun/moon track component
+- `src/v2/components/header/CelestialTrackDisplay.css` - Track styling and animations
 
 ### Modified This Sprint
-- `src/v2/App.jsx` - Removed DMForecastPanel, reordered components
-- `src/v2/styles/app.css` - Removed d20 styles
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Wind display (centered below temp)
-- `src/v2/components/weather/PrimaryDisplay.css` - Wind styling
-- `src/v2/components/header/WeatherHeader.jsx` - Moon indicator
-- `src/v2/components/header/WeatherHeader.css` - Moon indicator styling
-- `docs/ROADMAP.md` - All MVP items marked complete
-
-### Deprecated (Not Removed)
-- `src/v2/components/weather/ConditionsCard.jsx` - Replaced by DetailsCard
-- `src/v2/components/weather/CelestialCard.jsx` - Replaced by DetailsCard
-- `src/v2/components/weather/DMForecastPanel.jsx` - Replaced by WeekForecastStrip
+- `src/v2/contexts/WorldContext.jsx` - Added previousDate tracking
+- `src/v2/App.jsx` - Sky gradient CSS variable, pass props to header
+- `src/v2/styles/app.css` - Frosted glass styles, full-screen gradient
+- `src/v2/components/header/WeatherHeader.jsx` - Integrated CelestialTrackDisplay
+- `src/v2/components/weather/PrimaryDisplay.jsx` - Removed inline gradient
 
 ---
 
 ## What's Next
 
-### Testing Needed
-- Verify moon visibility calculation across different scenarios
-- Test WeekForecastStrip horizontal scrolling on mobile
-- Check responsive behavior on actual devices
+### Visual Testing Needed
+- Verify gradient transitions look good at sunrise/sunset boundaries
+- Test circuit animations when jumping between days
+- Check frosted glass appearance on mobile devices
+- Ensure text remains readable on all gradient backgrounds
+
+### Potential Enhancements
+- Add tooltips to sun/moon icons showing exact rise/set times
+- Consider hiding "Below horizon" labels (might be too verbose)
+- Add polar day/night handling (when sun/moon is always or never visible)
 
 ### From ROADMAP Post-MVP
 - Polar twilight lands (first 500 miles as magical zone)
@@ -85,41 +79,33 @@ Complete redesign for better at-a-glance usefulness during D&D sessions:
 - Multiple worlds per user
 - Dedicated create location modal
 
-### Optional Cleanup
-- Remove deprecated files (ConditionsCard, CelestialCard, DMForecastPanel)
-- Restyle DruidcraftForecast to horizontal format
-- Add smooth animations to DetailsCard collapse
-
 ---
 
 ## Architecture Notes
 
-### New Component Hierarchy
+### New Header Structure
 ```
 Header (sticky)
-  - Date/time controls
-  - Moon indicator (phase icon, lit/dim based on visibility)
+  - Date line (moon indicator, chevrons, date, next event)
+  - Time row (hour buttons, large time display)
+  - Celestial Track Display (NEW)
+    - Sun track (horizontal, shows position during daylight)
+    - Moon track (horizontal, shows position when visible)
 
-PrimaryDisplay (hero)
-  - Location name
-  - Temperature
-  - Wind speed/direction (centered below temp)
-  - Condition line + High/Low
-  - Feels like
-  - Badges (ground, alerts, biome)
-  - Snow overlay
+Body Background
+  - var(--sky-gradient) applied to body element
+  - Changes with time of day and weather condition
 
-WeekForecastStrip (always visible)
-  - 7 horizontal day cards (scrollable)
-  - Icon + High/Low + precip indicator per day
-  - Tap to expand day details
+Content Cards
+  - Frosted glass effect via backdrop-filter
+  - Semi-transparent backgrounds
+```
 
-DruidcraftForecast (expandable)
-  - 24h outlook with "cast" interaction
-
-DetailsCard (collapsed by default)
-  - Conditions: humidity, pressure, clouds, visibility
-  - Celestial: sunrise, sunset, daylight, moonrise, moonset
+### Animation State Machine
+```
+IDLE → (day boundary crossed) → CIRCUIT_EXIT → CIRCUIT_ENTER → IDLE
+       (same day change) ↺ position transition only
+       (>30 day jump) ↺ no animation
 ```
 
 ---

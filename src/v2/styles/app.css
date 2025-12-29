@@ -3,6 +3,30 @@
  * iOS Weather-inspired header and layout
  */
 
+/* ===== FULL-SCREEN SKY GRADIENT ===== */
+body {
+  background: var(--sky-gradient, var(--bg-primary));
+  min-height: 100vh;
+  transition: background 0.5s ease;
+}
+
+/* ===== FROSTED GLASS CARDS ===== */
+.primary-display,
+.details-card,
+.week-forecast-strip,
+.druidcraft-forecast,
+.card {
+  background: rgba(36, 43, 61, 0.7) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure proper text visibility on frosted glass */
+.primary-display {
+  color: var(--text-primary);
+}
+
 /* ===== LOADING SCREEN ===== */
 .loading-screen {
   position: fixed;

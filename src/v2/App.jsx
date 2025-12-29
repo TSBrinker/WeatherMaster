@@ -16,6 +16,7 @@ import WeatherDebug from './components/weather/WeatherDebug';
 import WeatherTestHarness from './components/testing/WeatherTestHarness';
 import WandererModal from './components/weather/WandererModal';
 import weatherService from './services/weather/WeatherService';
+import { calculateSkyGradient, parseTimeToHour } from './utils/skyGradientUtils';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/theme.css';
 import './styles/app.css';
@@ -42,7 +43,7 @@ const LOADING_PHRASES = [
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading, previousDate } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -92,6 +93,19 @@ const AppContent = () => {
       setWeatherData(weather);
     }
   }, [activeWorld?.currentDate, activeRegion]);
+
+  // Update sky gradient CSS variable based on time and weather
+  useEffect(() => {
+    if (activeWorld && weatherData) {
+      const hour = activeWorld.currentDate?.hour ?? 12;
+      const sunriseHour = parseTimeToHour(weatherData.celestial?.sunriseTime);
+      const sunsetHour = parseTimeToHour(weatherData.celestial?.sunsetTime);
+      const condition = weatherData.condition || '';
+
+      const gradient = calculateSkyGradient(hour, sunriseHour, sunsetHour, condition);
+      document.documentElement.style.setProperty('--sky-gradient', gradient);
+    }
+  }, [activeWorld?.currentDate?.hour, weatherData?.celestial, weatherData?.condition]);
 
   // Wrapper for advanceTime that handles wanderer interruptions
   const handleAdvanceTime = useCallback((hours) => {
@@ -164,9 +178,11 @@ const AppContent = () => {
       {/* iOS Lock Screen-style header with time controls */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}
+        previousDate={previousDate}
         onAdvanceTime={handleAdvanceTime}
         onJumpToDate={handleJumpToDate}
         celestialData={weatherData?.celestial}
+        condition={weatherData?.condition}
       />
 
       {/* Main Content */}

@@ -5,6 +5,7 @@ import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { transformCondition } from '../../utils/conditionPhrasing';
+import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
 import './PrimaryDisplay.css';
 
 /**
@@ -118,74 +119,13 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
   // Determine if feels like is different enough to show
   const showFeelsLike = feelsLike && Math.abs(temperature - feelsLike) >= 3;
 
-  // Helper function to parse time string like "5:42 AM" to hour number (0-23)
-  const parseTimeToHour = (timeString) => {
-    if (!timeString || timeString === 'Never' || timeString === 'Always') return null;
-    const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!match) return null;
-
-    let hour = parseInt(match[1]);
-    const period = match[3].toUpperCase();
-
-    if (period === 'PM' && hour !== 12) hour += 12;
-    if (period === 'AM' && hour === 12) hour = 0;
-
-    return hour;
-  };
-
   // Shared time-of-day calculations
   const hour = currentDate?.hour ?? 12; // Use in-game time, default to noon if not available
   const sunriseHour = parseTimeToHour(weather?.celestial?.sunriseTime);
   const sunsetHour = parseTimeToHour(weather?.celestial?.sunsetTime);
 
-  // Golden hour detection (the hour of sunrise and the hour of sunset)
-  const isGoldenHour = (sunriseHour !== null && hour === sunriseHour) ||
-                       (sunsetHour !== null && hour === sunsetHour);
-
-  // Night detection: after sunset hour or before sunrise hour
-  const isNight = sunsetHour !== null && sunriseHour !== null
-    ? (hour > sunsetHour || hour < sunriseHour)
-    : (hour < 6 || hour >= 20); // Fallback to static times
-
-  // Get weather gradient based on condition and time
-  const getWeatherGradient = () => {
-    const conditionLower = condition?.toLowerCase() || '';
-
-    // Twilight is deprecated in favor of golden hour
-    const isTwilight = false;
-
-    // Golden hour takes precedence for clear/sunny conditions
-    if (isGoldenHour && (conditionLower.includes('clear') || conditionLower.includes('sunny'))) {
-      return 'linear-gradient(135deg, #f59e0b 0%, #fb923c 100%)'; // Warm orange-yellow gradient
-    }
-
-    // Weather-based gradients
-    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
-      if (isNight) return 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)'; // Deep indigo to dark slate
-      return 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)'; // Bright sky blue
-    }
-
-    if (conditionLower.includes('cloud')) {
-      if (isGoldenHour) return 'linear-gradient(135deg, #d97706 0%, #92400e 100%)'; // Muted golden for clouds
-      if (isNight) return 'linear-gradient(135deg, #374151 0%, #1f2937 100%)';
-      return 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)';
-    }
-
-    if (conditionLower.includes('rain') || conditionLower.includes('storm')) {
-      if (isNight) return 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)';
-      return 'linear-gradient(135deg, #475569 0%, #64748b 100%)';
-    }
-
-    if (conditionLower.includes('snow')) {
-      if (isNight) return 'linear-gradient(135deg, #334155 0%, #1e293b 100%)';
-      return 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)';
-    }
-
-    // Default
-    if (isGoldenHour) return 'linear-gradient(135deg, #f59e0b 0%, #fb923c 100%)'; // Golden hour default
-    if (isNight) return 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)';
-    return 'linear-gradient(135deg, #4a90e2 0%, #87ceeb 100%)';
-  };
+  // Night detection for icon selection
+  const isNight = isNightTime(hour, sunriseHour, sunsetHour);
 
   // Get weather icon
   const getWeatherIcon = () => {
@@ -255,7 +195,6 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
     <>
       <div
         className={`primary-display ${textClass}${hasSnowOverlay ? ' snow-covered' : ''}`}
-        style={{ background: getWeatherGradient() }}
       >
         {/* Location Name - HUGE */}
         <div className="location-hero">

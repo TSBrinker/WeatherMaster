@@ -39,6 +39,9 @@ export const WorldProvider = ({ children }) => {
   // Wanderer gate tracking (for time interruption)
   const [wandererGates, setWandererGates] = useState({ nextGate: null, prevGate: null });
 
+  // Previous date tracking (for celestial animation direction)
+  const [previousDate, setPreviousDate] = useState(null);
+
   // Derived state
   const activeWorld = worlds.find(w => w.id === activeWorldId) || null;
   const activeRegion = activeWorld?.regions.find(r => r.id === activeRegionId) || null;
@@ -323,6 +326,9 @@ export const WorldProvider = ({ children }) => {
   const advanceTime = useCallback((hours) => {
     if (!activeWorld) return { newDate: null, interrupted: false, wanderer: null };
 
+    // Store current date as previous for animation direction
+    setPreviousDate({ ...activeWorld.currentDate });
+
     const targetDate = advanceDateUtil(activeWorld.currentDate, hours);
     const isForward = hours > 0;
     const gate = isForward ? wandererGates.nextGate : wandererGates.prevGate;
@@ -350,6 +356,9 @@ export const WorldProvider = ({ children }) => {
 
   const jumpToDate = useCallback((year, month, day, hour = 12) => {
     if (!activeWorld) return { newDate: null, interrupted: false, wanderer: null };
+
+    // Store current date as previous for animation direction
+    setPreviousDate({ ...activeWorld.currentDate });
 
     const targetDate = {
       year: year ?? activeWorld.currentDate.year,
@@ -517,6 +526,7 @@ export const WorldProvider = ({ children }) => {
     activeRegionId,
     activeContinentId,
     isLoading,
+    previousDate,
 
     // Derived state
     worldContinents,
