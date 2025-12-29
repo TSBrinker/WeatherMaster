@@ -162,6 +162,12 @@ This is the single source of truth for feature planning and priorities.
 - [ ] Web app for mobile access
 - [ ] Sync between platforms
 
+**Firebase Backend Integration**
+- [ ] Cloud storage for worlds/regions (replaces localStorage)
+- [ ] User authentication (Google sign-in)
+- [ ] Multi-device sync (phone/tablet/laptop)
+- [ ] *Why*: Enables future campaign features (calendar events, session notes, festival markers) that accumulate value over time and shouldn't live only in browser storage
+
 ---
 
 ## Completed Milestones

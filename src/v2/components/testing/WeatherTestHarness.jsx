@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh } from 'react-icons/bs';
+import React, { useState, useMemo } from 'react';
+import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form, Row, Col } from 'react-bootstrap';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh, BsStar, BsExclamationTriangle } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
 import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG } from './testConfig';
 import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis, runHeatIndexAnalysis } from './testRunner';
+import WandererService from '../../services/celestial/WandererService';
 import { downloadFullResults, downloadProblemsReport, downloadPrecipAnalysis, downloadPrecipSummary } from './resultExporters';
 import {
   BiomeStatsTable,
@@ -77,6 +78,20 @@ const WeatherTestHarness = () => {
   const [heatIndexProgress, setHeatIndexProgress] = useState(0);
   const [heatIndexResults, setHeatIndexResults] = useState(null);
 
+  // Wanderer analysis state
+  const [isWandererRunning, setIsWandererRunning] = useState(false);
+  const [wandererProgress, setWandererProgress] = useState(0);
+  const [wandererResults, setWandererResults] = useState(null);
+
+  // Impact preview state
+  const [previewSize, setPreviewSize] = useState('medium');
+  const [previewDistance, setPreviewDistance] = useState(5);
+
+  // Compute impact effects for preview
+  const impactPreview = useMemo(() => {
+    return WandererService.generateImpactEffects(previewSize, previewDistance, 'Open plains');
+  }, [previewSize, previewDistance]);
+
   const totalBiomes = getTotalBiomeCount();
   const newBiomes = getNewBiomeCount();
   const activeBiomes = newOnly ? newBiomes : totalBiomes;
@@ -146,6 +161,70 @@ const WeatherTestHarness = () => {
 
     setHeatIndexResults(analysisResults);
     setIsHeatIndexRunning(false);
+  };
+
+  const handleRunWandererAnalysis = async () => {
+    setIsWandererRunning(true);
+    setWandererProgress(0);
+
+    // Create a mock region for testing
+    const mockRegion = { id: 'wanderer-test-region' };
+    const yearsToTest = 10;
+    const totalYears = yearsToTest;
+
+    const stats = {
+      totalStreaks: 0,
+      totalLocalFalls: 0,
+      observableStreaks: 0,
+      sizeDistribution: { small: 0, medium: 0, large: 0, massive: 0 },
+      yearlyBreakdown: [],
+      events: []
+    };
+
+    // Test multiple years
+    for (let yearOffset = 0; yearOffset < totalYears; yearOffset++) {
+      const year = 1000 + yearOffset; // Arbitrary starting year
+      const yearStats = WandererService.getYearlyStats(mockRegion, year);
+
+      stats.totalStreaks += yearStats.totalStreaks;
+      stats.totalLocalFalls += yearStats.totalLocalFalls;
+      stats.observableStreaks += yearStats.observableStreaks;
+      stats.sizeDistribution.small += yearStats.sizeDistribution.small;
+      stats.sizeDistribution.medium += yearStats.sizeDistribution.medium;
+      stats.sizeDistribution.large += yearStats.sizeDistribution.large;
+      stats.sizeDistribution.massive += yearStats.sizeDistribution.massive;
+      stats.yearlyBreakdown.push({
+        year,
+        streaks: yearStats.totalStreaks,
+        localFalls: yearStats.totalLocalFalls,
+        events: yearStats.events
+      });
+      stats.events.push(...yearStats.events.map(e => ({ ...e, year })));
+
+      setWandererProgress(((yearOffset + 1) / totalYears) * 100);
+      // Small delay to allow UI updates
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    const results = {
+      config: {
+        yearsAnalyzed: totalYears,
+        regionId: mockRegion.id
+      },
+      summary: {
+        avgStreaksPerYear: (stats.totalStreaks / totalYears).toFixed(1),
+        avgLocalFallsPerYear: (stats.totalLocalFalls / totalYears).toFixed(2),
+        totalStreaks: stats.totalStreaks,
+        totalLocalFalls: stats.totalLocalFalls,
+        observableRate: ((stats.observableStreaks / stats.totalStreaks) * 100).toFixed(1),
+        sizeDistribution: stats.sizeDistribution
+      },
+      yearlyBreakdown: stats.yearlyBreakdown,
+      events: stats.events
+    };
+
+    setWandererResults(results);
+    setIsWandererRunning(false);
   };
 
   return (
@@ -336,6 +415,269 @@ const WeatherTestHarness = () => {
           )}
         </Card.Body>
       </Card>
+
+      {/* Wanderer Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#9966ff' }}>
+        <Card.Body>
+          <h5><BsStar className="me-2" />Wanderer (Falling Star) Analysis</h5>
+          <p className="text-muted">
+            Tests the frequency and distribution of Wanderer events over multiple years.
+            Verifies that streak and local fall rates match expected probabilities.
+          </p>
+          <ul>
+            <li>Duration: 10 years of simulation</li>
+            <li>Expected: ~14 streaks/year, ~2 local falls/year</li>
+            <li>Tracks: Streak frequency, local fall frequency, size distribution, visibility</li>
+          </ul>
+
+          <Button
+            variant="secondary"
+            onClick={handleRunWandererAnalysis}
+            disabled={isWandererRunning || isRunning}
+            size="lg"
+            style={{ backgroundColor: '#9966ff', borderColor: '#9966ff' }}
+          >
+            <BsStar className="me-2" />
+            {isWandererRunning ? 'Analyzing...' : 'Run Wanderer Analysis'}
+          </Button>
+
+          {isWandererRunning && (
+            <div className="mt-3">
+              <ProgressBar now={wandererProgress} label={`${wandererProgress.toFixed(1)}%`} animated style={{ backgroundColor: '#ddd' }} />
+              <small className="text-muted mt-2">Simulating 10 years of Wanderer events...</small>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      {/* Wanderer Impact Preview Card */}
+      <Card className="mb-4" style={{ borderColor: '#ff6b6b' }}>
+        <Card.Body>
+          <h5><BsExclamationTriangle className="me-2" />Impact Effects Preview</h5>
+          <p className="text-muted">
+            Preview the compositional narrative and mechanical effects for different size/distance combinations.
+          </p>
+
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label><strong>Size</strong></Form.Label>
+                <div>
+                  {['small', 'medium', 'large', 'massive'].map((size) => (
+                    <Form.Check
+                      key={size}
+                      inline
+                      type="radio"
+                      id={`size-${size}`}
+                      label={size.charAt(0).toUpperCase() + size.slice(1)}
+                      name="previewSize"
+                      checked={previewSize === size}
+                      onChange={() => setPreviewSize(size)}
+                    />
+                  ))}
+                </div>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>
+                  <strong>Distance:</strong> {previewDistance < 1 ? `${Math.round(previewDistance * 5280)} feet` : `${previewDistance} miles`}
+                  {' '}
+                  <Badge bg={
+                    impactPreview.band === 'close' ? 'danger' :
+                    impactPreview.band === 'near' ? 'warning' : 'secondary'
+                  }>
+                    {impactPreview.band}
+                  </Badge>
+                </Form.Label>
+                <Form.Range
+                  min={0.1}
+                  max={100}
+                  step={0.1}
+                  value={previewDistance}
+                  onChange={(e) => setPreviewDistance(parseFloat(e.target.value))}
+                />
+                <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                  <span>500ft</span>
+                  <span>1mi</span>
+                  <span>10mi</span>
+                  <span>50mi</span>
+                  <span>100mi</span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Quick presets */}
+          <div className="mb-3">
+            <strong>Quick Presets:</strong>{' '}
+            <Button size="sm" variant="outline-danger" className="me-1" onClick={() => { setPreviewSize('massive'); setPreviewDistance(0.15); }}>
+              Massive @ 800ft
+            </Button>
+            <Button size="sm" variant="outline-warning" className="me-1" onClick={() => { setPreviewSize('large'); setPreviewDistance(3); }}>
+              Large @ 3mi
+            </Button>
+            <Button size="sm" variant="outline-info" className="me-1" onClick={() => { setPreviewSize('medium'); setPreviewDistance(15); }}>
+              Medium @ 15mi
+            </Button>
+            <Button size="sm" variant="outline-secondary" onClick={() => { setPreviewSize('small'); setPreviewDistance(50); }}>
+              Small @ 50mi
+            </Button>
+          </div>
+
+          {/* Results display */}
+          <Card
+            className="mt-3"
+            style={{
+              borderColor: impactPreview.severity === 'catastrophic' ? '#dc3545' :
+                          impactPreview.severity === 'major' ? '#fd7e14' :
+                          impactPreview.severity === 'notable' ? '#ffc107' : '#6c757d',
+              borderWidth: impactPreview.severity === 'catastrophic' ? '3px' : '1px'
+            }}
+          >
+            <Card.Header style={{
+              backgroundColor: impactPreview.severity === 'catastrophic' ? '#dc3545' :
+                              impactPreview.severity === 'major' ? '#fd7e14' :
+                              impactPreview.severity === 'notable' ? '#ffc107' : '#6c757d',
+              color: impactPreview.severity === 'notable' ? '#000' : '#fff'
+            }}>
+              <strong>{impactPreview.summary}</strong>
+              <Badge className="ms-2" bg="dark">{impactPreview.severity}</Badge>
+            </Card.Header>
+            <Card.Body>
+              <h6>Narrative Description</h6>
+              <p style={{ fontStyle: 'italic', fontSize: '1.1em', lineHeight: '1.6' }}>
+                {impactPreview.narrative}
+              </p>
+
+              <Row>
+                <Col md={4}>
+                  <h6>Visual</h6>
+                  <p className="text-muted" style={{ fontSize: '0.9em' }}>{impactPreview.visual || '—'}</p>
+                </Col>
+                <Col md={4}>
+                  <h6>Sound</h6>
+                  <p className="text-muted" style={{ fontSize: '0.9em' }}>{impactPreview.sound || '—'}</p>
+                </Col>
+                <Col md={4}>
+                  <h6>Physical</h6>
+                  <p className="text-muted" style={{ fontSize: '0.9em' }}>{impactPreview.physical || '—'}</p>
+                </Col>
+              </Row>
+
+              {impactPreview.mechanics && (
+                <Alert variant="warning" className="mt-3 mb-0">
+                  <strong>Suggested Mechanics:</strong> {impactPreview.mechanics}
+                </Alert>
+              )}
+            </Card.Body>
+          </Card>
+        </Card.Body>
+      </Card>
+
+      {/* Wanderer Analysis Results */}
+      {wandererResults && (
+        <>
+          <Alert variant="info">
+            <Alert.Heading><BsStar className="me-2" />Wanderer Analysis Complete</Alert.Heading>
+            <p className="mb-0">
+              Simulated {wandererResults.config.yearsAnalyzed} years.
+              Average: <strong>{wandererResults.summary.avgStreaksPerYear} streaks/year</strong>,
+              <strong> {wandererResults.summary.avgLocalFallsPerYear} local falls/year</strong>.
+              Observable rate: <strong>{wandererResults.summary.observableRate}%</strong>.
+            </p>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Wanderer Statistics</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Total Streaks ({wandererResults.config.yearsAnalyzed} years)</td>
+                    <td><Badge bg="info">{wandererResults.summary.totalStreaks}</Badge></td>
+                  </tr>
+                  <tr>
+                    <td>Total Local Falls</td>
+                    <td><Badge bg="warning" text="dark">{wandererResults.summary.totalLocalFalls}</Badge></td>
+                  </tr>
+                  <tr>
+                    <td>Average Streaks/Year</td>
+                    <td>{wandererResults.summary.avgStreaksPerYear}</td>
+                  </tr>
+                  <tr>
+                    <td>Average Local Falls/Year</td>
+                    <td>{wandererResults.summary.avgLocalFallsPerYear}</td>
+                  </tr>
+                  <tr>
+                    <td>Observable Rate</td>
+                    <td>{wandererResults.summary.observableRate}%</td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              <h6 className="mt-4">Size Distribution (Local Falls)</h6>
+              <Table striped bordered size="sm">
+                <thead>
+                  <tr>
+                    <th>Size</th>
+                    <th>Count</th>
+                    <th>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(wandererResults.summary.sizeDistribution).map(([size, count]) => (
+                    <tr key={size}>
+                      <td style={{ textTransform: 'capitalize' }}>{size}</td>
+                      <td>{count}</td>
+                      <td>
+                        {wandererResults.summary.totalLocalFalls > 0
+                          ? ((count / wandererResults.summary.totalLocalFalls) * 100).toFixed(1) + '%'
+                          : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+
+              <h6 className="mt-4">Year-by-Year Breakdown</h6>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <Table striped bordered size="sm">
+                  <thead style={{ position: 'sticky', top: 0, background: 'white' }}>
+                    <tr>
+                      <th>Year</th>
+                      <th>Streaks</th>
+                      <th>Local Falls</th>
+                      <th>Events</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {wandererResults.yearlyBreakdown.map((year) => (
+                      <tr key={year.year}>
+                        <td>{year.year}</td>
+                        <td>{year.streaks}</td>
+                        <td>
+                          <Badge bg={year.localFalls > 0 ? 'warning' : 'secondary'} text="dark">
+                            {year.localFalls}
+                          </Badge>
+                        </td>
+                        <td style={{ fontSize: '0.8em' }}>
+                          {year.events.map((e, i) => (
+                            <span key={i} className="me-2">
+                              {e.date} ({e.size}, {e.distance}mi {e.direction})
+                            </span>
+                          ))}
+                          {year.events.length === 0 && <span className="text-muted">-</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
 
       {/* Heat Index Analysis Results */}
       {heatIndexResults && (

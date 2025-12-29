@@ -1,0 +1,291 @@
+/**
+ * WandererModal.css
+ * Dramatic styling for Wanderer (falling star) impact events
+ */
+
+/* Modal backdrop - darker for drama */
+.wanderer-modal .modal-backdrop {
+  background-color: #000;
+}
+
+/* Main modal styling */
+.wanderer-modal .modal-content {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 30%, #1a0a2e 70%, #0d0518 100%);
+  border: 2px solid #f4a460;
+  border-radius: 16px;
+  box-shadow: 0 0 60px rgba(244, 164, 96, 0.4), 0 0 120px rgba(255, 100, 50, 0.2);
+}
+
+.wanderer-modal-body {
+  padding: 2rem;
+  text-align: center;
+  color: #fff;
+}
+
+/* Dramatic icon container */
+.wanderer-icon-container {
+  margin-bottom: 1rem;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.wanderer-icon {
+  font-size: 6rem;
+  display: block;
+  filter: drop-shadow(0 0 20px rgba(255, 150, 50, 0.8));
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 20px rgba(255, 150, 50, 0.8));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 40px rgba(255, 200, 100, 1));
+  }
+}
+
+/* Headlines */
+.wanderer-headline {
+  font-size: 2.5rem;
+  font-weight: 200;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  color: #f4a460;
+  text-shadow: 0 0 20px rgba(244, 164, 96, 0.5);
+}
+
+.wanderer-subheadline {
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: #ccc;
+  margin-bottom: 1.5rem;
+}
+
+/* Location display */
+.wanderer-location {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wanderer-distance {
+  font-size: 3rem;
+  font-weight: 200;
+  color: #fff;
+}
+
+.wanderer-direction {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #f4a460;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+/* Visibility note */
+.wanderer-visibility {
+  font-style: italic;
+  color: #aaa;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+/* Impact narrative - the dramatic description */
+.wanderer-narrative {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #e0d0c0;
+  font-style: italic;
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid #f4a460;
+  border-radius: 0 8px 8px 0;
+  text-align: left;
+}
+
+/* Suggested mechanics box */
+.wanderer-mechanics {
+  background: rgba(255, 200, 50, 0.15);
+  border: 1px solid rgba(255, 200, 50, 0.4);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #ffe0a0;
+}
+
+.wanderer-mechanics strong {
+  color: #ffc107;
+}
+
+/* Details grid */
+.wanderer-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wanderer-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wanderer-detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.detail-value {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* Hooks and complications */
+.wanderer-hooks,
+.wanderer-complications {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wanderer-hooks h5,
+.wanderer-complications h5 {
+  color: #f4a460;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
+
+.wanderer-hooks ul,
+.wanderer-complications ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.wanderer-hooks li,
+.wanderer-complications li {
+  color: #ccc;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* DM Notes (collapsible) */
+.wanderer-dm-notes {
+  text-align: left;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.wanderer-dm-notes summary {
+  color: #888;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.wanderer-dm-notes p {
+  margin: 0.75rem 0 0 0;
+  color: #aaa;
+  line-height: 1.5;
+}
+
+/* Dismiss button */
+.wanderer-dismiss-btn {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 8px;
+}
+
+/* Severity-based variations */
+
+/* Catastrophic - massive impacts or large+close */
+.wanderer-catastrophic .modal-content {
+  border-color: #ff4444;
+  border-width: 3px;
+  box-shadow: 0 0 80px rgba(255, 68, 68, 0.5), 0 0 160px rgba(255, 100, 50, 0.3);
+}
+
+.wanderer-catastrophic .wanderer-headline {
+  color: #ff6b6b;
+  text-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
+}
+
+.wanderer-catastrophic .wanderer-icon {
+  font-size: 8rem;
+  filter: drop-shadow(0 0 30px rgba(255, 100, 50, 1));
+}
+
+.wanderer-catastrophic .wanderer-narrative {
+  border-left-color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+/* Major - large impacts or medium+close */
+.wanderer-major .modal-content {
+  border-color: #ffa500;
+  box-shadow: 0 0 60px rgba(255, 165, 0, 0.4), 0 0 120px rgba(255, 100, 50, 0.2);
+}
+
+.wanderer-major .wanderer-icon {
+  font-size: 7rem;
+}
+
+.wanderer-major .wanderer-narrative {
+  border-left-color: #ffa500;
+}
+
+/* Notable - medium impacts or any close */
+.wanderer-notable .modal-content {
+  border-color: #ffc107;
+  box-shadow: 0 0 50px rgba(255, 193, 7, 0.3), 0 0 100px rgba(255, 150, 50, 0.2);
+}
+
+/* Minor - small/far impacts */
+.wanderer-minor .modal-content {
+  border-color: #888;
+  box-shadow: 0 0 40px rgba(244, 164, 96, 0.3);
+}
+
+.wanderer-minor .wanderer-icon {
+  font-size: 5rem;
+}
+
+/* Animation for modal entrance */
+.wanderer-modal .modal-dialog {
+  animation: wanderer-entrance 0.5s ease-out;
+}
+
+@keyframes wanderer-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

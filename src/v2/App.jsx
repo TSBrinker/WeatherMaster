@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Button } from 'react-bootstrap';
 import { BiError } from 'react-icons/bi';
 import { PreferencesProvider } from './contexts/PreferencesContext';
@@ -15,6 +15,7 @@ import DruidcraftForecast from './components/weather/DruidcraftForecast';
 import DMForecastPanel from './components/weather/DMForecastPanel';
 import WeatherDebug from './components/weather/WeatherDebug';
 import WeatherTestHarness from './components/testing/WeatherTestHarness';
+import WandererModal from './components/weather/WandererModal';
 import weatherService from './services/weather/WeatherService';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/theme.css';
@@ -28,13 +29,16 @@ const isTestMode = urlParams.get('test') === 'true';
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   // REAL weather and celestial data
   const [weatherData, setWeatherData] = useState(null);
+
+  // Wanderer event state (for dramatic modal)
+  const [wandererEvent, setWandererEvent] = useState(null);
 
   useEffect(() => {
     if (activeWorld && activeRegion) {
@@ -43,6 +47,33 @@ const AppContent = () => {
       setWeatherData(weather);
     }
   }, [activeWorld?.currentDate, activeRegion]);
+
+  // Wrapper for advanceTime that handles wanderer interruptions
+  const handleAdvanceTime = useCallback((hours) => {
+    const result = advanceTime(hours);
+    if (result?.interrupted && result?.wanderer) {
+      setWandererEvent(result.wanderer);
+    }
+    return result;
+  }, [advanceTime]);
+
+  // Wrapper for jumpToDate that handles wanderer interruptions
+  const handleJumpToDate = useCallback((year, month, day, hour) => {
+    const result = jumpToDate(year, month, day, hour);
+    if (result?.interrupted && result?.wanderer) {
+      setWandererEvent(result.wanderer);
+    }
+    return result;
+  }, [jumpToDate]);
+
+  // Handler for dismissing the wanderer modal
+  const handleWandererDismiss = useCallback(() => {
+    setWandererEvent(null);
+    // Re-scan for gates from the new position
+    if (activeRegion && activeWorld?.currentDate) {
+      scanWandererGates(activeRegion, activeWorld.currentDate);
+    }
+  }, [activeRegion, activeWorld?.currentDate, scanWandererGates]);
 
   // Show world setup if no world exists
   useEffect(() => {
@@ -76,8 +107,8 @@ const AppContent = () => {
       {/* iOS Lock Screen-style header with time controls */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}
-        onAdvanceTime={advanceTime}
-        onJumpToDate={jumpToDate}
+        onAdvanceTime={handleAdvanceTime}
+        onJumpToDate={handleJumpToDate}
         celestialData={weatherData?.celestial}
       />
 
@@ -169,6 +200,12 @@ const AppContent = () => {
       <RegionCreator
         show={showRegionCreator}
         onHide={() => setShowRegionCreator(false)}
+      />
+
+      {/* Wanderer Event Modal (dramatic full-screen for local falls) */}
+      <WandererModal
+        wanderer={wandererEvent}
+        onDismiss={handleWandererDismiss}
       />
     </>
   );

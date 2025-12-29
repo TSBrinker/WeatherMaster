@@ -39,12 +39,32 @@ const CelestialCard = ({ weather }) => {
     return <WiMoonNew />;
   };
 
+  // Check for wanderer streak event
+  const wanderer = weather?.wanderer;
+  const hasStreak = wanderer?.occurred && wanderer?.eventType === 'streak';
+
   return (
     <Card className="celestial-card mb-3">
       <Card.Body>
         <div className="section-label">
           <BsStars /> CELESTIAL INFO
+          {hasStreak && (
+            <span className="wanderer-streak-indicator" title={wanderer.displaySummary}>
+              ✨
+            </span>
+          )}
         </div>
+
+        {/* Wanderer streak notification */}
+        {hasStreak && (
+          <div className="wanderer-streak-alert">
+            <span className="streak-icon">✨</span>
+            <span className="streak-text">{wanderer.displaySummary}</span>
+            {!wanderer.wasObservable && (
+              <span className="streak-visibility">({wanderer.visibilityBlocker})</span>
+            )}
+          </div>
+        )}
 
         <Row className="g-3">
           {/* Sunrise */}

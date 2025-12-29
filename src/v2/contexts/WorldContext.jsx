@@ -14,7 +14,8 @@ import {
   migrateFromLocalStorage,
   migrateWorldMapsToContinent,
 } from '../services/storage/indexedDB';
-import { advanceDate as advanceDateUtil } from '../utils/dateUtils';
+import { advanceDate as advanceDateUtil, compareDates } from '../utils/dateUtils';
+import WandererService from '../services/celestial/WandererService';
 
 const WorldContext = createContext();
 
@@ -34,6 +35,9 @@ export const WorldProvider = ({ children }) => {
   const [activeContinentId, setActiveContinentId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const isInitialized = useRef(false);
+
+  // Wanderer gate tracking (for time interruption)
+  const [wandererGates, setWandererGates] = useState({ nextGate: null, prevGate: null });
 
   // Derived state
   const activeWorld = worlds.find(w => w.id === activeWorldId) || null;
@@ -260,6 +264,50 @@ export const WorldProvider = ({ children }) => {
     ));
   }, []);
 
+  // ===== WANDERER GATE MANAGEMENT =====
+
+  /**
+   * Scan for wanderer gates in both directions from the current date
+   * This pre-caches the next/previous local fall events for O(1) interruption checks
+   */
+  const scanWandererGates = useCallback((region, fromDate) => {
+    if (!region || !fromDate) {
+      setWandererGates({ nextGate: null, prevGate: null });
+      return;
+    }
+
+    const nextGate = WandererService.findNextLocalFall(region, fromDate);
+    const prevGate = WandererService.findPrevLocalFall(region, fromDate);
+    setWandererGates({ nextGate, prevGate });
+  }, []);
+
+  // Scan for gates when region or date changes
+  useEffect(() => {
+    if (activeRegion && activeWorld?.currentDate) {
+      scanWandererGates(activeRegion, activeWorld.currentDate);
+    }
+  }, [activeRegion, activeWorld?.currentDate, scanWandererGates]);
+
+  // Debug helper: expose wanderer info to console
+  useEffect(() => {
+    if (activeRegion && activeWorld?.currentDate && wandererGates.nextGate) {
+      const nextGate = wandererGates.nextGate;
+      const nextEvent = WandererService.getWandererEvent(activeRegion, nextGate);
+      const formatDate = (d) => `${d.month}/${d.day}/${d.year} ${d.hour}:00`;
+
+      console.log(
+        `%c☄️ Next Wanderer: ${formatDate(nextGate)}`,
+        'color: #f4a460; font-weight: bold; font-size: 12px;'
+      );
+      if (nextEvent?.crash) {
+        const { size, distance, direction, impactEffects } = nextEvent.crash;
+        console.log(
+          `   Size: ${size}, Distance: ${distance < 1 ? Math.round(distance * 5280) + 'ft' : distance + 'mi'} ${direction}, Severity: ${impactEffects?.severity}`
+        );
+      }
+    }
+  }, [activeRegion, activeWorld?.currentDate, wandererGates.nextGate]);
+
   // ===== TIME MANAGEMENT =====
 
   const updateWorldTime = useCallback((newDate) => {
@@ -273,12 +321,24 @@ export const WorldProvider = ({ children }) => {
   }, [activeWorldId]);
 
   const advanceTime = useCallback((hours) => {
-    if (!activeWorld) return;
+    if (!activeWorld) return { newDate: null, interrupted: false, wanderer: null };
 
-    const newDate = advanceDateUtil(activeWorld.currentDate, hours);
-    updateWorldTime(newDate);
-    return newDate;
-  }, [activeWorld, updateWorldTime]);
+    const targetDate = advanceDateUtil(activeWorld.currentDate, hours);
+    const isForward = hours > 0;
+    const gate = isForward ? wandererGates.nextGate : wandererGates.prevGate;
+
+    // Check if we would cross a wanderer gate
+    if (gate && WandererService.crossesGate(activeWorld.currentDate, targetDate, gate)) {
+      // Stop at the gate instead of the target
+      const gateDate = { ...gate };
+      updateWorldTime(gateDate);
+      const wanderer = WandererService.getWandererEvent(activeRegion, gateDate);
+      return { newDate: gateDate, interrupted: true, wanderer };
+    }
+
+    updateWorldTime(targetDate);
+    return { newDate: targetDate, interrupted: false, wanderer: null };
+  }, [activeWorld, activeRegion, wandererGates, updateWorldTime]);
 
   const setSpecificTime = useCallback((year, month, day, hour) => {
     if (!activeWorldId) return;
@@ -289,17 +349,32 @@ export const WorldProvider = ({ children }) => {
   }, [activeWorldId, updateWorldTime]);
 
   const jumpToDate = useCallback((year, month, day, hour = 12) => {
-    if (!activeWorld) return;
+    if (!activeWorld) return { newDate: null, interrupted: false, wanderer: null };
 
-    const newDate = {
+    const targetDate = {
       year: year ?? activeWorld.currentDate.year,
       month,
       day,
       hour
     };
-    updateWorldTime(newDate);
-    return newDate;
-  }, [activeWorld, updateWorldTime]);
+
+    // Determine direction and check appropriate gate
+    const comparison = compareDates(activeWorld.currentDate, targetDate);
+    const isForward = comparison < 0;
+    const gate = isForward ? wandererGates.nextGate : wandererGates.prevGate;
+
+    // Check if we would cross a wanderer gate
+    if (gate && WandererService.crossesGate(activeWorld.currentDate, targetDate, gate)) {
+      // Stop at the gate instead of the target
+      const gateDate = { ...gate };
+      updateWorldTime(gateDate);
+      const wanderer = WandererService.getWandererEvent(activeRegion, gateDate);
+      return { newDate: gateDate, interrupted: true, wanderer };
+    }
+
+    updateWorldTime(targetDate);
+    return { newDate: targetDate, interrupted: false, wanderer: null };
+  }, [activeWorld, activeRegion, wandererGates, updateWorldTime]);
 
   // ===== REGION MANAGEMENT =====
 
@@ -466,6 +541,8 @@ export const WorldProvider = ({ children }) => {
     advanceTime,
     setSpecificTime,
     jumpToDate,
+    scanWandererGates,
+    wandererGates,
 
     // Region methods
     createRegion,

@@ -59,6 +59,46 @@
   font-weight: 400;
 }
 
+/* Wanderer streak indicator in section label */
+.wanderer-streak-indicator {
+  margin-left: 0.5rem;
+  font-size: 1rem;
+  animation: twinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Wanderer streak alert banner */
+.wanderer-streak-alert {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.2));
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wanderer-streak-alert .streak-icon {
+  font-size: 1.25rem;
+}
+
+.wanderer-streak-alert .streak-text {
+  color: #e0d0f0;
+  font-size: 0.9rem;
+}
+
+.wanderer-streak-alert .streak-visibility {
+  color: #a090b0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 /* Responsive adjustments */
 @media (max-width: 576px) {
   .celestial-icon {
@@ -75,5 +115,10 @@
 
   .celestial-label {
     font-size: 0.65rem;
+  }
+
+  .wanderer-streak-alert {
+    flex-direction: column;
+    text-align: center;
   }
 }

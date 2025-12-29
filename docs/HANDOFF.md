@@ -1,88 +1,114 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-28
-**Previous Agent**: Vale (Sprint 40)
-**Current Sprint Count**: 40 (next agent creates `SPRINT_41_*.md`)
-**Status**: MVP #4 and #5 Complete - Core MVP Sprint Done!
+**Previous Agent**: Cove (Sprint 42)
+**Current Sprint Count**: 42 (next agent creates `SPRINT_43_*.md`)
+**Status**: Wanderer Calibration & Impact Effects Complete
 
 ---
 
 ## What Was Done This Sprint
 
-### MVP #4: Time Control Improvements - COMPLETE
+### Wanderer Rate Calibration
 
-Added day-jump functionality and improved mobile usability:
+Adjusted event frequencies to be more campaign-friendly:
 
-- **Day jump chevrons**: Subtle `‹` / `›` buttons flank the date line for ±1 day
-- **44px touch targets**: All buttons meet Apple's accessibility recommendations
-- **Clickable sunrise/sunset**: Tap "Sunset 7:05 PM" to jump to that hour
-- **Fixed tomorrow's sunrise**: Clicking sunrise after sunset correctly advances to next day
+| Setting | Before | After |
+|---------|--------|-------|
+| Sky streaks | 2%/day (~7/yr) | 4%/day (~14/yr) |
+| Local falls | 0.04%/day (~0.15/yr) | 0.56%/day (~2/yr) |
+| Distance range | 1-50 miles | 100m - 100 miles |
 
-Layout:
-```
-     ‹  Mar 15 • Sunset 6:42 PM  ›      <- day jumps + clickable event
-       [-4h] [-1h]  11:04  [+1h] [+4h]   <- hour controls flank time
-```
+### Impact Effects System - NEW
 
-### MVP #5: Layout Stability Fixes - COMPLETE
+Implemented compositional narrative system for impact consequences:
 
-- **Hamburger icon centering**: Fixed vertical alignment of ☰ character
-- **Feels Like shift**: Always renders (visibility: hidden when not shown) to reserve space
-- **Button width consistency**: Fixed width instead of min-width prevents micro-shifts
+**Distance Bands:**
+- Close: <1 mile (dramatic, potentially dangerous)
+- Near: 1-10 miles (noticeable, exciting)
+- Far: 10+ miles (visible but distant)
+
+**Components:** Each impact generates combined text from:
+- Visual description
+- Sound description
+- Physical effects
+- Suggested mechanics (optional, for significant impacts)
+
+**Severity Levels:**
+- `catastrophic` - Massive impacts, or Large+Close
+- `major` - Large impacts, or Medium+Close
+- `notable` - Medium impacts, or Small+Close
+- `minor` - Small/far impacts
+
+### UI Updates
+
+**WandererModal:**
+- Now shows impact narrative in styled blockquote
+- Suggested mechanics displayed when applicable
+- Severity-based styling (colors, glow, icon size)
+- Distance displays in feet when <1 mile
+
+**Test Harness:**
+- New "Impact Effects Preview" card
+- Size selector + distance slider
+- Quick preset buttons (Massive @ 800ft, etc.)
+- Live preview of narrative and mechanics
+
+**Debug Console:**
+- Next Wanderer gate logged to console on region/date change
+- Shows date, size, distance, direction, severity
 
 ---
 
-## MVP Sprint Plan Status
+## Key Files
 
-| # | Item | Status | Notes |
-|---|------|--------|-------|
-| 1 | Cloud % midnight transitions | `[x]` | Fixed by Coral |
-| 2 | CRUD UI for editing | `[x]` | Fixed by Summit |
-| 3 | Special biomes in location modal | `[x]` | Fixed by Summit |
-| 4 | Time control improvements | `[x]` | Fixed by Vale |
-| 5 | Layout stability fixes | `[x]` | Fixed by Vale |
-| 6 | Hamburger menu centering | `[x]` | Included in #5 |
+### Modified This Sprint
+- `src/v2/models/constants.js` - WANDERER_CONFIG rates, WANDERER_IMPACT_EFFECTS
+- `src/v2/services/celestial/WandererService.js` - `generateImpactEffects()`, `getDistanceBand()`
+- `src/v2/components/weather/WandererModal.jsx` - Impact narrative display
+- `src/v2/components/weather/WandererModal.css` - Severity-based styling
+- `src/v2/components/testing/WeatherTestHarness.jsx` - Impact preview UI
+- `src/v2/contexts/WorldContext.jsx` - Debug console logging
 
-**All MVP items complete!**
+### Wanderer System (unchanged structure)
+- `src/v2/services/celestial/WandererService.js` - Core service
+- `src/v2/contexts/WorldContext.jsx` - Gate-based time interruption
+
+---
+
+## Testing Notes
+
+**To test Wanderers:**
+1. Run `npm start`
+2. Open browser console (F12) - see next Wanderer date logged
+3. Navigate time or use date picker to reach the gate
+4. Modal will show with impact narrative
+
+**Test Harness (`?test=true`):**
+- "Wanderer Analysis" - verify ~14 streaks/yr, ~2 local falls/yr
+- "Impact Effects Preview" - click through all size/distance combinations
+
+**Expected frequencies (10-year sim):**
+- ~140 streaks total
+- ~20 local falls total
+- Size distribution: 70% small, 20% medium, 8% large, 2% massive
 
 ---
 
 ## What's Next
 
-### Ideas From This Sprint (Tyler mentioned)
-- **Zoomable container** for continent map - pinch/zoom when placing pins without zooming the whole app
-- **Dashboard layout revisit** - reconsider what's shown and overall structure
-
 ### From NOTES_FROM_USER.md (pending items)
-- Polar region/twilight lands (first 500 miles as magical zone)
+- Polar twilight lands (first 500 miles as magical zone)
 - New biomes: Humid Subtropical, Steppe
 - Menu interaction improvements
 - Preferences menu structure
 - Multi-world support (stretch goal)
+- Dedicated 'create location' modal
 
-### From ROADMAP.md
-Check ROADMAP.md for the full feature roadmap and priorities.
-
----
-
-## Key Files Reference
-
-### Time Controls
-- `src/v2/components/header/WeatherHeader.jsx` - Header with time display and controls
-- `src/v2/components/header/WeatherHeader.css` - Styling for iOS lock screen aesthetic
-
-### Primary Display
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Main weather hero component
-- `src/v2/components/weather/PrimaryDisplay.css` - Layout and visual effects
-
-### Menu
-- `src/v2/components/menu/FloatingMenuButton.jsx` - Floating hamburger button
-- `src/v2/components/menu/HamburgerMenu.jsx` - Full-page menu overlay
-
----
-
-## Test Harness
-Access via `localhost:3000?test=true`
+### From Previous Discussion
+- Zoomable container for continent map
+- Dashboard layout revisit
+- Campaign management features (calendar, notes, festivals) - for Firebase era
 
 ---
 

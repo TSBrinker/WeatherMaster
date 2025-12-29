@@ -7,6 +7,7 @@
 import { WeatherGenerator } from './WeatherGenerator';
 import SunriseSunsetService from '../celestial/SunriseSunsetService';
 import MoonService from '../celestial/MoonService';
+import WandererService from '../celestial/WandererService';
 import { EnvironmentalConditionsService } from './EnvironmentalConditionsService';
 import { SnowAccumulationService } from './SnowAccumulationService';
 import { advanceDate, getMonthName } from '../../utils/dateUtils';
@@ -20,6 +21,7 @@ export class WeatherService {
     this.weatherGenerator = new WeatherGenerator();
     this.sunService = SunriseSunsetService;
     this.moonService = MoonService;
+    this.wandererService = WandererService;
     this.environmentalService = new EnvironmentalConditionsService();
     this.snowService = new SnowAccumulationService();
   }
@@ -48,11 +50,15 @@ export class WeatherService {
     // Get snow/ice accumulation and ground conditions
     const snowAccumulation = this.snowService.getAccumulation(region, date);
 
+    // Get wanderer event (pass weather for visibility check)
+    const wanderer = this.wandererService.getWandererEvent(region, date, weather);
+
     return {
       ...weather,
       celestial,
       environmental,
       snowAccumulation,
+      wanderer,
       timestamp: this.getTimestamp(date)
     };
   }
@@ -256,6 +262,7 @@ export class WeatherService {
     this.weatherGenerator.clearCache();
     this.environmentalService.clearCache();
     this.snowService.clearCache();
+    this.wandererService.clearCache();
   }
 }
 
