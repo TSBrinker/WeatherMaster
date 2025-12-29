@@ -137,46 +137,6 @@ const AppContent = () => {
     return (
       <div className={`loading-screen ${loadingFadeOut ? 'fade-out' : ''}`}>
         <div className="loading-content">
-          <div className="loading-d20">
-            {/* D20 wireframe - isometric view with triangular faces */}
-            <svg viewBox="0 0 100 100" className="d20-wireframe">
-              {/* Outer hexagon */}
-              <polygon
-                points="50,2 93,26 93,74 50,98 7,74 7,26"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-              {/* Center triangle (front face) - pointing up */}
-              <polygon
-                points="50,35 73,57 27,57"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-              {/* Lines from top hexagon vertex to center triangle */}
-              <line x1="50" y1="2" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="50" y1="2" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="50" y1="2" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              {/* Lines from upper-right hexagon vertex */}
-              <line x1="93" y1="26" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="93" y1="26" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              {/* Lines from upper-left hexagon vertex */}
-              <line x1="7" y1="26" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="7" y1="26" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              {/* Lines from lower-right hexagon vertex */}
-              <line x1="93" y1="74" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="93" y1="74" x2="50" y2="98" stroke="currentColor" strokeWidth="1.5" />
-              {/* Lines from lower-left hexagon vertex */}
-              <line x1="7" y1="74" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="7" y1="74" x2="50" y2="98" stroke="currentColor" strokeWidth="1.5" />
-              {/* Lines from bottom vertex to center triangle corners */}
-              <line x1="50" y1="98" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="50" y1="98" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </div>
           <h1 className="loading-title">WeatherMaster</h1>
           <div className="loading-subtitle">{loadingPhrase.current}</div>
         </div>

@@ -1,6 +1,6 @@
 # WeatherMaster Roadmap
 
-**Last Updated**: 2025-12-27 (Sprint 38)
+**Last Updated**: 2025-12-29 (Sprint 44)
 
 This is the single source of truth for feature planning and priorities.
 
@@ -24,11 +24,11 @@ This is the single source of truth for feature planning and priorities.
 | # | Item | Status | Notes |
 |---|------|--------|-------|
 | 1 | **Investigate cloud % midnight transitions** | `[x]` | FIXED: Added smooth hourly cloud transitions |
-| 2 | **CRUD UI for editing** | `[ ]` | Edit locations, continents, worlds (rename, reassign, fix typos) |
-| 3 | **Special biomes in location modal** | `[ ]` | 5 biomes defined but not appearing in UI |
-| 4 | **Time control improvements** | `[ ]` | Day jump buttons (<<< / >>>), larger hitboxes |
-| 5 | **Layout stability fixes** | `[ ]` | Time display width, Feels Like section shifts |
-| 6 | **Hamburger menu centering** | `[ ]` | Icon slightly off-center vertically |
+| 2 | **CRUD UI for editing** | `[x]` | DONE: RegionEditor.jsx allows rename, continent reassign, latitude/template changes |
+| 3 | **Special biomes in location modal** | `[x]` | DONE: templateHelpers.js includes special templates via compatibleBands |
+| 4 | **Time control improvements** | `[x]` | DONE (Sprint 40): Day jump chevrons, clickable sunrise/sunset, 44px touch targets |
+| 5 | **Layout stability fixes** | `[x]` | DONE (Sprint 40): Fixed Feels Like shifts, hamburger centering, button widths |
+| 6 | **Hamburger menu centering** | `[x]` | DONE (Sprint 40): Added margin-top offset to icon |
 
 ### Post-MVP / Future
 - New biomes (Humid Subtropical, Steppe)
@@ -90,11 +90,14 @@ This is the single source of truth for feature planning and priorities.
 - [ ] Add gameplay impact indicators to main display
 - [ ] Visibility/movement/combat modifiers prominently displayed
 
-**Wanderers (Falling Stars)** - *Marai Setting Specific*
-- [ ] WandererService for rare celestial events
-- [ ] UI integration in CelestialCard
-- [ ] DM Forecast shows upcoming Wanderer events
-- [ ] Treasure/plot hook generation
+**Wanderers (Falling Stars)** - *Marai Setting Specific* - COMPLETE ✅
+- [x] WandererService for rare celestial events *(Sprint 41)*
+- [x] UI integration in CelestialCard (streak indicator) *(Sprint 41)*
+- [x] Gate-based time interruption system *(Sprint 41)*
+- [x] Dramatic full-screen modal for local falls *(Sprint 41)*
+- [x] Treasure/plot hook generation *(Sprint 41)*
+- [x] Impact effects system (distance-based severity) *(Sprint 42)*
+- [x] Test harness integration *(Sprint 41-42)*
 
 ---
 
@@ -119,9 +122,9 @@ This is the single source of truth for feature planning and priorities.
 - [ ] Weather seed re-roll feature
 
 **Visual Polish**
-- [ ] Fix Feels Like section height shifts
+- [x] Fix Feels Like section height shifts *(Sprint 40)*
 - [ ] Background gradient fade transitions
-- [ ] Loading states and transitions
+- [x] Loading screen with fade transition *(Sprint 43)*
 - [ ] Mobile optimization
 
 **Accessibility & Quality**
@@ -184,6 +187,10 @@ This is the single source of truth for feature planning and priorities.
 | 17-18 | Oak, Pine | Snow visualization polish |
 | 19-20 | Opus, Ember | Precipitation analysis, diagnostic work |
 | 21 | Sequoia | Documentation cleanup |
+| 40 | Vale | MVP #4-6: Time controls, layout stability, menu centering |
+| 41 | Ridge | Wanderers feature (falling stars) |
+| 42 | Cove | Wanderer calibration and impact effects |
+| 43 | Stone | Loading screen implementation |
 
 See `sprint-logs/` for detailed sprint documentation.
 

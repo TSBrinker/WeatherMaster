@@ -24,28 +24,6 @@
   text-align: center;
 }
 
-.loading-d20 {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-}
-
-.d20-wireframe {
-  width: 100%;
-  height: 100%;
-  color: rgba(255, 255, 255, 0.5);
-  animation: d20-spin 8s linear infinite;
-}
-
-@keyframes d20-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .loading-title {
   font-size: 2.5rem;
   font-weight: 300;
