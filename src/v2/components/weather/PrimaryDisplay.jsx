@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
-import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy } from 'react-icons/wi';
+import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiStrongWind } from 'react-icons/wi';
 import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
@@ -262,10 +262,22 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
           {region.name}
         </div>
 
-        {/* Temperature - MASSIVE */}
+        {/* Temperature */}
         <div className="temperature-hero">
           {Math.round(temperature)}°
         </div>
+
+        {/* Wind - centered below temperature */}
+        {weather.windSpeed > 0 && (
+          <div className="wind-hero">
+            <WiStrongWind className="wind-icon" />
+            <span className="wind-speed">{weather.windSpeed}</span>
+            <span className="wind-unit">mph</span>
+            {weather.windDirection && (
+              <span className="wind-direction">{weather.windDirection}</span>
+            )}
+          </div>
+        )}
 
         {/* Condition Line: Icon + Condition + High/Low */}
         <div className="condition-line">

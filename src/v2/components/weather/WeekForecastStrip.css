@@ -1,0 +1,165 @@
+/* WeekForecastStrip - Always-visible 7-day horizontal forecast */
+
+.week-forecast-strip {
+  background: rgba(36, 43, 61, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.forecast-scroll-container {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  /* Hide scrollbar but allow scrolling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.forecast-scroll-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.forecast-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.forecast-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Individual day card */
+.day-card {
+  flex: 0 0 auto;
+  min-width: 70px;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.day-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.day-card.expanded {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.day-card.today {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.day-card.today .day-label {
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+/* Day label (Today, Tmrw, Mon, etc.) */
+.day-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Weather icon */
+.day-icon {
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+/* Temperature display */
+.day-temps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.875rem;
+  font-weight: 300;
+}
+
+.day-temps .temp-high {
+  color: var(--text-primary);
+}
+
+.day-temps .temp-low {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+/* Precipitation indicator */
+.day-precip {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  font-size: 1rem;
+  color: #42a5f5;
+  line-height: 1;
+}
+
+/* Expanded details panel */
+.expanded-details {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.expanded-date {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.expanded-condition {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.expanded-precip {
+  font-size: 0.8rem;
+  color: #42a5f5;
+  margin-bottom: 0.25rem;
+}
+
+.expanded-pattern {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .day-card {
+    min-width: 60px;
+    padding: 0.5rem 0.375rem;
+  }
+
+  .day-icon {
+    font-size: 1.5rem;
+  }
+
+  .day-temps {
+    font-size: 0.8rem;
+  }
+
+  .day-temps .temp-low {
+    font-size: 0.75rem;
+  }
+}

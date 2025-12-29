@@ -9,10 +9,9 @@ import WeatherHeader from './components/header/WeatherHeader';
 import FloatingMenuButton from './components/menu/FloatingMenuButton';
 import HamburgerMenu from './components/menu/HamburgerMenu';
 import PrimaryDisplay from './components/weather/PrimaryDisplay';
-import ConditionsCard from './components/weather/ConditionsCard';
-import CelestialCard from './components/weather/CelestialCard';
+import WeekForecastStrip from './components/weather/WeekForecastStrip';
 import DruidcraftForecast from './components/weather/DruidcraftForecast';
-import DMForecastPanel from './components/weather/DMForecastPanel';
+import DetailsCard from './components/weather/DetailsCard';
 import WeatherDebug from './components/weather/WeatherDebug';
 import WeatherTestHarness from './components/testing/WeatherTestHarness';
 import WandererModal from './components/weather/WandererModal';
@@ -184,7 +183,7 @@ const AppContent = () => {
             {/* Weather data */}
             {weatherData && (
               <>
-                {/* Primary Display - HUGE location and temp */}
+                {/* Primary Display - HUGE location and temp + wind */}
                 <PrimaryDisplay
                   region={activeRegion}
                   weather={weatherData}
@@ -193,11 +192,11 @@ const AppContent = () => {
                   weatherService={weatherService}
                 />
 
-                {/* Conditions Card - Wind, Humidity, Precip */}
-                <ConditionsCard weather={weatherData} />
-
-                {/* Celestial Card - Sun/Moon info */}
-                <CelestialCard weather={weatherData} />
+                {/* 7-Day Forecast Strip - Always visible */}
+                <WeekForecastStrip
+                  region={activeRegion}
+                  currentDate={activeWorld.currentDate}
+                />
 
                 {/* Active Weather Effects */}
                 {weatherData.effects && weatherData.effects.length > 0 && (
@@ -211,18 +210,15 @@ const AppContent = () => {
                   </div>
                 )}
 
-                {/* Druidcraft Forecast */}
+                {/* Druidcraft Forecast - 24h outlook */}
                 <DruidcraftForecast
                   region={activeRegion}
                   currentDate={activeWorld.currentDate}
                   currentWeather={weatherData}
                 />
 
-                {/* DM Forecast Panel */}
-                <DMForecastPanel
-                  region={activeRegion}
-                  currentDate={activeWorld.currentDate}
-                />
+                {/* Details Card - Combined conditions + celestial (collapsed) */}
+                <DetailsCard weather={weatherData} />
 
                 {/* Debug panel */}
                 <WeatherDebug weatherData={weatherData} />

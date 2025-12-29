@@ -63,9 +63,44 @@
   line-height: 1;
   letter-spacing: -0.03em; /* Tight spacing */
   text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  margin-bottom: 0.25rem; /* Tighter to condition line */
   position: relative;
-  z-index: 10; /* Above snow overlay */
+  z-index: 10;
+}
+
+/* Wind display - centered below temperature */
+.wind-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 1.125rem;
+  font-weight: 300;
+  opacity: 0.85;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+.wind-hero .wind-icon {
+  font-size: 1.5rem;
+}
+
+.wind-hero .wind-speed {
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.wind-hero .wind-unit {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.wind-hero .wind-direction {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  padding-left: 0.35rem;
+  margin-left: 0.1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* Condition Line - Icon + Condition + High/Low inline */
@@ -139,6 +174,10 @@
   .condition-icon {
     font-size: 1.75rem;
   }
+
+  .wind-hero .wind-speed {
+    font-size: 1.25rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -162,6 +201,18 @@
   .condition-icon {
     font-size: 1.5rem;
   }
+
+  .wind-hero {
+    font-size: 1rem;
+  }
+
+  .wind-hero .wind-icon {
+    font-size: 1.35rem;
+  }
+
+  .wind-hero .wind-speed {
+    font-size: 1.1rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -177,6 +228,18 @@
 
   .temperature-hero {
     font-size: 5rem;
+  }
+
+  .wind-hero {
+    font-size: 0.9rem;
+  }
+
+  .wind-hero .wind-icon {
+    font-size: 1.2rem;
+  }
+
+  .wind-hero .wind-speed {
+    font-size: 1rem;
   }
 
   .condition-line {

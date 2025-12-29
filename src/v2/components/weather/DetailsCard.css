@@ -1,0 +1,188 @@
+/**
+ * DetailsCard - Combined Conditions and Celestial Info
+ * Collapsible card with iOS Weather-inspired styling
+ */
+
+.details-card {
+  background: rgba(36, 43, 61, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* Toggle Button */
+.details-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.details-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.details-toggle-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.details-toggle-icon {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.wanderer-indicator {
+  font-size: 0.9rem;
+  animation: twinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Content Area */
+.details-content-inner {
+  padding: 0 1.25rem 1.25rem;
+}
+
+/* Section Styling */
+.details-section {
+  margin-bottom: 1rem;
+}
+
+.details-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-sublabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+/* Detail Items */
+.detail-item {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.detail-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.detail-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
+}
+
+.detail-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text-primary);
+}
+
+.detail-trend {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+/* Wanderer streak alert banner */
+.wanderer-streak-alert {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.2));
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wanderer-streak-alert .streak-icon {
+  font-size: 1.25rem;
+}
+
+.wanderer-streak-alert .streak-text {
+  color: #e0d0f0;
+  font-size: 0.9rem;
+}
+
+.wanderer-streak-alert .streak-visibility {
+  color: #a090b0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .details-toggle {
+    padding: 0.875rem 1rem;
+  }
+
+  .details-content-inner {
+    padding: 0 1rem 1rem;
+  }
+
+  .detail-item {
+    min-height: 80px;
+    padding: 0.625rem 0.375rem;
+  }
+
+  .detail-icon {
+    font-size: 1.25rem;
+  }
+
+  .detail-value {
+    font-size: 0.9rem;
+  }
+
+  .detail-label {
+    font-size: 0.6rem;
+  }
+
+  .wanderer-streak-alert {
+    flex-direction: column;
+    text-align: center;
+  }
+}

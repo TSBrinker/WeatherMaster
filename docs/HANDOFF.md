@@ -1,42 +1,82 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-29
-**Previous Agent**: Stone (Sprint 43)
-**Current Sprint Count**: 43 (next agent creates `SPRINT_44_*.md`)
-**Status**: Loading Screen Implemented
+**Previous Agent**: Brook (Sprint 44)
+**Current Sprint Count**: 44 (next agent creates `SPRINT_45_*.md`)
+**Status**: Main Page Layout Redesign Complete
 
 ---
 
 ## What Was Done This Sprint
 
-### NOTES_FROM_USER Workflow Fix
-- Clarified instructions in WORKING_WITH_TYLER.md (lines 13-22)
-- Now explicitly states: file items to ROADMAP, then DELETE from NOTES
-- Cleared all stale items from NOTES_FROM_USER.md (they were already in ROADMAP)
+### Loading Screen Simplification
+- Removed d20 wireframe SVG (wasn't visually working)
+- Kept simple text-only loading screen with random phrases
 
-### Loading Screen Implementation
-- Fixed app flicker on load (IndexedDB async load was showing "Create a world" briefly)
-- Added loading screen that shows for minimum 1.5s OR until data loads, whichever is longer
-- Smooth 0.4s fade-out transition
-- D20 wireframe SVG with slow rotation (8s)
-- 10 randomized loading phrases ("Conjuring the skies...", "Brewing a storm...", etc.)
+### Roadmap Audit
+- Verified and updated all MVP items to [x] complete
+- Clarified that CRUD UI and special biomes were already done
+
+### Main Page Layout Redesign
+Complete redesign for better at-a-glance usefulness during D&D sessions:
+
+1. **WeekForecastStrip** (NEW)
+   - Always-visible horizontal 7-day forecast below the hero
+   - Shows date (fantasy calendar format), weather icon, high/low temps, precip indicator
+   - Uses "Today", "Tmrw", then "Dec 31", "Jan 1" format (no weekday names)
+   - Tap to expand for full details
+
+2. **Wind in Hero Area**
+   - Added wind speed + direction to PrimaryDisplay
+   - Centered below temperature (not side-by-side for better visual balance)
+   - Responsive sizing on mobile
+
+3. **Moon Indicator in Header**
+   - Moon phase icon in the date line
+   - Golden when visible (above horizon), dimmed when below
+   - Tooltip shows phase name + visibility status
+
+4. **DetailsCard** (NEW)
+   - Combined ConditionsCard + CelestialCard into single collapsible section
+   - Collapsed by default with "Show Details" toggle
+   - Conditions: humidity, pressure, clouds, visibility
+   - Celestial: sunrise, sunset, daylight, moonrise, moonset
+
+5. **DMForecastPanel Removed**
+   - Was redundant with WeekForecastStrip
 
 ---
 
 ## Key Files
 
-### Modified This Sprint
-- `src/v2/App.jsx` - Loading screen logic with dual-condition timing
-- `src/v2/styles/app.css` - Loading screen styles (lines 6-62)
-- `docs/WORKING_WITH_TYLER.md` - Clarified NOTES workflow instructions
-- `docs/NOTES_FROM_USER.md` - Cleared processed items
+### Created This Sprint
+- `src/v2/components/weather/WeekForecastStrip.jsx` - 7-day horizontal strip
+- `src/v2/components/weather/WeekForecastStrip.css`
+- `src/v2/components/weather/DetailsCard.jsx` - Combined conditions/celestial
+- `src/v2/components/weather/DetailsCard.css`
 
-### Loading Screen Notes
-The d20 wireframe geometry is close but not perfect. Reference image is an isometric d20 with hexagon silhouette and triangular faces. Current SVG approximates this but could be refined by a future agent if desired.
+### Modified This Sprint
+- `src/v2/App.jsx` - Removed DMForecastPanel, reordered components
+- `src/v2/styles/app.css` - Removed d20 styles
+- `src/v2/components/weather/PrimaryDisplay.jsx` - Wind display (centered below temp)
+- `src/v2/components/weather/PrimaryDisplay.css` - Wind styling
+- `src/v2/components/header/WeatherHeader.jsx` - Moon indicator
+- `src/v2/components/header/WeatherHeader.css` - Moon indicator styling
+- `docs/ROADMAP.md` - All MVP items marked complete
+
+### Deprecated (Not Removed)
+- `src/v2/components/weather/ConditionsCard.jsx` - Replaced by DetailsCard
+- `src/v2/components/weather/CelestialCard.jsx` - Replaced by DetailsCard
+- `src/v2/components/weather/DMForecastPanel.jsx` - Replaced by WeekForecastStrip
 
 ---
 
 ## What's Next
+
+### Testing Needed
+- Verify moon visibility calculation across different scenarios
+- Test WeekForecastStrip horizontal scrolling on mobile
+- Check responsive behavior on actual devices
 
 ### From ROADMAP Post-MVP
 - Polar twilight lands (first 500 miles as magical zone)
@@ -45,22 +85,42 @@ The d20 wireframe geometry is close but not perfect. Reference image is an isome
 - Multiple worlds per user
 - Dedicated create location modal
 
-### From MVP Sprint Plan (ROADMAP)
-- CRUD UI for editing locations/continents/worlds
-- Special biomes in location modal
-- Time control improvements (day jump buttons)
-- Layout stability fixes
-- Hamburger menu centering
+### Optional Cleanup
+- Remove deprecated files (ConditionsCard, CelestialCard, DMForecastPanel)
+- Restyle DruidcraftForecast to horizontal format
+- Add smooth animations to DetailsCard collapse
 
 ---
 
-## Testing Notes
+## Architecture Notes
 
-**To see loading screen:**
-1. Run `npm start`
-2. Hard refresh (Ctrl+Shift+R) to clear cache
-3. Loading screen shows for ~1.5s with spinning d20 and random phrase
-4. Fades smoothly to main app
+### New Component Hierarchy
+```
+Header (sticky)
+  - Date/time controls
+  - Moon indicator (phase icon, lit/dim based on visibility)
+
+PrimaryDisplay (hero)
+  - Location name
+  - Temperature
+  - Wind speed/direction (centered below temp)
+  - Condition line + High/Low
+  - Feels like
+  - Badges (ground, alerts, biome)
+  - Snow overlay
+
+WeekForecastStrip (always visible)
+  - 7 horizontal day cards (scrollable)
+  - Icon + High/Low + precip indicator per day
+  - Tap to expand day details
+
+DruidcraftForecast (expandable)
+  - 24h outlook with "cast" interaction
+
+DetailsCard (collapsed by default)
+  - Conditions: humidity, pressure, clouds, visibility
+  - Celestial: sunrise, sunset, daylight, moonrise, moonset
+```
 
 ---
 

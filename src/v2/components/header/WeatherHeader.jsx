@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Container, Button, Modal, Form, Row, Col } from 'react-bootstrap';
+import { Container, Button, Modal, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { WiMoonNew, WiMoonWaxingCrescent3, WiMoonFirstQuarter, WiMoonWaxingGibbous3, WiMoonFull, WiMoonWaningGibbous3, WiMoonThirdQuarter, WiMoonWaningCrescent3 } from 'react-icons/wi';
 import './WeatherHeader.css';
 
 /**
@@ -74,6 +75,49 @@ const WeatherHeader = ({
 
   const nextEvent = getNextCelestialEvent();
 
+  // Get moon icon based on phase
+  const getMoonIcon = (phase) => {
+    if (!phase) return <WiMoonNew />;
+    const phaseLower = phase.toLowerCase();
+    if (phaseLower.includes('new')) return <WiMoonNew />;
+    if (phaseLower.includes('waxing crescent')) return <WiMoonWaxingCrescent3 />;
+    if (phaseLower.includes('first quarter')) return <WiMoonFirstQuarter />;
+    if (phaseLower.includes('waxing gibbous')) return <WiMoonWaxingGibbous3 />;
+    if (phaseLower.includes('full')) return <WiMoonFull />;
+    if (phaseLower.includes('waning gibbous')) return <WiMoonWaningGibbous3 />;
+    if (phaseLower.includes('last quarter') || phaseLower.includes('third quarter')) return <WiMoonThirdQuarter />;
+    if (phaseLower.includes('waning crescent')) return <WiMoonWaningCrescent3 />;
+    return <WiMoonNew />;
+  };
+
+  // Determine if moon is currently visible (above horizon)
+  const isMoonUp = () => {
+    if (!celestialData || !currentDate) return false;
+    const { moonriseTime, moonsetTime } = celestialData;
+
+    // Handle special cases
+    if (moonriseTime === 'Always' || moonsetTime === 'Never') return true;
+    if (moonriseTime === 'Never' || moonsetTime === 'Always') return false;
+
+    const moonriseHour = parseTime(moonriseTime);
+    const moonsetHour = parseTime(moonsetTime);
+    const currentHour = currentDate.hour;
+
+    if (moonriseHour === null || moonsetHour === null) return false;
+
+    // Moon can rise before or after it sets (depending on phase)
+    if (moonriseHour < moonsetHour) {
+      // Normal case: moonrise in morning, moonset in evening
+      return currentHour >= moonriseHour && currentHour < moonsetHour;
+    } else {
+      // Moon rises in evening, sets next morning
+      return currentHour >= moonriseHour || currentHour < moonsetHour;
+    }
+  };
+
+  const moonVisible = isMoonUp();
+  const moonPhase = celestialData?.moonPhase;
+
   // Jump to the next celestial event's hour
   const handleJumpToEvent = () => {
     if (nextEvent && onAdvanceTime) {
@@ -108,8 +152,23 @@ const WeatherHeader = ({
       <div className="weather-header">
         <Container fluid>
           <div className="header-row">
-            {/* Compact date line with day-jump chevrons */}
+            {/* Compact date line with day-jump chevrons and moon indicator */}
             <div className="date-line">
+              {/* Moon indicator */}
+              {moonPhase && (
+                <OverlayTrigger
+                  placement="bottom"
+                  overlay={
+                    <Tooltip id="moon-tooltip">
+                      {moonPhase}{moonVisible ? ' (visible)' : ' (below horizon)'}
+                    </Tooltip>
+                  }
+                >
+                  <span className={`moon-indicator ${moonVisible ? 'moon-up' : 'moon-down'}`}>
+                    {getMoonIcon(moonPhase)}
+                  </span>
+                </OverlayTrigger>
+              )}
               <button
                 className="day-chevron"
                 onClick={() => onAdvanceTime(-24)}

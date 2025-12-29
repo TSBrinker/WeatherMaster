@@ -91,6 +91,27 @@
   transform: scale(0.95);
 }
 
+/* Moon indicator */
+.moon-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: opacity 0.3s, color 0.3s;
+  cursor: help;
+  margin-right: 0.25rem;
+}
+
+.moon-indicator.moon-up {
+  color: #fbbf24; /* Warm golden yellow when visible */
+  opacity: 1;
+}
+
+.moon-indicator.moon-down {
+  color: rgba(255, 255, 255, 0.3); /* Dimmed when below horizon */
+  opacity: 0.6;
+}
+
 /* Large time display - iOS lock screen style */
 .time-display-hero {
   font-size: 3.5rem;
