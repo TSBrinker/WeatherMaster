@@ -13,11 +13,13 @@ Tyler uses `docs/NOTES_FROM_USER.md` as a running scratchpad for thoughts, bugs,
 **Every session, you MUST:**
 1. Read NOTES_FROM_USER.md at the start
 2. Acknowledge each item with Tyler
-3. Sort items appropriately:
-   - **Bugs**: Address or add to ROADMAP.md
-   - **Features**: Add to ROADMAP.md or discuss
-   - **Questions**: Ask Tyler for clarification
-4. Once processed, items can be cleared from the file
+3. **File items to ROADMAP.md** under the appropriate category:
+   - **Bugs**: Add to relevant section or MVP Sprint Plan
+   - **Features**: Add to appropriate Feature Category or Post-MVP/Future
+   - **Questions**: Ask Tyler for clarification first
+4. **Delete processed items from NOTES_FROM_USER.md** (keep the instruction header)
+
+**This is critical** - items left in NOTES will be re-read by every future agent! File them properly so they're tracked in ROADMAP and cleared from NOTES.
 
 **Never ignore this file** - it's Tyler's primary async communication channel!
 

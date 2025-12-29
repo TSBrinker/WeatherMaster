@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Container, Button } from 'react-bootstrap';
 import { BiError } from 'react-icons/bi';
 import { PreferencesProvider } from './contexts/PreferencesContext';
@@ -25,11 +25,25 @@ import './styles/app.css';
 const urlParams = new URLSearchParams(window.location.search);
 const isTestMode = urlParams.get('test') === 'true';
 
+// Loading screen phrases - randomly selected each load
+const LOADING_PHRASES = [
+  "Conjuring the skies...",
+  "Summoning the winds...",
+  "Reading the clouds...",
+  "Consulting the stars...",
+  "Brewing a storm...",
+  "Charting the heavens...",
+  "Gathering the mists...",
+  "Divining the forecast...",
+  "Whispering to the winds...",
+  "Stirring the atmosphere...",
+];
+
 /**
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -39,6 +53,38 @@ const AppContent = () => {
 
   // Wanderer event state (for dramatic modal)
   const [wandererEvent, setWandererEvent] = useState(null);
+
+  // Loading screen state: show for minimum 1.5s OR until data loads, then fade out
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
+  const minLoadTimeElapsed = useRef(false);
+  const dataLoaded = useRef(false);
+  const loadingPhrase = useRef(LOADING_PHRASES[Math.floor(Math.random() * LOADING_PHRASES.length)]);
+
+  // Track minimum load time (1.5 seconds)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      minLoadTimeElapsed.current = true;
+      // If data already loaded, trigger fade out
+      if (dataLoaded.current) {
+        setLoadingFadeOut(true);
+        setTimeout(() => setShowLoadingScreen(false), 400); // match CSS transition
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Track when data finishes loading
+  useEffect(() => {
+    if (!isLoading) {
+      dataLoaded.current = true;
+      // If minimum time already elapsed, trigger fade out
+      if (minLoadTimeElapsed.current) {
+        setLoadingFadeOut(true);
+        setTimeout(() => setShowLoadingScreen(false), 400); // match CSS transition
+      }
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (activeWorld && activeRegion) {
@@ -85,6 +131,58 @@ const AppContent = () => {
   const handleSetupComplete = () => {
     setShowWorldSetup(false);
   };
+
+  // Loading screen - show while data loads (minimum 1.5s to prevent flicker)
+  if (showLoadingScreen) {
+    return (
+      <div className={`loading-screen ${loadingFadeOut ? 'fade-out' : ''}`}>
+        <div className="loading-content">
+          <div className="loading-d20">
+            {/* D20 wireframe - isometric view with triangular faces */}
+            <svg viewBox="0 0 100 100" className="d20-wireframe">
+              {/* Outer hexagon */}
+              <polygon
+                points="50,2 93,26 93,74 50,98 7,74 7,26"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              {/* Center triangle (front face) - pointing up */}
+              <polygon
+                points="50,35 73,57 27,57"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              {/* Lines from top hexagon vertex to center triangle */}
+              <line x1="50" y1="2" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="50" y1="2" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="50" y1="2" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              {/* Lines from upper-right hexagon vertex */}
+              <line x1="93" y1="26" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="93" y1="26" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              {/* Lines from upper-left hexagon vertex */}
+              <line x1="7" y1="26" x2="50" y2="35" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="7" y1="26" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              {/* Lines from lower-right hexagon vertex */}
+              <line x1="93" y1="74" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="93" y1="74" x2="50" y2="98" stroke="currentColor" strokeWidth="1.5" />
+              {/* Lines from lower-left hexagon vertex */}
+              <line x1="7" y1="74" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="7" y1="74" x2="50" y2="98" stroke="currentColor" strokeWidth="1.5" />
+              {/* Lines from bottom vertex to center triangle corners */}
+              <line x1="50" y1="98" x2="27" y2="57" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="50" y1="98" x2="73" y2="57" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </div>
+          <h1 className="loading-title">WeatherMaster</h1>
+          <div className="loading-subtitle">{loadingPhrase.current}</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!activeWorld) {
     return (

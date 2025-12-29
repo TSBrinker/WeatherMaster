@@ -1,114 +1,66 @@
 # Handoff Document
 
-**Last Updated**: 2025-12-28
-**Previous Agent**: Cove (Sprint 42)
-**Current Sprint Count**: 42 (next agent creates `SPRINT_43_*.md`)
-**Status**: Wanderer Calibration & Impact Effects Complete
+**Last Updated**: 2025-12-29
+**Previous Agent**: Stone (Sprint 43)
+**Current Sprint Count**: 43 (next agent creates `SPRINT_44_*.md`)
+**Status**: Loading Screen Implemented
 
 ---
 
 ## What Was Done This Sprint
 
-### Wanderer Rate Calibration
+### NOTES_FROM_USER Workflow Fix
+- Clarified instructions in WORKING_WITH_TYLER.md (lines 13-22)
+- Now explicitly states: file items to ROADMAP, then DELETE from NOTES
+- Cleared all stale items from NOTES_FROM_USER.md (they were already in ROADMAP)
 
-Adjusted event frequencies to be more campaign-friendly:
-
-| Setting | Before | After |
-|---------|--------|-------|
-| Sky streaks | 2%/day (~7/yr) | 4%/day (~14/yr) |
-| Local falls | 0.04%/day (~0.15/yr) | 0.56%/day (~2/yr) |
-| Distance range | 1-50 miles | 100m - 100 miles |
-
-### Impact Effects System - NEW
-
-Implemented compositional narrative system for impact consequences:
-
-**Distance Bands:**
-- Close: <1 mile (dramatic, potentially dangerous)
-- Near: 1-10 miles (noticeable, exciting)
-- Far: 10+ miles (visible but distant)
-
-**Components:** Each impact generates combined text from:
-- Visual description
-- Sound description
-- Physical effects
-- Suggested mechanics (optional, for significant impacts)
-
-**Severity Levels:**
-- `catastrophic` - Massive impacts, or Large+Close
-- `major` - Large impacts, or Medium+Close
-- `notable` - Medium impacts, or Small+Close
-- `minor` - Small/far impacts
-
-### UI Updates
-
-**WandererModal:**
-- Now shows impact narrative in styled blockquote
-- Suggested mechanics displayed when applicable
-- Severity-based styling (colors, glow, icon size)
-- Distance displays in feet when <1 mile
-
-**Test Harness:**
-- New "Impact Effects Preview" card
-- Size selector + distance slider
-- Quick preset buttons (Massive @ 800ft, etc.)
-- Live preview of narrative and mechanics
-
-**Debug Console:**
-- Next Wanderer gate logged to console on region/date change
-- Shows date, size, distance, direction, severity
+### Loading Screen Implementation
+- Fixed app flicker on load (IndexedDB async load was showing "Create a world" briefly)
+- Added loading screen that shows for minimum 1.5s OR until data loads, whichever is longer
+- Smooth 0.4s fade-out transition
+- D20 wireframe SVG with slow rotation (8s)
+- 10 randomized loading phrases ("Conjuring the skies...", "Brewing a storm...", etc.)
 
 ---
 
 ## Key Files
 
 ### Modified This Sprint
-- `src/v2/models/constants.js` - WANDERER_CONFIG rates, WANDERER_IMPACT_EFFECTS
-- `src/v2/services/celestial/WandererService.js` - `generateImpactEffects()`, `getDistanceBand()`
-- `src/v2/components/weather/WandererModal.jsx` - Impact narrative display
-- `src/v2/components/weather/WandererModal.css` - Severity-based styling
-- `src/v2/components/testing/WeatherTestHarness.jsx` - Impact preview UI
-- `src/v2/contexts/WorldContext.jsx` - Debug console logging
+- `src/v2/App.jsx` - Loading screen logic with dual-condition timing
+- `src/v2/styles/app.css` - Loading screen styles (lines 6-62)
+- `docs/WORKING_WITH_TYLER.md` - Clarified NOTES workflow instructions
+- `docs/NOTES_FROM_USER.md` - Cleared processed items
 
-### Wanderer System (unchanged structure)
-- `src/v2/services/celestial/WandererService.js` - Core service
-- `src/v2/contexts/WorldContext.jsx` - Gate-based time interruption
-
----
-
-## Testing Notes
-
-**To test Wanderers:**
-1. Run `npm start`
-2. Open browser console (F12) - see next Wanderer date logged
-3. Navigate time or use date picker to reach the gate
-4. Modal will show with impact narrative
-
-**Test Harness (`?test=true`):**
-- "Wanderer Analysis" - verify ~14 streaks/yr, ~2 local falls/yr
-- "Impact Effects Preview" - click through all size/distance combinations
-
-**Expected frequencies (10-year sim):**
-- ~140 streaks total
-- ~20 local falls total
-- Size distribution: 70% small, 20% medium, 8% large, 2% massive
+### Loading Screen Notes
+The d20 wireframe geometry is close but not perfect. Reference image is an isometric d20 with hexagon silhouette and triangular faces. Current SVG approximates this but could be refined by a future agent if desired.
 
 ---
 
 ## What's Next
 
-### From NOTES_FROM_USER.md (pending items)
+### From ROADMAP Post-MVP
 - Polar twilight lands (first 500 miles as magical zone)
 - New biomes: Humid Subtropical, Steppe
-- Menu interaction improvements
-- Preferences menu structure
-- Multi-world support (stretch goal)
-- Dedicated 'create location' modal
+- Menu/preferences restructuring
+- Multiple worlds per user
+- Dedicated create location modal
 
-### From Previous Discussion
-- Zoomable container for continent map
-- Dashboard layout revisit
-- Campaign management features (calendar, notes, festivals) - for Firebase era
+### From MVP Sprint Plan (ROADMAP)
+- CRUD UI for editing locations/continents/worlds
+- Special biomes in location modal
+- Time control improvements (day jump buttons)
+- Layout stability fixes
+- Hamburger menu centering
+
+---
+
+## Testing Notes
+
+**To see loading screen:**
+1. Run `npm start`
+2. Hard refresh (Ctrl+Shift+R) to clear cache
+3. Loading screen shows for ~1.5s with spinning d20 and random phrase
+4. Fades smoothly to main app
 
 ---
 
