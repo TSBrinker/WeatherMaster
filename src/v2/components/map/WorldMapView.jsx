@@ -522,14 +522,27 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const handleDeleteVertex = useCallback(() => {
     if (!vertexContextMenu || !continent) return;
 
-    deletePoliticalRegionVertex(
-      continent.id,
-      vertexContextMenu.regionId,
-      vertexContextMenu.vertex.id
-    );
+    const region = continent.politicalRegions?.find(r => r.id === vertexContextMenu.regionId);
+    if (region) {
+      // Build updated vertices without the deleted one
+      const updatedVertices = region.vertices.filter(v => v.id !== vertexContextMenu.vertex.id);
+
+      // Delete the vertex
+      deletePoliticalRegionVertex(
+        continent.id,
+        vertexContextMenu.regionId,
+        vertexContextMenu.vertex.id
+      );
+
+      // Recalculate area/perimeter
+      updatePoliticalRegion(continent.id, vertexContextMenu.regionId, {
+        perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+        areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+      });
+    }
 
     setVertexContextMenu(null);
-  }, [vertexContextMenu, continent, deletePoliticalRegionVertex]);
+  }, [vertexContextMenu, continent, deletePoliticalRegionVertex, updatePoliticalRegion, mapScale]);
 
   // Handle link vertices from context menu
   const handleLinkVertices = useCallback((targetRegionId, targetVertex) => {
@@ -737,16 +750,34 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       if (vertex.sharedId) {
         // Update all linked vertices
         updateLinkedPoliticalVertices(continent.id, vertex.sharedId, { x: pos.x, y: pos.y });
+
+        // Recalculate area/perimeter for all affected regions
+        for (const region of continent.politicalRegions || []) {
+          const hasLinkedVertex = region.vertices?.some(v => v.sharedId === vertex.sharedId);
+          if (hasLinkedVertex) {
+            const updatedVertices = region.vertices.map(v =>
+              v.sharedId === vertex.sharedId ? { ...v, x: pos.x, y: pos.y } : v
+            );
+            updatePoliticalRegion(continent.id, region.id, {
+              perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+              areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+            });
+          }
+        }
       } else {
         // Update just this vertex
+        const updatedVertices = continent.politicalRegions
+          ?.find(r => r.id === draggingPoliticalVertex.regionId)
+          ?.vertices.map(v =>
+            v.id === draggingPoliticalVertex.vertexId
+              ? { ...v, x: pos.x, y: pos.y }
+              : v
+          ) || [];
+
         updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
-          vertices: continent.politicalRegions
-            ?.find(r => r.id === draggingPoliticalVertex.regionId)
-            ?.vertices.map(v =>
-              v.id === draggingPoliticalVertex.vertexId
-                ? { ...v, x: pos.x, y: pos.y }
-                : v
-            ) || []
+          vertices: updatedVertices,
+          perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+          areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
         });
       }
     }
@@ -787,16 +818,31 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
     // Edge subdivision: clicking on an edge of a selected political region
     if (edgeSubdividePreview && selectedPoliticalRegionId && continent) {
-      insertPoliticalRegionVertex(
-        continent.id,
-        selectedPoliticalRegionId,
-        {
+      const region = continent.politicalRegions?.find(r => r.id === selectedPoliticalRegionId);
+      if (region) {
+        // Build the updated vertices array with the new vertex inserted
+        const newVertex = {
           x: edgeSubdividePreview.x,
           y: edgeSubdividePreview.y,
           sharedId: null
-        },
-        edgeSubdividePreview.insertAfterIndex
-      );
+        };
+        const updatedVertices = [...region.vertices];
+        updatedVertices.splice(edgeSubdividePreview.insertAfterIndex + 1, 0, newVertex);
+
+        // Insert the vertex
+        insertPoliticalRegionVertex(
+          continent.id,
+          selectedPoliticalRegionId,
+          newVertex,
+          edgeSubdividePreview.insertAfterIndex
+        );
+
+        // Recalculate area/perimeter
+        updatePoliticalRegion(continent.id, selectedPoliticalRegionId, {
+          perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+          areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+        });
+      }
 
       setEdgeSubdividePreview(null);
       return;

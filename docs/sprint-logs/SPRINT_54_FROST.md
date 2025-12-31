@@ -54,6 +54,7 @@ Based on HANDOFF.md, the HIGH PRIORITY items are:
 
 ### Bug Fixes
 - Fixed edge subdivision click not working (polygon onClick was stopping propagation)
+- Fixed area/perimeter not recalculating when vertices are dragged, deleted, or inserted
 
 ### Mobile Touch Gestures
 - Added pinch-to-zoom support for mobile devices
