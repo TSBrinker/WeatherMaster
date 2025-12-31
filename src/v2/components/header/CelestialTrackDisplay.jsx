@@ -5,8 +5,19 @@ import { useCelestialAnimation, ANIMATION_PHASE } from '../../hooks/useCelestial
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
 import './CelestialTrackDisplay.css';
 
+// Track bounds: the visible track line spans 5% to 95% of the container
+const TRACK_START = 5;
+const TRACK_END = 95;
+
 /**
- * Calculate sun position as percentage across the track (0-100)
+ * Map a 0-100 progress value to the track's visual bounds (5% to 95%)
+ */
+function mapToTrackBounds(progress) {
+  return TRACK_START + (progress / 100) * (TRACK_END - TRACK_START);
+}
+
+/**
+ * Calculate sun position as percentage across the track
  * Returns null if sun is not visible (before sunrise or after sunset)
  */
 function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
@@ -20,16 +31,19 @@ function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
     return null; // Sun not visible
   }
 
-  // Calculate position: 0% at sunrise, 100% at sunset
+  // Calculate progress: 0 at sunrise, 100 at sunset
   const dayLength = sunsetHour - sunriseHour;
   if (dayLength <= 0) return null;
 
   const hoursSinceSunrise = currentHour - sunriseHour;
-  return (hoursSinceSunrise / dayLength) * 100;
+  const progress = (hoursSinceSunrise / dayLength) * 100;
+
+  // Map to track bounds (5% to 95%)
+  return mapToTrackBounds(progress);
 }
 
 /**
- * Calculate moon position as percentage across the track (0-100)
+ * Calculate moon position as percentage across the track
  * Returns null if moon is not visible
  */
 function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
@@ -64,7 +78,10 @@ function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
     return null;
   }
 
-  return (hoursSinceMoonrise / visibleDuration) * 100;
+  const progress = (hoursSinceMoonrise / visibleDuration) * 100;
+
+  // Map to track bounds (5% to 95%)
+  return mapToTrackBounds(progress);
 }
 
 /**
@@ -131,14 +148,10 @@ const CelestialTrackDisplay = ({
     return '';
   };
 
-  // During exit phase, show bodies exiting; during enter phase, show at new position
-  const showSun = animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT
-    ? true // Always show during exit (animating out)
-    : sunPosition !== null;
-
-  const showMoon = animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT
-    ? true // Always show during exit
-    : moonPosition !== null;
+  // Only show celestial bodies when they have a valid position
+  // Don't force-show during animations if they're not actually visible
+  const showSun = sunPosition !== null;
+  const showMoon = moonPosition !== null;
 
   return (
     <div className="celestial-track-display">
@@ -151,15 +164,12 @@ const CelestialTrackDisplay = ({
           <div
             className={`celestial-body sun ${getAnimationClass(animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT)}`}
             style={{
-              left: `${sunPosition ?? 50}%`,
+              left: `${sunPosition}%`,
               opacity: animationPhase === ANIMATION_PHASE.CIRCUIT_ENTER ? 0 : 1,
             }}
           >
             <WiDaySunny />
           </div>
-        )}
-        {!showSun && animationPhase === ANIMATION_PHASE.IDLE && (
-          <div className="track-empty-label">Below horizon</div>
         )}
       </div>
 
@@ -170,15 +180,12 @@ const CelestialTrackDisplay = ({
           <div
             className={`celestial-body moon ${isNight ? 'moon-night' : 'moon-day'} ${getAnimationClass(animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT)}`}
             style={{
-              left: `${moonPosition ?? 50}%`,
+              left: `${moonPosition}%`,
               opacity: animationPhase === ANIMATION_PHASE.CIRCUIT_ENTER ? 0 : 1,
             }}
           >
             {getMoonIcon(celestialData.moonPhase)}
           </div>
-        )}
-        {!showMoon && animationPhase === ANIMATION_PHASE.IDLE && (
-          <div className="track-empty-label">Below horizon</div>
         )}
       </div>
     </div>

@@ -128,7 +128,6 @@ class MoonService {
 
     // Search for crossing during the day
     const result = this.findAngleCrossing(gameDate, targetAngle, φ_moon, true);
-    console.log(`[MOONRISE DEBUG] θ_obs=${θ_obs}, targetAngle=${targetAngle}, result=${result}`);
     return result;
   }
 
@@ -147,7 +146,6 @@ class MoonService {
 
     // Search for crossing during the day
     const result = this.findAngleCrossing(gameDate, targetAngle, φ_moon, false);
-    console.log(`[MOONSET DEBUG] θ_obs=${θ_obs}, targetAngle=${targetAngle}, result=${result}`);
     return result;
   }
 
@@ -173,11 +171,6 @@ class MoonService {
       samples.push({ hour, angle: θ_moon });
     }
 
-    console.log(`[CROSSING DEBUG] Finding ${findFirst ? 'FIRST' : 'LAST'} crossing for targetAngle=${targetAngle}`);
-    console.log(`[CROSSING DEBUG] Moon angle at hour 0: ${samples[0].angle}`);
-    console.log(`[CROSSING DEBUG] Moon angle at hour 12: ${samples[24].angle}`);
-    console.log(`[CROSSING DEBUG] Moon angle at hour 23.5: ${samples[samples.length - 1].angle}`);
-
     // Find crossings (where angle passes through target)
     const crossings = [];
 
@@ -191,21 +184,16 @@ class MoonService {
         const exactHour = this.binarySearchAngleCrossing(
           gameDate, targetAngle, curr.hour, next.hour, φ_moon
         );
-        console.log(`[CROSSING DEBUG] Found crossing at hour ${exactHour} (between ${curr.hour} and ${next.hour})`);
         crossings.push(exactHour);
       }
     }
-
-    console.log(`[CROSSING DEBUG] Total crossings found: ${crossings.length}`);
 
     if (crossings.length === 0) {
       return null; // No crossing today
     }
 
     // Return first or last crossing
-    const result = findFirst ? crossings[0] : crossings[crossings.length - 1];
-    console.log(`[CROSSING DEBUG] Returning ${findFirst ? 'FIRST' : 'LAST'} crossing: ${result}`);
-    return result;
+    return findFirst ? crossings[0] : crossings[crossings.length - 1];
   }
 
   /**
