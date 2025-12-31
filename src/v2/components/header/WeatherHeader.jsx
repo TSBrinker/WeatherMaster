@@ -90,6 +90,7 @@ const WeatherHeader = ({
 }) => {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showSunJumpConfirm, setShowSunJumpConfirm] = useState(false);
 
   // Time picker state - stores offset in hours from current time (-24 to +24)
   const [pickTimeOffset, setPickTimeOffset] = useState(0);
@@ -117,6 +118,14 @@ const WeatherHeader = ({
   const formatCompactDate = (dateObj) => {
     if (!dateObj) return '';
     return `${monthNames[dateObj.month - 1]} ${dateObj.day}`;
+  };
+
+  // Format time without minutes (e.g., "6:42 AM" -> "6 AM")
+  const formatHourOnly = (timeStr) => {
+    if (!timeStr) return '';
+    const match = timeStr.match(/(\d+):\d+\s*(AM|PM)/i);
+    if (!match) return timeStr;
+    return `${match[1]} ${match[2]}`;
   };
 
   // Parse times like "6:42 AM" to hour
@@ -154,13 +163,18 @@ const WeatherHeader = ({
 
   const sunInfo = getSunInfo();
 
-  // Jump to sun event
-  const handleJumpToSunEvent = () => {
+  // Jump to sun event - now shows confirmation first
+  const handleSunEventClick = () => {
+    setShowSunJumpConfirm(true);
+  };
+
+  const handleConfirmSunJump = () => {
     if (sunInfo && onAdvanceTime) {
       let hoursToJump = sunInfo.hour - currentDate.hour;
       if (sunInfo.tomorrow) hoursToJump += 24;
       onAdvanceTime(hoursToJump);
     }
+    setShowSunJumpConfirm(false);
   };
 
   // Open time picker
@@ -272,14 +286,31 @@ const WeatherHeader = ({
                 {formatCompactDate(currentDate)}
               </button>
               {sunInfo && (
-                <button
-                  className="sun-event"
-                  onClick={handleJumpToSunEvent}
-                  title={`Jump to ${sunInfo.type}`}
-                >
-                  {sunInfo.type === 'sunrise' ? <WiSunrise /> : <WiSunset />}
-                  <span className="sun-time">{sunInfo.time}</span>
-                </button>
+                <div className="sun-event-container">
+                  <button
+                    className="sun-event"
+                    onClick={handleSunEventClick}
+                    title={`Jump to ${sunInfo.type}`}
+                  >
+                    {sunInfo.type === 'sunrise' ? <WiSunrise /> : <WiSunset />}
+                    <span className="sun-time">{sunInfo.time}</span>
+                  </button>
+                  {showSunJumpConfirm && (
+                    <>
+                      <div
+                        className="popover-overlay"
+                        onClick={() => setShowSunJumpConfirm(false)}
+                      />
+                      <div className="sun-jump-popover">
+                        <span>Jump to {sunInfo.type}?</span>
+                        <div className="popover-buttons">
+                          <button onClick={() => setShowSunJumpConfirm(false)}>✕</button>
+                          <button onClick={handleConfirmSunJump}>✓</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -438,6 +469,7 @@ const WeatherHeader = ({
           </Button>
         </Modal.Footer>
       </Modal>
+
     </>
   );
 };
