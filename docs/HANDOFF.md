@@ -1,76 +1,47 @@
 # Handoff Document
 
-**Last Updated**: 2025-12-29
-**Previous Agent**: Terra (Sprint 45)
-**Current Sprint Count**: 45 (next agent creates `SPRINT_46_*.md`)
-**Status**: Celestial Header Display Implemented
+**Last Updated**: 2025-12-30
+**Previous Agent**: Thorn (Sprint 46)
+**Current Sprint Count**: 46 (next agent creates `SPRINT_47_*.md`)
+**Status**: Celestial Track Display Fixed
 
 ---
 
 ## What Was Done This Sprint
 
-### Celestial Header Display
-Implemented Tyler's request for a visual sun/moon position display in the header:
+### Celestial Track Display Fixes
 
-1. **CelestialTrackDisplay Component** (NEW)
-   - Two horizontal track rows below the time controls
-   - Sun track: shows sun position during daylight (0% sunrise, 50% noon, 100% sunset)
-   - Moon track: shows moon position when above horizon
-   - Moon is dimmed gray when sun is up, opaque white at night
-   - "Below horizon" label when celestial body is not visible
+Terra (Sprint 45) implemented the celestial track display but it had issues. Thorn fixed:
 
-2. **Circuit Animations**
-   - When crossing day boundaries, sun/moon animate off one edge and in from the other
-   - Exit direction matches time direction (forward = exit right, backward = exit left)
-   - Animations skipped for jumps > 30 days
-   - Timing: 300ms exit, 300ms enter
-
-3. **Full-Screen Sky Gradient**
-   - Sky color gradient now covers entire screen background
-   - Gradient changes based on time of day and weather conditions
-   - Smooth 0.5s transitions between gradient states
-
-4. **Frosted Glass Cards**
-   - All content cards now have frosted glass appearance
-   - Uses `backdrop-filter: blur(20px)` with semi-transparent background
-   - Applies to: PrimaryDisplay, DetailsCard, WeekForecastStrip, DruidcraftForecast
-
-5. **Architecture Improvements**
-   - Extracted gradient logic to `skyGradientUtils.js` for reuse
-   - Added `previousDate` tracking in WorldContext for animation direction
-   - Created `useCelestialAnimation` hook for animation state machine
+1. **Positioning** - Sun/moon now actually move across track (was missing `width: 100%`)
+2. **Visibility timing** - Bodies visible through their set hour (not disappearing early)
+3. **Simplified UI** - Removed "below horizon" labels, removed duplicate moon indicator from date line
+4. **Added tooltips** - Hover over sun/moon to see rise/set times and moon phase
+5. **Removed animation system** - Circuit animation was hidden behind modal anyway
+6. **Cleaned up** - Removed debug console logs, unused props, deleted `useCelestialAnimation.js`
 
 ---
 
 ## Key Files
 
-### Created This Sprint
-- `src/v2/utils/skyGradientUtils.js` - Shared gradient calculation utilities
-- `src/v2/hooks/useCelestialAnimation.js` - Animation state machine hook
-- `src/v2/components/header/CelestialTrackDisplay.jsx` - Sun/moon track component
-- `src/v2/components/header/CelestialTrackDisplay.css` - Track styling and animations
-
 ### Modified This Sprint
-- `src/v2/contexts/WorldContext.jsx` - Added previousDate tracking
-- `src/v2/App.jsx` - Sky gradient CSS variable, pass props to header
-- `src/v2/styles/app.css` - Frosted glass styles, full-screen gradient
-- `src/v2/components/header/WeatherHeader.jsx` - Integrated CelestialTrackDisplay
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Removed inline gradient
+- `src/v2/components/header/CelestialTrackDisplay.jsx` - Simplified, added tooltips
+- `src/v2/components/header/CelestialTrackDisplay.css` - Fixed width, removed animation CSS
+- `src/v2/components/header/WeatherHeader.jsx` - Removed moon indicator, cleaned props
+- `src/v2/App.jsx` - Removed unused `previousDate` prop
+- `src/v2/services/celestial/MoonService.js` - Removed debug logs
+
+### Deleted This Sprint
+- `src/v2/hooks/useCelestialAnimation.js` - No longer needed
 
 ---
 
 ## What's Next
 
-### Visual Testing Needed
-- Verify gradient transitions look good at sunrise/sunset boundaries
-- Test circuit animations when jumping between days
-- Check frosted glass appearance on mobile devices
-- Ensure text remains readable on all gradient backgrounds
-
-### Potential Enhancements
-- Add tooltips to sun/moon icons showing exact rise/set times
-- Consider hiding "Below horizon" labels (might be too verbose)
-- Add polar day/night handling (when sun/moon is always or never visible)
+### Animation Polish (Optional)
+- Bodies currently just clip at edge with `overflow: hidden`
+- Could add smooth slide-in animation when bodies rise
+- Could add slide-out animation when they set
 
 ### From ROADMAP Post-MVP
 - Polar twilight lands (first 500 miles as magical zone)
@@ -83,30 +54,19 @@ Implemented Tyler's request for a visual sun/moon position display in the header
 
 ## Architecture Notes
 
-### New Header Structure
+### Celestial Track Display
 ```
-Header (sticky)
-  - Date line (moon indicator, chevrons, date, next event)
-  - Time row (hour buttons, large time display)
-  - Celestial Track Display (NEW)
-    - Sun track (horizontal, shows position during daylight)
-    - Moon track (horizontal, shows position when visible)
-
-Body Background
-  - var(--sky-gradient) applied to body element
-  - Changes with time of day and weather condition
-
-Content Cards
-  - Frosted glass effect via backdrop-filter
-  - Semi-transparent backgrounds
+CelestialTrackDisplay
+  - Two tracks (sun and moon), full width
+  - Bodies positioned at 10%-90% based on progress through visible hours
+  - overflow: hidden clips bodies at edges
+  - Tooltips show rise/set times on hover
+  - No animation state machine (removed)
 ```
 
-### Animation State Machine
-```
-IDLE → (day boundary crossed) → CIRCUIT_EXIT → CIRCUIT_ENTER → IDLE
-       (same day change) ↺ position transition only
-       (>30 day jump) ↺ no animation
-```
+### Visibility Logic
+- Sun visible: `currentHour >= sunriseHour && currentHour <= sunsetHour`
+- Moon handles overnight case (moonrise > moonset means it spans midnight)
 
 ---
 

@@ -1,13 +1,13 @@
 import React from 'react';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { WiDaySunny } from 'react-icons/wi';
 import { WiMoonNew, WiMoonWaxingCrescent3, WiMoonFirstQuarter, WiMoonWaxingGibbous3, WiMoonFull, WiMoonWaningGibbous3, WiMoonThirdQuarter, WiMoonWaningCrescent3 } from 'react-icons/wi';
-import { useCelestialAnimation, ANIMATION_PHASE } from '../../hooks/useCelestialAnimation';
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
 import './CelestialTrackDisplay.css';
 
-// Track bounds: the visible track line spans 5% to 95% of the container
-const TRACK_START = 5;
-const TRACK_END = 95;
+// Track bounds: bodies travel from 10% to 90%, leaving room to animate off edges
+const TRACK_START = 10;
+const TRACK_END = 90;
 
 /**
  * Map a 0-100 progress value to the track's visual bounds (5% to 95%)
@@ -21,24 +21,21 @@ function mapToTrackBounds(progress) {
  * Returns null if sun is not visible (before sunrise or after sunset)
  */
 function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
-  // Handle special cases
   if (sunriseHour === null || sunsetHour === null) {
-    return null; // Can't calculate without data
+    return null;
   }
 
-  // Check if sun is above horizon
-  if (currentHour < sunriseHour || currentHour >= sunsetHour) {
-    return null; // Sun not visible
+  // Sun visible from sunrise hour through sunset hour (inclusive)
+  if (currentHour < sunriseHour || currentHour > sunsetHour) {
+    return null;
   }
 
-  // Calculate progress: 0 at sunrise, 100 at sunset
   const dayLength = sunsetHour - sunriseHour;
   if (dayLength <= 0) return null;
 
   const hoursSinceSunrise = currentHour - sunriseHour;
   const progress = (hoursSinceSunrise / dayLength) * 100;
 
-  // Map to track bounds (5% to 95%)
   return mapToTrackBounds(progress);
 }
 
@@ -47,24 +44,22 @@ function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
  * Returns null if moon is not visible
  */
 function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
-  // Handle special cases
   if (moonriseHour === null || moonsetHour === null) {
     return null;
   }
 
-  // Check if moon is visible (handles overnight visibility)
   let isVisible = false;
   let visibleDuration = 0;
   let hoursSinceMoonrise = 0;
 
   if (moonriseHour < moonsetHour) {
-    // Normal case: moonrise before moonset on same day
-    isVisible = currentHour >= moonriseHour && currentHour < moonsetHour;
+    // Normal case: moonrise before moonset on same day (inclusive of moonset hour)
+    isVisible = currentHour >= moonriseHour && currentHour <= moonsetHour;
     visibleDuration = moonsetHour - moonriseHour;
     hoursSinceMoonrise = currentHour - moonriseHour;
   } else {
-    // Overnight case: moonrise in evening, moonset next morning
-    isVisible = currentHour >= moonriseHour || currentHour < moonsetHour;
+    // Overnight case: moonrise in evening, moonset next morning (inclusive)
+    isVisible = currentHour >= moonriseHour || currentHour <= moonsetHour;
     visibleDuration = (24 - moonriseHour) + moonsetHour;
 
     if (currentHour >= moonriseHour) {
@@ -79,8 +74,6 @@ function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
   }
 
   const progress = (hoursSinceMoonrise / visibleDuration) * 100;
-
-  // Map to track bounds (5% to 95%)
   return mapToTrackBounds(progress);
 }
 
@@ -108,15 +101,12 @@ function getMoonIcon(phase) {
  * - Sun track: shows sun position during daylight hours
  * - Moon track: shows moon position when above horizon
  * - Moon is dimmed when sun is up, opaque at night
- * - Circuit animation when crossing day boundaries
+ * - Hover tooltips show rise/set times and moon phase
  */
 const CelestialTrackDisplay = ({
   currentDate,
-  previousDate,
   celestialData,
 }) => {
-  const { animationPhase, exitDirection, isAnimating } = useCelestialAnimation(currentDate, previousDate);
-
   if (!celestialData || !currentDate) {
     return null;
   }
@@ -135,23 +125,12 @@ const CelestialTrackDisplay = ({
   // Determine if it's night (for moon styling)
   const isNight = isNightTime(currentHour, sunriseHour, sunsetHour);
 
-  // Get animation class based on phase and direction
-  const getAnimationClass = (isExiting) => {
-    if (!isAnimating) return '';
-
-    if (animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT && isExiting) {
-      return exitDirection === 'right' ? 'circuit-exit-right' : 'circuit-exit-left';
-    }
-    if (animationPhase === ANIMATION_PHASE.CIRCUIT_ENTER && !isExiting) {
-      return exitDirection === 'right' ? 'circuit-enter-left' : 'circuit-enter-right';
-    }
-    return '';
-  };
-
-  // Only show celestial bodies when they have a valid position
-  // Don't force-show during animations if they're not actually visible
   const showSun = sunPosition !== null;
   const showMoon = moonPosition !== null;
+
+  // Build tooltip content
+  const sunTooltip = `Sunrise: ${celestialData.sunriseTime}\nSunset: ${celestialData.sunsetTime}`;
+  const moonTooltip = `${celestialData.moonPhase}${showMoon ? '' : ' (below horizon)'}\nMoonrise: ${celestialData.moonriseTime}\nMoonset: ${celestialData.moonsetTime}`;
 
   return (
     <div className="celestial-track-display">
@@ -159,33 +138,35 @@ const CelestialTrackDisplay = ({
 
       {/* Sun Track */}
       <div className="celestial-track sun-track">
-        <div className="track-line" />
         {showSun && (
-          <div
-            className={`celestial-body sun ${getAnimationClass(animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT)}`}
-            style={{
-              left: `${sunPosition}%`,
-              opacity: animationPhase === ANIMATION_PHASE.CIRCUIT_ENTER ? 0 : 1,
-            }}
+          <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip id="sun-tooltip" style={{ whiteSpace: 'pre-line' }}>{sunTooltip}</Tooltip>}
           >
-            <WiDaySunny />
-          </div>
+            <div
+              className="celestial-body sun"
+              style={{ left: `${sunPosition}%` }}
+            >
+              <WiDaySunny />
+            </div>
+          </OverlayTrigger>
         )}
       </div>
 
       {/* Moon Track */}
       <div className="celestial-track moon-track">
-        <div className="track-line" />
         {showMoon && (
-          <div
-            className={`celestial-body moon ${isNight ? 'moon-night' : 'moon-day'} ${getAnimationClass(animationPhase === ANIMATION_PHASE.CIRCUIT_EXIT)}`}
-            style={{
-              left: `${moonPosition}%`,
-              opacity: animationPhase === ANIMATION_PHASE.CIRCUIT_ENTER ? 0 : 1,
-            }}
+          <OverlayTrigger
+            placement="bottom"
+            overlay={<Tooltip id="moon-tooltip" style={{ whiteSpace: 'pre-line' }}>{moonTooltip}</Tooltip>}
           >
-            {getMoonIcon(celestialData.moonPhase)}
-          </div>
+            <div
+              className={`celestial-body moon ${isNight ? 'moon-night' : 'moon-day'}`}
+              style={{ left: `${moonPosition}%` }}
+            >
+              {getMoonIcon(celestialData.moonPhase)}
+            </div>
+          </OverlayTrigger>
         )}
       </div>
     </div>

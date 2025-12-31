@@ -43,7 +43,7 @@ const LOADING_PHRASES = [
  * Main App Content (needs to be inside WorldProvider)
  */
 const AppContent = () => {
-  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading, previousDate } = useWorld();
+  const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading } = useWorld();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -178,11 +178,9 @@ const AppContent = () => {
       {/* iOS Lock Screen-style header with time controls */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}
-        previousDate={previousDate}
         onAdvanceTime={handleAdvanceTime}
         onJumpToDate={handleJumpToDate}
         celestialData={weatherData?.celestial}
-        condition={weatherData?.condition}
       />
 
       {/* Main Content */}
