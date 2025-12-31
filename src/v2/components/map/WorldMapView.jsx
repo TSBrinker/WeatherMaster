@@ -996,39 +996,38 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
     {
-      onPinch: ({ first, da: [distance], origin: [ox, oy], memo }) => {
+      onPinch: ({ first, da: [distance], offset: [scale], memo }) => {
         if (first) {
-          // Store initial state when pinch starts
-          return {
-            initialZoom: zoom,
-            initialDistance: distance,
-          };
+          // Store initial zoom when pinch starts
+          return { initialZoom: zoom };
         }
 
         if (!memo) return memo;
 
-        // Calculate scale relative to initial pinch distance
-        const scale = distance / memo.initialDistance;
+        // Use offset which gives us a normalized scale factor (1 = no change)
         const newZoom = Math.min(Math.max(memo.initialZoom * scale, 1), 5);
         setZoom(newZoom);
 
         return memo;
       },
       onPinchEnd: () => {
-        // Reset drag state if it was set
+        // Reset drag state if it was set during pinch
         if (draggingPoliticalVertex) {
           setDraggingPoliticalVertex(null);
         }
       },
-      onDrag: ({ pinching, cancel, delta: [dx, dy], first, last, xy: [x, y], touches }) => {
+      onDrag: ({ pinching, cancel, delta: [dx, dy], last, xy: [x, y], touches, event }) => {
         // Don't interfere with pinch gestures
         if (pinching) {
           cancel();
           return;
         }
 
-        // Two-finger drag for panning (use delta for smoother updates)
-        if (touches === 2) {
+        // Determine if this is a touch event with 2 fingers
+        const isTwoFingerTouch = touches === 2 || (event?.touches?.length === 2);
+
+        // Two-finger drag for panning
+        if (isTwoFingerTouch) {
           setPan(prev => ({
             x: prev.x + dx,
             y: prev.y + dy,
@@ -1037,7 +1036,6 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         }
 
         // Single-finger drag for vertex dragging (only if a vertex is being dragged)
-        // Use touches >= 1 to handle both touch (1) and mouse (0 or undefined)
         if (draggingPoliticalVertex) {
           const pos = screenToImageCoords(x, y);
           if (pos) {
@@ -1064,6 +1062,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         pointer: { touch: true },
       },
       pinch: {
+        scaleBounds: { min: 0.2, max: 5 },
         rubberband: true,
       },
     }
