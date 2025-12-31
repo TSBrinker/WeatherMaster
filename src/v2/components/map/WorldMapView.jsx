@@ -492,33 +492,6 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     draggingPoliticalVertexRef.current = dragInfo;
   }, []);
 
-  // Touch move handler for political vertices (mobile support)
-  // Handles continuous drag directly on the vertex element
-  const handlePoliticalVertexTouchMove = useCallback((e) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    if (!draggingPoliticalVertexRef.current) return;
-    if (e.touches.length !== 1) return;
-
-    const touch = e.touches[0];
-    const pos = screenToImageCoords(touch.clientX, touch.clientY);
-    if (pos) {
-      updateVertexPosition(pos);
-    }
-  }, [screenToImageCoords, updateVertexPosition]);
-
-  // Touch end handler for political vertices (mobile support)
-  const handlePoliticalVertexTouchEnd = useCallback((e) => {
-    e.stopPropagation();
-
-    if (draggingPoliticalVertexRef.current) {
-      setDraggingPoliticalVertex(null);
-      draggingPoliticalVertexRef.current = null;
-      dragStartRef.current = null;
-    }
-  }, []);
-
   // Right-click context menu for political vertices
   const handlePoliticalVertexContextMenu = useCallback((e, regionId, vertex) => {
     e.preventDefault();
@@ -1027,6 +1000,34 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       });
     }
   }, [continent, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
+
+  // Touch move handler for political vertices (mobile support)
+  // Handles continuous drag directly on the vertex element
+  // NOTE: Must be defined after screenToImageCoords and updateVertexPosition
+  const handlePoliticalVertexTouchMove = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!draggingPoliticalVertexRef.current) return;
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const pos = screenToImageCoords(touch.clientX, touch.clientY);
+    if (pos) {
+      updateVertexPosition(pos);
+    }
+  }, [screenToImageCoords, updateVertexPosition]);
+
+  // Touch end handler for political vertices (mobile support)
+  const handlePoliticalVertexTouchEnd = useCallback((e) => {
+    e.stopPropagation();
+
+    if (draggingPoliticalVertexRef.current) {
+      setDraggingPoliticalVertex(null);
+      draggingPoliticalVertexRef.current = null;
+      dragStartRef.current = null;
+    }
+  }, []);
 
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
