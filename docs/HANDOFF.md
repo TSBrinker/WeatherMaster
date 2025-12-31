@@ -55,6 +55,7 @@ Right-click on any vertex of a selected political region:
 - Two-finger pan
 - Touch vertex dragging for political regions
 - Removed CSS transition that was causing stuttery zoom
+- Uses `@use-gesture/react` library for robust gesture handling
 
 ---
 

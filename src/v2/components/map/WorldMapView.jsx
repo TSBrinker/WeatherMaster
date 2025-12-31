@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
 import { Settings, Plus, MapPin, ZoomIn, ZoomOut, RotateCcw, Layers, Route, Thermometer, Cloud, Crown } from 'lucide-react';
+import { useGesture } from '@use-gesture/react';
 import { useWorld } from '../../contexts/WorldContext';
 import {
   calculateVisibleBands,
@@ -96,13 +97,10 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef(null);
 
-  // Touch gesture state
-  const touchStateRef = useRef({
-    touches: [],           // Active touch points
-    initialPinchDistance: null,
-    initialZoom: null,
-    initialPan: null,
-    lastTouchCenter: null,
+  // Gesture state refs (for use-gesture)
+  const gestureStateRef = useRef({
+    initialZoom: 1,
+    initialPan: { x: 0, y: 0 },
   });
 
   const mapImage = continent?.mapImage;
@@ -480,29 +478,13 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   }, [getImagePosition]);
 
   // Touch start handler for political vertices (mobile support)
+  // Sets dragging state so the gesture handler knows to track vertex movement
   const handlePoliticalVertexTouchStart = useCallback((e, regionId, vertex) => {
     e.stopPropagation();
-    // Don't prevent default here - let single touch work for dragging
-
     if (e.touches.length !== 1) return; // Only handle single touch
 
-    const touch = e.touches[0];
-    const img = mapContainerRef.current?.querySelector('img');
-    if (!img) return;
-
-    const imgRect = img.getBoundingClientRect();
-    const scaleX = imageSize.width / imgRect.width;
-    const scaleY = imageSize.height / imgRect.height;
-
-    const x = (touch.clientX - imgRect.left) * scaleX;
-    const y = (touch.clientY - imgRect.top) * scaleY;
-
-    if (x < 0 || x > imageSize.width || y < 0 || y > imageSize.height) return;
-
-    const pos = { x: Math.round(x), y: Math.round(y) };
     setDraggingPoliticalVertex({ regionId, vertexId: vertex.id, vertex });
-    dragStartRef.current = pos;
-  }, [imageSize]);
+  }, []);
 
   // Right-click context menu for political vertices
   const handlePoliticalVertexContextMenu = useCallback((e, regionId, vertex) => {
@@ -952,147 +934,135 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     panStartRef.current = null;
   }, []);
 
-  // === TOUCH GESTURES (Mobile Support) ===
+  // === TOUCH/POINTER GESTURES (using @use-gesture/react) ===
 
-  // Calculate distance between two touch points
-  const getTouchDistance = useCallback((touch1, touch2) => {
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }, []);
+  // Helper: convert screen coordinates to image coordinates
+  const screenToImageCoords = useCallback((clientX, clientY) => {
+    const img = mapContainerRef.current?.querySelector('img');
+    if (!img) return null;
 
-  // Calculate center point between two touches
-  const getTouchCenter = useCallback((touch1, touch2) => {
-    return {
-      x: (touch1.clientX + touch2.clientX) / 2,
-      y: (touch1.clientY + touch2.clientY) / 2,
-    };
-  }, []);
+    const imgRect = img.getBoundingClientRect();
+    const scaleX = imageSize.width / imgRect.width;
+    const scaleY = imageSize.height / imgRect.height;
 
-  const handleTouchStart = useCallback((e) => {
-    const touches = e.touches;
-    const state = touchStateRef.current;
+    const x = Math.round((clientX - imgRect.left) * scaleX);
+    const y = Math.round((clientY - imgRect.top) * scaleY);
 
-    if (touches.length === 2) {
-      // Two-finger gesture starting (pinch/pan)
-      e.preventDefault(); // Prevent browser zoom
-      const touch1 = touches[0];
-      const touch2 = touches[1];
+    if (x < 0 || x > imageSize.width || y < 0 || y > imageSize.height) return null;
+    return { x, y };
+  }, [imageSize]);
 
-      state.initialPinchDistance = getTouchDistance(touch1, touch2);
-      state.initialZoom = zoom;
-      state.initialPan = { ...pan };
-      state.lastTouchCenter = getTouchCenter(touch1, touch2);
-      state.touches = [touch1, touch2];
-    } else if (touches.length === 1) {
-      // Single touch - could be tap, drag, or start of two-finger gesture
-      state.touches = [touches[0]];
-      state.initialPinchDistance = null;
-    }
-  }, [zoom, pan, getTouchDistance, getTouchCenter]);
+  // Helper: update vertex position (for drag operations)
+  const updateVertexPosition = useCallback((pos) => {
+    if (!draggingPoliticalVertex || !continent) return;
 
-  const handleTouchMove = useCallback((e) => {
-    const touches = e.touches;
-    const state = touchStateRef.current;
+    const vertex = draggingPoliticalVertex.vertex;
 
-    if (touches.length === 2 && state.initialPinchDistance !== null) {
-      // Two-finger gesture active
-      e.preventDefault(); // Prevent browser behavior
+    if (vertex.sharedId) {
+      // Update all linked vertices
+      updateLinkedPoliticalVertices(continent.id, vertex.sharedId, { x: pos.x, y: pos.y });
 
-      const touch1 = touches[0];
-      const touch2 = touches[1];
-
-      // Pinch-to-zoom
-      const currentDistance = getTouchDistance(touch1, touch2);
-      const scale = currentDistance / state.initialPinchDistance;
-      const newZoom = Math.min(Math.max(state.initialZoom * scale, 1), 5);
-      setZoom(newZoom);
-
-      // Two-finger pan
-      const currentCenter = getTouchCenter(touch1, touch2);
-      if (state.lastTouchCenter) {
-        const deltaX = currentCenter.x - state.lastTouchCenter.x;
-        const deltaY = currentCenter.y - state.lastTouchCenter.y;
-        setPan(prev => ({
-          x: prev.x + deltaX,
-          y: prev.y + deltaY,
-        }));
+      // Recalculate area/perimeter for all affected regions
+      for (const region of continent.politicalRegions || []) {
+        const hasLinkedVertex = region.vertices?.some(v => v.sharedId === vertex.sharedId);
+        if (hasLinkedVertex) {
+          const updatedVertices = region.vertices.map(v =>
+            v.sharedId === vertex.sharedId ? { ...v, x: pos.x, y: pos.y } : v
+          );
+          updatePoliticalRegion(continent.id, region.id, {
+            perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+            areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+          });
+        }
       }
-      state.lastTouchCenter = currentCenter;
-    } else if (touches.length === 1 && draggingPoliticalVertex && continent) {
-      // Single touch vertex dragging
-      e.preventDefault();
+    } else {
+      // Update just this vertex
+      const updatedVertices = continent.politicalRegions
+        ?.find(r => r.id === draggingPoliticalVertex.regionId)
+        ?.vertices.map(v =>
+          v.id === draggingPoliticalVertex.vertexId
+            ? { ...v, x: pos.x, y: pos.y }
+            : v
+        ) || [];
 
-      const touch = touches[0];
-      const img = mapContainerRef.current?.querySelector('img');
-      if (!img) return;
+      updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
+        vertices: updatedVertices,
+        perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+        areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+      });
+    }
+  }, [draggingPoliticalVertex, continent, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
 
-      const imgRect = img.getBoundingClientRect();
-      const scaleX = imageSize.width / imgRect.width;
-      const scaleY = imageSize.height / imgRect.height;
+  // Unified gesture handler using use-gesture
+  const bindGestures = useGesture(
+    {
+      onPinch: ({ origin: [ox, oy], first, offset: [scale], memo }) => {
+        if (first) {
+          // Store initial state when pinch starts
+          gestureStateRef.current.initialZoom = zoom;
+          gestureStateRef.current.initialPan = { ...pan };
+          return { originX: ox, originY: oy };
+        }
 
-      const x = Math.round((touch.clientX - imgRect.left) * scaleX);
-      const y = Math.round((touch.clientY - imgRect.top) * scaleY);
+        // Apply zoom (clamped between 1 and 5)
+        const newZoom = Math.min(Math.max(gestureStateRef.current.initialZoom * scale, 1), 5);
+        setZoom(newZoom);
 
-      if (x < 0 || x > imageSize.width || y < 0 || y > imageSize.height) return;
+        return memo;
+      },
+      onPinchEnd: () => {
+        // Reset drag state if it was set
+        if (draggingPoliticalVertex) {
+          setDraggingPoliticalVertex(null);
+        }
+      },
+      onDrag: ({ pinching, cancel, movement: [mx, my], first, xy: [x, y], touches }) => {
+        // Don't interfere with pinch gestures
+        if (pinching) {
+          cancel();
+          return;
+        }
 
-      const pos = { x, y };
-      const vertex = draggingPoliticalVertex.vertex;
+        // Two-finger drag for panning
+        if (touches === 2) {
+          if (first) {
+            gestureStateRef.current.initialPan = { ...pan };
+          }
+          setPan({
+            x: gestureStateRef.current.initialPan.x + mx,
+            y: gestureStateRef.current.initialPan.y + my,
+          });
+          return;
+        }
 
-      if (vertex.sharedId) {
-        // Update all linked vertices
-        updateLinkedPoliticalVertices(continent.id, vertex.sharedId, { x: pos.x, y: pos.y });
-
-        // Recalculate area/perimeter for all affected regions
-        for (const region of continent.politicalRegions || []) {
-          const hasLinkedVertex = region.vertices?.some(v => v.sharedId === vertex.sharedId);
-          if (hasLinkedVertex) {
-            const updatedVertices = region.vertices.map(v =>
-              v.sharedId === vertex.sharedId ? { ...v, x: pos.x, y: pos.y } : v
-            );
-            updatePoliticalRegion(continent.id, region.id, {
-              perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
-              areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
-            });
+        // Single-finger drag for vertex dragging (only if a vertex is being dragged)
+        if (touches === 1 && draggingPoliticalVertex) {
+          const pos = screenToImageCoords(x, y);
+          if (pos) {
+            updateVertexPosition(pos);
           }
         }
-      } else {
-        // Update just this vertex
-        const updatedVertices = continent.politicalRegions
-          ?.find(r => r.id === draggingPoliticalVertex.regionId)
-          ?.vertices.map(v =>
-            v.id === draggingPoliticalVertex.vertexId
-              ? { ...v, x: pos.x, y: pos.y }
-              : v
-          ) || [];
-
-        updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
-          vertices: updatedVertices,
-          perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
-          areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
-        });
-      }
+      },
+      onDragEnd: () => {
+        // Clear vertex dragging state
+        if (draggingPoliticalVertex) {
+          setDraggingPoliticalVertex(null);
+          dragStartRef.current = null;
+        }
+      },
+    },
+    {
+      eventOptions: { passive: false },
+      drag: {
+        filterTaps: true,
+        pointer: { touch: true },
+      },
+      pinch: {
+        scaleBounds: { min: 1, max: 5 },
+        rubberband: true,
+      },
     }
-  }, [getTouchDistance, getTouchCenter, draggingPoliticalVertex, continent, imageSize, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
-
-  const handleTouchEnd = useCallback((e) => {
-    const state = touchStateRef.current;
-    const remainingTouches = e.touches.length;
-
-    if (remainingTouches < 2) {
-      // Reset pinch/pan state when we drop below 2 fingers
-      state.initialPinchDistance = null;
-      state.initialZoom = null;
-      state.initialPan = null;
-      state.lastTouchCenter = null;
-    }
-
-    if (remainingTouches === 0) {
-      state.touches = [];
-    } else {
-      state.touches = Array.from(e.touches);
-    }
-  }, []);
+  );
 
   // Handle clicking on a region pin
   const handlePinClick = (e, region) => {
@@ -1254,10 +1224,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         onMouseDown={handlePanStart}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        {...bindGestures()}
       >
         {/* Wrapper that matches the image's displayed size exactly */}
         <div

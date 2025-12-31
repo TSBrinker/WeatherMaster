@@ -59,11 +59,15 @@ Based on HANDOFF.md, the HIGH PRIORITY items are:
 ### Mobile Touch Gestures
 - Added pinch-to-zoom support for mobile devices
 - Added two-finger pan for mobile navigation
-- Touch state tracking via ref (initialPinchDistance, initialZoom, lastTouchCenter)
 - Added `touch-action: none` CSS to prevent browser interference
 - Works alongside existing mouse controls (wheel zoom, shift+drag pan)
 - Added touch vertex dragging for political regions
 - Removed CSS transition that was causing stuttery zoom on mobile
+- **Refactored to use `@use-gesture/react`** for cleaner, more robust gesture handling:
+  - Unified pinch and drag handling via `useGesture` hook
+  - Better gesture recognition and conflict resolution
+  - Rubberband effect on pinch boundaries
+  - Proper touch vs mouse event normalization
 
 ---
 
