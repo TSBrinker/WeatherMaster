@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Container, Button, Modal } from 'react-bootstrap';
+import { createPortal } from 'react-dom';
+import { Container } from 'react-bootstrap';
 import { WiSunrise, WiSunset } from 'react-icons/wi';
 import CelestialTrackDisplay from './CelestialTrackDisplay';
 import './WeatherHeader.css';
@@ -91,6 +92,10 @@ const WeatherHeader = ({
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSunJumpConfirm, setShowSunJumpConfirm] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, right: 0 });
+  const sunEventButtonRef = useRef(null);
+  const timeButtonRef = useRef(null);
+  const dateButtonRef = useRef(null);
 
   // Time picker state - stores offset in hours from current time (-24 to +24)
   const [pickTimeOffset, setPickTimeOffset] = useState(0);
@@ -114,18 +119,10 @@ const WeatherHeader = ({
     return `${hour}:00 ${period}`;
   };
 
-  // Format compact date (e.g., "Feb 4")
+  // Format compact date (e.g., "Feb 4, 1024")
   const formatCompactDate = (dateObj) => {
     if (!dateObj) return '';
-    return `${monthNames[dateObj.month - 1]} ${dateObj.day}`;
-  };
-
-  // Format time without minutes (e.g., "6:42 AM" -> "6 AM")
-  const formatHourOnly = (timeStr) => {
-    if (!timeStr) return '';
-    const match = timeStr.match(/(\d+):\d+\s*(AM|PM)/i);
-    if (!match) return timeStr;
-    return `${match[1]} ${match[2]}`;
+    return `${monthNames[dateObj.month - 1]} ${dateObj.day}, ${dateObj.year}`;
   };
 
   // Parse times like "6:42 AM" to hour
@@ -165,6 +162,14 @@ const WeatherHeader = ({
 
   // Jump to sun event - now shows confirmation first
   const handleSunEventClick = () => {
+    // Calculate position for the portal-rendered popover
+    if (sunEventButtonRef.current) {
+      const rect = sunEventButtonRef.current.getBoundingClientRect();
+      setPopoverPosition({
+        top: rect.bottom + 8, // 8px below the button
+        right: window.innerWidth - rect.right, // Align right edge with button
+      });
+    }
     setShowSunJumpConfirm(true);
   };
 
@@ -179,12 +184,28 @@ const WeatherHeader = ({
 
   // Open time picker
   const handleOpenTimePicker = () => {
+    if (timeButtonRef.current) {
+      const rect = timeButtonRef.current.getBoundingClientRect();
+      setPopoverPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        right: 0,
+      });
+    }
     setPickTimeOffset(0); // Start at current time
     setShowTimePicker(true);
   };
 
   // Open date picker
   const handleOpenDatePicker = () => {
+    if (dateButtonRef.current) {
+      const rect = dateButtonRef.current.getBoundingClientRect();
+      setPopoverPosition({
+        top: rect.bottom + 8,
+        left: 0,
+        right: window.innerWidth - rect.right,
+      });
+    }
     setPickYear(currentDate?.year || 1);
     setPickMonth(currentDate?.month || 1);
     setPickDay(currentDate?.day || 1);
@@ -218,8 +239,8 @@ const WeatherHeader = ({
     // Calculate day offset for label
     const dayOffset = Math.floor(((currentDate?.hour || 0) + offset) / 24);
     let dayLabel = '';
-    if (dayOffset === -1) dayLabel = ' (yesterday)';
-    else if (dayOffset === 1) dayLabel = ' (tomorrow)';
+    if (dayOffset <= -1) dayLabel = ' (yst)';
+    else if (dayOffset >= 1) dayLabel = ' (tmw)';
 
     return { value: offset, label: `${displayHour}:00 ${period}${dayLabel}` };
   });
@@ -252,6 +273,7 @@ const WeatherHeader = ({
             {/* Left side: Time + forward controls */}
             <div className="header-left">
               <button
+                ref={timeButtonRef}
                 className="time-display"
                 onClick={handleOpenTimePicker}
                 title="Tap to change time"
@@ -279,6 +301,7 @@ const WeatherHeader = ({
             {/* Right side: Date + sunrise/sunset */}
             <div className="header-right">
               <button
+                ref={dateButtonRef}
                 className="date-display"
                 onClick={handleOpenDatePicker}
                 title="Tap to change date"
@@ -286,31 +309,15 @@ const WeatherHeader = ({
                 {formatCompactDate(currentDate)}
               </button>
               {sunInfo && (
-                <div className="sun-event-container">
-                  <button
-                    className="sun-event"
-                    onClick={handleSunEventClick}
-                    title={`Jump to ${sunInfo.type}`}
-                  >
-                    {sunInfo.type === 'sunrise' ? <WiSunrise /> : <WiSunset />}
-                    <span className="sun-time">{sunInfo.time}</span>
-                  </button>
-                  {showSunJumpConfirm && (
-                    <>
-                      <div
-                        className="popover-overlay"
-                        onClick={() => setShowSunJumpConfirm(false)}
-                      />
-                      <div className="sun-jump-popover">
-                        <span>Jump to {sunInfo.type}?</span>
-                        <div className="popover-buttons">
-                          <button onClick={() => setShowSunJumpConfirm(false)}>✕</button>
-                          <button onClick={handleConfirmSunJump}>✓</button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <button
+                  ref={sunEventButtonRef}
+                  className="sun-event"
+                  onClick={handleSunEventClick}
+                  title={`Jump to ${sunInfo.type}`}
+                >
+                  {sunInfo.type === 'sunrise' ? <WiSunrise /> : <WiSunset />}
+                  <span className="sun-time">{sunInfo.time}</span>
+                </button>
               )}
             </div>
           </div>
@@ -323,153 +330,192 @@ const WeatherHeader = ({
         </Container>
       </div>
 
-      {/* Time Picker Modal with Scroll Wheel */}
-      <Modal
-        show={showTimePicker}
-        onHide={() => setShowTimePicker(false)}
-        centered
-        className="picker-modal"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Select Time</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="scroll-wheel-row">
-            <ScrollWheel
-              items={hourItems}
-              value={pickTimeOffset}
-              onChange={setPickTimeOffset}
-            />
-          </div>
-          {/* Quick hour adjustments - these adjust the selected offset */}
-          <div className="picker-quick-controls">
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setPickTimeOffset(Math.max(-24, pickTimeOffset - 4))}
-            >
-              -4h
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setPickTimeOffset(Math.max(-24, pickTimeOffset - 1))}
-            >
-              -1h
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setPickTimeOffset(Math.min(23, pickTimeOffset + 1))}
-            >
-              +1h
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setPickTimeOffset(Math.min(23, pickTimeOffset + 4))}
-            >
-              +4h
-            </Button>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowTimePicker(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleApplyTime}>
-            Set Time
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Date Picker Modal with Scroll Wheels */}
-      <Modal
-        show={showDatePicker}
-        onHide={() => setShowDatePicker(false)}
-        centered
-        className="picker-modal"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Select Date</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div className="scroll-wheel-row multi">
-            <ScrollWheel
-              items={monthItems}
-              value={pickMonth}
-              onChange={setPickMonth}
-              label="Month"
-            />
-            <ScrollWheel
-              items={dayItems}
-              value={pickDay}
-              onChange={setPickDay}
-              label="Day"
-            />
-            {/* Year: toggle between scroll wheel and text input */}
-            <div className="scroll-wheel-container">
+      {/* Time Picker Popover - Portaled to body */}
+      {showTimePicker && createPortal(
+        <>
+          <div
+            className="popover-overlay"
+            onClick={() => setShowTimePicker(false)}
+          />
+          <div
+            className="picker-popover"
+            style={{
+              top: popoverPosition.top,
+              left: popoverPosition.left,
+            }}
+          >
+            <div className="picker-popover-header">
+              <span>Select Time</span>
+              <button className="picker-close-btn" onClick={() => setShowTimePicker(false)}>✕</button>
+            </div>
+            <div className="scroll-wheel-row">
+              <ScrollWheel
+                items={hourItems}
+                value={pickTimeOffset}
+                onChange={setPickTimeOffset}
+              />
+            </div>
+            <div className="picker-popover-actions">
               <button
-                className="scroll-wheel-label scroll-wheel-label-clickable"
-                onClick={() => setYearInputMode(!yearInputMode)}
-                title={yearInputMode ? "Switch to scroll wheel" : "Switch to text input"}
+                className="picker-action-btn"
+                onClick={() => setPickTimeOffset(Math.max(-24, pickTimeOffset - 4))}
               >
-                Year {yearInputMode ? '▼' : '⌨'}
+                -4h
               </button>
-              {yearInputMode ? (
-                <div className="year-input-wrapper">
-                  <input
-                    type="number"
-                    className="year-input"
-                    value={pickYear}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value) || 1;
-                      setPickYear(Math.max(1, val));
-                    }}
-                    min="1"
-                    autoFocus
-                  />
-                </div>
-              ) : (
-                <div className="scroll-wheel-wrapper">
-                  <div className="scroll-wheel-highlight" />
-                  <ScrollWheelInner
-                    items={yearItems}
-                    value={pickYear}
-                    onChange={setPickYear}
-                  />
-                </div>
-              )}
+              <button
+                className="picker-action-btn"
+                onClick={() => setPickTimeOffset(Math.max(-24, pickTimeOffset - 1))}
+              >
+                -1h
+              </button>
+              <button
+                className="picker-action-btn"
+                onClick={() => setPickTimeOffset(Math.min(23, pickTimeOffset + 1))}
+              >
+                +1h
+              </button>
+              <button
+                className="picker-action-btn"
+                onClick={() => setPickTimeOffset(Math.min(23, pickTimeOffset + 4))}
+              >
+                +4h
+              </button>
+            </div>
+            <div className="picker-popover-footer">
+              <button className="picker-cancel-btn" onClick={() => setShowTimePicker(false)}>
+                Cancel
+              </button>
+              <button className="picker-confirm-btn" onClick={handleApplyTime}>
+                Set Time
+              </button>
             </div>
           </div>
-          {/* Quick day adjustments */}
-          <div className="picker-quick-controls">
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => onAdvanceTime(-24)}
-            >
-              -1 Day
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => onAdvanceTime(24)}
-            >
-              +1 Day
-            </Button>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDatePicker(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleApplyDate}>
-            Set Date
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        </>,
+        document.body
+      )}
 
+      {/* Date Picker Popover - Portaled to body */}
+      {showDatePicker && createPortal(
+        <>
+          <div
+            className="popover-overlay"
+            onClick={() => setShowDatePicker(false)}
+          />
+          <div
+            className="picker-popover picker-popover-date"
+            style={{
+              top: popoverPosition.top,
+              right: popoverPosition.right,
+            }}
+          >
+            <div className="picker-popover-header">
+              <span>Select Date</span>
+              <button className="picker-close-btn" onClick={() => setShowDatePicker(false)}>✕</button>
+            </div>
+            <div className="scroll-wheel-row multi">
+              <ScrollWheel
+                items={monthItems}
+                value={pickMonth}
+                onChange={setPickMonth}
+                label="Month"
+              />
+              <ScrollWheel
+                items={dayItems}
+                value={pickDay}
+                onChange={setPickDay}
+                label="Day"
+              />
+              {/* Year: toggle between scroll wheel and text input */}
+              <div className="scroll-wheel-container">
+                <button
+                  className="scroll-wheel-label scroll-wheel-label-clickable"
+                  onClick={() => setYearInputMode(!yearInputMode)}
+                  title={yearInputMode ? "Switch to scroll wheel" : "Switch to text input"}
+                >
+                  Year {yearInputMode ? '▼' : '⌨'}
+                </button>
+                {yearInputMode ? (
+                  <div className="year-input-wrapper">
+                    <input
+                      type="number"
+                      className="year-input"
+                      value={pickYear}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        setPickYear(Math.max(1, val));
+                      }}
+                      min="1"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <div className="scroll-wheel-wrapper">
+                    <div className="scroll-wheel-highlight" />
+                    <ScrollWheelInner
+                      items={yearItems}
+                      value={pickYear}
+                      onChange={setPickYear}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="picker-popover-actions">
+              <button
+                className="picker-action-btn"
+                onClick={() => {
+                  onAdvanceTime(-24);
+                  setShowDatePicker(false);
+                }}
+              >
+                -1 Day
+              </button>
+              <button
+                className="picker-action-btn"
+                onClick={() => {
+                  onAdvanceTime(24);
+                  setShowDatePicker(false);
+                }}
+              >
+                +1 Day
+              </button>
+            </div>
+            <div className="picker-popover-footer">
+              <button className="picker-cancel-btn" onClick={() => setShowDatePicker(false)}>
+                Cancel
+              </button>
+              <button className="picker-confirm-btn" onClick={handleApplyDate}>
+                Set Date
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* Sun Jump Confirmation - Portaled to body for full-screen overlay */}
+      {showSunJumpConfirm && sunInfo && createPortal(
+        <>
+          <div
+            className="popover-overlay"
+            onClick={() => setShowSunJumpConfirm(false)}
+          />
+          <div
+            className="sun-jump-popover sun-jump-popover-portal"
+            style={{
+              top: popoverPosition.top,
+              right: popoverPosition.right,
+            }}
+          >
+            <span>Jump to {sunInfo.type}?</span>
+            <div className="popover-buttons">
+              <button onClick={() => setShowSunJumpConfirm(false)}>✕</button>
+              <button onClick={handleConfirmSunJump}>✓</button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </>
   );
 };

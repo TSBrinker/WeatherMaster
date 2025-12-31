@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ListGroup, Button, Form } from 'react-bootstrap';
 import { HiLocationMarker } from 'react-icons/hi';
 import { IoChevronBack, IoChevronDown, IoChevronForward } from 'react-icons/io5';
@@ -34,6 +35,8 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   } = useWorld();
 
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsPosition, setSettingsPosition] = useState({ top: 0, right: 0 });
+  const settingsButtonRef = useRef(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState(new Set());
   const [viewingContinent, setViewingContinent] = useState(null); // Continent being viewed on map
@@ -205,6 +208,17 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     }
   };
 
+  const handleOpenSettings = () => {
+    if (settingsButtonRef.current) {
+      const rect = settingsButtonRef.current.getBoundingClientRect();
+      setSettingsPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setShowSettings(true);
+  };
+
   const enterEditMode = () => {
     setShowSettings(false);
     setEditMode(true);
@@ -270,32 +284,50 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
         </button>
         <h1 className="locations-title">{editMode ? 'Edit Locations' : 'Locations'}</h1>
         {!editMode && (
-          <Button
-            variant="link"
+          <button
+            ref={settingsButtonRef}
             className="settings-trigger"
-            onClick={() => setShowSettings(!showSettings)}
+            onClick={handleOpenSettings}
           >
             ⋯
-          </Button>
+          </button>
         )}
         {editMode && <div className="header-spacer" />}
       </div>
 
-      {/* Settings panel (slide down when active) */}
-      {showSettings && (
-        <div className="settings-panel">
-          {/* Edit List button */}
-          {regions && regions.length > 0 && (
-            <Button
-              variant="outline-secondary"
-              className="w-100 mb-3"
-              onClick={enterEditMode}
-            >
-              Edit List
-            </Button>
-          )}
-          <SettingsMenu inline={true} />
-        </div>
+      {/* Settings Popover - Portaled to body */}
+      {showSettings && createPortal(
+        <>
+          <div
+            className="popover-overlay"
+            onClick={() => setShowSettings(false)}
+          />
+          <div
+            className="settings-popover"
+            style={{
+              top: settingsPosition.top,
+              right: settingsPosition.right,
+            }}
+          >
+            <div className="settings-popover-header">
+              <span>Settings</span>
+              <button className="picker-close-btn" onClick={() => setShowSettings(false)}>✕</button>
+            </div>
+            <div className="settings-popover-content">
+              {/* Edit List button */}
+              {regions && regions.length > 0 && (
+                <button
+                  className="settings-popover-btn"
+                  onClick={enterEditMode}
+                >
+                  Edit List
+                </button>
+              )}
+              <SettingsMenu inline={true} />
+            </div>
+          </div>
+        </>,
+        document.body
       )}
 
       {/* World name / Select All in edit mode */}
