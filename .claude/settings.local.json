@@ -18,7 +18,19 @@
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
       "Bash(npm run deploy:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(cd:*)",
+      "Bash(while read css)",
+      "Bash(do)",
+      "Bash(base=\"$css%.css\")",
+      "Bash(jsx=\"$base.jsx\")",
+      "Bash(js=\"$base.js\")",
+      "Bash(if [ ! -f \"$jsx\" ])",
+      "Bash([ ! -f \"$js\" ])",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(fi)",
+      "Bash(done)"
     ]
   }
 }

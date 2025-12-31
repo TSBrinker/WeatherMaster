@@ -1,80 +1,76 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-31
-**Previous Agent**: Zephyr (Sprint 52)
-**Current Sprint Count**: 52 (next agent creates `SPRINT_53_*.md`)
-**Status**: Path drawing feature complete with full map controls
+**Previous Agent**: Cliff (Sprint 53)
+**Current Sprint Count**: 53 (next agent creates `SPRINT_54_*.md`)
+**Status**: Region drawing complete, UI refactored. HIGH PRIORITY items identified.
 
 ---
 
-## What Was Done This Sprint (Sprint 52)
+## What Was Done This Sprint (Sprint 53)
 
-### 1. Complete Path Drawing System
-Full implementation of travel path feature for worldbuilding maps.
+### 1. Region Drawing System - Weather & Political
+Complete polygon drawing for both weather zones and political territories.
 
-**Files Created:**
-- `src/v2/utils/pathUtils.js` - Distance calculations, SVG helpers
-- `src/v2/components/map/PathManager.jsx` - UI panel for path management
-- `src/v2/components/map/PathManager.css` - Panel styling
+**New Files:**
+- `src/v2/utils/regionUtils.js` - Polygon math (area, perimeter, vertex snapping)
+- `src/v2/components/map/MapToolsPanel.jsx` + `.css` - Unified accordion panel
 
-**Files Modified:**
-- `src/v2/contexts/WorldContext.jsx` - Added path CRUD methods
-- `src/v2/components/map/WorldMapView.jsx` - Path rendering, drawing mode, zoom/pan
-- `src/v2/components/map/WorldMapView.css` - Path/waypoint styling, controls
-- `src/v2/components/menu/HamburgerMenu.jsx` - Fixed stale state bug
+**Modified Files:**
+- `src/v2/contexts/WorldContext.jsx` - Added 12 CRUD methods (6 per region type)
+- `src/v2/components/map/WorldMapView.jsx` - Drawing logic, SVG rendering, layer toggles
+- `src/v2/components/map/WorldMapView.css` - Polygon and vertex styles
 
-### Path Features
-- Draw paths by clicking waypoints on map
-- Live distance calculation while drawing
-- Drag waypoints to adjust paths
-- Rename paths inline
-- Color picker for each path
-- Visibility toggle per path
-- Delete paths
-- Start/end waypoint indicators (green/red)
+**Features:**
+- Draw polygons by clicking to place vertices (minimum 3 to close)
+- Weather regions: blue/teal colors, solid fill
+- Political regions: warm/orange colors, dashed borders
+- Vertex snapping - click near existing vertex to reuse point
+- Area/perimeter calculations
+- Per-region: rename, color picker, visibility toggle, delete
+- Layer toggle buttons in header
 
-### 2. Map Controls
-- **Zoom** - Buttons (+/-), Ctrl+scroll, 100%-500%
-- **Pan** - Shift+drag or middle-mouse when zoomed
-- **Reset** - Returns to 100% and centers
-- **Layer toggles** - Climate bands, paths (default OFF)
-- **Add Location mode** - Explicit button to enter placement mode
+### 2. UI Refactor - MapToolsPanel
+Consolidated 3 separate stacking panels into single accordion panel:
+- Paths, Weather, Political sections
+- Only one expands at a time
+- Auto-expands when drawing
+- Much cleaner than before
 
-### 3. Scale Reference Bar
-- Adaptive bar showing distance at current zoom
-- Uses "nice" numbers (1, 5, 10, 50, 100, 500, 1k, 2k, 5k miles)
-- Accounts for image scaling and zoom level
+### 3. Dead Code Cleanup
+Moved orphaned files to `src/v2/components/_recycled/`:
+- Old CSS files (CelestialCard, ConditionsCard, CurrentWeather, DMForecastPanel)
+- TimeDisplay.jsx
+- PathManager, WeatherRegionManager, PoliticalRegionManager (superseded by MapToolsPanel)
 
-### 4. Bug Fixes
-- Fixed path persistence (stale state in HamburgerMenu)
-- Fixed pin clicks during drawing mode (adds waypoint)
-- Fixed scale bar accuracy (display size vs natural size)
+---
+
+## HIGH PRIORITY Items (from testing with Tyler)
+
+### 1. Non-Overlapping Region Enforcement
+**Problem**: Territories can freely overlap. Tyler wants them to butt up against each other without overlapping (like a real map of kingdoms).
+
+**Possible approaches:**
+- Polygon intersection detection when saving
+- Auto edge alignment when vertices are near existing edges
+- Visual warning/prevention when overlap detected
+- Use a polygon clipping library (e.g., clipper-lib, polygon-clipping)
+
+### 2. Mobile Touch Gestures
+**Problem**: Zoom/pan only works with mouse (wheel scroll, shift+drag).
+
+**Needed:**
+- Pinch-to-zoom
+- Two-finger pan
+- Touch event handlers with gesture detection
 
 ---
 
 ## Uncommitted Changes
 
-All Sprint 52 work is uncommitted:
-- Path drawing system (3 new files)
-- Map zoom/pan controls
-- Scale reference bar
-- Layer toggles
-- Add Location mode
-- Bug fixes
-- Sprint 52 log
-
----
-
-## Next Tasks (from NOTES_FROM_USER.md)
-
-Tyler has two more map features planned:
-1. **Weather region drawing** - polygons for weather zones
-2. **Political regions** - borders for kingdoms
-
-The path system architecture can inform these polygon features - they'll need similar:
-- WorldContext CRUD methods
-- SVG rendering in WorldMapView
-- Management UI panels
+All Sprint 52 AND 53 work is uncommitted:
+- Sprint 52: Path drawing, zoom/pan, scale bar
+- Sprint 53: Region drawing, UI refactor, dead code cleanup
 
 ---
 
@@ -82,36 +78,50 @@ The path system architecture can inform these polygon features - they'll need si
 
 | Feature | Key File |
 |---------|----------|
+| Region utilities | `src/v2/utils/regionUtils.js` |
 | Path utilities | `src/v2/utils/pathUtils.js` |
-| Path manager UI | `src/v2/components/map/PathManager.jsx` |
+| Unified tools panel | `src/v2/components/map/MapToolsPanel.jsx` |
 | Map view | `src/v2/components/map/WorldMapView.jsx` |
 | World data | `src/v2/contexts/WorldContext.jsx` |
-| Map utils | `src/v2/utils/mapUtils.js` |
-| Sea state | `src/v2/services/weather/SeaStateService.js` |
 
 ---
 
 ## Architecture Notes
 
-### Path Data Structure
+### Region Data Structure
 ```javascript
 {
   id: string,
   name: string,
-  waypoints: [{ id, x, y }],
+  vertices: [{ id, x, y }],
   color: string (hex),
   isVisible: boolean,
-  totalDistanceMiles: number
+  perimeterMiles: number,
+  areaSquareMiles: number
 }
 ```
+Stored in `continent.weatherRegions[]` and `continent.politicalRegions[]`
 
-### WorldContext Path Methods
-- `createPath(continentId, pathData)`
-- `updatePath(continentId, pathId, updates)`
-- `deletePath(continentId, pathId)`
-- `addWaypoint(continentId, pathId, waypoint, index)`
-- `updateWaypoint(continentId, pathId, waypointId, updates)`
-- `deleteWaypoint(continentId, pathId, waypointId)`
+### WorldContext Region Methods (12 total)
+Weather: `createWeatherRegion`, `updateWeatherRegion`, `deleteWeatherRegion`, `addWeatherRegionVertex`, `updateWeatherRegionVertex`, `deleteWeatherRegionVertex`
+
+Political: Same pattern with `Political` prefix
+
+### Drawing Mode State
+```javascript
+drawingMode: 'none' | 'path' | 'weatherRegion' | 'politicalRegion'
+```
+
+### Vertex Snapping
+`findNearestVertexAcrossRegions(x, y, weatherRegions, politicalRegions, threshold)` - returns nearest vertex within threshold across all regions. Used on every click during region drawing.
+
+---
+
+## Remaining Items
+
+1. **Non-overlapping regions** (HIGH PRIORITY)
+2. **Mobile touch gestures** (HIGH PRIORITY)
+3. Exact sunrise/sunset from pin Y position
 
 ---
 

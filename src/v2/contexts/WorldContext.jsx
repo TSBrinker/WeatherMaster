@@ -640,6 +640,256 @@ export const WorldProvider = ({ children }) => {
     }));
   }, []);
 
+  // ===== WEATHER REGION MANAGEMENT =====
+
+  const createWeatherRegion = useCallback((continentId, regionData) => {
+    if (!continentId) return null;
+
+    const newRegion = {
+      id: uuidv4(),
+      name: regionData.name || 'New Weather Region',
+      vertices: regionData.vertices || [],
+      color: regionData.color || '#3498db',
+      isVisible: true,
+      perimeterMiles: regionData.perimeterMiles || 0,
+      areaSquareMiles: regionData.areaSquareMiles || 0,
+    };
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, weatherRegions: [...(continent.weatherRegions || []), newRegion] }
+        : continent
+    ));
+
+    return newRegion;
+  }, []);
+
+  const updateWeatherRegion = useCallback((continentId, regionId, updates) => {
+    if (!continentId || !regionId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? {
+          ...continent,
+          weatherRegions: (continent.weatherRegions || []).map(region =>
+            region.id === regionId
+              ? { ...region, ...updates }
+              : region
+          )
+        }
+        : continent
+    ));
+  }, []);
+
+  const deleteWeatherRegion = useCallback((continentId, regionId) => {
+    if (!continentId || !regionId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, weatherRegions: (continent.weatherRegions || []).filter(r => r.id !== regionId) }
+        : continent
+    ));
+  }, []);
+
+  const addWeatherRegionVertex = useCallback((continentId, regionId, vertex, index = -1) => {
+    if (!continentId || !regionId) return;
+
+    const newVertex = {
+      id: uuidv4(),
+      x: vertex.x,
+      y: vertex.y,
+    };
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        weatherRegions: (continent.weatherRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          const newVertices = [...region.vertices];
+          if (index >= 0 && index < newVertices.length) {
+            newVertices.splice(index, 0, newVertex);
+          } else {
+            newVertices.push(newVertex);
+          }
+
+          return { ...region, vertices: newVertices };
+        })
+      };
+    }));
+
+    return newVertex;
+  }, []);
+
+  const updateWeatherRegionVertex = useCallback((continentId, regionId, vertexId, updates) => {
+    if (!continentId || !regionId || !vertexId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        weatherRegions: (continent.weatherRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          return {
+            ...region,
+            vertices: region.vertices.map(v =>
+              v.id === vertexId ? { ...v, ...updates } : v
+            )
+          };
+        })
+      };
+    }));
+  }, []);
+
+  const deleteWeatherRegionVertex = useCallback((continentId, regionId, vertexId) => {
+    if (!continentId || !regionId || !vertexId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        weatherRegions: (continent.weatherRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          return {
+            ...region,
+            vertices: region.vertices.filter(v => v.id !== vertexId)
+          };
+        })
+      };
+    }));
+  }, []);
+
+  // ===== POLITICAL REGION MANAGEMENT =====
+
+  const createPoliticalRegion = useCallback((continentId, regionData) => {
+    if (!continentId) return null;
+
+    const newRegion = {
+      id: uuidv4(),
+      name: regionData.name || 'New Political Region',
+      vertices: regionData.vertices || [],
+      color: regionData.color || '#e74c3c',
+      isVisible: true,
+      perimeterMiles: regionData.perimeterMiles || 0,
+      areaSquareMiles: regionData.areaSquareMiles || 0,
+    };
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, politicalRegions: [...(continent.politicalRegions || []), newRegion] }
+        : continent
+    ));
+
+    return newRegion;
+  }, []);
+
+  const updatePoliticalRegion = useCallback((continentId, regionId, updates) => {
+    if (!continentId || !regionId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? {
+          ...continent,
+          politicalRegions: (continent.politicalRegions || []).map(region =>
+            region.id === regionId
+              ? { ...region, ...updates }
+              : region
+          )
+        }
+        : continent
+    ));
+  }, []);
+
+  const deletePoliticalRegion = useCallback((continentId, regionId) => {
+    if (!continentId || !regionId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, politicalRegions: (continent.politicalRegions || []).filter(r => r.id !== regionId) }
+        : continent
+    ));
+  }, []);
+
+  const addPoliticalRegionVertex = useCallback((continentId, regionId, vertex, index = -1) => {
+    if (!continentId || !regionId) return;
+
+    const newVertex = {
+      id: uuidv4(),
+      x: vertex.x,
+      y: vertex.y,
+    };
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          const newVertices = [...region.vertices];
+          if (index >= 0 && index < newVertices.length) {
+            newVertices.splice(index, 0, newVertex);
+          } else {
+            newVertices.push(newVertex);
+          }
+
+          return { ...region, vertices: newVertices };
+        })
+      };
+    }));
+
+    return newVertex;
+  }, []);
+
+  const updatePoliticalRegionVertex = useCallback((continentId, regionId, vertexId, updates) => {
+    if (!continentId || !regionId || !vertexId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          return {
+            ...region,
+            vertices: region.vertices.map(v =>
+              v.id === vertexId ? { ...v, ...updates } : v
+            )
+          };
+        })
+      };
+    }));
+  }, []);
+
+  const deletePoliticalRegionVertex = useCallback((continentId, regionId, vertexId) => {
+    if (!continentId || !regionId || !vertexId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          return {
+            ...region,
+            vertices: region.vertices.filter(v => v.id !== vertexId)
+          };
+        })
+      };
+    }));
+  }, []);
+
   const contextValue = {
     // State
     worlds,
@@ -697,6 +947,22 @@ export const WorldProvider = ({ children }) => {
     addWaypoint,
     updateWaypoint,
     deleteWaypoint,
+
+    // Weather Region methods
+    createWeatherRegion,
+    updateWeatherRegion,
+    deleteWeatherRegion,
+    addWeatherRegionVertex,
+    updateWeatherRegionVertex,
+    deleteWeatherRegionVertex,
+
+    // Political Region methods
+    createPoliticalRegion,
+    updatePoliticalRegion,
+    deletePoliticalRegion,
+    addPoliticalRegionVertex,
+    updatePoliticalRegionVertex,
+    deletePoliticalRegionVertex,
   };
 
   return (

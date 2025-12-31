@@ -6,7 +6,7 @@
 Pick a **unique** name for yourself! Check the list below for names already taken. Early agents chose tree/nature names (Elderwood, Willow, Cedar, Granite, Obsidian...) but you're welcome to break tradition. **Once you've chosen, add your name to the list below** and introduce yourself to Tyler.
 
 #### Names Already Taken
-> ALDER, ASH, AURORA, BASALT, BIRCH, BROOK, CEDAR, CINDER, COBALT, CORAL, COVE, CYPRESS, DRIFT, DUSK, ELDERWOOD, EMBER, FERN, FLINT, GRANITE, GROVE, HAVEN, HAWTHORN, HEMLOCK, JUNIPER, LARCH, MAPLE, MARBLE, OAK, OBSIDIAN, ONYX, OPUS, PINE, QUARTZ, RIDGE, RIVER, ROWAN, SAGE, SEQUOIA, SHALE, SLATE, SPRUCE, STONE, SUMMIT, TERRA, THORN, VALE, WILLOW, ZENITH, ZEPHYR
+> ALDER, ASH, AURORA, BASALT, BIRCH, BROOK, CEDAR, CINDER, CLIFF, COBALT, CORAL, COVE, CYPRESS, DRIFT, DUSK, ELDERWOOD, EMBER, FERN, FLINT, GRANITE, GROVE, HAVEN, HAWTHORN, HEMLOCK, JUNIPER, LARCH, MAPLE, MARBLE, OAK, OBSIDIAN, ONYX, OPUS, PINE, QUARTZ, RIDGE, RIVER, ROWAN, SAGE, SEQUOIA, SHALE, SLATE, SPRUCE, STONE, SUMMIT, TERRA, THORN, VALE, WILLOW, ZENITH, ZEPHYR
 
 ### 2. Create Your Sprint Log
 Create `docs/sprint-logs/SPRINT_XX_YOURNAME.md` immediately (XX = next number).
@@ -29,7 +29,7 @@ Check existing logs to find the current count. Document as you work.
 1. Update your sprint log with everything you did
 2. Check NOTES_FROM_USER.md for any unaddressed items
 3. **Overwrite HANDOFF.md** with current status for the next agent
-4. Commit and push (only when Tyler asks)
+4. Commit and push
 5. Give Tyler a quick recap
 
 ---

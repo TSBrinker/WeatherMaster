@@ -154,10 +154,21 @@ This is the single source of truth for feature planning and priorities.
 
 ### 🔮 Stretch Goals
 
-**Interactive Map System**
-- [ ] Upload continent map image
-- [ ] Climate band visualization overlay
-- [ ] Pin placement with auto-suggest biomes
+**Interactive Map System** - PARTIAL ✅ *(Sprint 52-53)*
+- [x] Upload continent map image
+- [x] Climate band visualization overlay
+- [x] Pin placement with auto-suggest biomes
+- [x] Map zoom/pan controls (100%-500%)
+- [x] Scale reference bar
+- [x] Layer toggles (climate bands, paths, weather regions, political regions)
+- [x] Path drawing with waypoints and distance calculation *(Sprint 52)*
+- [x] Weather region drawing (polygon zones) *(Sprint 53)*
+- [x] Political region drawing (kingdom borders) *(Sprint 53)*
+- [x] Unified MapToolsPanel (accordion-style, replaces 3 separate panels) *(Sprint 53)*
+- [x] Vertex snapping (click near existing vertex to reuse exact point) *(Sprint 53)*
+- [ ] **HIGH PRIORITY**: Non-overlapping region enforcement (territories should butt up, not overlap)
+- [ ] **HIGH PRIORITY**: Mobile touch gestures (pinch-to-zoom, two-finger pan)
+- [ ] Exact sunrise/sunset times from pin Y position (precision enhancement)
 
 **Spatial Weather System**
 - [ ] Adjacent regions system

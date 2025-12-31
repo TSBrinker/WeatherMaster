@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
-import { Settings, Plus, MapPin, ZoomIn, ZoomOut, RotateCcw, Layers, Route, Thermometer } from 'lucide-react';
+import { Settings, Plus, MapPin, ZoomIn, ZoomOut, RotateCcw, Layers, Route, Thermometer, Cloud, Crown } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
 import {
   calculateVisibleBands,
@@ -14,8 +14,17 @@ import {
   calculatePathDistance,
   getNextPathColor,
 } from '../../utils/pathUtils';
+import {
+  verticesToSvgPoints,
+  calculatePolygonPerimeter,
+  calculatePolygonArea,
+  getNextRegionColor,
+  findNearestVertexAcrossRegions,
+  WEATHER_REGION_COLORS,
+  POLITICAL_REGION_COLORS,
+} from '../../utils/regionUtils';
 import MapConfigModal from './MapConfigModal';
-import PathManager from './PathManager';
+import MapToolsPanel from './MapToolsPanel';
 import './WorldMapView.css';
 
 /**
@@ -27,7 +36,7 @@ import './WorldMapView.css';
  * - onSelectRegion: Callback when user clicks on a region pin
  */
 const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
-  const { activeWorld, groupedRegions, createPath, updatePath } = useWorld();
+  const { activeWorld, groupedRegions, createPath, updatePath, createWeatherRegion, updateWeatherRegion, createPoliticalRegion, updatePoliticalRegion } = useWorld();
   const mapContainerRef = useRef(null);
   const imageRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 }); // Natural image dimensions
@@ -36,9 +45,17 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const [hoveredBand, setHoveredBand] = useState(null);
 
   // Path drawing state
-  const [drawingMode, setDrawingMode] = useState('none'); // 'none' | 'drawing'
+  const [drawingMode, setDrawingMode] = useState('none'); // 'none' | 'path' | 'weatherRegion' | 'politicalRegion'
   const [activePath, setActivePath] = useState(null); // Path being drawn
   const [selectedPathId, setSelectedPathId] = useState(null);
+
+  // Weather region drawing state
+  const [activeWeatherRegion, setActiveWeatherRegion] = useState(null);
+  const [selectedWeatherRegionId, setSelectedWeatherRegionId] = useState(null);
+
+  // Political region drawing state
+  const [activePoliticalRegion, setActivePoliticalRegion] = useState(null);
+  const [selectedPoliticalRegionId, setSelectedPoliticalRegionId] = useState(null);
 
   // Waypoint dragging state
   const [draggingWaypoint, setDraggingWaypoint] = useState(null);
@@ -47,6 +64,8 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // Layer visibility (default off to reduce visual clutter)
   const [showPaths, setShowPaths] = useState(false);
   const [showClimate, setShowClimate] = useState(false);
+  const [showWeatherRegions, setShowWeatherRegions] = useState(false);
+  const [showPoliticalRegions, setShowPoliticalRegions] = useState(false);
 
   // Location placement mode
   const [placingLocation, setPlacingLocation] = useState(false);
@@ -157,7 +176,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // === PATH DRAWING ===
 
   const handleStartDrawing = useCallback(() => {
-    setDrawingMode('drawing');
+    setDrawingMode('path');
     setSelectedPathId(null);
     setActivePath({
       waypoints: [],
@@ -209,6 +228,156 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       totalDistanceMiles: totalDistance,
     });
   }, [activePath, mapScale]);
+
+  // === WEATHER REGION DRAWING ===
+
+  const handleStartWeatherRegionDrawing = useCallback(() => {
+    setDrawingMode('weatherRegion');
+    setSelectedWeatherRegionId(null);
+    setActiveWeatherRegion({
+      vertices: [],
+      color: getNextRegionColor(continent?.weatherRegions || [], WEATHER_REGION_COLORS),
+      perimeterMiles: 0,
+      areaSquareMiles: 0,
+    });
+  }, [continent?.weatherRegions]);
+
+  const handleFinishWeatherRegionDrawing = useCallback(() => {
+    if (!activeWeatherRegion || activeWeatherRegion.vertices.length < 3 || !continent) {
+      setDrawingMode('none');
+      setActiveWeatherRegion(null);
+      return;
+    }
+
+    // Create the region with a default name
+    const regionNumber = (continent.weatherRegions?.length || 0) + 1;
+    createWeatherRegion(continent.id, {
+      name: `Weather Zone ${regionNumber}`,
+      vertices: activeWeatherRegion.vertices,
+      color: activeWeatherRegion.color,
+      perimeterMiles: activeWeatherRegion.perimeterMiles,
+      areaSquareMiles: activeWeatherRegion.areaSquareMiles,
+    });
+
+    setDrawingMode('none');
+    setActiveWeatherRegion(null);
+    setShowWeatherRegions(true); // Auto-show the layer when a region is created
+  }, [activeWeatherRegion, continent, createWeatherRegion]);
+
+  const handleCancelWeatherRegionDrawing = useCallback(() => {
+    setDrawingMode('none');
+    setActiveWeatherRegion(null);
+  }, []);
+
+  const handleAddWeatherRegionVertex = useCallback((pos) => {
+    if (!activeWeatherRegion) return;
+
+    // First priority: check for vertex snapping (clicking on an existing vertex)
+    const nearestVertex = findNearestVertexAcrossRegions(
+      pos.x,
+      pos.y,
+      continent?.weatherRegions || [],
+      continent?.politicalRegions || [],
+      12 // vertex snapping threshold
+    );
+
+    let vertexPosition = { x: pos.x, y: pos.y };
+
+    if (nearestVertex) {
+      // Snap to the existing vertex position
+      vertexPosition = { x: nearestVertex.vertex.x, y: nearestVertex.vertex.y };
+    }
+
+    const newVertex = {
+      id: `temp-${Date.now()}`,
+      x: vertexPosition.x,
+      y: vertexPosition.y,
+    };
+
+    const newVertices = [...activeWeatherRegion.vertices, newVertex];
+
+    setActiveWeatherRegion({
+      ...activeWeatherRegion,
+      vertices: newVertices,
+      perimeterMiles: calculatePolygonPerimeter(newVertices, mapScale),
+      areaSquareMiles: calculatePolygonArea(newVertices, mapScale),
+    });
+  }, [activeWeatherRegion, continent, mapScale]);
+
+  // === POLITICAL REGION DRAWING ===
+
+  const handleStartPoliticalRegionDrawing = useCallback(() => {
+    setDrawingMode('politicalRegion');
+    setSelectedPoliticalRegionId(null);
+    setActivePoliticalRegion({
+      vertices: [],
+      color: getNextRegionColor(continent?.politicalRegions || [], POLITICAL_REGION_COLORS),
+      perimeterMiles: 0,
+      areaSquareMiles: 0,
+    });
+  }, [continent?.politicalRegions]);
+
+  const handleFinishPoliticalRegionDrawing = useCallback(() => {
+    if (!activePoliticalRegion || activePoliticalRegion.vertices.length < 3 || !continent) {
+      setDrawingMode('none');
+      setActivePoliticalRegion(null);
+      return;
+    }
+
+    // Create the region with a default name
+    const regionNumber = (continent.politicalRegions?.length || 0) + 1;
+    createPoliticalRegion(continent.id, {
+      name: `Kingdom ${regionNumber}`,
+      vertices: activePoliticalRegion.vertices,
+      color: activePoliticalRegion.color,
+      perimeterMiles: activePoliticalRegion.perimeterMiles,
+      areaSquareMiles: activePoliticalRegion.areaSquareMiles,
+    });
+
+    setDrawingMode('none');
+    setActivePoliticalRegion(null);
+    setShowPoliticalRegions(true); // Auto-show the layer when a region is created
+  }, [activePoliticalRegion, continent, createPoliticalRegion]);
+
+  const handleCancelPoliticalRegionDrawing = useCallback(() => {
+    setDrawingMode('none');
+    setActivePoliticalRegion(null);
+  }, []);
+
+  const handleAddPoliticalRegionVertex = useCallback((pos) => {
+    if (!activePoliticalRegion) return;
+
+    // First priority: check for vertex snapping (clicking on an existing vertex)
+    const nearestVertex = findNearestVertexAcrossRegions(
+      pos.x,
+      pos.y,
+      continent?.weatherRegions || [],
+      continent?.politicalRegions || [],
+      12 // vertex snapping threshold
+    );
+
+    let vertexPosition = { x: pos.x, y: pos.y };
+
+    if (nearestVertex) {
+      // Snap to the existing vertex position
+      vertexPosition = { x: nearestVertex.vertex.x, y: nearestVertex.vertex.y };
+    }
+
+    const newVertex = {
+      id: `temp-${Date.now()}`,
+      x: vertexPosition.x,
+      y: vertexPosition.y,
+    };
+
+    const newVertices = [...activePoliticalRegion.vertices, newVertex];
+
+    setActivePoliticalRegion({
+      ...activePoliticalRegion,
+      vertices: newVertices,
+      perimeterMiles: calculatePolygonPerimeter(newVertices, mapScale),
+      areaSquareMiles: calculatePolygonArea(newVertices, mapScale),
+    });
+  }, [activePoliticalRegion, continent, mapScale]);
 
   // === WAYPOINT DRAGGING ===
 
@@ -274,9 +443,21 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     const pos = getImagePosition(e);
     if (!pos) return;
 
-    // In drawing mode, add waypoint
-    if (drawingMode === 'drawing') {
+    // In path drawing mode, add waypoint
+    if (drawingMode === 'path') {
       handleAddWaypoint(pos);
+      return;
+    }
+
+    // In weather region drawing mode, add vertex
+    if (drawingMode === 'weatherRegion') {
+      handleAddWeatherRegionVertex(pos);
+      return;
+    }
+
+    // In political region drawing mode, add vertex
+    if (drawingMode === 'politicalRegion') {
+      handleAddPoliticalRegionVertex(pos);
       return;
     }
 
@@ -357,9 +538,21 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const handlePinClick = (e, region) => {
     e.stopPropagation(); // Don't trigger map click
 
-    // In drawing mode, add waypoint at the pin's location instead of selecting region
-    if (drawingMode === 'drawing' && region.mapPosition) {
+    // In path drawing mode, add waypoint at the pin's location instead of selecting region
+    if (drawingMode === 'path' && region.mapPosition) {
       handleAddWaypoint({ x: region.mapPosition.x, y: region.mapPosition.y });
+      return;
+    }
+
+    // In weather region drawing mode, add vertex at the pin's location
+    if (drawingMode === 'weatherRegion' && region.mapPosition) {
+      handleAddWeatherRegionVertex({ x: region.mapPosition.x, y: region.mapPosition.y });
+      return;
+    }
+
+    // In political region drawing mode, add vertex at the pin's location
+    if (drawingMode === 'politicalRegion' && region.mapPosition) {
+      handleAddPoliticalRegionVertex({ x: region.mapPosition.x, y: region.mapPosition.y });
       return;
     }
 
@@ -432,6 +625,24 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           >
             <Route size={14} />
           </Button>
+          <Button
+            variant={showWeatherRegions ? 'info' : 'outline-secondary'}
+            size="sm"
+            onClick={() => setShowWeatherRegions(!showWeatherRegions)}
+            title={showWeatherRegions ? 'Hide weather regions' : 'Show weather regions'}
+            className="layer-toggle"
+          >
+            <Cloud size={14} />
+          </Button>
+          <Button
+            variant={showPoliticalRegions ? 'warning' : 'outline-secondary'}
+            size="sm"
+            onClick={() => setShowPoliticalRegions(!showPoliticalRegions)}
+            title={showPoliticalRegions ? 'Hide political regions' : 'Show political regions'}
+            className="layer-toggle"
+          >
+            <Crown size={14} />
+          </Button>
           <div className="header-divider" />
           {/* Zoom controls */}
           <Button
@@ -476,7 +687,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
       <div
         ref={mapContainerRef}
-        className={`map-container ${drawingMode === 'drawing' ? 'drawing-mode' : ''} ${placingLocation ? 'placing-mode' : ''} ${draggingWaypoint ? 'dragging' : ''} ${isPanning ? 'panning' : ''}`}
+        className={`map-container ${drawingMode !== 'none' ? 'drawing-mode' : ''} ${placingLocation ? 'placing-mode' : ''} ${draggingWaypoint ? 'dragging' : ''} ${isPanning ? 'panning' : ''}`}
         onClick={handleMapClick}
         onMouseMove={(e) => { handleMouseMove(e); handlePanMove(e); }}
         onMouseUp={(e) => { handleMouseUp(); handlePanEnd(); }}
@@ -536,6 +747,171 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                   </g>
                 );
               })}
+
+              {/* Saved weather regions (rendered first, behind paths) */}
+              {showWeatherRegions && continent?.weatherRegions?.filter(r => r.isVisible).map(region => (
+                <g
+                  key={region.id}
+                  className={`map-region weather-region ${selectedWeatherRegionId === region.id ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedWeatherRegionId(region.id === selectedWeatherRegionId ? null : region.id);
+                  }}
+                >
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill={region.color}
+                    fillOpacity="0.3"
+                    stroke={region.color}
+                    strokeWidth="2"
+                    className="region-polygon"
+                  />
+                  {/* Invisible wider polygon for easier click targeting */}
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill="transparent"
+                    stroke="transparent"
+                    strokeWidth="10"
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {/* Vertex handles (show when selected) */}
+                  {selectedWeatherRegionId === region.id && region.vertices.map((v, idx) => (
+                    <circle
+                      key={v.id}
+                      cx={v.x}
+                      cy={v.y}
+                      r="6"
+                      className="vertex-marker"
+                      fill={region.color}
+                      stroke="white"
+                      strokeWidth="2"
+                      style={{ cursor: 'grab' }}
+                    />
+                  ))}
+                </g>
+              ))}
+
+              {/* Active weather region being drawn */}
+              {activeWeatherRegion && activeWeatherRegion.vertices.length > 0 && (
+                <g className="map-region weather-region active-drawing">
+                  {/* Draw as polygon if 3+ vertices, otherwise as polyline */}
+                  {activeWeatherRegion.vertices.length >= 3 ? (
+                    <polygon
+                      points={verticesToSvgPoints(activeWeatherRegion.vertices)}
+                      fill={activeWeatherRegion.color}
+                      fillOpacity="0.2"
+                      stroke={activeWeatherRegion.color}
+                      strokeWidth="2"
+                      strokeDasharray="8 4"
+                      className="region-polygon"
+                    />
+                  ) : (
+                    <polyline
+                      points={verticesToSvgPoints(activeWeatherRegion.vertices)}
+                      fill="none"
+                      stroke={activeWeatherRegion.color}
+                      strokeWidth="2"
+                      strokeDasharray="8 4"
+                    />
+                  )}
+                  {/* Vertex markers while drawing */}
+                  {activeWeatherRegion.vertices.map((v, idx) => (
+                    <circle
+                      key={v.id}
+                      cx={v.x}
+                      cy={v.y}
+                      r="6"
+                      className={`vertex-marker drawing ${idx === 0 ? 'start' : ''}`}
+                      fill={activeWeatherRegion.color}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                  ))}
+                </g>
+              )}
+
+              {/* Saved political regions (rendered after weather regions) */}
+              {showPoliticalRegions && continent?.politicalRegions?.filter(r => r.isVisible).map(region => (
+                <g
+                  key={region.id}
+                  className={`map-region political-region ${selectedPoliticalRegionId === region.id ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPoliticalRegionId(region.id === selectedPoliticalRegionId ? null : region.id);
+                  }}
+                >
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill={region.color}
+                    fillOpacity="0.2"
+                    stroke={region.color}
+                    strokeWidth="3"
+                    strokeDasharray="12 4"
+                    className="region-polygon political"
+                  />
+                  {/* Invisible wider polygon for easier click targeting */}
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill="transparent"
+                    stroke="transparent"
+                    strokeWidth="10"
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {/* Vertex handles (show when selected) */}
+                  {selectedPoliticalRegionId === region.id && region.vertices.map((v, idx) => (
+                    <circle
+                      key={v.id}
+                      cx={v.x}
+                      cy={v.y}
+                      r="6"
+                      className="vertex-marker political"
+                      fill={region.color}
+                      stroke="white"
+                      strokeWidth="2"
+                      style={{ cursor: 'grab' }}
+                    />
+                  ))}
+                </g>
+              ))}
+
+              {/* Active political region being drawn */}
+              {activePoliticalRegion && activePoliticalRegion.vertices.length > 0 && (
+                <g className="map-region political-region active-drawing">
+                  {/* Draw as polygon if 3+ vertices, otherwise as polyline */}
+                  {activePoliticalRegion.vertices.length >= 3 ? (
+                    <polygon
+                      points={verticesToSvgPoints(activePoliticalRegion.vertices)}
+                      fill={activePoliticalRegion.color}
+                      fillOpacity="0.15"
+                      stroke={activePoliticalRegion.color}
+                      strokeWidth="3"
+                      strokeDasharray="8 4"
+                      className="region-polygon political"
+                    />
+                  ) : (
+                    <polyline
+                      points={verticesToSvgPoints(activePoliticalRegion.vertices)}
+                      fill="none"
+                      stroke={activePoliticalRegion.color}
+                      strokeWidth="3"
+                      strokeDasharray="8 4"
+                    />
+                  )}
+                  {/* Vertex markers while drawing */}
+                  {activePoliticalRegion.vertices.map((v, idx) => (
+                    <circle
+                      key={v.id}
+                      cx={v.x}
+                      cy={v.y}
+                      r="6"
+                      className={`vertex-marker drawing political ${idx === 0 ? 'start' : ''}`}
+                      fill={activePoliticalRegion.color}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                  ))}
+                </g>
+              )}
 
               {/* Saved paths */}
               {showPaths && continent?.paths?.filter(p => p.isVisible).map(path => (
@@ -635,10 +1011,20 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         </div>
 
         {/* Click hint overlay */}
-        {drawingMode === 'drawing' ? (
+        {drawingMode === 'path' ? (
           <div className="click-hint drawing">
             Click to add waypoints
             {activePath?.waypoints?.length >= 2 && ' - Click checkmark to finish'}
+          </div>
+        ) : drawingMode === 'weatherRegion' ? (
+          <div className="click-hint drawing weather">
+            Click to add vertices (min 3) - click near existing vertices to snap
+            {activeWeatherRegion?.vertices?.length >= 3 && ' - Click checkmark to finish'}
+          </div>
+        ) : drawingMode === 'politicalRegion' ? (
+          <div className="click-hint drawing political">
+            Click to add vertices (min 3) - click near existing vertices to snap
+            {activePoliticalRegion?.vertices?.length >= 3 && ' - Click checkmark to finish'}
           </div>
         ) : placingLocation && (
           <div className="click-hint placing">
@@ -658,17 +1044,32 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         )}
       </div>
 
-      {/* Path Manager Panel */}
+      {/* Unified Map Tools Panel */}
       {mapImage && mapScale && (
-        <PathManager
+        <MapToolsPanel
           continent={continent}
           drawingMode={drawingMode}
-          onStartDrawing={handleStartDrawing}
-          onFinishDrawing={handleFinishDrawing}
-          onCancelDrawing={handleCancelDrawing}
+          // Path props
+          onStartPathDrawing={handleStartDrawing}
+          onFinishPathDrawing={handleFinishDrawing}
+          onCancelPathDrawing={handleCancelDrawing}
           activePath={activePath}
           selectedPathId={selectedPathId}
           onSelectPath={setSelectedPathId}
+          // Weather region props
+          onStartWeatherRegionDrawing={handleStartWeatherRegionDrawing}
+          onFinishWeatherRegionDrawing={handleFinishWeatherRegionDrawing}
+          onCancelWeatherRegionDrawing={handleCancelWeatherRegionDrawing}
+          activeWeatherRegion={activeWeatherRegion}
+          selectedWeatherRegionId={selectedWeatherRegionId}
+          onSelectWeatherRegion={setSelectedWeatherRegionId}
+          // Political region props
+          onStartPoliticalRegionDrawing={handleStartPoliticalRegionDrawing}
+          onFinishPoliticalRegionDrawing={handleFinishPoliticalRegionDrawing}
+          onCancelPoliticalRegionDrawing={handleCancelPoliticalRegionDrawing}
+          activePoliticalRegion={activePoliticalRegion}
+          selectedPoliticalRegionId={selectedPoliticalRegionId}
+          onSelectPoliticalRegion={setSelectedPoliticalRegionId}
         />
       )}
 
