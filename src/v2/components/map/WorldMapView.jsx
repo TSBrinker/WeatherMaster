@@ -996,16 +996,20 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
     {
-      onPinch: ({ origin: [ox, oy], first, offset: [scale], memo }) => {
+      onPinch: ({ first, da: [distance], origin: [ox, oy], memo }) => {
         if (first) {
           // Store initial state when pinch starts
-          gestureStateRef.current.initialZoom = zoom;
-          gestureStateRef.current.initialPan = { ...pan };
-          return { originX: ox, originY: oy };
+          return {
+            initialZoom: zoom,
+            initialDistance: distance,
+          };
         }
 
-        // Apply zoom (clamped between 1 and 5)
-        const newZoom = Math.min(Math.max(gestureStateRef.current.initialZoom * scale, 1), 5);
+        if (!memo) return memo;
+
+        // Calculate scale relative to initial pinch distance
+        const scale = distance / memo.initialDistance;
+        const newZoom = Math.min(Math.max(memo.initialZoom * scale, 1), 5);
         setZoom(newZoom);
 
         return memo;
@@ -1016,22 +1020,19 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           setDraggingPoliticalVertex(null);
         }
       },
-      onDrag: ({ pinching, cancel, movement: [mx, my], first, xy: [x, y], touches }) => {
+      onDrag: ({ pinching, cancel, delta: [dx, dy], first, xy: [x, y], touches }) => {
         // Don't interfere with pinch gestures
         if (pinching) {
           cancel();
           return;
         }
 
-        // Two-finger drag for panning
+        // Two-finger drag for panning (use delta for smoother updates)
         if (touches === 2) {
-          if (first) {
-            gestureStateRef.current.initialPan = { ...pan };
-          }
-          setPan({
-            x: gestureStateRef.current.initialPan.x + mx,
-            y: gestureStateRef.current.initialPan.y + my,
-          });
+          setPan(prev => ({
+            x: prev.x + dx,
+            y: prev.y + dy,
+          }));
           return;
         }
 
@@ -1058,7 +1059,6 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         pointer: { touch: true },
       },
       pinch: {
-        scaleBounds: { min: 1, max: 5 },
         rubberband: true,
       },
     }
