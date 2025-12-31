@@ -39,7 +39,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   const settingsButtonRef = useRef(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState(new Set());
-  const [viewingContinent, setViewingContinent] = useState(null); // Continent being viewed on map
+  const [viewingContinentId, setViewingContinentId] = useState(null); // ID of continent being viewed on map
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [mapClickData, setMapClickData] = useState(null); // { x, y, latitudeBand }
   const [newContinentName, setNewContinentName] = useState('');
@@ -47,6 +47,12 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   const [editingRegion, setEditingRegion] = useState(null); // Region being edited
   const [editingContinentId, setEditingContinentId] = useState(null); // Continent being renamed
   const [editingContinentName, setEditingContinentName] = useState(''); // New name for continent
+
+  // Derive viewingContinent from context (keeps it in sync when paths are added)
+  const viewingContinent = useMemo(() => {
+    if (!viewingContinentId) return null;
+    return worldContinents.find(c => c.id === viewingContinentId) || null;
+  }, [viewingContinentId, worldContinents]);
 
   // Get weather data for all regions (memoized to avoid recalculating on every render)
   const regionWeather = useMemo(() => {
@@ -84,7 +90,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setShowSettings(false);
     setEditMode(false);
     setSelectedRegions(new Set());
-    setViewingContinent(null);
+    setViewingContinentId(null);
     setMapClickData(null);
     setShowNewContinentInput(false);
     setNewContinentName('');
@@ -239,7 +245,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
         <div className="locations-header">
           <button
             className="back-button"
-            onClick={() => setViewingContinent(null)}
+            onClick={() => setViewingContinentId(null)}
             aria-label="Back to locations"
           >
             <IoChevronBack />
@@ -430,7 +436,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
                             className="continent-map-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setViewingContinent(continent);
+                              setViewingContinentId(continent.id);
                             }}
                             title="View map"
                           >

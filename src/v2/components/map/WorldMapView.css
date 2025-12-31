@@ -10,9 +10,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .map-header h5 {
@@ -20,6 +22,35 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary, #ffffff);
+}
+
+.map-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 0.25rem;
+}
+
+.layer-toggle {
+  padding: 0.25rem 0.4rem;
+}
+
+.layer-toggle.btn-primary {
+  background: rgba(66, 165, 245, 0.8);
+  border-color: rgba(66, 165, 245, 0.8);
+}
+
+.zoom-level {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #aaa);
+  min-width: 40px;
+  text-align: center;
 }
 
 .map-header .btn-outline-secondary {
@@ -34,13 +65,22 @@
   color: var(--text-primary, #fff);
 }
 
+.map-header .btn-outline-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Map Container */
 .map-container {
   position: relative;
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   cursor: crosshair;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.map-container.panning {
+  cursor: grabbing;
 }
 
 /* Image wrapper - sizes itself to match the image exactly */
@@ -48,6 +88,8 @@
   position: relative;
   display: inline-block;
   width: 100%;
+  transition: transform 0.1s ease-out;
+  will-change: transform;
 }
 
 .map-image {
@@ -119,12 +161,13 @@
 /* Location Pins */
 .location-pin {
   position: absolute;
-  transform: translate(-50%, -100%);
+  /* transform is set inline to handle zoom scaling */
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   z-index: 10;
+  transform-origin: center bottom;
 }
 
 .pin-icon {
@@ -171,6 +214,54 @@
   border-radius: 999px;
   pointer-events: none;
   white-space: nowrap;
+}
+
+/* Scale Reference Bar */
+.scale-bar {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+
+.scale-bar-line {
+  height: 4px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  position: relative;
+  min-width: 30px;
+  max-width: 200px;
+}
+
+.scale-bar-line::before,
+.scale-bar-line::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: white;
+  bottom: -3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.scale-bar-line::before {
+  left: 0;
+}
+
+.scale-bar-line::after {
+  right: 0;
+}
+
+.scale-bar-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .hint-band {
@@ -238,6 +329,88 @@
   color: var(--text-secondary, #aaa);
   margin-bottom: 1.5rem;
   max-width: 300px;
+}
+
+/* Path Rendering */
+.map-path {
+  pointer-events: auto;
+}
+
+.map-path .path-line {
+  transition: stroke-width 0.15s ease, opacity 0.15s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.map-path:hover .path-line {
+  stroke-width: 5;
+}
+
+.map-path.selected .path-line {
+  stroke-width: 5;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+}
+
+.map-path.active-drawing .path-line {
+  animation: dash-flow 0.5s linear infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+/* Waypoint Markers */
+.waypoint-marker {
+  transition: r 0.15s ease, filter 0.15s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.waypoint-marker:hover {
+  r: 10;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+}
+
+.waypoint-marker.start {
+  stroke: #4caf50;
+  stroke-width: 3;
+}
+
+.waypoint-marker.end {
+  stroke: #f44336;
+  stroke-width: 3;
+}
+
+.waypoint-marker.drawing {
+  pointer-events: none;
+}
+
+/* Drawing Mode */
+.map-container.drawing-mode {
+  cursor: crosshair;
+}
+
+.map-container.dragging {
+  cursor: grabbing;
+}
+
+.map-container.dragging .waypoint-marker {
+  cursor: grabbing;
+}
+
+.click-hint.drawing {
+  background: rgba(66, 165, 245, 0.9);
+  color: white;
+}
+
+/* Location Placement Mode */
+.map-container.placing-mode {
+  cursor: crosshair;
+}
+
+.click-hint.placing {
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
 }
 
 /* Responsive */

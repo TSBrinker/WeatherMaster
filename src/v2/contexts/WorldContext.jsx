@@ -515,6 +515,131 @@ export const WorldProvider = ({ children }) => {
     ));
   }, [activeWorldId, activeRegionId]);
 
+  // ===== PATH MANAGEMENT =====
+
+  const createPath = useCallback((continentId, pathData) => {
+    if (!continentId) return null;
+
+    const newPath = {
+      id: uuidv4(),
+      name: pathData.name || 'New Path',
+      waypoints: pathData.waypoints || [],
+      color: pathData.color || '#e74c3c',
+      isVisible: true,
+      totalDistanceMiles: pathData.totalDistanceMiles || 0,
+    };
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, paths: [...(continent.paths || []), newPath] }
+        : continent
+    ));
+
+    return newPath;
+  }, []);
+
+  const updatePath = useCallback((continentId, pathId, updates) => {
+    if (!continentId || !pathId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? {
+          ...continent,
+          paths: (continent.paths || []).map(path =>
+            path.id === pathId
+              ? { ...path, ...updates }
+              : path
+          )
+        }
+        : continent
+    ));
+  }, []);
+
+  const deletePath = useCallback((continentId, pathId) => {
+    if (!continentId || !pathId) return;
+
+    setContinents(prev => prev.map(continent =>
+      continent.id === continentId
+        ? { ...continent, paths: (continent.paths || []).filter(p => p.id !== pathId) }
+        : continent
+    ));
+  }, []);
+
+  const addWaypoint = useCallback((continentId, pathId, waypoint, index = -1) => {
+    if (!continentId || !pathId) return;
+
+    const newWaypoint = {
+      id: uuidv4(),
+      x: waypoint.x,
+      y: waypoint.y,
+      label: waypoint.label || null,
+    };
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        paths: (continent.paths || []).map(path => {
+          if (path.id !== pathId) return path;
+
+          const newWaypoints = [...path.waypoints];
+          if (index >= 0 && index < newWaypoints.length) {
+            newWaypoints.splice(index, 0, newWaypoint);
+          } else {
+            newWaypoints.push(newWaypoint);
+          }
+
+          return { ...path, waypoints: newWaypoints };
+        })
+      };
+    }));
+
+    return newWaypoint;
+  }, []);
+
+  const updateWaypoint = useCallback((continentId, pathId, waypointId, updates) => {
+    if (!continentId || !pathId || !waypointId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        paths: (continent.paths || []).map(path => {
+          if (path.id !== pathId) return path;
+
+          return {
+            ...path,
+            waypoints: path.waypoints.map(wp =>
+              wp.id === waypointId ? { ...wp, ...updates } : wp
+            )
+          };
+        })
+      };
+    }));
+  }, []);
+
+  const deleteWaypoint = useCallback((continentId, pathId, waypointId) => {
+    if (!continentId || !pathId || !waypointId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        paths: (continent.paths || []).map(path => {
+          if (path.id !== pathId) return path;
+
+          return {
+            ...path,
+            waypoints: path.waypoints.filter(wp => wp.id !== waypointId)
+          };
+        })
+      };
+    }));
+  }, []);
+
   const contextValue = {
     // State
     worlds,
@@ -564,6 +689,14 @@ export const WorldProvider = ({ children }) => {
     createLocation,
     updateLocation,
     deleteLocation,
+
+    // Path methods
+    createPath,
+    updatePath,
+    deletePath,
+    addWaypoint,
+    updateWaypoint,
+    deleteWaypoint,
   };
 
   return (
