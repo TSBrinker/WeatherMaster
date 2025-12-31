@@ -3,7 +3,7 @@
 **Last Updated**: 2025-12-31
 **Previous Agent**: Frost (Sprint 54)
 **Current Sprint Count**: 54 (next agent creates `SPRINT_55_*.md`)
-**Status**: Non-overlapping region enforcement complete. Mobile touch gestures still needed.
+**Status**: Non-overlapping region enforcement complete. Mobile touch gestures complete.
 
 ---
 
@@ -50,13 +50,11 @@ Right-click on any vertex of a selected political region:
 
 ### 1. ~~Non-Overlapping Region Enforcement~~ ✅ DONE
 
-### 2. Mobile Touch Gestures (STILL NEEDED)
-**Problem**: Zoom/pan only works with mouse (wheel scroll, shift+drag).
-
-**Needed:**
+### 2. Mobile Touch Gestures ✅ DONE
 - Pinch-to-zoom
 - Two-finger pan
-- Touch event handlers with gesture detection
+- Touch vertex dragging for political regions
+- Removed CSS transition that was causing stuttery zoom
 
 ---
 
@@ -116,9 +114,8 @@ drawingMode: 'none' | 'path' | 'weatherRegion' | 'politicalRegion'
 
 ## Remaining Items
 
-1. **Mobile touch gestures** (HIGH PRIORITY)
-2. Exact sunrise/sunset from pin Y position
-3. Coastline snapping (future enhancement)
+1. Exact sunrise/sunset from pin Y position
+2. Coastline snapping (future enhancement)
 
 ---
 

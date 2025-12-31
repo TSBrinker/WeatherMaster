@@ -62,6 +62,8 @@ Based on HANDOFF.md, the HIGH PRIORITY items are:
 - Touch state tracking via ref (initialPinchDistance, initialZoom, lastTouchCenter)
 - Added `touch-action: none` CSS to prevent browser interference
 - Works alongside existing mouse controls (wheel zoom, shift+drag pan)
+- Added touch vertex dragging for political regions
+- Removed CSS transition that was causing stuttery zoom on mobile
 
 ---
 

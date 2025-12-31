@@ -479,6 +479,31 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     dragStartRef.current = pos;
   }, [getImagePosition]);
 
+  // Touch start handler for political vertices (mobile support)
+  const handlePoliticalVertexTouchStart = useCallback((e, regionId, vertex) => {
+    e.stopPropagation();
+    // Don't prevent default here - let single touch work for dragging
+
+    if (e.touches.length !== 1) return; // Only handle single touch
+
+    const touch = e.touches[0];
+    const img = mapContainerRef.current?.querySelector('img');
+    if (!img) return;
+
+    const imgRect = img.getBoundingClientRect();
+    const scaleX = imageSize.width / imgRect.width;
+    const scaleY = imageSize.height / imgRect.height;
+
+    const x = (touch.clientX - imgRect.left) * scaleX;
+    const y = (touch.clientY - imgRect.top) * scaleY;
+
+    if (x < 0 || x > imageSize.width || y < 0 || y > imageSize.height) return;
+
+    const pos = { x: Math.round(x), y: Math.round(y) };
+    setDraggingPoliticalVertex({ regionId, vertexId: vertex.id, vertex });
+    dragStartRef.current = pos;
+  }, [imageSize]);
+
   // Right-click context menu for political vertices
   const handlePoliticalVertexContextMenu = useCallback((e, regionId, vertex) => {
     e.preventDefault();
@@ -994,8 +1019,61 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         }));
       }
       state.lastTouchCenter = currentCenter;
+    } else if (touches.length === 1 && draggingPoliticalVertex && continent) {
+      // Single touch vertex dragging
+      e.preventDefault();
+
+      const touch = touches[0];
+      const img = mapContainerRef.current?.querySelector('img');
+      if (!img) return;
+
+      const imgRect = img.getBoundingClientRect();
+      const scaleX = imageSize.width / imgRect.width;
+      const scaleY = imageSize.height / imgRect.height;
+
+      const x = Math.round((touch.clientX - imgRect.left) * scaleX);
+      const y = Math.round((touch.clientY - imgRect.top) * scaleY);
+
+      if (x < 0 || x > imageSize.width || y < 0 || y > imageSize.height) return;
+
+      const pos = { x, y };
+      const vertex = draggingPoliticalVertex.vertex;
+
+      if (vertex.sharedId) {
+        // Update all linked vertices
+        updateLinkedPoliticalVertices(continent.id, vertex.sharedId, { x: pos.x, y: pos.y });
+
+        // Recalculate area/perimeter for all affected regions
+        for (const region of continent.politicalRegions || []) {
+          const hasLinkedVertex = region.vertices?.some(v => v.sharedId === vertex.sharedId);
+          if (hasLinkedVertex) {
+            const updatedVertices = region.vertices.map(v =>
+              v.sharedId === vertex.sharedId ? { ...v, x: pos.x, y: pos.y } : v
+            );
+            updatePoliticalRegion(continent.id, region.id, {
+              perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+              areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+            });
+          }
+        }
+      } else {
+        // Update just this vertex
+        const updatedVertices = continent.politicalRegions
+          ?.find(r => r.id === draggingPoliticalVertex.regionId)
+          ?.vertices.map(v =>
+            v.id === draggingPoliticalVertex.vertexId
+              ? { ...v, x: pos.x, y: pos.y }
+              : v
+          ) || [];
+
+        updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
+          vertices: updatedVertices,
+          perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
+          areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
+        });
+      }
     }
-  }, [getTouchDistance, getTouchCenter]);
+  }, [getTouchDistance, getTouchCenter, draggingPoliticalVertex, continent, imageSize, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
 
   const handleTouchEnd = useCallback((e) => {
     const state = touchStateRef.current;
@@ -1402,6 +1480,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                       strokeWidth={v.sharedId ? 3 : 2}
                       style={{ cursor: 'grab' }}
                       onMouseDown={(e) => handlePoliticalVertexMouseDown(e, region.id, v)}
+                      onTouchStart={(e) => handlePoliticalVertexTouchStart(e, region.id, v)}
                       onContextMenu={(e) => handlePoliticalVertexContextMenu(e, region.id, v)}
                     />
                   ))}
