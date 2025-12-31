@@ -120,6 +120,14 @@ const SettingsMenu = ({ inline = false }) => {
               <FaBomb /> Nuke All Data
             </Button>
           </div>
+
+          {/* Version info */}
+          <div className="version-info mt-4 text-center">
+            <small className="text-muted">
+              Build: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
+              {typeof __BUILD_DATE__ !== 'undefined' && ` (${__BUILD_DATE__})`}
+            </small>
+          </div>
         </div>
 
         {/* Educational Modals */}

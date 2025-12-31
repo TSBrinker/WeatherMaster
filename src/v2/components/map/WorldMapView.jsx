@@ -996,10 +996,13 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
     {
-      onPinch: ({ first, offset: [scale], origin: [ox, oy], memo }) => {
+      onPinch: ({ first, offset: [scale], origin: [ox, oy], delta: [ds, da], memo }) => {
         if (first) {
-          // Store initial zoom when pinch starts
-          return { initialZoom: zoom };
+          // Store initial state when pinch starts
+          return {
+            initialZoom: zoom,
+            lastOrigin: [ox, oy],
+          };
         }
 
         if (!memo) return memo;
@@ -1008,7 +1011,20 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         const newZoom = Math.min(Math.max(memo.initialZoom * scale, 1), 5);
         setZoom(newZoom);
 
-        return memo;
+        // Pan based on origin movement (two-finger drag during pinch)
+        const originDx = ox - memo.lastOrigin[0];
+        const originDy = oy - memo.lastOrigin[1];
+        if (Math.abs(originDx) > 0.5 || Math.abs(originDy) > 0.5) {
+          setPan(prev => ({
+            x: prev.x + originDx,
+            y: prev.y + originDy,
+          }));
+        }
+
+        return {
+          ...memo,
+          lastOrigin: [ox, oy],
+        };
       },
       onPinchEnd: () => {
         // Reset drag state if it was set during pinch
@@ -1020,7 +1036,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         // Skip taps
         if (tap) return;
 
-        // Don't interfere with pinch gestures
+        // Don't interfere with pinch gestures (pan is handled in onPinch)
         if (pinching) {
           cancel();
           return;
@@ -1029,7 +1045,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         // Get touch count from various sources
         const touchCount = touches || event?.touches?.length || 0;
 
-        // Two-finger drag for panning (handle both during and without pinch)
+        // Two-finger drag for panning (when NOT pinching)
         if (touchCount >= 2) {
           setPan(prev => ({
             x: prev.x + dx,
