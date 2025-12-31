@@ -1020,7 +1020,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           setDraggingPoliticalVertex(null);
         }
       },
-      onDrag: ({ pinching, cancel, delta: [dx, dy], first, xy: [x, y], touches }) => {
+      onDrag: ({ pinching, cancel, delta: [dx, dy], first, last, xy: [x, y], touches }) => {
         // Don't interfere with pinch gestures
         if (pinching) {
           cancel();
@@ -1037,19 +1037,24 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         }
 
         // Single-finger drag for vertex dragging (only if a vertex is being dragged)
-        if (touches === 1 && draggingPoliticalVertex) {
+        // Use touches >= 1 to handle both touch (1) and mouse (0 or undefined)
+        if (draggingPoliticalVertex) {
           const pos = screenToImageCoords(x, y);
           if (pos) {
             updateVertexPosition(pos);
           }
+
+          // Clear vertex drag state when this drag gesture ends
+          if (last) {
+            setDraggingPoliticalVertex(null);
+            dragStartRef.current = null;
+          }
         }
       },
       onDragEnd: () => {
-        // Clear vertex dragging state
-        if (draggingPoliticalVertex) {
-          setDraggingPoliticalVertex(null);
-          dragStartRef.current = null;
-        }
+        // Only clear non-vertex drag state here
+        // Vertex dragging is cleared in onDrag when last=true
+        dragStartRef.current = null;
       },
     },
     {
