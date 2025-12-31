@@ -996,7 +996,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
     {
-      onPinch: ({ first, da: [distance], offset: [scale], memo }) => {
+      onPinch: ({ first, offset: [scale], origin: [ox, oy], memo }) => {
         if (first) {
           // Store initial zoom when pinch starts
           return { initialZoom: zoom };
@@ -1016,18 +1016,21 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           setDraggingPoliticalVertex(null);
         }
       },
-      onDrag: ({ pinching, cancel, delta: [dx, dy], last, xy: [x, y], touches, event }) => {
+      onDrag: ({ pinching, cancel, delta: [dx, dy], last, xy: [x, y], touches, event, tap }) => {
+        // Skip taps
+        if (tap) return;
+
         // Don't interfere with pinch gestures
         if (pinching) {
           cancel();
           return;
         }
 
-        // Determine if this is a touch event with 2 fingers
-        const isTwoFingerTouch = touches === 2 || (event?.touches?.length === 2);
+        // Get touch count from various sources
+        const touchCount = touches || event?.touches?.length || 0;
 
-        // Two-finger drag for panning
-        if (isTwoFingerTouch) {
+        // Two-finger drag for panning (handle both during and without pinch)
+        if (touchCount >= 2) {
           setPan(prev => ({
             x: prev.x + dx,
             y: prev.y + dy,
@@ -1036,7 +1039,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         }
 
         // Single-finger drag for vertex dragging (only if a vertex is being dragged)
-        if (draggingPoliticalVertex) {
+        if (draggingPoliticalVertex && touchCount <= 1) {
           const pos = screenToImageCoords(x, y);
           if (pos) {
             updateVertexPosition(pos);
@@ -1060,6 +1063,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       drag: {
         filterTaps: true,
         pointer: { touch: true },
+        threshold: 5, // Small threshold to distinguish from taps
       },
       pinch: {
         scaleBounds: { min: 0.2, max: 5 },
@@ -1440,20 +1444,30 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                   />
                   {/* Vertex handles (show when selected) */}
                   {selectedPoliticalRegionId === region.id && region.vertices.map((v, idx) => (
-                    <circle
-                      key={v.id}
-                      cx={v.x}
-                      cy={v.y}
-                      r="6"
-                      className={`vertex-marker political ${v.sharedId ? 'shared' : ''}`}
-                      fill={region.color}
-                      stroke={v.sharedId ? '#2ecc71' : 'white'}
-                      strokeWidth={v.sharedId ? 3 : 2}
-                      style={{ cursor: 'grab' }}
-                      onMouseDown={(e) => handlePoliticalVertexMouseDown(e, region.id, v)}
-                      onTouchStart={(e) => handlePoliticalVertexTouchStart(e, region.id, v)}
-                      onContextMenu={(e) => handlePoliticalVertexContextMenu(e, region.id, v)}
-                    />
+                    <g key={v.id}>
+                      {/* Invisible larger touch target for mobile */}
+                      <circle
+                        cx={v.x}
+                        cy={v.y}
+                        r="20"
+                        fill="transparent"
+                        style={{ cursor: 'grab' }}
+                        onMouseDown={(e) => handlePoliticalVertexMouseDown(e, region.id, v)}
+                        onTouchStart={(e) => handlePoliticalVertexTouchStart(e, region.id, v)}
+                        onContextMenu={(e) => handlePoliticalVertexContextMenu(e, region.id, v)}
+                      />
+                      {/* Visible vertex marker */}
+                      <circle
+                        cx={v.x}
+                        cy={v.y}
+                        r="6"
+                        className={`vertex-marker political ${v.sharedId ? 'shared' : ''}`}
+                        fill={region.color}
+                        stroke={v.sharedId ? '#2ecc71' : 'white'}
+                        strokeWidth={v.sharedId ? 3 : 2}
+                        style={{ cursor: 'grab', pointerEvents: 'none' }}
+                      />
+                    </g>
                   ))}
                 </g>
               ))}
