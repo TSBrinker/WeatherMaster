@@ -72,6 +72,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
   // Political region vertex dragging state
   const [draggingPoliticalVertex, setDraggingPoliticalVertex] = useState(null);
+  const draggingPoliticalVertexRef = useRef(null); // Ref mirror for gesture callbacks
   // { regionId, vertexId, vertex (with sharedId) }
 
   // Edge subdivision hover state (for selected political regions)
@@ -473,17 +474,49 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     const pos = getImagePosition(e);
     if (!pos) return;
 
-    setDraggingPoliticalVertex({ regionId, vertexId: vertex.id, vertex });
+    const dragInfo = { regionId, vertexId: vertex.id, vertex };
+    setDraggingPoliticalVertex(dragInfo);
+    draggingPoliticalVertexRef.current = dragInfo; // Also set ref for gesture callback
     dragStartRef.current = pos;
   }, [getImagePosition]);
 
   // Touch start handler for political vertices (mobile support)
-  // Sets dragging state so the gesture handler knows to track vertex movement
+  // Sets dragging state and prevents default to handle touch drag directly
   const handlePoliticalVertexTouchStart = useCallback((e, regionId, vertex) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent scrolling/panning while dragging vertex
     if (e.touches.length !== 1) return; // Only handle single touch
 
-    setDraggingPoliticalVertex({ regionId, vertexId: vertex.id, vertex });
+    const dragInfo = { regionId, vertexId: vertex.id, vertex };
+    setDraggingPoliticalVertex(dragInfo);
+    draggingPoliticalVertexRef.current = dragInfo;
+  }, []);
+
+  // Touch move handler for political vertices (mobile support)
+  // Handles continuous drag directly on the vertex element
+  const handlePoliticalVertexTouchMove = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!draggingPoliticalVertexRef.current) return;
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const pos = screenToImageCoords(touch.clientX, touch.clientY);
+    if (pos) {
+      updateVertexPosition(pos);
+    }
+  }, [screenToImageCoords, updateVertexPosition]);
+
+  // Touch end handler for political vertices (mobile support)
+  const handlePoliticalVertexTouchEnd = useCallback((e) => {
+    e.stopPropagation();
+
+    if (draggingPoliticalVertexRef.current) {
+      setDraggingPoliticalVertex(null);
+      draggingPoliticalVertexRef.current = null;
+      dragStartRef.current = null;
+    }
   }, []);
 
   // Right-click context menu for political vertices
@@ -953,10 +986,12 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   }, [imageSize]);
 
   // Helper: update vertex position (for drag operations)
+  // Uses ref instead of state to avoid stale closure issues in gesture callbacks
   const updateVertexPosition = useCallback((pos) => {
-    if (!draggingPoliticalVertex || !continent) return;
+    const dragInfo = draggingPoliticalVertexRef.current;
+    if (!dragInfo || !continent) return;
 
-    const vertex = draggingPoliticalVertex.vertex;
+    const vertex = dragInfo.vertex;
 
     if (vertex.sharedId) {
       // Update all linked vertices
@@ -978,20 +1013,20 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     } else {
       // Update just this vertex
       const updatedVertices = continent.politicalRegions
-        ?.find(r => r.id === draggingPoliticalVertex.regionId)
+        ?.find(r => r.id === dragInfo.regionId)
         ?.vertices.map(v =>
-          v.id === draggingPoliticalVertex.vertexId
+          v.id === dragInfo.vertexId
             ? { ...v, x: pos.x, y: pos.y }
             : v
         ) || [];
 
-      updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
+      updatePoliticalRegion(continent.id, dragInfo.regionId, {
         vertices: updatedVertices,
         perimeterMiles: calculatePolygonPerimeter(updatedVertices, mapScale),
         areaSquareMiles: calculatePolygonArea(updatedVertices, mapScale),
       });
     }
-  }, [draggingPoliticalVertex, continent, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
+  }, [continent, mapScale, updateLinkedPoliticalVertices, updatePoliticalRegion]);
 
   // Unified gesture handler using use-gesture
   const bindGestures = useGesture(
@@ -1028,8 +1063,9 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       },
       onPinchEnd: () => {
         // Reset drag state if it was set during pinch
-        if (draggingPoliticalVertex) {
+        if (draggingPoliticalVertexRef.current) {
           setDraggingPoliticalVertex(null);
+          draggingPoliticalVertexRef.current = null;
         }
       },
       onDrag: ({ pinching, cancel, delta: [dx, dy], last, xy: [x, y], touches, event, tap }) => {
@@ -1055,7 +1091,8 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         }
 
         // Single-finger drag for vertex dragging (only if a vertex is being dragged)
-        if (draggingPoliticalVertex && touchCount <= 1) {
+        // Use ref to access current value (avoids stale closure)
+        if (draggingPoliticalVertexRef.current && touchCount <= 1) {
           const pos = screenToImageCoords(x, y);
           if (pos) {
             updateVertexPosition(pos);
@@ -1064,6 +1101,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           // Clear vertex drag state when this drag gesture ends
           if (last) {
             setDraggingPoliticalVertex(null);
+            draggingPoliticalVertexRef.current = null;
             dragStartRef.current = null;
           }
         }
@@ -1467,9 +1505,11 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                         cy={v.y}
                         r="20"
                         fill="transparent"
-                        style={{ cursor: 'grab' }}
+                        style={{ cursor: 'grab', touchAction: 'none' }}
                         onMouseDown={(e) => handlePoliticalVertexMouseDown(e, region.id, v)}
                         onTouchStart={(e) => handlePoliticalVertexTouchStart(e, region.id, v)}
+                        onTouchMove={handlePoliticalVertexTouchMove}
+                        onTouchEnd={handlePoliticalVertexTouchEnd}
                         onContextMenu={(e) => handlePoliticalVertexContextMenu(e, region.id, v)}
                       />
                       {/* Visible vertex marker */}
