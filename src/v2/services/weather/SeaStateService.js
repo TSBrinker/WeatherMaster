@@ -6,6 +6,9 @@
  * Wave heights correlate with wind speed via the Beaufort scale.
  */
 
+import { WeatherGenerator } from './WeatherGenerator';
+import { advanceDate } from '../../utils/dateUtils';
+
 /**
  * Beaufort Scale reference
  * Maps wind speed ranges to sea conditions and wave heights
@@ -59,6 +62,7 @@ export const SAILING_CONDITIONS = {
 export class SeaStateService {
   constructor() {
     this.seaStateCache = new Map();
+    this.weatherGenerator = new WeatherGenerator();
   }
 
   /**
@@ -397,6 +401,97 @@ export class SeaStateService {
     }
 
     return { hazards, effects };
+  }
+
+  /**
+   * Get short-term sea state forecast (next 6 hours)
+   * Helps sailors anticipate changing conditions
+   * @param {Object} region - Ocean region with climate parameters
+   * @param {Object} date - Current game date {year, month, day, hour}
+   * @param {Object} currentWeather - Current weather from WeatherGenerator
+   * @returns {Object} Forecast with trend and upcoming conditions
+   */
+  getSeaStateForecast(region, date, currentWeather) {
+    const currentSeaState = this.getSeaState(region, date, currentWeather);
+    const forecastHours = [1, 2, 3, 6]; // Check 1, 2, 3, and 6 hours ahead
+    const forecasts = [];
+
+    for (const hoursAhead of forecastHours) {
+      const futureDate = advanceDate(date, hoursAhead);
+      const futureWeather = this.weatherGenerator.generateWeather(region, futureDate);
+      const futureSeaState = this.getSeaState(region, futureDate, futureWeather);
+
+      forecasts.push({
+        hoursAhead,
+        waveHeight: futureSeaState.waveHeight,
+        seaCondition: futureSeaState.seaCondition,
+        sailingConditions: futureSeaState.sailingConditions,
+        windSpeed: futureWeather.windSpeed,
+        beaufortScale: futureSeaState.beaufortScale
+      });
+    }
+
+    // Determine overall trend
+    const currentWaves = currentSeaState.waveHeight;
+    const futureWaves3h = forecasts.find(f => f.hoursAhead === 3)?.waveHeight || currentWaves;
+    const futureWaves6h = forecasts.find(f => f.hoursAhead === 6)?.waveHeight || currentWaves;
+
+    let trend = 'steady';
+    let trendDescription = 'Conditions expected to remain stable';
+
+    // Check for significant changes (more than 25% change in wave height)
+    const change3h = (futureWaves3h - currentWaves) / Math.max(currentWaves, 1);
+    const change6h = (futureWaves6h - currentWaves) / Math.max(currentWaves, 1);
+
+    if (change3h > 0.5 || change6h > 0.75) {
+      trend = 'deteriorating_rapidly';
+      trendDescription = 'Conditions deteriorating rapidly - seek shelter';
+    } else if (change3h > 0.25 || change6h > 0.5) {
+      trend = 'deteriorating';
+      trendDescription = 'Seas building - conditions worsening';
+    } else if (change3h < -0.5 || change6h < -0.75) {
+      trend = 'improving_rapidly';
+      trendDescription = 'Conditions improving quickly';
+    } else if (change3h < -0.25 || change6h < -0.5) {
+      trend = 'improving';
+      trendDescription = 'Seas calming - conditions improving';
+    }
+
+    // Check for sailing condition changes
+    const currentRating = currentSeaState.sailingConditions;
+    const ratingIn3h = forecasts.find(f => f.hoursAhead === 3)?.sailingConditions;
+    const sailingRatings = ['excellent', 'good', 'fair', 'challenging', 'hazardous', 'dangerous'];
+    const currentRatingIndex = sailingRatings.indexOf(currentRating);
+    const futureRatingIndex = sailingRatings.indexOf(ratingIn3h);
+
+    let sailingTrendWarning = null;
+    if (futureRatingIndex > currentRatingIndex + 1) {
+      sailingTrendWarning = `Sailing conditions expected to become ${ratingIn3h} within 3 hours`;
+    } else if (futureRatingIndex < currentRatingIndex - 1) {
+      sailingTrendWarning = `Sailing conditions expected to improve to ${ratingIn3h} within 3 hours`;
+    }
+
+    // Find the worst conditions in the forecast window
+    const worstCondition = forecasts.reduce((worst, f) => {
+      return f.waveHeight > worst.waveHeight ? f : worst;
+    }, { waveHeight: currentWaves, hoursAhead: 0, seaCondition: currentSeaState.seaCondition });
+
+    return {
+      current: {
+        waveHeight: currentWaves,
+        seaCondition: currentSeaState.seaCondition,
+        sailingConditions: currentRating
+      },
+      forecasts,
+      trend,
+      trendDescription,
+      sailingTrendWarning,
+      peakConditions: worstCondition.hoursAhead > 0 ? {
+        hoursAhead: worstCondition.hoursAhead,
+        waveHeight: worstCondition.waveHeight,
+        seaCondition: worstCondition.seaCondition
+      } : null
+    };
   }
 
   /**

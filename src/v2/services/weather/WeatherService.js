@@ -46,19 +46,25 @@ export class WeatherService {
     // Get celestial data
     const celestial = this.getCelestialData(region, date);
 
-    // Get environmental conditions (drought, flooding, heat waves, etc.)
-    const environmental = this.environmentalService.getEnvironmentalConditions(region, date);
-
-    // Get snow/ice accumulation and ground conditions
-    const snowAccumulation = this.snowService.getAccumulation(region, date);
+    // Get environmental conditions and snow accumulation (land regions only)
+    // Ocean regions don't have meaningful snow accumulation or flood risk
+    const isOcean = this.isOceanRegion(region);
+    const environmental = isOcean
+      ? this.getOceanEnvironmental()
+      : this.environmentalService.getEnvironmentalConditions(region, date);
+    const snowAccumulation = isOcean
+      ? this.getOceanSnowAccumulation()
+      : this.snowService.getAccumulation(region, date);
 
     // Get wanderer event (pass weather for visibility check)
     const wanderer = this.wandererService.getWandererEvent(region, date, weather);
 
-    // Get sea state for ocean regions
-    const seaState = this.isOceanRegion(region)
-      ? this.seaStateService.getSeaState(region, date, weather)
-      : null;
+    // Get sea state for ocean regions (includes forecast for sailors)
+    let seaState = null;
+    if (isOcean) {
+      seaState = this.seaStateService.getSeaState(region, date, weather);
+      seaState.forecast = this.seaStateService.getSeaStateForecast(region, date, weather);
+    }
 
     return {
       ...weather,
@@ -82,6 +88,48 @@ export class WeatherService {
     return climate.specialFactors?.isOcean === true ||
            climate.biome === 'ocean' ||
            region.biome === 'ocean';
+  }
+
+  /**
+   * Get environmental conditions for ocean regions
+   * Ocean regions don't have land-based environmental conditions
+   * @returns {Object} Empty environmental conditions
+   */
+  getOceanEnvironmental() {
+    return {
+      drought: { level: 0, name: 'N/A', description: 'Ocean region', gameplayImpacts: [] },
+      flooding: { level: 0, name: 'N/A', description: 'Ocean region', gameplayImpacts: [] },
+      heatWave: { level: 0, name: 'Normal', description: 'Temperatures within seasonal norms', consecutiveDays: 0, degreesAboveNormal: 0, gameplayImpacts: [] },
+      coldSnap: { level: 0, name: 'Normal', description: 'Temperatures within seasonal norms', consecutiveDays: 0, degreesBelowNormal: 0, gameplayImpacts: [] },
+      wildfireRisk: { level: 0, name: 'N/A', description: 'Ocean region', gameplayImpacts: [] },
+      activeAlerts: [],
+      hasActiveAlerts: false,
+      isOceanRegion: true
+    };
+  }
+
+  /**
+   * Get snow accumulation for ocean regions
+   * Snow doesn't accumulate on open water - it melts on contact
+   * @returns {Object} Empty snow accumulation
+   */
+  getOceanSnowAccumulation() {
+    return {
+      snowDepth: 0,
+      snowWaterEquivalent: 0,
+      iceAccumulation: 0,
+      snowAge: 0,
+      groundCondition: { name: 'Ocean', description: 'Open water - no ground accumulation' },
+      snowFillPercent: 0,
+      groundTemperature: null,
+      groundTempCondition: null,
+      canAccumulateSnow: false,
+      isSnowCovered: false,
+      isIcy: false,
+      travelImpact: ['Sea conditions determine travel'],
+      gameplayEffects: [],
+      isOceanRegion: true
+    };
   }
 
   /**

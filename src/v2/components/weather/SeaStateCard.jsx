@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Badge, Collapse } from 'react-bootstrap';
 import { GiWaveSurfer, GiSailboat, GiWindsock, GiCompass } from 'react-icons/gi';
-import { WiStormWarning } from 'react-icons/wi';
-import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
+import { WiStormWarning, WiTime3 } from 'react-icons/wi';
+import { BsChevronDown, BsChevronUp, BsArrowUp, BsArrowDown, BsDash } from 'react-icons/bs';
 import { SEA_STATE_LABELS, SAILING_CONDITIONS } from '../../services/weather/SeaStateService';
 import './SeaStateCard.css';
 
@@ -12,10 +12,27 @@ import './SeaStateCard.css';
  */
 const SeaStateCard = ({ seaState }) => {
   const [showEffects, setShowEffects] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
 
   if (!seaState) {
     return null;
   }
+
+  // Get trend icon and color
+  const getTrendDisplay = (trend) => {
+    switch (trend) {
+      case 'deteriorating_rapidly':
+        return { icon: <BsArrowUp />, color: '#dc3545', label: 'Building Fast' };
+      case 'deteriorating':
+        return { icon: <BsArrowUp />, color: '#ff8c00', label: 'Building' };
+      case 'improving_rapidly':
+        return { icon: <BsArrowDown />, color: '#28a745', label: 'Calming Fast' };
+      case 'improving':
+        return { icon: <BsArrowDown />, color: '#5cb85c', label: 'Calming' };
+      default:
+        return { icon: <BsDash />, color: '#6c757d', label: 'Steady' };
+    }
+  };
 
   // Get sailing condition color
   const getSailingColor = (rating) => {
@@ -50,6 +67,8 @@ const SeaStateCard = ({ seaState }) => {
   const seaStateColor = getSeaStateColor(seaState.seaCondition);
   const hasHazards = seaState.hazards && seaState.hazards.length > 0;
   const hasEffects = seaState.effects && seaState.effects.length > 0;
+  const forecast = seaState.forecast;
+  const trendDisplay = forecast ? getTrendDisplay(forecast.trend) : null;
 
   return (
     <Card className="sea-state-card mb-3">
@@ -63,6 +82,11 @@ const SeaStateCard = ({ seaState }) => {
           <div className="wave-height-display">
             <span className="wave-height-value">{seaState.waveHeight}</span>
             <span className="wave-height-unit">ft</span>
+            {trendDisplay && forecast.trend !== 'steady' && (
+              <span className="trend-indicator" style={{ color: trendDisplay.color }}>
+                {trendDisplay.icon}
+              </span>
+            )}
           </div>
           <div className="sea-condition-label" style={{ color: seaStateColor }}>
             {SEA_STATE_LABELS[seaState.seaCondition] || seaState.seaCondition}
@@ -71,6 +95,58 @@ const SeaStateCard = ({ seaState }) => {
             Force {seaState.beaufortScale} - {seaState.beaufortDescription}
           </div>
         </div>
+
+        {/* Forecast Section */}
+        {forecast && (
+          <div className="forecast-section">
+            <div
+              className="forecast-header"
+              onClick={() => setShowForecast(!showForecast)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && setShowForecast(!showForecast)}
+            >
+              <span className="forecast-trend" style={{ color: trendDisplay?.color }}>
+                <WiTime3 className="forecast-icon" />
+                {trendDisplay?.label}: {forecast.trendDescription}
+              </span>
+              {showForecast ? <BsChevronUp /> : <BsChevronDown />}
+            </div>
+            <Collapse in={showForecast}>
+              <div className="forecast-details">
+                {/* Sailing Trend Warning */}
+                {forecast.sailingTrendWarning && (
+                  <div className="sailing-trend-warning">
+                    <WiStormWarning /> {forecast.sailingTrendWarning}
+                  </div>
+                )}
+
+                {/* Peak Conditions Warning */}
+                {forecast.peakConditions && forecast.peakConditions.waveHeight > seaState.waveHeight * 1.25 && (
+                  <div className="peak-warning">
+                    Peak: {forecast.peakConditions.waveHeight}ft waves expected in {forecast.peakConditions.hoursAhead}h
+                  </div>
+                )}
+
+                {/* Hourly Forecast */}
+                <div className="hourly-forecast">
+                  {forecast.forecasts.map((f, idx) => (
+                    <div key={idx} className="forecast-hour">
+                      <div className="forecast-hour-label">+{f.hoursAhead}h</div>
+                      <div className="forecast-hour-waves">{f.waveHeight}ft</div>
+                      <div
+                        className="forecast-hour-sailing"
+                        style={{ color: getSailingColor(f.sailingConditions) }}
+                      >
+                        {SAILING_CONDITIONS[f.sailingConditions]?.label || f.sailingConditions}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Collapse>
+          </div>
+        )}
 
         {/* Hazards Banner */}
         {hasHazards && (

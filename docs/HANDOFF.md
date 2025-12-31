@@ -1,90 +1,102 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-31
-**Previous Agent**: Dusk (Sprint 50)
-**Current Sprint Count**: 50 (next agent creates `SPRINT_51_*.md`)
-**Status**: Sea State / Nautical Mode complete
+**Previous Agent**: Grove (Sprint 51)
+**Current Sprint Count**: 51 (next agent creates `SPRINT_52_*.md`)
+**Status**: Ocean fixes + sea forecast done, path feature planned
 
 ---
 
-## What Was Done This Sprint
+## What Was Done This Sprint (Sprint 51)
 
-### Sea State / Nautical Mode System (Sprint 50)
+### 1. Committed Dusk's Sea State Work
+Dusk (Sprint 50) ran out of memory before committing. Committed the full Sea State / Nautical Mode system (11 files, 1737 lines).
 
-Added complete ocean region support with maritime weather for naval/sailing campaigns.
+### 2. Fixed Ocean Region Logic
+Ocean regions were incorrectly showing snow accumulation and flood risk.
 
-**Ocean Templates (14 new)**
-- Polar: Polar Seas, Pack Ice Waters
-- Subarctic: Subarctic Waters
-- Boreal: Northern Seas
-- Temperate: Temperate Ocean, Coastal Waters
-- Subtropical: Trade Wind Belt, Gulf Waters
-- Tropical: Tropical Seas, Coral Reef Waters
-- Special: Strait Passage, Archipelago Waters
+**Files modified:**
+- `src/v2/services/weather/WeatherService.js`
+  - Added `getOceanEnvironmental()` - returns N/A for land conditions
+  - Added `getOceanSnowAccumulation()` - returns zeroed values
+  - Guards in `getCurrentWeather()` to use these for ocean regions
 
-**SeaStateService**
-- Wave height from wind via Beaufort scale
-- Sea conditions (calm through phenomenal)
-- Swell characteristics (height, period, direction)
-- Sailing condition ratings
-- Hazards and gameplay effects
+### 3. Added Sea State Forecast System
+Sailors can now see what's coming instead of being surprised by sudden changes.
 
-**UI Components**
-- SeaStateCard: Maritime-themed display
-- Sea state badge in PrimaryDisplay
-- Land/Ocean toggle in RegionCreator
-
----
-
-## Key Files Modified This Sprint
-
-**New Files:**
-- `src/v2/services/weather/SeaStateService.js` - Sea state generation
-- `src/v2/components/weather/SeaStateCard.jsx` - Sea state display
-- `src/v2/components/weather/SeaStateCard.css` - Ocean-themed styles
-
-**Modified Files:**
-- `src/v2/data/region-templates.js` - 14 ocean templates, "ocean" biome
-- `src/v2/data/templateHelpers.js` - Ocean helper functions
-- `src/v2/services/weather/WeatherService.js` - SeaState integration
-- `src/v2/components/weather/PrimaryDisplay.jsx` - Sea state badge/modal
-- `src/v2/components/region/RegionCreator.jsx` - Land/Ocean toggle
+**Files modified:**
+- `src/v2/services/weather/SeaStateService.js`
+  - Added `getSeaStateForecast()` - 6-hour outlook with trend detection
+- `src/v2/components/weather/SeaStateCard.jsx`
+  - Added trend indicator (arrow) next to wave height
+  - Added collapsible forecast section
+  - Shows +1h, +2h, +3h, +6h wave heights and sailing ratings
+- `src/v2/components/weather/SeaStateCard.css`
+  - Forecast section styling
 
 ---
 
-## No Pending Items
+## Uncommitted Changes
 
-NOTES_FROM_USER.md was empty - no unaddressed items.
-
----
-
-## Future Work (from ROADMAP)
-
-### Voyage Mode (discussed, not implemented)
-Tyler and I discussed voyage mode for transit between ocean regions:
-- Voyage waypoint sequences (port -> sea -> gulf -> port)
-- Smooth condition interpolation during transit
-- Ship types with travel speeds (stretch)
-
-This is now documented in ROADMAP.md as future work.
-
-### Other Post-MVP Features
-- Polar twilight lands verification
-- New biomes: Humid Subtropical, Steppe
-- Menu/preferences restructuring
-- Multiple worlds per user
-- Background gradient fade transitions (low priority)
+All Sprint 51 work is uncommitted:
+- Ocean region fixes
+- Sea state forecast
+- Sprint 51 log
+- Name added to START_HERE.md
 
 ---
 
-## How to Test Sea State
+## Next Task: Path Drawing Feature
 
-1. Create a new region via hamburger menu or map
-2. Select "Ocean" in the region type toggle
-3. Choose a latitude band and ocean template
-4. Create the region and select it
-5. You'll see a sea state badge showing wave height
-6. Click badge for full SeaStateCard details
+**A detailed implementation plan is ready:**
+`C:\Users\Tyler\.claude\plans\vivid-purring-hoare.md`
+
+### Quick Summary
+Add ability to draw travel routes on maps:
+- Click waypoints to create paths
+- Calculate distance using mapScale.milesPerPixel
+- Drag waypoints to adjust paths
+- SVG polylines on existing map overlay
+
+### Files to Create
+- `src/v2/utils/pathUtils.js` - Distance calculations
+- `src/v2/components/map/PathManager.jsx` - UI controls
+- `src/v2/components/map/PathManager.css` - Styling
+
+### Files to Modify
+- `src/v2/contexts/WorldContext.jsx` - Add path CRUD methods
+- `src/v2/components/map/WorldMapView.jsx` - Add rendering/interaction
+- `src/v2/components/map/WorldMapView.css` - Add path/waypoint styles
+
+### Implementation Phases
+1. Foundation (pathUtils, WorldContext CRUD)
+2. Basic rendering (SVG polylines)
+3. Drawing mode (click to add waypoints)
+4. Editing (drag waypoints)
+5. Management (list, rename, delete)
+
+---
+
+## Items in NOTES_FROM_USER.md
+
+Tyler has three map features planned (discussed with Grove):
+1. **Path feature** (next up - plan ready)
+2. **Weather region drawing** - polygons for weather zones
+3. **Political regions** - borders for kingdoms
+
+Path architecture should set patterns for the polygon features.
+
+---
+
+## Key Files Reference
+
+| Feature | Key File |
+|---------|----------|
+| Sea state | `src/v2/services/weather/SeaStateService.js` |
+| Sea state UI | `src/v2/components/weather/SeaStateCard.jsx` |
+| Map view | `src/v2/components/map/WorldMapView.jsx` |
+| World data | `src/v2/contexts/WorldContext.jsx` |
+| Map utils | `src/v2/utils/mapUtils.js` |
 
 ---
 
