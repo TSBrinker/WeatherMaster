@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { Modal, Button, Form, Alert, ButtonGroup, ToggleButton } from 'react-bootstrap';
 import { useWorld } from '../../contexts/WorldContext';
 import {
   getAllLatitudeBands,
   getTemplatesByLatitude,
+  getLandTemplatesByLatitude,
+  getOceanTemplatesByLatitude,
   getTemplate,
   extractClimateProfile
 } from '../../data/templateHelpers';
@@ -16,9 +18,12 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [regionName, setRegionName] = useState('');
   const [continentId, setContinentId] = useState(initialContinentId || '');
+  const [regionType, setRegionType] = useState('land'); // 'land' or 'ocean'
 
-  // Get available templates for selected latitude
-  const availableTemplates = getTemplatesByLatitude(latitudeBand);
+  // Get available templates for selected latitude, filtered by region type
+  const availableTemplates = regionType === 'ocean'
+    ? getOceanTemplatesByLatitude(latitudeBand)
+    : getLandTemplatesByLatitude(latitudeBand);
   const selectedTemplate = selectedTemplateId
     ? getTemplate(latitudeBand, selectedTemplateId)
     : null;
@@ -37,12 +42,14 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     }
   }, [show, initialContinentId]);
 
-  // Auto-select first template when latitude changes
+  // Auto-select first template when latitude or region type changes
   useEffect(() => {
     if (availableTemplates.length > 0) {
       setSelectedTemplateId(availableTemplates[0].id);
+    } else {
+      setSelectedTemplateId('');
     }
-  }, [latitudeBand]);
+  }, [latitudeBand, regionType]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -87,6 +94,7 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     setRegionName('');
     setLatitudeBand('temperate');
     setContinentId('');
+    setRegionType('land');
     onHide();
   };
 
@@ -150,22 +158,66 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
             </Form.Text>
           </Form.Group>
 
+          {/* Region Type Toggle */}
+          <Form.Group className="mb-3">
+            <Form.Label>Region Type</Form.Label>
+            <div>
+              <ButtonGroup>
+                <ToggleButton
+                  id="region-type-land"
+                  type="radio"
+                  variant={regionType === 'land' ? 'primary' : 'outline-primary'}
+                  name="regionType"
+                  value="land"
+                  checked={regionType === 'land'}
+                  onChange={(e) => setRegionType(e.currentTarget.value)}
+                >
+                  Land
+                </ToggleButton>
+                <ToggleButton
+                  id="region-type-ocean"
+                  type="radio"
+                  variant={regionType === 'ocean' ? 'info' : 'outline-info'}
+                  name="regionType"
+                  value="ocean"
+                  checked={regionType === 'ocean'}
+                  onChange={(e) => setRegionType(e.currentTarget.value)}
+                >
+                  Ocean
+                </ToggleButton>
+              </ButtonGroup>
+            </div>
+            <Form.Text className="text-muted">
+              {regionType === 'ocean'
+                ? 'Ocean regions display sea state, wave height, and sailing conditions'
+                : 'Land regions display standard weather, ground conditions, and snow accumulation'}
+            </Form.Text>
+          </Form.Group>
+
           {/* Template Selection */}
           <Form.Group className="mb-3">
             <Form.Label>Region Template</Form.Label>
-            <Form.Select
-              value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
-            >
-              {availableTemplates.map(template => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </Form.Select>
-            <Form.Text className="text-muted">
-              Pre-configured climate settings for common biome types
-            </Form.Text>
+            {availableTemplates.length > 0 ? (
+              <>
+                <Form.Select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                >
+                  {availableTemplates.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </Form.Select>
+                <Form.Text className="text-muted">
+                  Pre-configured climate settings for common {regionType} types
+                </Form.Text>
+              </>
+            ) : (
+              <Alert variant="warning" className="mb-0">
+                No {regionType} templates available for this latitude band. Try a different latitude or region type.
+              </Alert>
+            )}
           </Form.Group>
 
           {/* Template Description */}

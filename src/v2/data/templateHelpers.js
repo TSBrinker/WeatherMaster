@@ -110,3 +110,41 @@ export const extractClimateProfile = (template) => {
     templateDescription: template.description
   };
 };
+
+/**
+ * Check if a template is an ocean template
+ */
+export const isOceanTemplate = (template) => {
+  if (!template) return false;
+  return template.parameters?.specialFactors?.isOcean === true ||
+         template.defaultBiome === 'ocean';
+};
+
+/**
+ * Get only ocean templates for a specific latitude band
+ * Includes both regular ocean templates and compatible special ocean templates
+ */
+export const getOceanTemplatesByLatitude = (latitudeBand) => {
+  const allTemplates = getTemplatesByLatitude(latitudeBand);
+  return allTemplates.filter(isOceanTemplate);
+};
+
+/**
+ * Get only land templates for a specific latitude band
+ * Excludes ocean templates
+ */
+export const getLandTemplatesByLatitude = (latitudeBand) => {
+  const allTemplates = getTemplatesByLatitude(latitudeBand);
+  return allTemplates.filter(template => !isOceanTemplate(template));
+};
+
+/**
+ * Check if a region is an ocean region based on its climate profile
+ */
+export const isOceanRegion = (region) => {
+  if (!region) return false;
+  const climate = region.climate || region.parameters || {};
+  return climate.specialFactors?.isOcean === true ||
+         climate.biome === 'ocean' ||
+         region.biome === 'ocean';
+};

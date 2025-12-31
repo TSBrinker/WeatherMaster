@@ -23,7 +23,8 @@ export const biomeLabels = {
   "temperate-rainforest": "Temperate Rainforest",
   "boreal-forest": "Boreal Forest",
   "boreal-grassland": "Boreal Grassland",
-  "tundra": "Tundra"
+  "tundra": "Tundra",
+  "ocean": "Ocean"
 };
 
 // Region templates organized by latitude band
@@ -219,6 +220,95 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "tundra"
+    },
+    // === POLAR OCEAN TEMPLATES ===
+    "polar-seas": {
+      name: "Polar Seas",
+      description: "Frigid waters near the disc center where pack ice dominates for much of the year. Brief summer thaw allows limited navigation, but ice can reform rapidly. Icebergs and growlers pose constant hazards.",
+      gameplayImpact: "Ice navigation requires specialized vessels. Icebergs can appear suddenly in fog. Summer provides brief window for travel. Hypothermia risk if crew goes overboard is near-instant.",
+      parameters: {
+        latitude: 80,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.3,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.3,
+          swellSource: 'polar',
+          baseSwellHeight: 4,
+          baseSwellPeriod: 8,
+          icebergs: 0.9,
+          packIce: 0.8,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 28, variance: 15 },
+          winter: { mean: 15, variance: 10 },
+          spring: { mean: 28, variance: 12 },
+          summer: { mean: 38, variance: 8 },
+          fall: { mean: 30, variance: 12 }
+        },
+        humidityProfile: {
+          annual: { mean: 85, variance: 10 },
+          winter: { mean: 80, variance: 10 },
+          spring: { mean: 85, variance: 10 },
+          summer: { mean: 90, variance: 8 },
+          fall: { mean: 85, variance: 10 }
+        },
+        dewPointProfile: {
+          annual: { mean: 22, variance: 12, max: 38 },
+          winter: { mean: 10, variance: 8, max: 22 },
+          spring: { mean: 22, variance: 10, max: 35 },
+          summer: { mean: 35, variance: 6, max: 42 },
+          fall: { mean: 25, variance: 10, max: 38 }
+        }
+      },
+      defaultBiome: "ocean"
+    },
+    "pack-ice-waters": {
+      name: "Pack Ice Waters",
+      description: "Transitional zone where seasonal pack ice forms and breaks up. In summer, channels open through the ice allowing passage. Winter locks the sea in continuous ice sheet.",
+      gameplayImpact: "Navigable only in summer months. Ice pressure can crush vessels caught in freeze-up. Leads and polynyas provide unpredictable routes. Rich hunting grounds for marine mammals.",
+      parameters: {
+        latitude: 75,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.4,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'coastal',
+          currentStrength: 0.4,
+          swellSource: 'polar',
+          baseSwellHeight: 3,
+          baseSwellPeriod: 7,
+          packIce: 0.7,
+          seasonalIce: true,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 32, variance: 18 },
+          winter: { mean: 18, variance: 12 },
+          spring: { mean: 30, variance: 14 },
+          summer: { mean: 42, variance: 8 },
+          fall: { mean: 34, variance: 14 }
+        },
+        humidityProfile: {
+          annual: { mean: 82, variance: 12 },
+          winter: { mean: 78, variance: 10 },
+          spring: { mean: 82, variance: 12 },
+          summer: { mean: 88, variance: 8 },
+          fall: { mean: 82, variance: 12 }
+        },
+        dewPointProfile: {
+          annual: { mean: 26, variance: 14, max: 42 },
+          winter: { mean: 12, variance: 10, max: 25 },
+          spring: { mean: 25, variance: 12, max: 38 },
+          summer: { mean: 38, variance: 6, max: 45 },
+          fall: { mean: 28, variance: 12, max: 40 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
   // FLAT DISC: Subtropical (4,500-5,500 mi) = mild winters, warm summers
@@ -544,6 +634,95 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-deciduous"
+    },
+    // === SUBTROPICAL OCEAN TEMPLATES ===
+    "trade-wind-belt": {
+      name: "Trade Wind Belt",
+      description: "Warm waters dominated by steady northeast or southeast trade winds. Reliable sailing conditions most of the year, though hurricane season brings serious risks in late summer and fall.",
+      gameplayImpact: "Trade winds provide consistent sailing. Hurricane season (summer/fall) requires careful planning. Squalls can develop quickly in afternoon. Generally excellent visibility.",
+      parameters: {
+        latitude: 25,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.2,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.4,
+          swellSource: 'trade',
+          baseSwellHeight: 4,
+          baseSwellPeriod: 10,
+          tradeWinds: true,
+          hurricaneRisk: 0.6,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 76, variance: 8 },
+          winter: { mean: 72, variance: 6 },
+          spring: { mean: 76, variance: 6 },
+          summer: { mean: 82, variance: 5 },
+          fall: { mean: 78, variance: 6 }
+        },
+        humidityProfile: {
+          annual: { mean: 75, variance: 10 },
+          winter: { mean: 72, variance: 10 },
+          spring: { mean: 74, variance: 10 },
+          summer: { mean: 78, variance: 8 },
+          fall: { mean: 76, variance: 10 }
+        },
+        dewPointProfile: {
+          annual: { mean: 68, variance: 6, max: 78 },
+          winter: { mean: 64, variance: 6, max: 74 },
+          spring: { mean: 68, variance: 6, max: 76 },
+          summer: { mean: 72, variance: 4, max: 80 },
+          fall: { mean: 70, variance: 6, max: 78 }
+        }
+      },
+      defaultBiome: "ocean"
+    },
+    "gulf-waters": {
+      name: "Gulf Waters",
+      description: "Semi-enclosed warm waters with limited fetch reducing wave heights. Strong tidal currents near entrances. Water temperatures can become very warm in summer, fueling storm development.",
+      gameplayImpact: "Calmer than open ocean but currents can be treacherous. Summer heat can be oppressive at sea. Storm surge extremely dangerous in enclosed waters. Good for coastal trading.",
+      parameters: {
+        latitude: 28,
+        elevation: 0,
+        maritimeInfluence: 0.95,
+        terrainRoughness: 0.3,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'gulf',
+          currentStrength: 0.5,
+          swellSource: 'local',
+          baseSwellHeight: 2,
+          baseSwellPeriod: 6,
+          hurricaneRisk: 0.7,
+          stormSurge: 0.8,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 78, variance: 10 },
+          winter: { mean: 70, variance: 8 },
+          spring: { mean: 78, variance: 8 },
+          summer: { mean: 86, variance: 5 },
+          fall: { mean: 80, variance: 8 }
+        },
+        humidityProfile: {
+          annual: { mean: 78, variance: 10 },
+          winter: { mean: 74, variance: 10 },
+          spring: { mean: 76, variance: 10 },
+          summer: { mean: 82, variance: 8 },
+          fall: { mean: 78, variance: 10 }
+        },
+        dewPointProfile: {
+          annual: { mean: 70, variance: 6, max: 80 },
+          winter: { mean: 64, variance: 6, max: 74 },
+          spring: { mean: 70, variance: 6, max: 78 },
+          summer: { mean: 76, variance: 4, max: 82 },
+          fall: { mean: 72, variance: 6, max: 80 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
 
@@ -714,6 +893,50 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "boreal-forest"
+    },
+    // === BOREAL OCEAN TEMPLATES ===
+    "northern-seas": {
+      name: "Northern Seas",
+      description: "Cold but navigable waters with strong seasonal variation. Powerful storms sweep through regularly, especially in autumn and winter. Long summer days provide extended sailing windows.",
+      gameplayImpact: "Autumn gales are particularly dangerous. Summer sailing relatively safe but still unpredictable. Winter storms can last for days. Strong tidal currents near coasts.",
+      parameters: {
+        latitude: 50,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.4,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.5,
+          swellSource: 'westerlies',
+          baseSwellHeight: 6,
+          baseSwellPeriod: 9,
+          stormFrequency: 0.5,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 48, variance: 22 },
+          winter: { mean: 36, variance: 12 },
+          spring: { mean: 46, variance: 14 },
+          summer: { mean: 58, variance: 10 },
+          fall: { mean: 50, variance: 14 }
+        },
+        humidityProfile: {
+          annual: { mean: 82, variance: 12 },
+          winter: { mean: 80, variance: 10 },
+          spring: { mean: 82, variance: 12 },
+          summer: { mean: 85, variance: 10 },
+          fall: { mean: 82, variance: 12 }
+        },
+        dewPointProfile: {
+          annual: { mean: 40, variance: 14, max: 58 },
+          winter: { mean: 30, variance: 10, max: 42 },
+          spring: { mean: 38, variance: 12, max: 52 },
+          summer: { mean: 52, variance: 8, max: 62 },
+          fall: { mean: 42, variance: 12, max: 56 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
 
@@ -1001,6 +1224,94 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "temperate-rainforest"
+    },
+    // === TEMPERATE OCEAN TEMPLATES ===
+    "temperate-ocean": {
+      name: "Temperate Ocean",
+      description: "Open ocean waters with classic four-season variation. Westerly winds dominate, bringing regular weather systems. Good sailing conditions in summer, challenging in winter.",
+      gameplayImpact: "Seasonal weather patterns are somewhat predictable. Summer provides reliable sailing windows. Autumn storms require caution. Winter crossings are risky but possible.",
+      parameters: {
+        latitude: 42,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.3,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.5,
+          swellSource: 'westerlies',
+          baseSwellHeight: 5,
+          baseSwellPeriod: 9,
+          stormFrequency: 0.4,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 56, variance: 18 },
+          winter: { mean: 46, variance: 10 },
+          spring: { mean: 54, variance: 12 },
+          summer: { mean: 66, variance: 8 },
+          fall: { mean: 58, variance: 12 }
+        },
+        humidityProfile: {
+          annual: { mean: 78, variance: 12 },
+          winter: { mean: 76, variance: 10 },
+          spring: { mean: 78, variance: 12 },
+          summer: { mean: 80, variance: 10 },
+          fall: { mean: 78, variance: 12 }
+        },
+        dewPointProfile: {
+          annual: { mean: 48, variance: 12, max: 65 },
+          winter: { mean: 40, variance: 8, max: 52 },
+          spring: { mean: 46, variance: 10, max: 60 },
+          summer: { mean: 58, variance: 6, max: 68 },
+          fall: { mean: 50, variance: 10, max: 62 }
+        }
+      },
+      defaultBiome: "ocean"
+    },
+    "coastal-waters": {
+      name: "Coastal Waters",
+      description: "Nearshore waters where land effects modify ocean conditions. Tidal influences are strong, and local winds create variable conditions. Sheltered harbors provide refuge.",
+      gameplayImpact: "Land-sea breezes create predictable daily patterns. Tidal currents can be hazardous near headlands. Fog common in certain seasons. Generally safer than open ocean.",
+      parameters: {
+        latitude: 44,
+        elevation: 0,
+        maritimeInfluence: 0.9,
+        terrainRoughness: 0.5,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'coastal',
+          currentStrength: 0.6,
+          swellSource: 'westerlies',
+          baseSwellHeight: 3,
+          baseSwellPeriod: 7,
+          tidalRange: 'moderate',
+          fog: 0.5,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 54, variance: 16 },
+          winter: { mean: 44, variance: 10 },
+          spring: { mean: 52, variance: 12 },
+          summer: { mean: 64, variance: 8 },
+          fall: { mean: 56, variance: 12 }
+        },
+        humidityProfile: {
+          annual: { mean: 76, variance: 14 },
+          winter: { mean: 78, variance: 12 },
+          spring: { mean: 76, variance: 14 },
+          summer: { mean: 74, variance: 12 },
+          fall: { mean: 76, variance: 14 }
+        },
+        dewPointProfile: {
+          annual: { mean: 46, variance: 12, max: 62 },
+          winter: { mean: 38, variance: 8, max: 50 },
+          spring: { mean: 44, variance: 10, max: 58 },
+          summer: { mean: 56, variance: 6, max: 66 },
+          fall: { mean: 48, variance: 10, max: 60 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
 
@@ -1237,6 +1548,51 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "tundra"
+    },
+    // === SUBARCTIC OCEAN TEMPLATES ===
+    "subarctic-waters": {
+      name: "Subarctic Waters",
+      description: "Cold, stormy seas with frequent fog and unpredictable weather. Rich fishing grounds but treacherous conditions. Seasonal ice possible in winter months.",
+      gameplayImpact: "Dangerous sailing conditions year-round. Fog banks appear suddenly. Strong currents near coastlines. Winter storms can be devastating. Excellent fishing when conditions allow.",
+      parameters: {
+        latitude: 62,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.4,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.6,
+          swellSource: 'westerlies',
+          baseSwellHeight: 8,
+          baseSwellPeriod: 10,
+          fog: 0.7,
+          stormFrequency: 0.6,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 42, variance: 20 },
+          winter: { mean: 32, variance: 12 },
+          spring: { mean: 40, variance: 14 },
+          summer: { mean: 52, variance: 10 },
+          fall: { mean: 44, variance: 14 }
+        },
+        humidityProfile: {
+          annual: { mean: 85, variance: 10 },
+          winter: { mean: 82, variance: 10 },
+          spring: { mean: 85, variance: 10 },
+          summer: { mean: 88, variance: 8 },
+          fall: { mean: 85, variance: 10 }
+        },
+        dewPointProfile: {
+          annual: { mean: 36, variance: 14, max: 52 },
+          winter: { mean: 26, variance: 10, max: 38 },
+          spring: { mean: 34, variance: 12, max: 48 },
+          summer: { mean: 48, variance: 8, max: 58 },
+          fall: { mean: 38, variance: 12, max: 52 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
 
@@ -1440,6 +1796,95 @@ export const regionTemplates = {
         }
       },
       defaultBiome: "tropical-seasonal"
+    },
+    // === TROPICAL OCEAN TEMPLATES ===
+    "tropical-seas": {
+      name: "Tropical Seas",
+      description: "Warm, calm waters with gentle trade wind swells. Generally excellent sailing conditions with predictable weather patterns. Occasional afternoon squalls, especially near islands.",
+      gameplayImpact: "Easy sailing most of the time. Afternoon squalls may require shelter. Heat affects crew stamina. Doldrums possible near equator with becalmed conditions.",
+      parameters: {
+        latitude: 10,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.2,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'open',
+          currentStrength: 0.4,
+          swellSource: 'trade',
+          baseSwellHeight: 3,
+          baseSwellPeriod: 10,
+          doldrums: 0.3,
+          squalls: 0.4,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 82, variance: 4 },
+          winter: { mean: 80, variance: 4 },
+          spring: { mean: 82, variance: 4 },
+          summer: { mean: 84, variance: 3 },
+          fall: { mean: 82, variance: 4 }
+        },
+        humidityProfile: {
+          annual: { mean: 80, variance: 8 },
+          winter: { mean: 78, variance: 8 },
+          spring: { mean: 80, variance: 8 },
+          summer: { mean: 82, variance: 6 },
+          fall: { mean: 80, variance: 8 }
+        },
+        dewPointProfile: {
+          annual: { mean: 74, variance: 4, max: 82 },
+          winter: { mean: 72, variance: 4, max: 80 },
+          spring: { mean: 74, variance: 4, max: 82 },
+          summer: { mean: 76, variance: 3, max: 84 },
+          fall: { mean: 74, variance: 4, max: 82 }
+        }
+      },
+      defaultBiome: "ocean"
+    },
+    "coral-reef-waters": {
+      name: "Coral Reef Waters",
+      description: "Shallow, crystal-clear tropical waters over reef systems. Beautiful but hazardous for navigation - coral heads and sudden shallows demand careful piloting.",
+      gameplayImpact: "Stunning underwater visibility but extreme navigation hazards. Grounding on reef can be catastrophic. Rich marine life for fishing and diving. Calm conditions inside reef barriers.",
+      parameters: {
+        latitude: 15,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.6,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'coastal',
+          currentStrength: 0.3,
+          swellSource: 'trade',
+          baseSwellHeight: 2,
+          baseSwellPeriod: 8,
+          reefs: 0.9,
+          shallows: 0.8,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 82, variance: 4 },
+          winter: { mean: 80, variance: 4 },
+          spring: { mean: 82, variance: 4 },
+          summer: { mean: 84, variance: 3 },
+          fall: { mean: 82, variance: 4 }
+        },
+        humidityProfile: {
+          annual: { mean: 78, variance: 10 },
+          winter: { mean: 76, variance: 10 },
+          spring: { mean: 78, variance: 10 },
+          summer: { mean: 80, variance: 8 },
+          fall: { mean: 78, variance: 10 }
+        },
+        dewPointProfile: {
+          annual: { mean: 72, variance: 4, max: 80 },
+          winter: { mean: 70, variance: 4, max: 78 },
+          spring: { mean: 72, variance: 4, max: 80 },
+          summer: { mean: 74, variance: 3, max: 82 },
+          fall: { mean: 72, variance: 4, max: 80 }
+        }
+      },
+      defaultBiome: "ocean"
     }
   },
 
@@ -1652,6 +2097,97 @@ export const regionTemplates = {
       },
       defaultBiome: "desert",
       compatibleBands: ["subtropical", "temperate"]
+    },
+    // === SPECIAL OCEAN TEMPLATES ===
+    "strait-passage": {
+      name: "Strait Passage",
+      description: "Narrow waterway connecting larger bodies of water. Strong tidal currents accelerate through the constriction, creating challenging but predictable sailing conditions.",
+      gameplayImpact: "Timing is everything - slack tide required for safe passage. Strong currents can exceed vessel speed. Excellent defensive chokepoint. Weather funnels through strait.",
+      parameters: {
+        latitude: 45,
+        elevation: 0,
+        maritimeInfluence: 1.0,
+        terrainRoughness: 0.7,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'strait',
+          currentStrength: 0.9,
+          swellSource: 'local',
+          baseSwellHeight: 2,
+          baseSwellPeriod: 5,
+          tidalRange: 'macro',
+          tidalCurrents: 0.9,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 54, variance: 18 },
+          winter: { mean: 44, variance: 12 },
+          spring: { mean: 52, variance: 14 },
+          summer: { mean: 64, variance: 10 },
+          fall: { mean: 56, variance: 14 }
+        },
+        humidityProfile: {
+          annual: { mean: 75, variance: 15 },
+          winter: { mean: 78, variance: 12 },
+          spring: { mean: 75, variance: 15 },
+          summer: { mean: 72, variance: 12 },
+          fall: { mean: 75, variance: 15 }
+        },
+        dewPointProfile: {
+          annual: { mean: 44, variance: 12, max: 60 },
+          winter: { mean: 36, variance: 10, max: 48 },
+          spring: { mean: 42, variance: 12, max: 56 },
+          summer: { mean: 54, variance: 8, max: 64 },
+          fall: { mean: 46, variance: 10, max: 58 }
+        }
+      },
+      defaultBiome: "ocean",
+      compatibleBands: ["polar", "subarctic", "boreal", "temperate", "subtropical", "tropical"]
+    },
+    "archipelago-waters": {
+      name: "Archipelago Waters",
+      description: "Complex waters threading between numerous islands. Sheltered passages alternate with exposed crossings. Local knowledge is essential for safe navigation.",
+      gameplayImpact: "Many route options but navigation is complex. Shelter always nearby. Currents unpredictable between islands. Excellent for ambushes and evasion. Rich fishing.",
+      parameters: {
+        latitude: 40,
+        elevation: 0,
+        maritimeInfluence: 0.95,
+        terrainRoughness: 0.7,
+        specialFactors: {
+          isOcean: true,
+          seaType: 'coastal',
+          currentStrength: 0.5,
+          swellSource: 'local',
+          baseSwellHeight: 2,
+          baseSwellPeriod: 6,
+          islandEffect: true,
+          sheltered: 0.6,
+          groundType: 'water',
+        },
+        temperatureProfile: {
+          annual: { mean: 58, variance: 16 },
+          winter: { mean: 48, variance: 10 },
+          spring: { mean: 56, variance: 12 },
+          summer: { mean: 68, variance: 8 },
+          fall: { mean: 60, variance: 12 }
+        },
+        humidityProfile: {
+          annual: { mean: 76, variance: 14 },
+          winter: { mean: 78, variance: 12 },
+          spring: { mean: 76, variance: 14 },
+          summer: { mean: 74, variance: 12 },
+          fall: { mean: 76, variance: 14 }
+        },
+        dewPointProfile: {
+          annual: { mean: 48, variance: 12, max: 64 },
+          winter: { mean: 40, variance: 10, max: 52 },
+          spring: { mean: 46, variance: 10, max: 58 },
+          summer: { mean: 58, variance: 8, max: 68 },
+          fall: { mean: 50, variance: 10, max: 62 }
+        }
+      },
+      defaultBiome: "ocean",
+      compatibleBands: ["subarctic", "boreal", "temperate", "subtropical", "tropical"]
     }
   }
 };

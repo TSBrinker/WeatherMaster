@@ -1,6 +1,6 @@
 # WeatherMaster Roadmap
 
-**Last Updated**: 2025-12-29 (Sprint 44)
+**Last Updated**: 2025-12-31 (Sprint 50)
 
 This is the single source of truth for feature planning and priorities.
 
@@ -103,10 +103,15 @@ This is the single source of truth for feature planning and priorities.
 
 ### 🗺️ Biomes & Templates
 
-**Ocean & Maritime**
-- [ ] Open ocean climate templates
-- [ ] Sea states (calm, moderate, rough, storm)
-- [ ] Sailing-specific conditions
+**Ocean & Maritime** - COMPLETE ✅ *(Sprint 50)*
+- [x] Open ocean climate templates (14 new templates across all latitude bands)
+- [x] Sea states (calm through phenomenal, Beaufort scale)
+- [x] Sailing-specific conditions (ratings, hazards, gameplay effects)
+
+**Voyage Mode** - NOT STARTED
+- [ ] Voyage waypoint system (port -> sea -> gulf -> port)
+- [ ] Condition blending during transit
+- [ ] Ship types with travel speeds
 
 **Biome Coverage Audit**
 - [ ] Review all major real-world biomes represented
@@ -191,6 +196,7 @@ This is the single source of truth for feature planning and priorities.
 | 41 | Ridge | Wanderers feature (falling stars) |
 | 42 | Cove | Wanderer calibration and impact effects |
 | 43 | Stone | Loading screen implementation |
+| 50 | Dusk | Ocean & Maritime: Sea state system, ocean templates |
 
 See `sprint-logs/` for detailed sprint documentation.
 

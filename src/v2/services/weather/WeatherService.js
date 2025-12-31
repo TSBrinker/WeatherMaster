@@ -10,6 +10,7 @@ import MoonService from '../celestial/MoonService';
 import WandererService from '../celestial/WandererService';
 import { EnvironmentalConditionsService } from './EnvironmentalConditionsService';
 import { SnowAccumulationService } from './SnowAccumulationService';
+import { SeaStateService } from './SeaStateService';
 import { advanceDate, getMonthName } from '../../utils/dateUtils';
 
 /**
@@ -24,6 +25,7 @@ export class WeatherService {
     this.wandererService = WandererService;
     this.environmentalService = new EnvironmentalConditionsService();
     this.snowService = new SnowAccumulationService();
+    this.seaStateService = new SeaStateService();
   }
 
   /**
@@ -53,14 +55,33 @@ export class WeatherService {
     // Get wanderer event (pass weather for visibility check)
     const wanderer = this.wandererService.getWandererEvent(region, date, weather);
 
+    // Get sea state for ocean regions
+    const seaState = this.isOceanRegion(region)
+      ? this.seaStateService.getSeaState(region, date, weather)
+      : null;
+
     return {
       ...weather,
       celestial,
       environmental,
       snowAccumulation,
+      seaState,
       wanderer,
       timestamp: this.getTimestamp(date)
     };
+  }
+
+  /**
+   * Check if a region is an ocean region
+   * @param {Object} region - Region data
+   * @returns {boolean} True if ocean region
+   */
+  isOceanRegion(region) {
+    if (!region) return false;
+    const climate = region.climate || region.parameters || {};
+    return climate.specialFactors?.isOcean === true ||
+           climate.biome === 'ocean' ||
+           region.biome === 'ocean';
   }
 
   /**
@@ -263,6 +284,7 @@ export class WeatherService {
     this.environmentalService.clearCache();
     this.snowService.clearCache();
     this.wandererService.clearCache();
+    this.seaStateService.clearCache();
   }
 }
 

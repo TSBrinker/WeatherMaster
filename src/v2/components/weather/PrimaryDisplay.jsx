@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiStrongWind } from 'react-icons/wi';
 import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
+import { GiWaveSurfer } from 'react-icons/gi';
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { transformCondition } from '../../utils/conditionPhrasing';
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
+import SeaStateCard from './SeaStateCard';
 import './PrimaryDisplay.css';
 
 /**
@@ -90,6 +92,7 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
   const [showConditionModal, setShowConditionModal] = useState(false);
   const [showEnvironmentalModal, setShowEnvironmentalModal] = useState(false);
   const [showSnowModal, setShowSnowModal] = useState(false);
+  const [showSeaStateModal, setShowSeaStateModal] = useState(false);
   const { conditionPhrasing, showSnowAccumulation } = usePreferences();
 
   if (!region || !weather) {
@@ -262,6 +265,18 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
                   {weather.snowAccumulation.groundCondition?.name || 'Ground'}
                 </>
               )}
+            </Badge>
+          )}
+
+          {/* Sea State Badge - show for ocean regions */}
+          {weather.seaState && (
+            <Badge
+              bg="info"
+              className="info-badge sea-state-badge"
+              onClick={() => setShowSeaStateModal(true)}
+            >
+              <GiWaveSurfer className="badge-icon" />
+              {weather.seaState.waveHeight}ft - {weather.seaState.seaCondition}
             </Badge>
           )}
 
@@ -548,6 +563,31 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Sea State Modal */}
+      {weather.seaState && (
+        <Modal
+          show={showSeaStateModal}
+          onHide={() => setShowSeaStateModal(false)}
+          centered
+          size="lg"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              <GiWaveSurfer className="me-2" style={{ color: '#4a90d9' }} />
+              Sea Conditions
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <SeaStateCard seaState={weather.seaState} />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowSeaStateModal(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </>
   );
 };
