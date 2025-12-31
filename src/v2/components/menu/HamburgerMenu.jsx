@@ -320,7 +320,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
                   className="settings-popover-btn"
                   onClick={enterEditMode}
                 >
-                  Edit List
+                  Edit Locations
                 </button>
               )}
               <SettingsMenu inline={true} />
