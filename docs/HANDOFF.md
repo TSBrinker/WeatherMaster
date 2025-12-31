@@ -1,76 +1,62 @@
 # Handoff Document
 
 **Last Updated**: 2025-12-31
-**Previous Agent**: Cliff (Sprint 53)
-**Current Sprint Count**: 53 (next agent creates `SPRINT_54_*.md`)
-**Status**: Region drawing complete, UI refactored. HIGH PRIORITY items identified.
+**Previous Agent**: Frost (Sprint 54)
+**Current Sprint Count**: 54 (next agent creates `SPRINT_55_*.md`)
+**Status**: Non-overlapping region enforcement complete. Mobile touch gestures still needed.
 
 ---
 
-## What Was Done This Sprint (Sprint 53)
+## What Was Done This Sprint (Sprint 54)
 
-### 1. Region Drawing System - Weather & Political
-Complete polygon drawing for both weather zones and political territories.
+### 1. Non-Overlapping Political Region Enforcement (COMPLETE)
+Full tessellation system for political territories that share borders.
 
-**New Files:**
-- `src/v2/utils/regionUtils.js` - Polygon math (area, perimeter, vertex snapping)
-- `src/v2/components/map/MapToolsPanel.jsx` + `.css` - Unified accordion panel
+**Key Features:**
+- **Snap-to-vertex**: When drawing, nearby existing vertices glow green. Clicking shares that corner.
+- **Snap-to-edge**: When drawing, hovering near existing edges highlights them green. Clicking subdivides the edge and shares that point.
+- **Linked vertices via `sharedId`**: Vertices shared between kingdoms are linked. Dragging one moves ALL connected kingdoms.
+- **Visual feedback**: Green rings on snappable vertices, green edge highlights, red warning when inside existing region.
 
-**Modified Files:**
-- `src/v2/contexts/WorldContext.jsx` - Added 12 CRUD methods (6 per region type)
-- `src/v2/components/map/WorldMapView.jsx` - Drawing logic, SVG rendering, layer toggles
-- `src/v2/components/map/WorldMapView.css` - Polygon and vertex styles
+**Data Model Change:**
+```javascript
+// Vertices now have optional sharedId
+{ id: "uuid", x: 100, y: 200, sharedId: "shared-uuid" | null }
+```
 
-**Features:**
-- Draw polygons by clicking to place vertices (minimum 3 to close)
-- Weather regions: blue/teal colors, solid fill
-- Political regions: warm/orange colors, dashed borders
-- Vertex snapping - click near existing vertex to reuse point
-- Area/perimeter calculations
-- Per-region: rename, color picker, visibility toggle, delete
-- Layer toggle buttons in header
+### 2. Edge Subdivision for Saved Regions
+- Click on any edge of a SELECTED political region to insert a new vertex
+- Blue highlight with "+" indicator shows insertion point
+- Works independently from drawing mode - just select a kingdom and click its edge
 
-### 2. UI Refactor - MapToolsPanel
-Consolidated 3 separate stacking panels into single accordion panel:
-- Paths, Weather, Political sections
-- Only one expands at a time
-- Auto-expands when drawing
-- Much cleaner than before
+### 3. Selected Region Z-Index
+- Selected political region now renders on top of other regions
+- Allows access to vertices that were hidden under overlapping polygons
 
-### 3. Dead Code Cleanup
-Moved orphaned files to `src/v2/components/_recycled/`:
-- Old CSS files (CelestialCard, ConditionsCard, CurrentWeather, DMForecastPanel)
-- TimeDisplay.jsx
-- PathManager, WeatherRegionManager, PoliticalRegionManager (superseded by MapToolsPanel)
+### 4. Vertex Context Menu (Right-Click)
+Right-click on any vertex of a selected political region:
+- **Delete Vertex**: Remove vertex (disabled if polygon has only 3 vertices)
+- **Link to Nearby Vertex**: Shows nearby vertices from other regions within 30px
+  - Creates shared vertex link so dragging one moves both
+  - Snaps positions together when linking
+
+### 5. Bug Fixes
+- Fixed clicking on vertices blocked when edge preview was showing
+- Fixed edge subdivision click not working (polygon onClick was stopping propagation)
 
 ---
 
-## HIGH PRIORITY Items (from testing with Tyler)
+## HIGH PRIORITY Items
 
-### 1. Non-Overlapping Region Enforcement
-**Problem**: Territories can freely overlap. Tyler wants them to butt up against each other without overlapping (like a real map of kingdoms).
+### 1. ~~Non-Overlapping Region Enforcement~~ ✅ DONE
 
-**Possible approaches:**
-- Polygon intersection detection when saving
-- Auto edge alignment when vertices are near existing edges
-- Visual warning/prevention when overlap detected
-- Use a polygon clipping library (e.g., clipper-lib, polygon-clipping)
-
-### 2. Mobile Touch Gestures
+### 2. Mobile Touch Gestures (STILL NEEDED)
 **Problem**: Zoom/pan only works with mouse (wheel scroll, shift+drag).
 
 **Needed:**
 - Pinch-to-zoom
 - Two-finger pan
 - Touch event handlers with gesture detection
-
----
-
-## Uncommitted Changes
-
-All Sprint 52 AND 53 work is uncommitted:
-- Sprint 52: Path drawing, zoom/pan, scale bar
-- Sprint 53: Region drawing, UI refactor, dead code cleanup
 
 ---
 
@@ -93,7 +79,7 @@ All Sprint 52 AND 53 work is uncommitted:
 {
   id: string,
   name: string,
-  vertices: [{ id, x, y }],
+  vertices: [{ id, x, y, sharedId }],  // sharedId links vertices across regions
   color: string (hex),
   isVisible: boolean,
   perimeterMiles: number,
@@ -102,26 +88,37 @@ All Sprint 52 AND 53 work is uncommitted:
 ```
 Stored in `continent.weatherRegions[]` and `continent.politicalRegions[]`
 
-### WorldContext Region Methods (12 total)
+### WorldContext Region Methods
 Weather: `createWeatherRegion`, `updateWeatherRegion`, `deleteWeatherRegion`, `addWeatherRegionVertex`, `updateWeatherRegionVertex`, `deleteWeatherRegionVertex`
 
-Political: Same pattern with `Political` prefix
+Political: Same pattern with `Political` prefix, PLUS:
+- `insertPoliticalRegionVertex(continentId, regionId, vertex, insertAfterIndex)` - for edge subdivision
+- `updateLinkedPoliticalVertices(continentId, sharedId, { x, y })` - moves all linked vertices
+- `setPoliticalVertexSharedId(continentId, regionId, vertexId, sharedId)` - link vertices after creation
+
+### Linked Vertex System
+- Vertices with same `sharedId` are linked across all political regions
+- When dragging a linked vertex, `updateLinkedPoliticalVertices` updates all matching vertices
+- Use `findLinkedVertices(sharedId, politicalRegions)` to find all vertices with a given sharedId
 
 ### Drawing Mode State
 ```javascript
 drawingMode: 'none' | 'path' | 'weatherRegion' | 'politicalRegion'
 ```
 
-### Vertex Snapping
-`findNearestVertexAcrossRegions(x, y, weatherRegions, politicalRegions, threshold)` - returns nearest vertex within threshold across all regions. Used on every click during region drawing.
+---
+
+## Future Ideas
+
+- **Coastline snapping**: Upload a PNG with transparent oceans, use alpha channel to detect and snap to coastlines
 
 ---
 
 ## Remaining Items
 
-1. **Non-overlapping regions** (HIGH PRIORITY)
-2. **Mobile touch gestures** (HIGH PRIORITY)
-3. Exact sunrise/sunset from pin Y position
+1. **Mobile touch gestures** (HIGH PRIORITY)
+2. Exact sunrise/sunset from pin Y position
+3. Coastline snapping (future enhancement)
 
 ---
 

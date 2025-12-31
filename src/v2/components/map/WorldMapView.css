@@ -543,3 +543,207 @@
     height: 20px;
   }
 }
+
+/* ===== SNAP PREVIEW INDICATORS ===== */
+
+.snap-preview {
+  pointer-events: none;
+}
+
+/* Vertex snap ring animation */
+.snap-vertex-ring {
+  animation: snap-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes snap-pulse {
+  from {
+    r: 10;
+    opacity: 0.7;
+  }
+  to {
+    r: 14;
+    opacity: 1;
+  }
+}
+
+/* Edge highlight animation */
+.snap-edge-highlight {
+  animation: edge-glow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes edge-glow {
+  from {
+    stroke-width: 3;
+    stroke-opacity: 0.7;
+  }
+  to {
+    stroke-width: 5;
+    stroke-opacity: 1;
+  }
+}
+
+/* Warning ring animation */
+.snap-warning-ring {
+  animation: warning-pulse 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes warning-pulse {
+  from {
+    r: 8;
+    stroke-opacity: 0.6;
+  }
+  to {
+    r: 12;
+    stroke-opacity: 1;
+  }
+}
+
+/* Snappable vertex markers (shown during drawing) */
+.snappable-vertices {
+  pointer-events: none;
+}
+
+.snappable-vertex-marker {
+  transition: opacity 0.2s ease;
+}
+
+/* Click hint variants for snap states */
+.click-hint.snap-vertex,
+.click-hint.snap-edge {
+  background: rgba(46, 204, 113, 0.9);
+}
+
+.click-hint.snap-warning {
+  background: rgba(231, 76, 60, 0.9);
+}
+
+/* Shared vertex indicator (green border) */
+.vertex-marker.shared {
+  filter: drop-shadow(0 0 4px rgba(46, 204, 113, 0.6));
+}
+
+/* ===== EDGE SUBDIVIDE PREVIEW ===== */
+
+.edge-subdivide-preview {
+  pointer-events: none;
+}
+
+.edge-subdivide-preview line {
+  animation: subdivide-edge-glow 0.6s ease-in-out infinite alternate;
+}
+
+.edge-subdivide-preview circle {
+  animation: subdivide-point-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes subdivide-edge-glow {
+  from {
+    stroke-width: 3;
+    stroke-opacity: 0.8;
+  }
+  to {
+    stroke-width: 5;
+    stroke-opacity: 1;
+  }
+}
+
+@keyframes subdivide-point-pulse {
+  from {
+    r: 6;
+  }
+  to {
+    r: 10;
+  }
+}
+
+/* ===== VERTEX CONTEXT MENU ===== */
+
+.vertex-context-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.vertex-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(30, 30, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.context-menu-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.context-menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.context-menu-item:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+.context-menu-item.danger:hover:not(:disabled) {
+  background: rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+}
+
+.context-menu-hint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: 0.5rem;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.25rem 0;
+}
+
+.context-menu-section {
+  padding: 0.4rem 0.75rem 0.2rem;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.context-menu-info {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.context-menu-info.linked {
+  color: #2ecc71;
+  font-style: normal;
+}

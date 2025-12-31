@@ -20,9 +20,13 @@ import {
   calculatePolygonArea,
   getNextRegionColor,
   findNearestVertexAcrossRegions,
+  findNearestPoliticalVertex,
+  findNearestPoliticalEdge,
+  findContainingPoliticalRegion,
   WEATHER_REGION_COLORS,
   POLITICAL_REGION_COLORS,
 } from '../../utils/regionUtils';
+import { v4 as uuidv4 } from 'uuid';
 import MapConfigModal from './MapConfigModal';
 import MapToolsPanel from './MapToolsPanel';
 import './WorldMapView.css';
@@ -36,7 +40,7 @@ import './WorldMapView.css';
  * - onSelectRegion: Callback when user clicks on a region pin
  */
 const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
-  const { activeWorld, groupedRegions, createPath, updatePath, createWeatherRegion, updateWeatherRegion, createPoliticalRegion, updatePoliticalRegion } = useWorld();
+  const { activeWorld, groupedRegions, createPath, updatePath, createWeatherRegion, updateWeatherRegion, createPoliticalRegion, updatePoliticalRegion, deletePoliticalRegionVertex, insertPoliticalRegionVertex, updateLinkedPoliticalVertices, setPoliticalVertexSharedId } = useWorld();
   const mapContainerRef = useRef(null);
   const imageRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 }); // Natural image dimensions
@@ -57,9 +61,25 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const [activePoliticalRegion, setActivePoliticalRegion] = useState(null);
   const [selectedPoliticalRegionId, setSelectedPoliticalRegionId] = useState(null);
 
+  // Snap preview state for political region drawing
+  // { type: 'vertex'|'edge'|'warning', x, y, regionId, regionName?, vertex?, edgeIndex?, insertAfterIndex? }
+  const [snapPreview, setSnapPreview] = useState(null);
+
   // Waypoint dragging state
   const [draggingWaypoint, setDraggingWaypoint] = useState(null);
   const dragStartRef = useRef(null);
+
+  // Political region vertex dragging state
+  const [draggingPoliticalVertex, setDraggingPoliticalVertex] = useState(null);
+  // { regionId, vertexId, vertex (with sharedId) }
+
+  // Edge subdivision hover state (for selected political regions)
+  const [edgeSubdividePreview, setEdgeSubdividePreview] = useState(null);
+  // { regionId, edgeIndex, insertAfterIndex, x, y, vertex1, vertex2 }
+
+  // Vertex context menu state
+  const [vertexContextMenu, setVertexContextMenu] = useState(null);
+  // { x, y (screen coords), regionId, vertex, nearbyVertices: [{regionId, vertex, distance}] }
 
   // Layer visibility (default off to reduce visual clutter)
   const [showPaths, setShowPaths] = useState(false);
@@ -347,26 +367,70 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const handleAddPoliticalRegionVertex = useCallback((pos) => {
     if (!activePoliticalRegion) return;
 
-    // First priority: check for vertex snapping (clicking on an existing vertex)
-    const nearestVertex = findNearestVertexAcrossRegions(
-      pos.x,
-      pos.y,
-      continent?.weatherRegions || [],
+    let vertexPosition = { x: pos.x, y: pos.y };
+    let sharedId = null;
+
+    // First priority: check for vertex snapping
+    const nearestVertex = findNearestPoliticalVertex(
+      pos.x, pos.y,
       continent?.politicalRegions || [],
+      null,
       12 // vertex snapping threshold
     );
 
-    let vertexPosition = { x: pos.x, y: pos.y };
-
     if (nearestVertex) {
-      // Snap to the existing vertex position
+      // Snap to existing vertex
       vertexPosition = { x: nearestVertex.vertex.x, y: nearestVertex.vertex.y };
+
+      // Handle sharedId linking
+      if (nearestVertex.vertex.sharedId) {
+        // Use existing sharedId
+        sharedId = nearestVertex.vertex.sharedId;
+      } else {
+        // Create new sharedId and update the existing vertex
+        sharedId = uuidv4();
+        setPoliticalVertexSharedId(
+          continent.id,
+          nearestVertex.regionId,
+          nearestVertex.vertex.id,
+          sharedId
+        );
+      }
+    } else {
+      // Second priority: check for edge snapping
+      const nearestEdge = findNearestPoliticalEdge(
+        pos.x, pos.y,
+        continent?.politicalRegions || [],
+        null,
+        15 // edge snapping threshold
+      );
+
+      if (nearestEdge) {
+        // Snap to edge - subdivide the existing polygon
+        vertexPosition = {
+          x: nearestEdge.projectedPoint.x,
+          y: nearestEdge.projectedPoint.y,
+        };
+
+        // Create sharedId for the new linked vertex
+        sharedId = uuidv4();
+
+        // Insert vertex into the existing polygon at the edge
+        insertPoliticalRegionVertex(
+          continent.id,
+          nearestEdge.regionId,
+          { x: vertexPosition.x, y: vertexPosition.y, sharedId },
+          nearestEdge.insertAfterIndex
+        );
+      }
+      // If no snap, sharedId stays null (independent vertex)
     }
 
     const newVertex = {
       id: `temp-${Date.now()}`,
       x: vertexPosition.x,
       y: vertexPosition.y,
+      sharedId,
     };
 
     const newVertices = [...activePoliticalRegion.vertices, newVertex];
@@ -377,7 +441,10 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       perimeterMiles: calculatePolygonPerimeter(newVertices, mapScale),
       areaSquareMiles: calculatePolygonArea(newVertices, mapScale),
     });
-  }, [activePoliticalRegion, continent, mapScale]);
+
+    // Clear snap preview after adding vertex
+    setSnapPreview(null);
+  }, [activePoliticalRegion, continent, mapScale, insertPoliticalRegionVertex, setPoliticalVertexSharedId]);
 
   // === WAYPOINT DRAGGING ===
 
@@ -392,6 +459,108 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     dragStartRef.current = pos;
   }, [getImagePosition]);
 
+  const handlePoliticalVertexMouseDown = useCallback((e, regionId, vertex) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const pos = getImagePosition(e);
+    if (!pos) return;
+
+    setDraggingPoliticalVertex({ regionId, vertexId: vertex.id, vertex });
+    dragStartRef.current = pos;
+  }, [getImagePosition]);
+
+  // Right-click context menu for political vertices
+  const handlePoliticalVertexContextMenu = useCallback((e, regionId, vertex) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Find nearby vertices from OTHER regions that could be linked
+    const nearbyVertices = [];
+    const LINK_THRESHOLD = 30; // pixels
+
+    for (const region of continent?.politicalRegions || []) {
+      if (region.id === regionId) continue; // Skip same region
+      for (const v of region.vertices || []) {
+        const dx = v.x - vertex.x;
+        const dy = v.y - vertex.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < LINK_THRESHOLD) {
+          nearbyVertices.push({
+            regionId: region.id,
+            regionName: region.name,
+            vertex: v,
+            distance,
+          });
+        }
+      }
+    }
+
+    // Sort by distance
+    nearbyVertices.sort((a, b) => a.distance - b.distance);
+
+    setVertexContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      regionId,
+      vertex,
+      nearbyVertices,
+      canDelete: (continent?.politicalRegions?.find(r => r.id === regionId)?.vertices?.length || 0) > 3,
+    });
+  }, [continent?.politicalRegions]);
+
+  // Handle delete vertex from context menu
+  const handleDeleteVertex = useCallback(() => {
+    if (!vertexContextMenu || !continent) return;
+
+    deletePoliticalRegionVertex(
+      continent.id,
+      vertexContextMenu.regionId,
+      vertexContextMenu.vertex.id
+    );
+
+    setVertexContextMenu(null);
+  }, [vertexContextMenu, continent, deletePoliticalRegionVertex]);
+
+  // Handle link vertices from context menu
+  const handleLinkVertices = useCallback((targetRegionId, targetVertex) => {
+    if (!vertexContextMenu || !continent) return;
+
+    const sourceVertex = vertexContextMenu.vertex;
+
+    // Determine sharedId to use
+    let sharedId;
+    if (sourceVertex.sharedId && targetVertex.sharedId) {
+      // Both already have sharedIds - use source's (could merge groups, but keeping simple for now)
+      sharedId = sourceVertex.sharedId;
+      // Update target to use source's sharedId
+      setPoliticalVertexSharedId(continent.id, targetRegionId, targetVertex.id, sharedId);
+    } else if (sourceVertex.sharedId) {
+      // Source has sharedId, target doesn't - add target to source's group
+      sharedId = sourceVertex.sharedId;
+      setPoliticalVertexSharedId(continent.id, targetRegionId, targetVertex.id, sharedId);
+    } else if (targetVertex.sharedId) {
+      // Target has sharedId, source doesn't - add source to target's group
+      sharedId = targetVertex.sharedId;
+      setPoliticalVertexSharedId(continent.id, vertexContextMenu.regionId, sourceVertex.id, sharedId);
+    } else {
+      // Neither has sharedId - create new one for both
+      sharedId = uuidv4();
+      setPoliticalVertexSharedId(continent.id, vertexContextMenu.regionId, sourceVertex.id, sharedId);
+      setPoliticalVertexSharedId(continent.id, targetRegionId, targetVertex.id, sharedId);
+    }
+
+    // Also snap positions together (use source position)
+    updateLinkedPoliticalVertices(continent.id, sharedId, { x: sourceVertex.x, y: sourceVertex.y });
+
+    setVertexContextMenu(null);
+  }, [vertexContextMenu, continent, setPoliticalVertexSharedId, updateLinkedPoliticalVertices]);
+
+  // Close context menu when clicking elsewhere
+  const handleCloseContextMenu = useCallback(() => {
+    setVertexContextMenu(null);
+  }, []);
+
   const handleMouseMove = useCallback((e) => {
     // Handle band hover
     if (!mapScale || imageSize.height === 0) return;
@@ -405,6 +574,127 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
     const band = getLatitudeBandAtPosition(y, imageSize.height, mapScale);
     setHoveredBand(band);
+
+    // Handle snap preview during political region drawing
+    if (drawingMode === 'politicalRegion' && continent?.politicalRegions) {
+      const pos = getImagePosition(e);
+      if (pos) {
+        // First priority: check existing vertices
+        const nearestVertex = findNearestPoliticalVertex(
+          pos.x, pos.y,
+          continent.politicalRegions,
+          null, // Don't exclude any region
+          12 // vertex snapping threshold
+        );
+
+        if (nearestVertex) {
+          setSnapPreview({
+            type: 'vertex',
+            x: nearestVertex.vertex.x,
+            y: nearestVertex.vertex.y,
+            regionId: nearestVertex.regionId,
+            vertex: nearestVertex.vertex,
+          });
+        } else {
+          // Second priority: check edges
+          const nearestEdge = findNearestPoliticalEdge(
+            pos.x, pos.y,
+            continent.politicalRegions,
+            null, // Don't exclude any region
+            15 // edge snapping threshold
+          );
+
+          if (nearestEdge) {
+            setSnapPreview({
+              type: 'edge',
+              x: nearestEdge.projectedPoint.x,
+              y: nearestEdge.projectedPoint.y,
+              regionId: nearestEdge.regionId,
+              regionName: nearestEdge.regionName,
+              edgeIndex: nearestEdge.edgeIndex,
+              insertAfterIndex: nearestEdge.insertAfterIndex,
+              vertex1: nearestEdge.vertex1,
+              vertex2: nearestEdge.vertex2,
+            });
+          } else {
+            // Check if inside an existing polygon (warning case)
+            const containing = findContainingPoliticalRegion(
+              pos.x, pos.y,
+              continent.politicalRegions,
+              null
+            );
+
+            if (containing) {
+              setSnapPreview({
+                type: 'warning',
+                x: pos.x,
+                y: pos.y,
+                regionId: containing.regionId,
+                regionName: containing.regionName,
+              });
+            } else {
+              setSnapPreview(null);
+            }
+          }
+        }
+      } else {
+        setSnapPreview(null);
+      }
+    } else if (snapPreview) {
+      setSnapPreview(null);
+    }
+
+    // Handle edge subdivision preview for selected political regions (not in drawing mode)
+    if (drawingMode === 'none' && selectedPoliticalRegionId && showPoliticalRegions && continent?.politicalRegions) {
+      const pos = getImagePosition(e);
+      if (pos) {
+        // Find the selected region
+        const selectedRegion = continent.politicalRegions.find(r => r.id === selectedPoliticalRegionId);
+        if (selectedRegion && selectedRegion.vertices.length >= 3) {
+          // First check if we're near a vertex - if so, don't show edge preview
+          // (vertices take priority for dragging)
+          const nearVertex = findNearestPoliticalVertex(
+            pos.x, pos.y,
+            [selectedRegion],
+            null,
+            12 // vertex detection threshold (same as vertex marker size)
+          );
+
+          if (nearVertex) {
+            // Near a vertex, don't show edge preview
+            setEdgeSubdividePreview(null);
+          } else {
+            // Check if near an edge of the selected region only
+            const nearestEdge = findNearestPoliticalEdge(
+              pos.x, pos.y,
+              [selectedRegion], // Only check the selected region
+              null,
+              15 // edge detection threshold
+            );
+
+            if (nearestEdge) {
+              setEdgeSubdividePreview({
+                regionId: selectedRegion.id,
+                edgeIndex: nearestEdge.edgeIndex,
+                insertAfterIndex: nearestEdge.insertAfterIndex,
+                x: nearestEdge.projectedPoint.x,
+                y: nearestEdge.projectedPoint.y,
+                vertex1: nearestEdge.vertex1,
+                vertex2: nearestEdge.vertex2,
+              });
+            } else {
+              setEdgeSubdividePreview(null);
+            }
+          }
+        } else {
+          setEdgeSubdividePreview(null);
+        }
+      } else {
+        setEdgeSubdividePreview(null);
+      }
+    } else if (edgeSubdividePreview) {
+      setEdgeSubdividePreview(null);
+    }
 
     // Handle waypoint dragging
     if (draggingWaypoint && continent) {
@@ -427,10 +717,35 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         totalDistanceMiles: totalDistance,
       });
     }
-  }, [mapScale, imageSize, draggingWaypoint, continent, getImagePosition, updatePath]);
+
+    // Handle political vertex dragging (with linked vertex support)
+    if (draggingPoliticalVertex && continent) {
+      const pos = getImagePosition(e);
+      if (!pos) return;
+
+      const vertex = draggingPoliticalVertex.vertex;
+
+      if (vertex.sharedId) {
+        // Update all linked vertices
+        updateLinkedPoliticalVertices(continent.id, vertex.sharedId, { x: pos.x, y: pos.y });
+      } else {
+        // Update just this vertex
+        updatePoliticalRegion(continent.id, draggingPoliticalVertex.regionId, {
+          vertices: continent.politicalRegions
+            ?.find(r => r.id === draggingPoliticalVertex.regionId)
+            ?.vertices.map(v =>
+              v.id === draggingPoliticalVertex.vertexId
+                ? { ...v, x: pos.x, y: pos.y }
+                : v
+            ) || []
+        });
+      }
+    }
+  }, [mapScale, imageSize, draggingWaypoint, draggingPoliticalVertex, continent, getImagePosition, updatePath, updatePoliticalRegion, updateLinkedPoliticalVertices, drawingMode, snapPreview, selectedPoliticalRegionId, showPoliticalRegions, edgeSubdividePreview]);
 
   const handleMouseUp = useCallback(() => {
     setDraggingWaypoint(null);
+    setDraggingPoliticalVertex(null);
     dragStartRef.current = null;
   }, []);
 
@@ -461,6 +776,23 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       return;
     }
 
+    // Edge subdivision: clicking on an edge of a selected political region
+    if (edgeSubdividePreview && selectedPoliticalRegionId && continent) {
+      insertPoliticalRegionVertex(
+        continent.id,
+        selectedPoliticalRegionId,
+        {
+          x: edgeSubdividePreview.x,
+          y: edgeSubdividePreview.y,
+          sharedId: null
+        },
+        edgeSubdividePreview.insertAfterIndex
+      );
+
+      setEdgeSubdividePreview(null);
+      return;
+    }
+
     // In location placement mode, place the location
     if (placingLocation && mapScale && onPlaceLocation) {
       const latitudeBand = getLatitudeBandAtPosition(pos.y, imageSize.height, mapScale);
@@ -478,8 +810,14 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
   const handleMouseLeave = () => {
     setHoveredBand(null);
+    setSnapPreview(null);
+    setEdgeSubdividePreview(null);
     if (draggingWaypoint) {
       setDraggingWaypoint(null);
+      dragStartRef.current = null;
+    }
+    if (draggingPoliticalVertex) {
+      setDraggingPoliticalVertex(null);
       dragStartRef.current = null;
     }
     if (isPanning) {
@@ -831,11 +1169,53 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
               )}
 
               {/* Saved political regions (rendered after weather regions) */}
-              {showPoliticalRegions && continent?.politicalRegions?.filter(r => r.isVisible).map(region => (
+              {/* Render non-selected regions first, then selected region on top */}
+              {showPoliticalRegions && continent?.politicalRegions?.filter(r => r.isVisible && r.id !== selectedPoliticalRegionId).map(region => (
+                <g
+                  key={region.id}
+                  className="map-region political-region"
+                  onClick={(e) => {
+                    if (drawingMode === 'politicalRegion') return;
+                    e.stopPropagation();
+                    setSelectedPoliticalRegionId(region.id);
+                  }}
+                >
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill={region.color}
+                    fillOpacity="0.2"
+                    stroke={region.color}
+                    strokeWidth="3"
+                    strokeDasharray="12 4"
+                    className="region-polygon political"
+                    style={{ pointerEvents: drawingMode === 'politicalRegion' ? 'none' : 'auto' }}
+                  />
+                  <polygon
+                    points={verticesToSvgPoints(region.vertices)}
+                    fill="transparent"
+                    stroke="transparent"
+                    strokeWidth="10"
+                    style={{
+                      cursor: drawingMode === 'politicalRegion' ? 'crosshair' : 'pointer',
+                      pointerEvents: drawingMode === 'politicalRegion' ? 'none' : 'auto'
+                    }}
+                  />
+                </g>
+              ))}
+              {/* Selected political region rendered last (on top) */}
+              {showPoliticalRegions && selectedPoliticalRegionId && continent?.politicalRegions?.filter(r => r.isVisible && r.id === selectedPoliticalRegionId).map(region => (
                 <g
                   key={region.id}
                   className={`map-region political-region ${selectedPoliticalRegionId === region.id ? 'selected' : ''}`}
                   onClick={(e) => {
+                    // In drawing mode, let the click pass through to add vertices
+                    if (drawingMode === 'politicalRegion') {
+                      return; // Don't stop propagation, don't select
+                    }
+                    // If there's an edge subdivide preview, let the click through to add a vertex
+                    if (edgeSubdividePreview) {
+                      return; // Don't stop propagation, let handleMapClick handle it
+                    }
                     e.stopPropagation();
                     setSelectedPoliticalRegionId(region.id === selectedPoliticalRegionId ? null : region.id);
                   }}
@@ -848,14 +1228,18 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                     strokeWidth="3"
                     strokeDasharray="12 4"
                     className="region-polygon political"
+                    style={{ pointerEvents: drawingMode === 'politicalRegion' ? 'none' : 'auto' }}
                   />
-                  {/* Invisible wider polygon for easier click targeting */}
+                  {/* Invisible wider polygon for easier click targeting (disabled during drawing) */}
                   <polygon
                     points={verticesToSvgPoints(region.vertices)}
                     fill="transparent"
                     stroke="transparent"
                     strokeWidth="10"
-                    style={{ cursor: 'pointer' }}
+                    style={{
+                      cursor: drawingMode === 'politicalRegion' ? 'crosshair' : 'pointer',
+                      pointerEvents: drawingMode === 'politicalRegion' ? 'none' : 'auto'
+                    }}
                   />
                   {/* Vertex handles (show when selected) */}
                   {selectedPoliticalRegionId === region.id && region.vertices.map((v, idx) => (
@@ -864,15 +1248,143 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                       cx={v.x}
                       cy={v.y}
                       r="6"
-                      className="vertex-marker political"
+                      className={`vertex-marker political ${v.sharedId ? 'shared' : ''}`}
                       fill={region.color}
-                      stroke="white"
-                      strokeWidth="2"
+                      stroke={v.sharedId ? '#2ecc71' : 'white'}
+                      strokeWidth={v.sharedId ? 3 : 2}
                       style={{ cursor: 'grab' }}
+                      onMouseDown={(e) => handlePoliticalVertexMouseDown(e, region.id, v)}
+                      onContextMenu={(e) => handlePoliticalVertexContextMenu(e, region.id, v)}
                     />
                   ))}
                 </g>
               ))}
+
+              {/* Snappable vertices indicator (during political region drawing) */}
+              {drawingMode === 'politicalRegion' && showPoliticalRegions && continent?.politicalRegions?.filter(r => r.isVisible).map(region => (
+                <g key={`snap-${region.id}`} className="snappable-vertices">
+                  {region.vertices.map(v => (
+                    <circle
+                      key={v.id}
+                      cx={v.x}
+                      cy={v.y}
+                      r="8"
+                      fill="rgba(46, 204, 113, 0.2)"
+                      stroke="rgba(46, 204, 113, 0.5)"
+                      strokeWidth="1"
+                      className="snappable-vertex-marker"
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  ))}
+                </g>
+              ))}
+
+              {/* Snap preview indicators */}
+              {snapPreview && drawingMode === 'politicalRegion' && (
+                <g className="snap-preview">
+                  {snapPreview.type === 'vertex' && (
+                    <>
+                      {/* Highlight ring around vertex being snapped to */}
+                      <circle
+                        cx={snapPreview.x}
+                        cy={snapPreview.y}
+                        r="12"
+                        fill="none"
+                        stroke="#2ecc71"
+                        strokeWidth="3"
+                        className="snap-vertex-ring"
+                      />
+                      <circle
+                        cx={snapPreview.x}
+                        cy={snapPreview.y}
+                        r="5"
+                        fill="#2ecc71"
+                      />
+                    </>
+                  )}
+
+                  {snapPreview.type === 'edge' && (
+                    <>
+                      {/* Highlight the edge being snapped to */}
+                      <line
+                        x1={snapPreview.vertex1.x}
+                        y1={snapPreview.vertex1.y}
+                        x2={snapPreview.vertex2.x}
+                        y2={snapPreview.vertex2.y}
+                        stroke="#2ecc71"
+                        strokeWidth="4"
+                        className="snap-edge-highlight"
+                      />
+                      {/* Show snap point on the edge */}
+                      <circle
+                        cx={snapPreview.x}
+                        cy={snapPreview.y}
+                        r="6"
+                        fill="#2ecc71"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                    </>
+                  )}
+
+                  {snapPreview.type === 'warning' && (
+                    <>
+                      {/* Warning indicator - vertex would be inside existing polygon */}
+                      <circle
+                        cx={snapPreview.x}
+                        cy={snapPreview.y}
+                        r="10"
+                        fill="none"
+                        stroke="#e74c3c"
+                        strokeWidth="3"
+                        strokeDasharray="4 2"
+                        className="snap-warning-ring"
+                      />
+                    </>
+                  )}
+                </g>
+              )}
+
+              {/* Edge subdivision preview (for selected political regions) */}
+              {edgeSubdividePreview && drawingMode === 'none' && (
+                <g className="edge-subdivide-preview">
+                  {/* Highlight the edge being subdivided */}
+                  <line
+                    x1={edgeSubdividePreview.vertex1.x}
+                    y1={edgeSubdividePreview.vertex1.y}
+                    x2={edgeSubdividePreview.vertex2.x}
+                    y2={edgeSubdividePreview.vertex2.y}
+                    stroke="#3498db"
+                    strokeWidth="4"
+                    className="snap-edge-highlight"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  {/* Show the point where new vertex will be added */}
+                  <circle
+                    cx={edgeSubdividePreview.x}
+                    cy={edgeSubdividePreview.y}
+                    r="8"
+                    fill="#3498db"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="snap-vertex-ring"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  {/* Plus icon indicator */}
+                  <text
+                    x={edgeSubdividePreview.x}
+                    y={edgeSubdividePreview.y + 1}
+                    fill="white"
+                    fontSize="12"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    +
+                  </text>
+                </g>
+              )}
 
               {/* Active political region being drawn */}
               {activePoliticalRegion && activePoliticalRegion.vertices.length > 0 && (
@@ -1022,8 +1534,20 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
             {activeWeatherRegion?.vertices?.length >= 3 && ' - Click checkmark to finish'}
           </div>
         ) : drawingMode === 'politicalRegion' ? (
-          <div className="click-hint drawing political">
-            Click to add vertices (min 3) - click near existing vertices to snap
+          <div className={`click-hint drawing political ${
+            snapPreview?.type === 'edge' ? 'snap-edge' :
+            snapPreview?.type === 'vertex' ? 'snap-vertex' :
+            snapPreview?.type === 'warning' ? 'snap-warning' : ''
+          }`}>
+            {snapPreview?.type === 'edge' ? (
+              <>Click to snap to edge and create shared border</>
+            ) : snapPreview?.type === 'vertex' ? (
+              <>Click to snap to vertex and share corner</>
+            ) : snapPreview?.type === 'warning' ? (
+              <>Warning: Inside {snapPreview.regionName} - will create overlap</>
+            ) : (
+              <>Click to add vertices (min 3) - hover near borders to snap</>
+            )}
             {activePoliticalRegion?.vertices?.length >= 3 && ' - Click checkmark to finish'}
           </div>
         ) : placingLocation && (
@@ -1092,6 +1616,69 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       )}
 
       <MapConfigModal show={showConfig} onHide={() => setShowConfig(false)} continent={continent} />
+
+      {/* Vertex Context Menu */}
+      {vertexContextMenu && (
+        <>
+          {/* Backdrop to close menu */}
+          <div
+            className="vertex-context-backdrop"
+            onClick={handleCloseContextMenu}
+          />
+          <div
+            className="vertex-context-menu"
+            style={{
+              left: vertexContextMenu.x,
+              top: vertexContextMenu.y,
+            }}
+          >
+            <div className="context-menu-header">
+              Vertex Options
+            </div>
+
+            {/* Delete option */}
+            <button
+              className="context-menu-item danger"
+              onClick={handleDeleteVertex}
+              disabled={!vertexContextMenu.canDelete}
+              title={!vertexContextMenu.canDelete ? 'Cannot delete: polygon needs at least 3 vertices' : 'Delete this vertex'}
+            >
+              Delete Vertex
+              {!vertexContextMenu.canDelete && <span className="context-menu-hint">(min 3)</span>}
+            </button>
+
+            {/* Link options */}
+            {vertexContextMenu.nearbyVertices.length > 0 && (
+              <>
+                <div className="context-menu-divider" />
+                <div className="context-menu-section">Link to:</div>
+                {vertexContextMenu.nearbyVertices.map((nearby) => (
+                  <button
+                    key={`${nearby.regionId}-${nearby.vertex.id}`}
+                    className="context-menu-item"
+                    onClick={() => handleLinkVertices(nearby.regionId, nearby.vertex)}
+                  >
+                    {nearby.regionName}
+                    <span className="context-menu-hint">({Math.round(nearby.distance)}px)</span>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {vertexContextMenu.nearbyVertices.length === 0 && !vertexContextMenu.vertex.sharedId && (
+              <div className="context-menu-info">
+                No nearby vertices to link
+              </div>
+            )}
+
+            {vertexContextMenu.vertex.sharedId && (
+              <div className="context-menu-info linked">
+                ✓ Already linked
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

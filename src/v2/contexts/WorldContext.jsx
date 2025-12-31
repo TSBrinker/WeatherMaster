@@ -890,6 +890,87 @@ export const WorldProvider = ({ children }) => {
     }));
   }, []);
 
+  /**
+   * Insert a vertex into an existing political region at a specific edge position.
+   * Used when snapping to an edge - we subdivide the existing polygon.
+   */
+  const insertPoliticalRegionVertex = useCallback((continentId, regionId, vertex, insertAfterIndex) => {
+    if (!continentId || !regionId) return null;
+
+    const newVertex = {
+      id: uuidv4(),
+      x: vertex.x,
+      y: vertex.y,
+      sharedId: vertex.sharedId || null,
+    };
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          const newVertices = [...region.vertices];
+          // Insert after the specified index (between edge vertices)
+          newVertices.splice(insertAfterIndex + 1, 0, newVertex);
+
+          return { ...region, vertices: newVertices };
+        })
+      };
+    }));
+
+    return newVertex;
+  }, []);
+
+  /**
+   * Update all vertices with matching sharedId across all political regions.
+   * Used for linked vertex dragging - moving one shared vertex moves all connected ones.
+   */
+  const updateLinkedPoliticalVertices = useCallback((continentId, sharedId, updates) => {
+    if (!continentId || !sharedId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => ({
+          ...region,
+          vertices: region.vertices.map(v =>
+            v.sharedId === sharedId ? { ...v, ...updates } : v
+          )
+        }))
+      };
+    }));
+  }, []);
+
+  /**
+   * Set the sharedId on an existing vertex (used when snapping to create a link).
+   */
+  const setPoliticalVertexSharedId = useCallback((continentId, regionId, vertexId, sharedId) => {
+    if (!continentId || !regionId || !vertexId) return;
+
+    setContinents(prev => prev.map(continent => {
+      if (continent.id !== continentId) return continent;
+
+      return {
+        ...continent,
+        politicalRegions: (continent.politicalRegions || []).map(region => {
+          if (region.id !== regionId) return region;
+
+          return {
+            ...region,
+            vertices: region.vertices.map(v =>
+              v.id === vertexId ? { ...v, sharedId } : v
+            )
+          };
+        })
+      };
+    }));
+  }, []);
+
   const contextValue = {
     // State
     worlds,
@@ -963,6 +1044,9 @@ export const WorldProvider = ({ children }) => {
     addPoliticalRegionVertex,
     updatePoliticalRegionVertex,
     deletePoliticalRegionVertex,
+    insertPoliticalRegionVertex,
+    updateLinkedPoliticalVertices,
+    setPoliticalVertexSharedId,
   };
 
   return (

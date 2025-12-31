@@ -328,3 +328,167 @@ export function getNextRegionColor(existingRegions, colorPalette) {
   const availableColor = colorPalette.find(c => !usedColors.has(c));
   return availableColor || colorPalette[existingRegions?.length % colorPalette.length || 0];
 }
+
+/**
+ * Project a point onto a line segment, returning the projected coordinates.
+ *
+ * @param {number} px - Point X
+ * @param {number} py - Point Y
+ * @param {number} x1 - Segment start X
+ * @param {number} y1 - Segment start Y
+ * @param {number} x2 - Segment end X
+ * @param {number} y2 - Segment end Y
+ * @returns {Object} { x, y, t } where t is parametric position (0-1)
+ */
+export function projectPointOntoSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lengthSquared = dx * dx + dy * dy;
+
+  if (lengthSquared === 0) {
+    return { x: x1, y: y1, t: 0 };
+  }
+
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSquared));
+  return {
+    x: x1 + t * dx,
+    y: y1 + t * dy,
+    t,
+  };
+}
+
+/**
+ * Find the nearest edge across political regions with projection data for snapping.
+ * Returns enough info to insert a vertex at the snap point.
+ *
+ * @param {number} x - Point X coordinate
+ * @param {number} y - Point Y coordinate
+ * @param {Array} politicalRegions - Array of political region objects
+ * @param {string|null} excludeRegionId - Region ID to exclude from search
+ * @param {number} threshold - Maximum distance in pixels
+ * @returns {Object|null} { regionId, regionName, edgeIndex, insertAfterIndex, vertex1, vertex2, projectedPoint, distance } or null
+ */
+export function findNearestPoliticalEdge(x, y, politicalRegions, excludeRegionId = null, threshold = 15) {
+  let nearest = null;
+  let nearestDistance = threshold;
+
+  for (const region of politicalRegions) {
+    if (region.id === excludeRegionId) continue;
+    if (!region.vertices || region.vertices.length < 3) continue;
+
+    for (let i = 0; i < region.vertices.length; i++) {
+      const v1 = region.vertices[i];
+      const v2 = region.vertices[(i + 1) % region.vertices.length];
+      const projection = projectPointOntoSegment(x, y, v1.x, v1.y, v2.x, v2.y);
+      const dx = x - projection.x;
+      const dy = y - projection.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = {
+          regionId: region.id,
+          regionName: region.name,
+          edgeIndex: i,
+          insertAfterIndex: i,
+          vertex1: { ...v1 },
+          vertex2: { ...v2 },
+          projectedPoint: { x: projection.x, y: projection.y },
+          distance,
+          t: projection.t,
+        };
+      }
+    }
+  }
+
+  return nearest;
+}
+
+/**
+ * Check if a point is inside any political region.
+ *
+ * @param {number} x - Point X coordinate
+ * @param {number} y - Point Y coordinate
+ * @param {Array} politicalRegions - Array of political region objects
+ * @param {string|null} excludeRegionId - Region ID to exclude from check
+ * @returns {Object|null} { regionId, regionName } if inside, null otherwise
+ */
+export function findContainingPoliticalRegion(x, y, politicalRegions, excludeRegionId = null) {
+  for (const region of politicalRegions) {
+    if (region.id === excludeRegionId) continue;
+    if (!region.vertices || region.vertices.length < 3) continue;
+
+    if (isPointInPolygon(x, y, region.vertices)) {
+      return {
+        regionId: region.id,
+        regionName: region.name,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Find all vertices with a given sharedId across all political regions.
+ * Used for linked vertex updates.
+ *
+ * @param {string} sharedId - The shared vertex ID to find
+ * @param {Array} politicalRegions - Array of political region objects
+ * @returns {Array} Array of { regionId, vertexId, vertex } for all matching vertices
+ */
+export function findLinkedVertices(sharedId, politicalRegions) {
+  if (!sharedId) return [];
+
+  const linked = [];
+  for (const region of politicalRegions) {
+    if (!region.vertices) continue;
+    for (const vertex of region.vertices) {
+      if (vertex.sharedId === sharedId) {
+        linked.push({
+          regionId: region.id,
+          vertexId: vertex.id,
+          vertex: { ...vertex },
+        });
+      }
+    }
+  }
+  return linked;
+}
+
+/**
+ * Find the nearest political vertex with full vertex data including sharedId.
+ * Used for snapping during drawing.
+ *
+ * @param {number} x - Point X coordinate
+ * @param {number} y - Point Y coordinate
+ * @param {Array} politicalRegions - Array of political region objects
+ * @param {string|null} excludeRegionId - Region ID to exclude from search
+ * @param {number} threshold - Maximum distance in pixels
+ * @returns {Object|null} { regionId, vertex: {id, x, y, sharedId}, distance } or null
+ */
+export function findNearestPoliticalVertex(x, y, politicalRegions, excludeRegionId = null, threshold = 12) {
+  let nearest = null;
+  let nearestDistance = threshold;
+
+  for (const region of politicalRegions) {
+    if (region.id === excludeRegionId) continue;
+    if (!region.vertices || region.vertices.length === 0) continue;
+
+    for (const v of region.vertices) {
+      const dx = v.x - x;
+      const dy = v.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = {
+          regionId: region.id,
+          vertex: { ...v },
+          distance,
+        };
+      }
+    }
+  }
+
+  return nearest;
+}
