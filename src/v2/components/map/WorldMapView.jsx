@@ -96,6 +96,15 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef(null);
 
+  // Touch gesture state
+  const touchStateRef = useRef({
+    touches: [],           // Active touch points
+    initialPinchDistance: null,
+    initialZoom: null,
+    initialPan: null,
+    lastTouchCenter: null,
+  });
+
   const mapImage = continent?.mapImage;
   const mapScale = continent?.mapScale;
 
@@ -872,6 +881,95 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     panStartRef.current = null;
   }, []);
 
+  // === TOUCH GESTURES (Mobile Support) ===
+
+  // Calculate distance between two touch points
+  const getTouchDistance = useCallback((touch1, touch2) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }, []);
+
+  // Calculate center point between two touches
+  const getTouchCenter = useCallback((touch1, touch2) => {
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
+    };
+  }, []);
+
+  const handleTouchStart = useCallback((e) => {
+    const touches = e.touches;
+    const state = touchStateRef.current;
+
+    if (touches.length === 2) {
+      // Two-finger gesture starting (pinch/pan)
+      e.preventDefault(); // Prevent browser zoom
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+
+      state.initialPinchDistance = getTouchDistance(touch1, touch2);
+      state.initialZoom = zoom;
+      state.initialPan = { ...pan };
+      state.lastTouchCenter = getTouchCenter(touch1, touch2);
+      state.touches = [touch1, touch2];
+    } else if (touches.length === 1) {
+      // Single touch - could be tap, drag, or start of two-finger gesture
+      state.touches = [touches[0]];
+      state.initialPinchDistance = null;
+    }
+  }, [zoom, pan, getTouchDistance, getTouchCenter]);
+
+  const handleTouchMove = useCallback((e) => {
+    const touches = e.touches;
+    const state = touchStateRef.current;
+
+    if (touches.length === 2 && state.initialPinchDistance !== null) {
+      // Two-finger gesture active
+      e.preventDefault(); // Prevent browser behavior
+
+      const touch1 = touches[0];
+      const touch2 = touches[1];
+
+      // Pinch-to-zoom
+      const currentDistance = getTouchDistance(touch1, touch2);
+      const scale = currentDistance / state.initialPinchDistance;
+      const newZoom = Math.min(Math.max(state.initialZoom * scale, 1), 5);
+      setZoom(newZoom);
+
+      // Two-finger pan
+      const currentCenter = getTouchCenter(touch1, touch2);
+      if (state.lastTouchCenter) {
+        const deltaX = currentCenter.x - state.lastTouchCenter.x;
+        const deltaY = currentCenter.y - state.lastTouchCenter.y;
+        setPan(prev => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY,
+        }));
+      }
+      state.lastTouchCenter = currentCenter;
+    }
+  }, [getTouchDistance, getTouchCenter]);
+
+  const handleTouchEnd = useCallback((e) => {
+    const state = touchStateRef.current;
+    const remainingTouches = e.touches.length;
+
+    if (remainingTouches < 2) {
+      // Reset pinch/pan state when we drop below 2 fingers
+      state.initialPinchDistance = null;
+      state.initialZoom = null;
+      state.initialPan = null;
+      state.lastTouchCenter = null;
+    }
+
+    if (remainingTouches === 0) {
+      state.touches = [];
+    } else {
+      state.touches = Array.from(e.touches);
+    }
+  }, []);
+
   // Handle clicking on a region pin
   const handlePinClick = (e, region) => {
     e.stopPropagation(); // Don't trigger map click
@@ -1032,6 +1130,10 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         onMouseDown={handlePanStart}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {/* Wrapper that matches the image's displayed size exactly */}
         <div

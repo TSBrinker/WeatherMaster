@@ -77,6 +77,10 @@
   overflow: hidden;
   cursor: crosshair;
   background: rgba(0, 0, 0, 0.3);
+  /* Prevent default touch behaviors (browser zoom, scroll) so our gestures work */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .map-container.panning {

@@ -55,12 +55,18 @@ Based on HANDOFF.md, the HIGH PRIORITY items are:
 ### Bug Fixes
 - Fixed edge subdivision click not working (polygon onClick was stopping propagation)
 
+### Mobile Touch Gestures
+- Added pinch-to-zoom support for mobile devices
+- Added two-finger pan for mobile navigation
+- Touch state tracking via ref (initialPinchDistance, initialZoom, lastTouchCenter)
+- Added `touch-action: none` CSS to prevent browser interference
+- Works alongside existing mouse controls (wheel zoom, shift+drag pan)
+
 ---
 
 ## Notes
 
-*Sprint focused on non-overlapping region enforcement for political territories*
+*Sprint completed both HIGH PRIORITY items: non-overlapping regions AND mobile touch gestures*
 
 ### Future Ideas (from Tyler)
 - **Coastline snapping**: Upload a PNG with transparent oceans, use alpha channel to detect and snap to coastlines
-- **Mobile friendly**: Touch gestures (pinch-to-zoom, two-finger pan) still needed - was HIGH PRIORITY in HANDOFF
