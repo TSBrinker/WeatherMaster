@@ -5,12 +5,15 @@ import { WiMoonNew, WiMoonWaxingCrescent3, WiMoonFirstQuarter, WiMoonWaxingGibbo
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
 import './CelestialTrackDisplay.css';
 
-// Track bounds: bodies travel from 10% to 90%, leaving room to animate off edges
+// Track bounds: bodies travel from 10% to 90% during visible hours
+// Entry/exit zones (0-10% and 90-100%) are off-screen due to overflow:hidden
 const TRACK_START = 10;
 const TRACK_END = 90;
+const ENTRY_POSITION = -5;  // Off left edge
+const EXIT_POSITION = 105;  // Off right edge
 
 /**
- * Map a 0-100 progress value to the track's visual bounds (5% to 95%)
+ * Map a 0-100 progress value to the track's visual bounds (10% to 90%)
  */
 function mapToTrackBounds(progress) {
   return TRACK_START + (progress / 100) * (TRACK_END - TRACK_START);
@@ -18,21 +21,33 @@ function mapToTrackBounds(progress) {
 
 /**
  * Calculate sun position as percentage across the track
- * Returns null if sun is not visible (before sunrise or after sunset)
+ * Returns position for sliding in/out at rise/set times
+ * Returns null only when sun is more than 1 hour from visible
  */
 function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
   if (sunriseHour === null || sunsetHour === null) {
     return null;
   }
 
-  // Sun visible from sunrise hour through sunset hour (inclusive)
-  if (currentHour < sunriseHour || currentHour > sunsetHour) {
-    return null;
-  }
-
   const dayLength = sunsetHour - sunriseHour;
   if (dayLength <= 0) return null;
 
+  // Hour before sunrise: entering from left
+  if (currentHour === sunriseHour - 1) {
+    return ENTRY_POSITION;
+  }
+
+  // Hour after sunset: exiting to right
+  if (currentHour === sunsetHour + 1) {
+    return EXIT_POSITION;
+  }
+
+  // Not visible and not in entry/exit zone
+  if (currentHour < sunriseHour - 1 || currentHour > sunsetHour + 1) {
+    return null;
+  }
+
+  // During visible hours: calculate position across track
   const hoursSinceSunrise = currentHour - sunriseHour;
   const progress = (hoursSinceSunrise / dayLength) * 100;
 
@@ -41,26 +56,63 @@ function calculateSunPosition(currentHour, sunriseHour, sunsetHour) {
 
 /**
  * Calculate moon position as percentage across the track
- * Returns null if moon is not visible
+ * Returns position for sliding in/out at rise/set times
+ * Returns null only when moon is more than 1 hour from visible
  */
 function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
   if (moonriseHour === null || moonsetHour === null) {
     return null;
   }
 
-  let isVisible = false;
   let visibleDuration = 0;
   let hoursSinceMoonrise = 0;
 
   if (moonriseHour < moonsetHour) {
-    // Normal case: moonrise before moonset on same day (inclusive of moonset hour)
-    isVisible = currentHour >= moonriseHour && currentHour <= moonsetHour;
+    // Normal case: moonrise before moonset on same day
     visibleDuration = moonsetHour - moonriseHour;
+
+    // Hour before moonrise: entering from left
+    if (currentHour === moonriseHour - 1) {
+      return ENTRY_POSITION;
+    }
+
+    // Hour after moonset: exiting to right
+    if (currentHour === moonsetHour + 1) {
+      return EXIT_POSITION;
+    }
+
+    // Not visible and not in entry/exit zone
+    if (currentHour < moonriseHour - 1 || currentHour > moonsetHour + 1) {
+      return null;
+    }
+
+    // Handle edge: at moonrise hour, start at left edge of visible track
+    if (currentHour < moonriseHour) {
+      return ENTRY_POSITION;
+    }
+
     hoursSinceMoonrise = currentHour - moonriseHour;
   } else {
-    // Overnight case: moonrise in evening, moonset next morning (inclusive)
-    isVisible = currentHour >= moonriseHour || currentHour <= moonsetHour;
+    // Overnight case: moonrise in evening, moonset next morning
     visibleDuration = (24 - moonriseHour) + moonsetHour;
+
+    // Hour before moonrise: entering from left
+    if (currentHour === moonriseHour - 1) {
+      return ENTRY_POSITION;
+    }
+
+    // Hour after moonset: exiting to right (handle wrap)
+    if (currentHour === (moonsetHour + 1) % 24) {
+      return EXIT_POSITION;
+    }
+
+    // Check if in visible range (including entry/exit zones)
+    const inEveningRange = currentHour >= moonriseHour - 1;
+    const inMorningRange = currentHour <= moonsetHour + 1;
+
+    if (!inEveningRange && !inMorningRange) {
+      return null;
+    }
 
     if (currentHour >= moonriseHour) {
       hoursSinceMoonrise = currentHour - moonriseHour;
@@ -69,7 +121,7 @@ function calculateMoonPosition(currentHour, moonriseHour, moonsetHour) {
     }
   }
 
-  if (!isVisible || visibleDuration <= 0) {
+  if (visibleDuration <= 0) {
     return null;
   }
 

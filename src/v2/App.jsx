@@ -94,7 +94,12 @@ const AppContent = () => {
     }
   }, [activeWorld?.currentDate, activeRegion]);
 
-  // Update sky gradient CSS variable based on time and weather
+  // Sky gradient state for cross-fade animation
+  const [currentGradient, setCurrentGradient] = useState('linear-gradient(135deg, #1e293b 0%, #0f172a 100%)');
+  const [previousGradient, setPreviousGradient] = useState('linear-gradient(135deg, #1e293b 0%, #0f172a 100%)');
+  const [gradientOpacity, setGradientOpacity] = useState(1);
+
+  // Update sky gradient with cross-fade animation
   useEffect(() => {
     if (activeWorld && weatherData) {
       const hour = activeWorld.currentDate?.hour ?? 12;
@@ -102,8 +107,22 @@ const AppContent = () => {
       const sunsetHour = parseTimeToHour(weatherData.celestial?.sunsetTime);
       const condition = weatherData.condition || '';
 
-      const gradient = calculateSkyGradient(hour, sunriseHour, sunsetHour, condition);
-      document.documentElement.style.setProperty('--sky-gradient', gradient);
+      const newGradient = calculateSkyGradient(hour, sunriseHour, sunsetHour, condition);
+
+      // Only animate if gradient actually changed
+      if (newGradient !== currentGradient) {
+        // Store old gradient as previous, set new gradient, start at opacity 0
+        setPreviousGradient(currentGradient);
+        setCurrentGradient(newGradient);
+        setGradientOpacity(0);
+
+        // Trigger fade-in on next frame
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setGradientOpacity(1);
+          });
+        });
+      }
     }
   }, [activeWorld?.currentDate?.hour, weatherData?.celestial, weatherData?.condition]);
 
@@ -175,6 +194,16 @@ const AppContent = () => {
 
   return (
     <>
+      {/* Sky gradient background with cross-fade */}
+      <div
+        className="sky-gradient-layer previous"
+        style={{ background: previousGradient }}
+      />
+      <div
+        className="sky-gradient-layer current"
+        style={{ background: currentGradient, opacity: gradientOpacity }}
+      />
+
       {/* iOS Lock Screen-style header with time controls */}
       <WeatherHeader
         currentDate={activeWorld.currentDate}

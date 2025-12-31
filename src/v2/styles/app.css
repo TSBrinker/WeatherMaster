@@ -3,11 +3,26 @@
  * iOS Weather-inspired header and layout
  */
 
-/* ===== FULL-SCREEN SKY GRADIENT ===== */
+/* ===== FULL-SCREEN SKY GRADIENT WITH CROSS-FADE ===== */
 body {
-  background: var(--sky-gradient, var(--bg-primary));
   min-height: 100vh;
-  transition: background 0.5s ease;
+  background: var(--bg-primary);
+}
+
+/* Sky gradient background layers for smooth cross-fade */
+.sky-gradient-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: opacity 1s ease-in-out;
+}
+
+.sky-gradient-layer.previous {
+  z-index: -2;
+}
+
+.sky-gradient-layer.current {
+  z-index: -1;
 }
 
 /* ===== FROSTED GLASS CARDS ===== */
