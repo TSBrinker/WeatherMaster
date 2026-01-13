@@ -305,6 +305,11 @@
   /* Inherits from Bootstrap bg-warning/bg-danger */
 }
 
+/* Gameplay effects badge */
+.gameplay-badge {
+  background: rgba(99, 102, 241, 0.85) !important;
+}
+
 /* Biome badge - subtle */
 .biome-badge {
   opacity: 0.8;

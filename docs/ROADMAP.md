@@ -86,9 +86,9 @@ This is the single source of truth for feature planning and priorities.
 ### 🎮 Gameplay Integration
 
 **D&D Mechanics Surface**
-- [ ] Expand weather-effects.js to inline all cross-references
-- [ ] Add gameplay impact indicators to main display
-- [ ] Visibility/movement/combat modifiers prominently displayed
+- [x] Expand weather-effects.js to inline all cross-references *(Sprint 55)*
+- [x] Add gameplay impact indicators to main display *(Sprint 55)*
+- [x] Visibility/movement/combat modifiers prominently displayed *(Sprint 55)*
 
 **Wanderers (Falling Stars)** - *Marai Setting Specific* - COMPLETE ✅
 - [x] WandererService for rare celestial events *(Sprint 41)*
@@ -166,8 +166,8 @@ This is the single source of truth for feature planning and priorities.
 - [x] Political region drawing (kingdom borders) *(Sprint 53)*
 - [x] Unified MapToolsPanel (accordion-style, replaces 3 separate panels) *(Sprint 53)*
 - [x] Vertex snapping (click near existing vertex to reuse exact point) *(Sprint 53)*
-- [ ] **HIGH PRIORITY**: Non-overlapping region enforcement (territories should butt up, not overlap)
-- [ ] **HIGH PRIORITY**: Mobile touch gestures (pinch-to-zoom, two-finger pan)
+- [x] **HIGH PRIORITY**: Non-overlapping region enforcement (territories should butt up, not overlap) *(Sprint 54)*
+- [x] **HIGH PRIORITY**: Mobile touch gestures (pinch-to-zoom, two-finger pan) *(Sprint 54)*
 - [ ] Exact sunrise/sunset times from pin Y position (precision enhancement)
 
 **Spatial Weather System**

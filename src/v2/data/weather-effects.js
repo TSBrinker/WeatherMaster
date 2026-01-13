@@ -107,13 +107,19 @@ export const weatherEffects = {
     summary: "Falling snow reduces visibility and hampers movement.",
     visibility: "Limited to 100 feet. Objects beyond that are lightly obscured.",
     movement: "All travel speed halved. Two consecutive days makes all terrain difficult and wagon travel impossible until a day without snow.",
-    rest: "As per Freezing Cold condition.",
+    rest: "DC 15 Constitution saving throw to benefit from a long rest without heat and shelter. Failed save by 5 or more results in one level of exhaustion.",
     damage: ["+1 to all cold damage rolls."],
-    checks: ["Tracking is easier in fresh snow (advantage on Survival checks for tracking)."],
+    checks: [
+      "Tracking is easier in fresh snow (advantage on Survival checks for tracking).",
+      "Disadvantage on checks using Navigation Tools to determine location based on celestial observation.",
+      "Disadvantage on Dexterity checks for characters without cold protection."
+    ],
     other: [
       "High flying creatures have total cover.",
       "Terrain gradually becomes difficult terrain as snow accumulates.",
-      "Contains all effects of Heavy Clouds and Freezing Cold."
+      "Outdoor light does not count as sunlight (affects sunlight sensitivity and similar traits).",
+      "Unprotected water sources freeze over.",
+      "Characters without adequate cold weather gear must make a DC 10 Constitution saving throw every 2 hours or gain a level of exhaustion."
     ]
   },
 
@@ -151,37 +157,50 @@ export const weatherEffects = {
   "Thunderstorm": {
     summary: "Violent storm with lightning, thunder, and heavy rain.",
     visibility: "All creatures partially obscured beyond 20 feet.",
-    movement: "As per Heavy Rain.",
-    rest: "As per Heavy Rain.",
+    movement: "Wagon travel at half speed. Multiple consecutive days make wagon travel impossible until one dry day.",
+    rest: "DC 16 Constitution saving throw to benefit from a long rest without shelter.",
     damage: [
       "+2 to all lightning and thunder damage rolls.",
       "-4 to all fire damage rolls."
     ],
     checks: [
       "Disadvantage on Perception checks that rely on hearing due to thunder.",
-      "Disadvantage on ranged attacks beyond 30 feet."
+      "Disadvantage on ranged attacks beyond 30 feet.",
+      "Disadvantage on ranged weapon attacks beyond 60 feet."
     ],
     other: [
       "Roll a d20 after 4+ hours of travel; on a 1, struck by a lightning bolt dealing 3d12 lightning damage.",
       "Open flames automatically extinguished.",
-      "All effects of Rain, High Winds, and Heavy Clouds apply."
+      "Flooding likely in low-lying areas.",
+      "Verbal communication beyond 30 feet requires shouting.",
+      "High flying aerial creatures have total cover.",
+      "Outdoor light does not count as sunlight (affects sunlight sensitivity and similar traits)."
     ]
   },
 
   "Blizzard": {
     summary: "Severe winter storm combining heavy snow, freezing temperatures, and strong winds.",
     visibility: "All creatures heavily obscured beyond 20 feet.",
-    movement: "All terrain is difficult terrain. Navigation extremely challenging.",
+    movement: "All terrain is difficult terrain. Navigation extremely challenging. Difficult to travel against the wind direction.",
     rest: "DC 12 Constitution saving throw each hour in a blizzard or take 3d4 cold damage and gain one level of exhaustion.",
     damage: ["+3 to all cold damage rolls."],
     checks: [
       "Disadvantage on all Perception checks.",
-      "Disadvantage on all ranged attacks."
+      "Disadvantage on all ranged attacks.",
+      "Disadvantage on Dexterity checks for characters without cold protection.",
+      "Disadvantage on checks using Navigation Tools to determine location based on celestial observation."
     ],
     other: [
-      "Creatures have advantage on saves against Constitution if they have proper winter gear.",
-      "Contains all effects of Snow, High Winds, and Freezing Cold.",
-      "Risk of becoming lost increases significantly."
+      "Creatures have advantage on Constitution saves if they have proper winter gear.",
+      "Risk of becoming lost increases significantly.",
+      "Tracking is easier in fresh snow (advantage on Survival checks for tracking).",
+      "Terrain gradually becomes difficult terrain as snow accumulates.",
+      "Outdoor light does not count as sunlight (affects sunlight sensitivity and similar traits).",
+      "Unprotected water sources freeze over.",
+      "Characters without adequate cold weather gear must make a DC 10 Constitution saving throw every 2 hours or gain a level of exhaustion.",
+      "Flying creatures move at half speed against the wind.",
+      "Small flying creatures cannot fly against the wind.",
+      "Exposed flames are automatically extinguished."
     ]
   },
 

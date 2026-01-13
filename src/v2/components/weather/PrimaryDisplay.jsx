@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiStrongWind } from 'react-icons/wi';
 import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
-import { GiWaveSurfer } from 'react-icons/gi';
+import { GiWaveSurfer, GiCrossedSwords } from 'react-icons/gi';
 import { regionTemplates } from '../../data/region-templates';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { transformCondition } from '../../utils/conditionPhrasing';
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
+import { getGameplayIndicators, getFullWeatherEffects } from '../../utils/gameplayEffects';
 import SeaStateCard from './SeaStateCard';
 import './PrimaryDisplay.css';
 
@@ -93,6 +94,7 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
   const [showEnvironmentalModal, setShowEnvironmentalModal] = useState(false);
   const [showSnowModal, setShowSnowModal] = useState(false);
   const [showSeaStateModal, setShowSeaStateModal] = useState(false);
+  const [showGameplayModal, setShowGameplayModal] = useState(false);
   const { conditionPhrasing, showSnowAccumulation } = usePreferences();
 
   if (!region || !weather) {
@@ -194,6 +196,10 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
     </Tooltip>
   ) : null;
 
+  // Gameplay indicators - extract key D&D mechanics from current conditions
+  const gameplayIndicators = getGameplayIndicators(weather);
+  const fullWeatherEffects = getFullWeatherEffects(weather.condition);
+
   return (
     <>
       <div
@@ -289,6 +295,23 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
             >
               <BsExclamationTriangleFill className="badge-icon" />
               {environmental.activeAlerts.length} Alert{environmental.activeAlerts.length > 1 ? 's' : ''}
+            </Badge>
+          )}
+
+          {/* Gameplay Effects Badge - shows key D&D mechanics */}
+          {gameplayIndicators?.hasImpact && (
+            <Badge
+              bg="primary"
+              className="info-badge gameplay-badge"
+              onClick={() => setShowGameplayModal(true)}
+            >
+              <GiCrossedSwords className="badge-icon" />
+              {gameplayIndicators.visibility && `Vis: ${gameplayIndicators.visibility}`}
+              {gameplayIndicators.visibility && (gameplayIndicators.ranged || gameplayIndicators.movement) && ' | '}
+              {gameplayIndicators.ranged && `Ranged: ${gameplayIndicators.ranged}`}
+              {gameplayIndicators.ranged && gameplayIndicators.movement && ' | '}
+              {gameplayIndicators.movement && gameplayIndicators.movement}
+              {!gameplayIndicators.visibility && !gameplayIndicators.ranged && !gameplayIndicators.movement && 'Effects'}
             </Badge>
           )}
 
@@ -588,6 +611,145 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
           </Modal.Footer>
         </Modal>
       )}
+
+      {/* Gameplay Effects Modal - D&D 5e mechanics */}
+      <Modal
+        show={showGameplayModal}
+        onHide={() => setShowGameplayModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <GiCrossedSwords className="me-2" style={{ color: '#6366f1' }} />
+            Weather & Gameplay Effects
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {fullWeatherEffects ? (
+            <>
+              {/* Condition Summary */}
+              <div className="mb-4 p-3 bg-dark bg-opacity-50 rounded">
+                <h5 className="mb-2">{fullWeatherEffects.key}</h5>
+                <p className="mb-0 text-muted">{fullWeatherEffects.summary}</p>
+              </div>
+
+              {/* Key Indicators Grid */}
+              {gameplayIndicators?.hasImpact && (
+                <div className="row mb-4">
+                  {gameplayIndicators.visibility && (
+                    <div className="col-6 col-md-3 mb-3">
+                      <div className="p-2 bg-dark bg-opacity-25 rounded text-center">
+                        <div className="text-muted small">Visibility</div>
+                        <div className="fw-bold">{gameplayIndicators.visibility}</div>
+                      </div>
+                    </div>
+                  )}
+                  {gameplayIndicators.movement && (
+                    <div className="col-6 col-md-3 mb-3">
+                      <div className="p-2 bg-dark bg-opacity-25 rounded text-center">
+                        <div className="text-muted small">Movement</div>
+                        <div className="fw-bold">{gameplayIndicators.movement}</div>
+                      </div>
+                    </div>
+                  )}
+                  {gameplayIndicators.ranged && (
+                    <div className="col-6 col-md-3 mb-3">
+                      <div className="p-2 bg-dark bg-opacity-25 rounded text-center">
+                        <div className="text-muted small">Ranged</div>
+                        <div className="fw-bold">{gameplayIndicators.ranged}</div>
+                      </div>
+                    </div>
+                  )}
+                  {gameplayIndicators.restDC && (
+                    <div className="col-6 col-md-3 mb-3">
+                      <div className="p-2 bg-dark bg-opacity-25 rounded text-center">
+                        <div className="text-muted small">Rest Save</div>
+                        <div className="fw-bold">{gameplayIndicators.restDC}</div>
+                      </div>
+                    </div>
+                  )}
+                  {gameplayIndicators.damageModifiers.length > 0 && (
+                    <div className="col-12 mb-3">
+                      <div className="p-2 bg-dark bg-opacity-25 rounded text-center">
+                        <div className="text-muted small">Damage Modifiers</div>
+                        <div className="fw-bold">{gameplayIndicators.damageModifiers.join(', ')}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Detailed Effects */}
+              <div className="gameplay-effects-detail">
+                {fullWeatherEffects.visibility && fullWeatherEffects.visibility !== 'Normal' && (
+                  <div className="mb-3">
+                    <h6 className="text-info">Visibility</h6>
+                    <p className="mb-0">{fullWeatherEffects.visibility}</p>
+                  </div>
+                )}
+
+                {fullWeatherEffects.movement && fullWeatherEffects.movement !== 'Normal' && (
+                  <div className="mb-3">
+                    <h6 className="text-warning">Movement</h6>
+                    <p className="mb-0">{fullWeatherEffects.movement}</p>
+                  </div>
+                )}
+
+                {fullWeatherEffects.rest && fullWeatherEffects.rest !== 'Normal' && (
+                  <div className="mb-3">
+                    <h6 className="text-secondary">Rest</h6>
+                    <p className="mb-0">{fullWeatherEffects.rest}</p>
+                  </div>
+                )}
+
+                {fullWeatherEffects.damage && fullWeatherEffects.damage.length > 0 && (
+                  <div className="mb-3">
+                    <h6 className="text-danger">Damage Modifiers</h6>
+                    <ul className="mb-0">
+                      {fullWeatherEffects.damage.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {fullWeatherEffects.checks && fullWeatherEffects.checks.length > 0 && (
+                  <div className="mb-3">
+                    <h6 style={{ color: '#f59e0b' }}>Check Modifiers</h6>
+                    <ul className="mb-0">
+                      {fullWeatherEffects.checks.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {fullWeatherEffects.other && fullWeatherEffects.other.length > 0 && (
+                  <div className="mb-3">
+                    <h6 className="text-success">Other Effects</h6>
+                    <ul className="mb-0">
+                      {fullWeatherEffects.other.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-muted p-4">
+              <p>No specific gameplay effects for current conditions.</p>
+              <p className="small">Standard rules apply - no visibility, movement, or combat modifiers.</p>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowGameplayModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };
