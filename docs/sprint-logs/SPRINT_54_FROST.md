@@ -2,7 +2,7 @@
 
 **Date**: 2025-12-31
 **Agent**: Frost
-**Status**: In Progress
+**Status**: Complete
 
 ---
 
@@ -68,6 +68,14 @@ Based on HANDOFF.md, the HIGH PRIORITY items are:
   - Better gesture recognition and conflict resolution
   - Rubberband effect on pinch boundaries
   - Proper touch vs mouse event normalization
+- **Fixed vertex touch dragging** (final session):
+  - Added `draggingPoliticalVertexRef` to mirror state for gesture callbacks (avoids stale closure issue)
+  - Added direct `onTouchMove`/`onTouchEnd` handlers on vertex elements (bypasses gesture library threshold)
+  - Fixed function ordering bug where touch handlers were defined before their dependencies
+
+### Developer Experience
+- Added build version display in Settings menu (commit hash + build date)
+- Injected via Vite's `define` config at build time
 
 ---
 

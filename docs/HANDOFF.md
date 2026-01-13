@@ -1,9 +1,9 @@
 # Handoff Document
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-12
 **Previous Agent**: Frost (Sprint 54)
 **Current Sprint Count**: 54 (next agent creates `SPRINT_55_*.md`)
-**Status**: Non-overlapping region enforcement complete. Mobile touch gestures complete.
+**Status**: Sprint 54 COMPLETE. Both high priority items done.
 
 ---
 
@@ -24,38 +24,31 @@ Full tessellation system for political territories that share borders.
 { id: "uuid", x: 100, y: 200, sharedId: "shared-uuid" | null }
 ```
 
-### 2. Edge Subdivision for Saved Regions
+### 2. Mobile Touch Gestures (COMPLETE)
+- **Pinch-to-zoom**: Uses `@use-gesture/react` with normalized scale offset
+- **Two-finger pan**: Pan during pinch gesture via origin tracking
+- **Touch vertex dragging**: Direct `onTouchMove`/`onTouchEnd` handlers on vertex elements
+- **CSS**: `touch-action: none` on map container, removed transition for smooth gestures
+
+**Key technical fixes:**
+- Added `draggingPoliticalVertexRef` to mirror state (avoids stale closure in gesture callbacks)
+- Touch handlers defined AFTER `screenToImageCoords` and `updateVertexPosition` (function ordering matters)
+- Larger invisible touch targets (r="20") behind visible vertex markers (r="6")
+
+### 3. Edge Subdivision for Saved Regions
 - Click on any edge of a SELECTED political region to insert a new vertex
 - Blue highlight with "+" indicator shows insertion point
-- Works independently from drawing mode - just select a kingdom and click its edge
-
-### 3. Selected Region Z-Index
-- Selected political region now renders on top of other regions
-- Allows access to vertices that were hidden under overlapping polygons
+- Works independently from drawing mode
 
 ### 4. Vertex Context Menu (Right-Click)
 Right-click on any vertex of a selected political region:
 - **Delete Vertex**: Remove vertex (disabled if polygon has only 3 vertices)
 - **Link to Nearby Vertex**: Shows nearby vertices from other regions within 30px
-  - Creates shared vertex link so dragging one moves both
-  - Snaps positions together when linking
 
-### 5. Bug Fixes
-- Fixed clicking on vertices blocked when edge preview was showing
-- Fixed edge subdivision click not working (polygon onClick was stopping propagation)
-
----
-
-## HIGH PRIORITY Items
-
-### 1. ~~Non-Overlapping Region Enforcement~~ ✅ DONE
-
-### 2. Mobile Touch Gestures ✅ DONE
-- Pinch-to-zoom
-- Two-finger pan
-- Touch vertex dragging for political regions
-- Removed CSS transition that was causing stuttery zoom
-- Uses `@use-gesture/react` library for robust gesture handling
+### 5. Developer Experience
+- Added build version display in Settings menu (hamburger > Settings section)
+- Shows git commit hash + build date
+- Injected via Vite's `define` config at build time
 
 ---
 
@@ -68,6 +61,7 @@ Right-click on any vertex of a selected political region:
 | Unified tools panel | `src/v2/components/map/MapToolsPanel.jsx` |
 | Map view | `src/v2/components/map/WorldMapView.jsx` |
 | World data | `src/v2/contexts/WorldContext.jsx` |
+| Vite config (version inject) | `vite.config.js` |
 
 ---
 
@@ -99,6 +93,21 @@ Political: Same pattern with `Political` prefix, PLUS:
 - Vertices with same `sharedId` are linked across all political regions
 - When dragging a linked vertex, `updateLinkedPoliticalVertices` updates all matching vertices
 - Use `findLinkedVertices(sharedId, politicalRegions)` to find all vertices with a given sharedId
+
+### Mobile Touch Gesture Pattern
+```javascript
+// State + ref mirror for gesture callbacks
+const [draggingPoliticalVertex, setDraggingPoliticalVertex] = useState(null);
+const draggingPoliticalVertexRef = useRef(null);
+
+// On touch start, set both
+const dragInfo = { regionId, vertexId: vertex.id, vertex };
+setDraggingPoliticalVertex(dragInfo);
+draggingPoliticalVertexRef.current = dragInfo;
+
+// In gesture/touch handlers, read from ref (not state)
+if (draggingPoliticalVertexRef.current) { ... }
+```
 
 ### Drawing Mode State
 ```javascript
