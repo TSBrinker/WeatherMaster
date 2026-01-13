@@ -393,34 +393,47 @@ export class WeatherGenerator {
   }
 
   /**
-   * Find the dominant precipitation type from recent hours
-   * Looks back up to 6 hours to establish a precipitation "trend"
+   * Go back one hour from a given date
+   * @param {Object} date - Game date
+   * @returns {Object} Date one hour earlier
+   */
+  getPreviousHourDate(date) {
+    const prevDate = { ...date };
+    prevDate.hour -= 1;
+    if (prevDate.hour < 0) {
+      prevDate.hour = 23;
+      prevDate.day -= 1;
+      if (prevDate.day < 1) {
+        prevDate.day = 30;
+        prevDate.month -= 1;
+        if (prevDate.month < 1) {
+          prevDate.month = 12;
+          prevDate.year -= 1;
+        }
+      }
+    }
+    return prevDate;
+  }
+
+  /**
+   * Find the dominant precipitation type and temperature trend from recent hours
+   * Uses type momentum/hysteresis to prevent rapid cycling in transition zones.
+   *
+   * Key insight: Precipitation type should persist until there's a SUSTAINED
+   * temperature trend in one direction, not just momentary fluctuations.
+   *
    * @param {Object} region - Region data
    * @param {Object} date - Game date
-   * @returns {Object} { dominantType, streakLength, avgTemp }
+   * @returns {Object} { dominantType, streakLength, avgTemp, tempTrend, trendStrength, consecutiveTrendHours }
    */
   getRecentPrecipitationTrend(region, date) {
     const types = [];
     const temps = [];
     let currentDate = { ...date };
 
-    // Look back up to 6 hours
-    for (let i = 1; i <= 6; i++) {
-      // Go back one hour
-      currentDate = { ...currentDate };
-      currentDate.hour -= 1;
-      if (currentDate.hour < 0) {
-        currentDate.hour = 23;
-        currentDate.day -= 1;
-        if (currentDate.day < 1) {
-          currentDate.day = 30;
-          currentDate.month -= 1;
-          if (currentDate.month < 1) {
-            currentDate.month = 12;
-            currentDate.year -= 1;
-          }
-        }
-      }
+    // Look back up to 12 hours for better trend detection
+    for (let i = 1; i <= 12; i++) {
+      currentDate = this.getPreviousHourDate(currentDate);
 
       const pastType = this.getPastPrecipitationType(region, currentDate);
       if (pastType === null) break; // Stop if we hit a dry hour
@@ -435,7 +448,14 @@ export class WeatherGenerator {
     }
 
     if (types.length === 0) {
-      return { dominantType: null, streakLength: 0, avgTemp: null };
+      return {
+        dominantType: null,
+        streakLength: 0,
+        avgTemp: null,
+        tempTrend: 'stable',
+        trendStrength: 0,
+        consecutiveTrendHours: 0
+      };
     }
 
     // Find dominant type (most common in recent hours)
@@ -454,11 +474,93 @@ export class WeatherGenerator {
 
     const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
 
-    return { dominantType, streakLength: types.length, avgTemp };
+    // Calculate temperature trend direction and strength
+    // temps[0] is 1 hour ago, temps[n] is n+1 hours ago
+    // So warming means temps[0] > temps[n] (recent is warmer than older)
+    const { tempTrend, trendStrength, consecutiveTrendHours } =
+      this.calculateTemperatureTrend(temps);
+
+    return {
+      dominantType,
+      streakLength: types.length,
+      avgTemp,
+      tempTrend,        // 'warming', 'cooling', or 'stable'
+      trendStrength,    // degrees change over lookback period
+      consecutiveTrendHours  // how many consecutive hours temp has moved in same direction
+    };
   }
 
   /**
-   * Generate precipitation data with smooth transitions and type persistence
+   * Calculate temperature trend from a series of temperatures
+   * temps[0] is most recent (1 hour ago), temps[n] is oldest
+   *
+   * @param {number[]} temps - Array of temperatures, newest first
+   * @returns {Object} { tempTrend, trendStrength, consecutiveTrendHours }
+   */
+  calculateTemperatureTrend(temps) {
+    if (temps.length < 2) {
+      return { tempTrend: 'stable', trendStrength: 0, consecutiveTrendHours: 0 };
+    }
+
+    // Overall trend: compare recent 3 hours to older 3 hours
+    const recentAvg = temps.slice(0, Math.min(3, temps.length))
+      .reduce((a, b) => a + b, 0) / Math.min(3, temps.length);
+    const olderStart = Math.min(3, temps.length);
+    const olderTemps = temps.slice(olderStart, olderStart + 3);
+
+    let overallChange = 0;
+    if (olderTemps.length > 0) {
+      const olderAvg = olderTemps.reduce((a, b) => a + b, 0) / olderTemps.length;
+      overallChange = recentAvg - olderAvg;
+    }
+
+    // Count consecutive hours of consistent temperature movement
+    // Going backwards: if temp[i] > temp[i+1], that hour was warming
+    let consecutiveTrendHours = 0;
+    let lastDirection = null;
+
+    for (let i = 0; i < temps.length - 1; i++) {
+      const hourChange = temps[i] - temps[i + 1]; // positive = warming
+      const direction = hourChange > 1 ? 'warming' : (hourChange < -1 ? 'cooling' : 'stable');
+
+      if (i === 0) {
+        lastDirection = direction;
+        if (direction !== 'stable') consecutiveTrendHours = 1;
+      } else if (direction === lastDirection && direction !== 'stable') {
+        consecutiveTrendHours++;
+      } else if (direction !== 'stable' && direction !== lastDirection) {
+        break; // Trend reversed
+      }
+      // If stable, continue counting but don't reset
+    }
+
+    // Determine trend based on overall change (need at least 3°F to call it a trend)
+    let tempTrend;
+    if (overallChange >= 3) {
+      tempTrend = 'warming';
+    } else if (overallChange <= -3) {
+      tempTrend = 'cooling';
+    } else {
+      tempTrend = 'stable';
+    }
+
+    return {
+      tempTrend,
+      trendStrength: Math.abs(overallChange),
+      consecutiveTrendHours
+    };
+  }
+
+  /**
+   * Generate precipitation data with smooth transitions and type momentum/hysteresis.
+   *
+   * Type Momentum System:
+   * - Once precipitation establishes a type (snow or rain), it persists until there's
+   *   a SUSTAINED temperature trend in the opposite direction
+   * - Requires 3+ consecutive hours of temperature movement to trigger a transition
+   * - All transitions must go through sleet/freezing-rain (no direct snow↔rain)
+   * - Sleet acts as a "buffer zone" that resists quick reversals
+   *
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @param {Object} pattern - Current weather pattern
@@ -480,69 +582,8 @@ export class WeatherGenerator {
     // Get recent precipitation trend for type persistence
     const trend = this.getRecentPrecipitationTrend(region, date);
 
-    // Determine type based on temperature with persistence
-    let type;
-
-    // Clear temperature thresholds (no ambiguity)
-    if (temperature <= 25) {
-      type = 'snow'; // Clearly cold - definitely snow
-    } else if (temperature >= 42) {
-      type = 'rain'; // Clearly warm - definitely rain
-    } else if (temperature <= 28) {
-      // Cold but near transition - favor snow, but check trend
-      if (trend.dominantType === 'rain' && trend.streakLength >= 3 && trend.avgTemp > 35) {
-        // Recent rain trend with warmer temps - transition through sleet
-        type = 'sleet';
-      } else {
-        type = 'snow';
-      }
-    } else if (temperature >= 38) {
-      // Warm but near transition - favor rain, but check trend
-      if (trend.dominantType === 'snow' && trend.streakLength >= 3 && trend.avgTemp < 32) {
-        // Recent snow trend with colder temps - transition through sleet
-        type = 'sleet';
-      } else {
-        type = 'rain';
-      }
-    } else {
-      // Transition zone (28-38°F) - use persistence heavily
-      if (trend.dominantType === 'snow' && trend.streakLength >= 2) {
-        // Continue snow if trending cold or stable
-        if (temperature <= trend.avgTemp + 3) {
-          type = 'snow';
-        } else {
-          // Warming up - transition to sleet
-          type = 'sleet';
-        }
-      } else if (trend.dominantType === 'rain' && trend.streakLength >= 2) {
-        // Continue rain if trending warm or stable
-        if (temperature >= trend.avgTemp - 3) {
-          type = 'rain';
-        } else {
-          // Cooling down - transition to sleet
-          type = 'sleet';
-        }
-      } else if (trend.dominantType === 'mixed' && trend.streakLength >= 2) {
-        // Already in transition - check if we should exit
-        if (temperature <= 30) {
-          type = 'snow'; // Cold enough to solidify
-        } else if (temperature >= 36) {
-          type = 'rain'; // Warm enough to liquify
-        } else {
-          // Stay in mixed - use seeded random to pick sleet vs freezing rain
-          const rng = new SeededRandom(seed + 999);
-          type = rng.next() < 0.5 ? 'freezing-rain' : 'sleet';
-        }
-      } else {
-        // No strong trend - use temperature with some randomness
-        const rng = new SeededRandom(seed + 999);
-        if (temperature <= 32) {
-          type = rng.next() < 0.6 ? 'sleet' : 'freezing-rain';
-        } else {
-          type = 'sleet';
-        }
-      }
-    }
+    // Determine type using momentum/hysteresis system
+    const type = this.determineTypeWithMomentum(temperature, trend, seed);
 
     // Determine intensity
     const rng = new SeededRandom(seed + 1);
@@ -562,6 +603,119 @@ export class WeatherGenerator {
       type,
       intensity
     };
+  }
+
+  /**
+   * Determine precipitation type using momentum/hysteresis system.
+   *
+   * The key principle: established precipitation types have "inertia" and require
+   * sustained temperature trends to change. This prevents ping-ponging when
+   * temperature oscillates around the freezing point.
+   *
+   * Temperature zones:
+   * - ≤22°F: Always snow (hard freeze)
+   * - ≥45°F: Always rain (clearly warm)
+   * - 22-45°F: Transition zone - use momentum
+   *
+   * Momentum rules:
+   * - Snow persists unless warming trend (3+ hours) AND temp crosses 34°F
+   * - Rain persists unless cooling trend (3+ hours) AND temp drops below 32°F
+   * - Sleet requires sustained trend (3+ hours moving same direction) to exit
+   *
+   * @param {number} temperature - Current temperature in °F
+   * @param {Object} trend - Trend data from getRecentPrecipitationTrend()
+   * @param {number} seed - Random seed for tie-breaking
+   * @returns {string} Precipitation type
+   */
+  determineTypeWithMomentum(temperature, trend, seed) {
+    const {
+      dominantType,
+      streakLength,
+      avgTemp,
+      tempTrend,
+      consecutiveTrendHours
+    } = trend;
+
+    // Hard boundaries - no ambiguity
+    if (temperature <= 22) return 'snow';
+    if (temperature >= 45) return 'rain';
+
+    // Check if there's an established precipitation type with momentum
+    const hasSnowMomentum = dominantType === 'snow' && streakLength >= 3;
+    const hasRainMomentum = dominantType === 'rain' && streakLength >= 3;
+    const inSleetTransition = dominantType === 'mixed' && streakLength >= 2;
+
+    // For sustained trend, require 3+ consecutive hours
+    const hasSustainedWarming = tempTrend === 'warming' && consecutiveTrendHours >= 3;
+    const hasSustainedCooling = tempTrend === 'cooling' && consecutiveTrendHours >= 3;
+
+    // SNOW MOMENTUM: Snow persists until sustained warming pushes temp above 34°F
+    if (hasSnowMomentum) {
+      // Continue snow unless sustained warming AND warm enough
+      if (hasSustainedWarming && temperature >= 34) {
+        // Begin transition to rain - must go through sleet
+        return 'sleet';
+      }
+      // Persist snow even if temp fluctuates into low 30s
+      if (temperature <= 36) {
+        return 'snow';
+      }
+      // Temperature jumped high - transition through sleet
+      return 'sleet';
+    }
+
+    // RAIN MOMENTUM: Rain persists until sustained cooling drops temp below 32°F
+    if (hasRainMomentum) {
+      // Continue rain unless sustained cooling AND cold enough
+      if (hasSustainedCooling && temperature <= 32) {
+        // Begin transition to snow - must go through sleet
+        return 'sleet';
+      }
+      // Persist rain even if temp fluctuates into mid 30s
+      if (temperature >= 30) {
+        return 'rain';
+      }
+      // Temperature dropped sharply - transition through sleet
+      return 'sleet';
+    }
+
+    // SLEET/TRANSITION STATE: Act as a buffer that resists quick reversals
+    if (inSleetTransition) {
+      // Only exit sleet if there's a sustained trend AND we've clearly moved to one side
+      if (hasSustainedCooling && temperature <= 28) {
+        return 'snow'; // Committed to snow
+      }
+      if (hasSustainedWarming && temperature >= 38) {
+        return 'rain'; // Committed to rain
+      }
+      // Stay in mixed precipitation - pick sleet or freezing rain
+      const rng = new SeededRandom(seed + 999);
+      // Freezing rain more likely when near/below freezing with rain momentum
+      if (temperature <= 32) {
+        return rng.next() < 0.6 ? 'freezing-rain' : 'sleet';
+      }
+      return 'sleet';
+    }
+
+    // NO ESTABLISHED MOMENTUM - New precipitation event or weak trend
+    // Use temperature zones with bias toward maintaining recent type if any
+
+    if (streakLength >= 1 && dominantType) {
+      // Some recent history - lean toward it if temperature supports it
+      if (dominantType === 'snow' && temperature <= 34) return 'snow';
+      if (dominantType === 'rain' && temperature >= 32) return 'rain';
+    }
+
+    // Fresh start - use temperature with slight overlap in transition zone
+    if (temperature <= 30) {
+      return 'snow';
+    } else if (temperature >= 36) {
+      return 'rain';
+    } else {
+      // Middle of transition zone (30-36°F) - start with sleet
+      const rng = new SeededRandom(seed + 999);
+      return rng.next() < 0.5 ? 'sleet' : 'freezing-rain';
+    }
   }
 
   /**

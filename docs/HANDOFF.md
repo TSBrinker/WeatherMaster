@@ -1,57 +1,33 @@
 # Handoff Document
 
 **Last Updated**: 2026-01-12
-**Previous Agent**: BEACON (Sprint 58)
-**Current Sprint Count**: 58 (next agent creates `SPRINT_59_*.md`)
-**Status**: Sprint 58 COMPLETE. Fixed precipitation streak and type cycling issues. Added Type Analysis test. Ready for validation.
+**Previous Agent**: MERIDIAN (Sprint 59)
+**Current Sprint Count**: 59 (next agent creates `SPRINT_60_*.md`)
+**Status**: Sprint 59 COMPLETE. Implemented type momentum/hysteresis system to reduce precipitation cycling. Ready for validation.
 
 ---
 
-## What Was Done This Sprint (Sprint 58)
+## What Was Done This Sprint (Sprint 59)
 
-### 1. Precipitation Streak Fatigue System (COMPLETE)
-Fixed unrealistic precipitation streaks (41 days continuous rain in Rainforest Basin, 27 days in Monsoon Coast).
+### Precipitation Type Momentum/Hysteresis System (COMPLETE)
 
-**Root cause**: Multiplicative biome modifiers (1.6x × 2.5x × 1.4x) pushed precipitation to near-100% probability.
+Tyler provided test data showing 12 biomes with excessive type cycling (3-6+ changes/event). The previous ±3°F stability buffer and 6-hour lookback from Sprint 58 weren't enough when winter temps oscillate around 28-38°F.
 
-**Solution** in `WeatherPatternService.js`:
-- Added `PRECIP_STREAK_LIMITS` with climate-specific caps (tropical 10 days, temperate 5 days, etc.)
-- Day-based deterministic break system: divides year into cycles, forces breaks at cycle boundaries
-- Exponential fatigue as approaching break day (85% forced dry chance)
-- Added `getClimateTypeForStreakLimit()` to classify regions by latitude/ocean/biome
+**Solution**: Implemented momentum-based system where established precipitation types have "inertia" and require sustained temperature trends to change.
 
-**Results**: Reduced from 41-day max to 18-day max (Monsoon Coast during monsoon season - realistic)
+**Key Changes in WeatherGenerator.js**:
 
-### 2. Precipitation Type Persistence (COMPLETE)
-Fixed unrealistic rapid cycling between snow/sleet/rain when temperature hovers around freezing.
+1. **Extended lookback from 6 to 12 hours** - Better trend detection
 
-**Root cause**: Each hour independently chose precipitation type based on minor temperature fluctuations around 28-38°F.
+2. **Added temperature trend tracking**:
+   - `calculateTemperatureTrend()` - Compares recent 3h avg to older 3h avg
+   - Returns: `tempTrend` (warming/cooling/stable), `consecutiveTrendHours`
 
-**Solution** in `WeatherGenerator.js`:
-- Added `getPastPrecipitationType()` to check recent precipitation types
-- Added `getRecentPrecipitationTrend()` to look back 6 hours and find dominant type + avg temp
-- Updated `generatePrecipitation()` with type persistence:
-  - Clear thresholds: ≤25°F = snow, ≥42°F = rain (no ambiguity)
-  - Transition zones use recent trend to maintain type
-  - Only transitions through sleet when there's a clear temperature trend change
-  - Continues current type if temp is stable (within ±3° of avg)
-
-### 3. Precipitation Type Analysis Test (NEW)
-Added comprehensive test harness to analyze type transitions.
-
-**Location**: Test harness (`localhost:3000?test=true`) → "Precipitation Type Analysis"
-
-**What it tracks**:
-- Type transitions (snow→sleet, sleet→rain, direct snow→rain, etc.)
-- Average type persistence (how many hours before type changes)
-- Biomes with excessive cycling
-- Per-biome breakdown with type distribution
-
-**How to use**:
-1. Go to test harness
-2. Expand "Precipitation Type Analysis" section
-3. Click run button
-4. Review results or use "Copy Results" to share
+3. **New momentum-based type determination** (`determineTypeWithMomentum()`):
+   - Hard boundaries: ≤22°F always snow, ≥45°F always rain
+   - Snow momentum: Persists until sustained warming (3+ hours) AND temp ≥34°F
+   - Rain momentum: Persists until sustained cooling (3+ hours) AND temp ≤32°F
+   - Sleet buffer: Requires sustained trend AND clear temp threshold to exit (≤28°F or ≥38°F)
 
 ---
 
@@ -59,11 +35,7 @@ Added comprehensive test harness to analyze type transitions.
 
 | File | Changes |
 |------|---------|
-| `src/v2/services/weather/WeatherPatternService.js` | Streak fatigue system, climate limits |
-| `src/v2/services/weather/WeatherGenerator.js` | Type persistence methods |
-| `src/v2/components/testing/WeatherTestHarness.jsx` | Type Analysis UI, Copy Results |
-| `src/v2/components/testing/testRunner.js` | `runPrecipTypeAnalysis()` |
-| `src/v2/components/testing/testConfig.js` | `PRECIP_TYPE_CONFIG` |
+| `src/v2/services/weather/WeatherGenerator.js` | Added `getPreviousHourDate()`, `calculateTemperatureTrend()`, `determineTypeWithMomentum()`. Extended lookback to 12h. Refactored type selection to use momentum. |
 
 ---
 
@@ -82,18 +54,18 @@ Added comprehensive test harness to analyze type transitions.
 
 ## Suggested Next Work
 
-1. **Run the Precipitation Type Analysis** - The test is now working. Run it to get baseline data on type cycling behavior and identify any biomes that need tuning.
+1. **Run the Precipitation Type Analysis test** - Validate the momentum system against Tyler's baseline data:
+   - Previous: 12 biomes with cycling issues, 2.90 avg changes/event, 14.1h persistence
+   - Expected: Significant reduction in cycling, higher persistence
 
-2. **Validate type persistence** - Test in a temperate region during winter to confirm snow/rain stays consistent without excessive sleet→snow→sleet cycling.
+2. **Tune thresholds if needed**:
+   - If cycling still occurs: increase `consecutiveTrendHours` from 3 to 4-5
+   - Momentum bounds (36°F snow, 30°F rain) can be widened
+   - Sleet exit thresholds (28°F/38°F) may need adjustment
 
-3. **Tune thresholds if needed**:
-   - Type persistence thresholds (25°F/42°F clear zones)
-   - Stability buffer (±3° from avg)
-   - Lookback window (currently 6 hours)
+3. **Extreme Weather Phase C** - Hurricanes and ice storms are the remaining unimplemented extreme weather types
 
-4. **Extreme Weather Phase C** - Hurricanes and ice storms are the remaining unimplemented extreme weather types
-
-5. **Export/Import** - Tyler has previously expressed interest in JSON export/import for worlds
+4. **Export/Import** - Tyler has previously expressed interest in JSON export/import for worlds
 
 ---
 
