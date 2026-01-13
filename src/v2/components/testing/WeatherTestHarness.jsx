@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form, Row, Col } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh, BsStar, BsExclamationTriangle } from 'react-icons/bs';
+import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form, Row, Col, Collapse } from 'react-bootstrap';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh, BsStar, BsExclamationTriangle, BsChatQuote, BsArrowRepeat, BsChevronDown, BsChevronRight } from 'react-icons/bs';
+import { generateNarrative, getTemperatureBands, getConditions, getVariationCount, detectProgression } from '../../utils/narrativeWeather';
+import { biomeLabels } from '../../data/region-templates';
 import { regionTemplates } from '../../data/region-templates';
-import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG } from './testConfig';
-import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis, runHeatIndexAnalysis } from './testRunner';
+import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG, PRECIP_STREAK_CONFIG, PRECIP_TYPE_CONFIG } from './testConfig';
+import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis, runHeatIndexAnalysis, runPrecipStreakAnalysis, runPrecipTypeAnalysis } from './testRunner';
 import WandererService from '../../services/celestial/WandererService';
 import { downloadFullResults, downloadProblemsReport, downloadPrecipAnalysis, downloadPrecipSummary } from './resultExporters';
 import {
@@ -48,6 +50,115 @@ const getNewBiomeCount = () => {
 };
 
 /**
+ * Format streak results as markdown for easy sharing
+ */
+const formatStreakResultsAsMarkdown = (results) => {
+  if (!results) return '';
+
+  let md = '';
+
+  // Summary stats
+  md += `Average Precipitation Frequency\t${results.summary.avgPrecipFrequency}% of hours\n`;
+  md += `Longest Precipitation Streak\t${Math.floor(results.summary.longestPrecipStreak.hours / 24)} days in ${results.summary.longestPrecipStreak.biome}`;
+  if (results.summary.longestPrecipStreak.dates) {
+    md += ` (${results.summary.longestPrecipStreak.dates.startDate} - ${results.summary.longestPrecipStreak.dates.endDate})`;
+  }
+  md += '\n';
+  md += `Longest Dry Streak\t${Math.floor(results.summary.longestDryStreak.hours / 24)} days in ${results.summary.longestDryStreak.biome}\n`;
+  md += `Biomes with Long Streaks (>7 days)\t${results.summary.biomesWithLongStreaks.length}\n`;
+  md += `Biomes with Extreme Streaks (>14 days)\t${results.summary.biomesWithExtremeStreaks.length}\n`;
+
+  // Extreme streaks table
+  if (results.issues.length > 0) {
+    md += `Extreme Precipitation Streaks (>14 days)\n`;
+    md += `Biome\tDays\tDates\tPrecip Types\n`;
+    results.issues.forEach(issue => {
+      const days = issue.details?.days || Math.floor(issue.details?.hours / 24);
+      const dates = `${issue.details?.startDate} - ${issue.details?.endDate}`;
+      const types = issue.details?.types?.join(', ') || '-';
+      md += `${issue.biome}\t${days}\t${dates}\t${types}\n`;
+    });
+  }
+
+  // Long streaks table
+  if (results.summary.biomesWithLongStreaks.length > 0) {
+    md += `Long Precipitation Streaks (7-14 days)\n`;
+    md += `Biome\tDays\tDates\n`;
+    results.summary.biomesWithLongStreaks.forEach(item => {
+      md += `${item.biome}\t${item.days}\t${item.details?.startDate} - ${item.details?.endDate}\n`;
+    });
+  }
+
+  // All biomes table
+  md += `All Biomes - Precipitation Stats\n`;
+  md += `Biome\tPrecip Freq\tLongest Precip\tLongest Dry\tTotal Precip Hours\n`;
+  Object.values(results.biomes)
+    .sort((a, b) => b.stats.longestPrecipStreak - a.stats.longestPrecipStreak)
+    .forEach(b => {
+      const precipDays = Math.floor(b.stats.longestPrecipStreak / 24);
+      const precipHours = b.stats.longestPrecipStreak % 24;
+      const dryDays = Math.floor(b.stats.longestDryStreak / 24);
+      const startDate = b.longestPrecipDetails?.startDate || '';
+      md += `${b.biomeName}\t${b.stats.precipFrequency}%\t${precipDays}d ${precipHours}h(${startDate})\t${dryDays}d\t${b.stats.totalPrecipHours.toLocaleString()}\n`;
+    });
+
+  return md;
+};
+
+/**
+ * Format precipitation type results as markdown for easy sharing
+ */
+const formatTypeResultsAsMarkdown = (results) => {
+  if (!results) return '';
+
+  let md = '## Precipitation Type Analysis Results\n\n';
+
+  // Summary stats
+  md += '### Summary\n';
+  md += `Total Precipitation Events\t${results.summary.totalPrecipEvents}\n`;
+  md += `Total Type Changes\t${results.summary.totalTypeChanges}\n`;
+  md += `Avg Type Changes per Event\t${results.summary.avgTypeChangesPerEvent}\n`;
+  md += `Avg Type Persistence\t${results.summary.avgTypePersistence} hours\n`;
+  md += `Biomes with Cycling Issues\t${results.summary.biomesWithCycling.length}\n\n`;
+
+  // Transition counts
+  md += '### Type Transitions\n';
+  md += `Transition\tCount\n`;
+  md += `Snow → Sleet\t${results.summary.transitionCounts.snowToSleet}\n`;
+  md += `Sleet → Snow\t${results.summary.transitionCounts.sleetToSnow}\n`;
+  md += `Sleet → Rain\t${results.summary.transitionCounts.sleetToRain}\n`;
+  md += `Rain → Sleet\t${results.summary.transitionCounts.rainToSleet}\n`;
+  md += `Snow → Rain (Direct!)\t${results.summary.transitionCounts.snowToRain}\n`;
+  md += `Rain → Snow (Direct!)\t${results.summary.transitionCounts.rainToSnow}\n`;
+  md += `Other\t${results.summary.transitionCounts.other}\n\n`;
+
+  // Biomes with cycling issues
+  if (results.summary.biomesWithCycling.length > 0) {
+    md += '### Biomes with Cycling Issues\n';
+    md += 'Biome\tAvg Changes/Event\tCycling Events\tWorst Event\n';
+    results.summary.biomesWithCycling.forEach(item => {
+      const worst = item.worstEvent
+        ? `${item.worstEvent.typeChanges} changes in ${item.worstEvent.duration}h: ${item.worstEvent.typeSequence}`
+        : '-';
+      md += `${item.biome}\t${item.avgChangesPerEvent}\t${item.cyclingEvents}\t${worst}\n`;
+    });
+    md += '\n';
+  }
+
+  // All biomes table
+  md += '### All Biomes\n';
+  md += 'Biome\tWinter Mean\tEvents\tChanges/Event\tPersistence\tSnow\tSleet\tRain\n';
+  Object.values(results.biomes)
+    .sort((a, b) => parseFloat(b.stats.avgChangesPerEvent) - parseFloat(a.stats.avgChangesPerEvent))
+    .forEach(b => {
+      md += `${b.biomeName}\t${b.winterMean}°F\t${b.stats.precipEvents}\t${b.stats.avgChangesPerEvent}\t${b.stats.avgTypePersistence || '-'}h\t`;
+      md += `${b.stats.typeDistribution.snow}\t${b.stats.typeDistribution.sleet}\t${b.stats.typeDistribution.rain}\n`;
+    });
+
+  return md;
+};
+
+/**
  * WeatherTestHarness - Comprehensive weather generation testing
  *
  * Tests all biomes across a full year with validation
@@ -83,14 +194,87 @@ const WeatherTestHarness = () => {
   const [wandererProgress, setWandererProgress] = useState(0);
   const [wandererResults, setWandererResults] = useState(null);
 
+  // Precipitation streak analysis state
+  const [isStreakRunning, setIsStreakRunning] = useState(false);
+  const [streakProgress, setStreakProgress] = useState(0);
+  const [streakResults, setStreakResults] = useState(null);
+  const [streakCopied, setStreakCopied] = useState(false);
+
+  // Precipitation type analysis state
+  const [isTypeRunning, setIsTypeRunning] = useState(false);
+  const [typeProgress, setTypeProgress] = useState(0);
+  const [typeResults, setTypeResults] = useState(null);
+  const [typeCopied, setTypeCopied] = useState(false);
+
   // Impact preview state
   const [previewSize, setPreviewSize] = useState('medium');
   const [previewDistance, setPreviewDistance] = useState(5);
+
+  // Section collapse state (all collapsed by default)
+  const [sectionsOpen, setSectionsOpen] = useState({
+    fullYear: false,
+    precip: false,
+    thunderstorm: false,
+    flood: false,
+    heatIndex: false,
+    streak: false,
+    precipType: false,
+    wanderer: false,
+    impact: false,
+    narrative: false
+  });
+
+  const toggleSection = (section) => {
+    setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Narrative preview state
+  const [narrativeTemp, setNarrativeTemp] = useState(45);
+  const [narrativeCondition, setNarrativeCondition] = useState('Partly Cloudy');
+  const [narrativeHour, setNarrativeHour] = useState(14);
+  const [narrativeMonth, setNarrativeMonth] = useState(3);
+  const [narrativeBiome, setNarrativeBiome] = useState('');
+  const [narrativeVariant, setNarrativeVariant] = useState(0);
+  const [narrativePrevCondition, setNarrativePrevCondition] = useState(''); // For progression testing
+  const [narrativeSunrise, setNarrativeSunrise] = useState(6); // Sunrise hour for dynamic time periods
+  const [narrativeSunset, setNarrativeSunset] = useState(18); // Sunset hour for dynamic time periods
+  const [narrativeUseDynamicTime, setNarrativeUseDynamicTime] = useState(true); // Toggle dynamic time periods
 
   // Compute impact effects for preview
   const impactPreview = useMemo(() => {
     return WandererService.generateImpactEffects(previewSize, previewDistance, 'Open plains');
   }, [previewSize, previewDistance]);
+
+  // Compute narrative preview with progression
+  const narrativeProgression = useMemo(() => {
+    if (!narrativePrevCondition) return null;
+    return detectProgression(
+      { condition: narrativeCondition },
+      { condition: narrativePrevCondition }
+    );
+  }, [narrativeCondition, narrativePrevCondition]);
+
+  const narrativePreview = useMemo(() => {
+    return generateNarrative({
+      temperature: narrativeTemp,
+      condition: narrativeCondition,
+      hour: narrativeHour,
+      month: narrativeMonth,
+      biome: narrativeBiome || undefined,
+      variant: narrativeVariant,
+      progression: narrativeProgression,
+      sunriseHour: narrativeUseDynamicTime ? narrativeSunrise : undefined,
+      sunsetHour: narrativeUseDynamicTime ? narrativeSunset : undefined
+    });
+  }, [narrativeTemp, narrativeCondition, narrativeHour, narrativeMonth, narrativeBiome, narrativeVariant, narrativeProgression, narrativeSunrise, narrativeSunset, narrativeUseDynamicTime]);
+
+  const narrativeVariationCount = useMemo(() => {
+    return getVariationCount({
+      temperature: narrativeTemp,
+      condition: narrativeCondition,
+      month: narrativeMonth
+    });
+  }, [narrativeTemp, narrativeCondition, narrativeMonth]);
 
   const totalBiomes = getTotalBiomeCount();
   const newBiomes = getNewBiomeCount();
@@ -161,6 +345,30 @@ const WeatherTestHarness = () => {
 
     setHeatIndexResults(analysisResults);
     setIsHeatIndexRunning(false);
+  };
+
+  const handleRunStreakAnalysis = async () => {
+    setIsStreakRunning(true);
+    setStreakProgress(0);
+
+    const analysisResults = await runPrecipStreakAnalysis((progressPercent) => {
+      setStreakProgress(progressPercent);
+    });
+
+    setStreakResults(analysisResults);
+    setIsStreakRunning(false);
+  };
+
+  const handleRunTypeAnalysis = async () => {
+    setIsTypeRunning(true);
+    setTypeProgress(0);
+
+    const analysisResults = await runPrecipTypeAnalysis((progressPercent) => {
+      setTypeProgress(progressPercent);
+    });
+
+    setTypeResults(analysisResults);
+    setIsTypeRunning(false);
   };
 
   const handleRunWandererAnalysis = async () => {
@@ -246,219 +454,375 @@ const WeatherTestHarness = () => {
       </p>
 
       <Card className="mb-4">
-        <Card.Body>
-          <h5>Test Configuration</h5>
-          <ul>
-            <li>Biomes: {newOnly ? `${newBiomes} new templates` : `All ${totalBiomes} templates`}</li>
-            <li>Days: {TEST_CONFIG.daysToTest} (full year)</li>
-            <li>Hours per day: {TEST_CONFIG.hoursToTest.length} (midnight, 6am, noon, 6pm)</li>
-            <li>Total tests: ~{totalTests.toLocaleString()}</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer' }}
+          onClick={() => toggleSection('fullYear')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.fullYear ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            Full Year Weather Validation
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.fullYear}>
+          <Card.Body>
+            <ul>
+              <li>Biomes: {newOnly ? `${newBiomes} new templates` : `All ${totalBiomes} templates`}</li>
+              <li>Days: {TEST_CONFIG.daysToTest} (full year)</li>
+              <li>Hours per day: {TEST_CONFIG.hoursToTest.length} (midnight, 6am, noon, 6pm)</li>
+              <li>Total tests: ~{totalTests.toLocaleString()}</li>
+            </ul>
 
-          {newBiomes > 0 && (
-            <Form.Check
-              type="checkbox"
-              id="new-only-filter"
-              label={<span>New templates only <Badge bg="info">{newBiomes}</Badge></span>}
-              checked={newOnly}
-              onChange={(e) => setNewOnly(e.target.checked)}
-              className="mb-3"
-              disabled={isRunning}
-            />
-          )}
+            {newBiomes > 0 && (
+              <Form.Check
+                type="checkbox"
+                id="new-only-filter"
+                label={<span>New templates only <Badge bg="info">{newBiomes}</Badge></span>}
+                checked={newOnly}
+                onChange={(e) => setNewOnly(e.target.checked)}
+                className="mb-3"
+                disabled={isRunning}
+              />
+            )}
 
-          <Button
-            variant="primary"
-            onClick={handleRunTests}
-            disabled={isRunning || (newOnly && newBiomes === 0)}
-            size="lg"
-          >
-            {isRunning ? 'Running Tests...' : 'Run Test Harness'}
-          </Button>
+            <Button
+              variant="primary"
+              onClick={handleRunTests}
+              disabled={isRunning || (newOnly && newBiomes === 0)}
+              size="lg"
+            >
+              {isRunning ? 'Running Tests...' : 'Run Test Harness'}
+            </Button>
 
-          {isRunning && (
-            <div className="mt-3">
-              <ProgressBar now={progress} label={`${progress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">{newOnly ? 'Testing new templates...' : 'This may take 10-30 seconds...'}</small>
-            </div>
-          )}
-        </Card.Body>
+            {isRunning && (
+              <div className="mt-3">
+                <ProgressBar now={progress} label={`${progress.toFixed(1)}%`} animated />
+                <small className="text-muted mt-2">{newOnly ? 'Testing new templates...' : 'This may take 10-30 seconds...'}</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Precipitation Analysis Card */}
       <Card className="mb-4" style={{ borderColor: '#6ea8fe' }}>
-        <Card.Body>
-          <h5><BsThermometerSnow className="me-2" />Precipitation & Snow Accumulation Analysis</h5>
-          <p className="text-muted">
-            Hourly time-series analysis of precipitation type changes and snow accumulation/melt patterns.
-            Tests only cold-climate biomes (winter mean ≤ 32°F).
-          </p>
-          <ul>
-            <li>Duration: {PRECIP_ANALYSIS_CONFIG.hoursToAnalyze} hours ({PRECIP_ANALYSIS_CONFIG.hoursToAnalyze / 24} days)</li>
-            <li>Start Date: January 15 (mid-winter)</li>
-            <li>Captures: Temperature, Precip Type, Snow Depth, Melt Rate (hourly)</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#6ea8fe' }}
+          onClick={() => toggleSection('precip')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.precip ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsThermometerSnow className="me-2" />Precipitation & Snow Accumulation Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.precip}>
+          <Card.Body>
+            <p className="text-muted">
+              Hourly time-series analysis of precipitation type changes and snow accumulation/melt patterns.
+              Tests only cold-climate biomes (winter mean ≤ 32°F).
+            </p>
+            <ul>
+              <li>Duration: {PRECIP_ANALYSIS_CONFIG.hoursToAnalyze} hours ({PRECIP_ANALYSIS_CONFIG.hoursToAnalyze / 24} days)</li>
+              <li>Start Date: January 15 (mid-winter)</li>
+              <li>Captures: Temperature, Precip Type, Snow Depth, Melt Rate (hourly)</li>
+            </ul>
 
-          <Button
-            variant="info"
-            onClick={handleRunPrecipAnalysis}
-            disabled={isPrecipRunning || isRunning}
-            size="lg"
-          >
-            <BsSnow className="me-2" />
-            {isPrecipRunning ? 'Analyzing...' : 'Run Precipitation Analysis'}
-          </Button>
+            <Button
+              variant="info"
+              onClick={handleRunPrecipAnalysis}
+              disabled={isPrecipRunning || isRunning}
+              size="lg"
+            >
+              <BsSnow className="me-2" />
+              {isPrecipRunning ? 'Analyzing...' : 'Run Precipitation Analysis'}
+            </Button>
 
-          {isPrecipRunning && (
-            <div className="mt-3">
-              <ProgressBar variant="info" now={precipProgress} label={`${precipProgress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">Analyzing cold-climate biomes...</small>
-            </div>
-          )}
-        </Card.Body>
+            {isPrecipRunning && (
+              <div className="mt-3">
+                <ProgressBar variant="info" now={precipProgress} label={`${precipProgress.toFixed(1)}%`} animated />
+                <small className="text-muted mt-2">Analyzing cold-climate biomes...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Thunderstorm Analysis Card */}
       <Card className="mb-4" style={{ borderColor: '#ffc107' }}>
-        <Card.Body>
-          <h5><BsLightningCharge className="me-2" />Thunderstorm Analysis</h5>
-          <p className="text-muted">
-            Tests thunderstorm generation in biomes with thunderstorm potential during summer afternoons.
-          </p>
-          <ul>
-            <li>Duration: {THUNDERSTORM_CONFIG.daysToAnalyze} days (June-July)</li>
-            <li>Hours: Afternoon peak ({THUNDERSTORM_CONFIG.hoursToTest.join(', ')}:00)</li>
-            <li>Tracks: Thunderstorm rate, severity, conversion from heavy rain</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#ffc107' }}
+          onClick={() => toggleSection('thunderstorm')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.thunderstorm ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsLightningCharge className="me-2" />Thunderstorm Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.thunderstorm}>
+          <Card.Body>
+            <p className="text-muted">
+              Tests thunderstorm generation in biomes with thunderstorm potential during summer afternoons.
+            </p>
+            <ul>
+              <li>Duration: {THUNDERSTORM_CONFIG.daysToAnalyze} days (June-July)</li>
+              <li>Hours: Afternoon peak ({THUNDERSTORM_CONFIG.hoursToTest.join(', ')}:00)</li>
+              <li>Tracks: Thunderstorm rate, severity, conversion from heavy rain</li>
+            </ul>
 
-          <Button
-            variant="warning"
-            onClick={handleRunThunderstormAnalysis}
-            disabled={isThunderstormRunning || isRunning || isPrecipRunning}
-            size="lg"
-          >
-            <BsLightningCharge className="me-2" />
-            {isThunderstormRunning ? 'Analyzing...' : 'Run Thunderstorm Analysis'}
-          </Button>
+            <Button
+              variant="warning"
+              onClick={handleRunThunderstormAnalysis}
+              disabled={isThunderstormRunning || isRunning || isPrecipRunning}
+              size="lg"
+            >
+              <BsLightningCharge className="me-2" />
+              {isThunderstormRunning ? 'Analyzing...' : 'Run Thunderstorm Analysis'}
+            </Button>
 
-          {isThunderstormRunning && (
-            <div className="mt-3">
-              <ProgressBar variant="warning" now={thunderstormProgress} label={`${thunderstormProgress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">Analyzing thunderstorm-prone biomes...</small>
-            </div>
-          )}
-        </Card.Body>
+            {isThunderstormRunning && (
+              <div className="mt-3">
+                <ProgressBar variant="warning" now={thunderstormProgress} label={`${thunderstormProgress.toFixed(1)}%`} animated />
+                <small className="text-muted mt-2">Analyzing thunderstorm-prone biomes...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Flood Analysis Card */}
       <Card className="mb-4" style={{ borderColor: '#0dcaf0' }}>
-        <Card.Body>
-          <h5><BsWater className="me-2" />Flood Risk Analysis</h5>
-          <p className="text-muted">
-            Validates flood alert accuracy by checking if alerts correlate with actual flood-causing conditions.
-            Flags false positives (alerts during frozen conditions) and missed alerts (rapid melt without warning).
-          </p>
-          <ul>
-            <li>Duration: {FLOOD_ANALYSIS_CONFIG.daysToAnalyze} days (Jan 15 - Apr 15, winter through spring thaw)</li>
-            <li>Tracks: Snow depth, melt rate, precipitation type, flood alerts</li>
-            <li>Validates: Alert appropriateness based on physical conditions</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#0dcaf0' }}
+          onClick={() => toggleSection('flood')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.flood ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsWater className="me-2" />Flood Risk Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.flood}>
+          <Card.Body>
+            <p className="text-muted">
+              Validates flood alert accuracy by checking if alerts correlate with actual flood-causing conditions.
+              Flags false positives (alerts during frozen conditions) and missed alerts (rapid melt without warning).
+            </p>
+            <ul>
+              <li>Duration: {FLOOD_ANALYSIS_CONFIG.daysToAnalyze} days (Jan 15 - Apr 15, winter through spring thaw)</li>
+              <li>Tracks: Snow depth, melt rate, precipitation type, flood alerts</li>
+              <li>Validates: Alert appropriateness based on physical conditions</li>
+            </ul>
 
-          <Button
-            variant="info"
-            onClick={handleRunFloodAnalysis}
-            disabled={isFloodRunning || isRunning || isPrecipRunning || isThunderstormRunning}
-            size="lg"
-          >
-            <BsWater className="me-2" />
-            {isFloodRunning ? 'Analyzing...' : 'Run Flood Analysis'}
-          </Button>
+            <Button
+              variant="info"
+              onClick={handleRunFloodAnalysis}
+              disabled={isFloodRunning || isRunning || isPrecipRunning || isThunderstormRunning}
+              size="lg"
+            >
+              <BsWater className="me-2" />
+              {isFloodRunning ? 'Analyzing...' : 'Run Flood Analysis'}
+            </Button>
 
-          {isFloodRunning && (
-            <div className="mt-3">
-              <ProgressBar variant="info" now={floodProgress} label={`${floodProgress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">Analyzing flood alert accuracy...</small>
-            </div>
-          )}
-        </Card.Body>
+            {isFloodRunning && (
+              <div className="mt-3">
+                <ProgressBar variant="info" now={floodProgress} label={`${floodProgress.toFixed(1)}%`} animated />
+                <small className="text-muted mt-2">Analyzing flood alert accuracy...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Heat Index Analysis Card */}
       <Card className="mb-4" style={{ borderColor: '#dc3545' }}>
-        <Card.Body>
-          <h5><BsThermometerHigh className="me-2" />Heat Index / Dew Point Analysis</h5>
-          <p className="text-muted">
-            Validates the dew point-based humidity system by checking heat index calculations across hot climates.
-            Ensures "Feels Like" appears when it should and uses realistic dew point values.
-          </p>
-          <ul>
-            <li>Duration: {HEAT_INDEX_CONFIG.daysToAnalyze} days x {HEAT_INDEX_CONFIG.yearsToTest} years (summer months)</li>
-            <li>Tracks: Temperature, dew point, humidity, heat index, "Feels Like" display threshold</li>
-            <li>Flags: Biomes that never show "Feels Like" despite hot temperatures</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#dc3545' }}
+          onClick={() => toggleSection('heatIndex')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.heatIndex ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsThermometerHigh className="me-2" />Heat Index / Dew Point Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.heatIndex}>
+          <Card.Body>
+            <p className="text-muted">
+              Validates the dew point-based humidity system by checking heat index calculations across hot climates.
+              Ensures "Feels Like" appears when it should and uses realistic dew point values.
+            </p>
+            <ul>
+              <li>Duration: {HEAT_INDEX_CONFIG.daysToAnalyze} days x {HEAT_INDEX_CONFIG.yearsToTest} years (summer months)</li>
+              <li>Tracks: Temperature, dew point, humidity, heat index, "Feels Like" display threshold</li>
+              <li>Flags: Biomes that never show "Feels Like" despite hot temperatures</li>
+            </ul>
 
-          <Button
-            variant="danger"
-            onClick={handleRunHeatIndexAnalysis}
-            disabled={isHeatIndexRunning || isRunning || isPrecipRunning || isThunderstormRunning || isFloodRunning}
-            size="lg"
-          >
-            <BsThermometerHigh className="me-2" />
-            {isHeatIndexRunning ? 'Analyzing...' : 'Run Heat Index Analysis'}
+            <Button
+              variant="danger"
+              onClick={handleRunHeatIndexAnalysis}
+              disabled={isHeatIndexRunning || isRunning || isPrecipRunning || isThunderstormRunning || isFloodRunning}
+              size="lg"
+            >
+              <BsThermometerHigh className="me-2" />
+              {isHeatIndexRunning ? 'Analyzing...' : 'Run Heat Index Analysis'}
+            </Button>
+
+            {isHeatIndexRunning && (
+              <div className="mt-3">
+                <ProgressBar variant="danger" now={heatIndexProgress} label={`${heatIndexProgress.toFixed(1)}%`} animated />
+                <small className="text-muted mt-2">Analyzing heat index and dew point values...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
+      </Card>
+
+      {/* Precipitation Streak Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#17a2b8' }}>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#17a2b8' }}
+          onClick={() => toggleSection('streak')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.streak ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsWater className="me-2" />Precipitation Streak Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.streak}>
+          <Card.Body>
+            <p className="text-muted">
+              Identifies unrealistic precipitation patterns like consecutive weeks of rain or unusually long dry spells.
+              Helps diagnose biomes with broken precipitation generation.
+            </p>
+            <ul>
+              <li>Duration: Full year ({PRECIP_STREAK_CONFIG.hoursToAnalyze / 24} days) across all biomes</li>
+              <li>Tracks: Longest rain/snow streak, longest dry spell, monthly precipitation frequency</li>
+              <li>Flags: Streaks &gt;7 days (warning), &gt;14 days (extreme)</li>
+            </ul>
+
+            <Button
+              variant="info"
+              onClick={handleRunStreakAnalysis}
+              disabled={isStreakRunning || isRunning || isPrecipRunning || isThunderstormRunning || isFloodRunning || isHeatIndexRunning}
+              size="lg"
+            >
+              <BsWater className="me-2" />
+            {isStreakRunning ? 'Analyzing...' : 'Run Precipitation Streak Analysis'}
           </Button>
 
-          {isHeatIndexRunning && (
+          {isStreakRunning && (
             <div className="mt-3">
-              <ProgressBar variant="danger" now={heatIndexProgress} label={`${heatIndexProgress.toFixed(1)}%`} animated />
-              <small className="text-muted mt-2">Analyzing heat index and dew point values...</small>
+              <ProgressBar variant="info" now={streakProgress} label={`${streakProgress.toFixed(1)}%`} animated />
+              <small className="text-muted mt-2">Analyzing precipitation patterns across all biomes...</small>
             </div>
           )}
-        </Card.Body>
+          </Card.Body>
+        </Collapse>
+      </Card>
+
+      {/* Precipitation Type Analysis Card */}
+      <Card className="mb-4" style={{ borderColor: '#20c997' }}>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#20c997' }}
+          onClick={() => toggleSection('precipType')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.precipType ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsArrowRepeat className="me-2" />Precipitation Type Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.precipType}>
+          <Card.Body>
+            <p className="text-muted">
+              Analyzes precipitation TYPE transitions (snow/sleet/rain) to identify unrealistic rapid cycling.
+              Focuses on biomes with winter temps in the transition zone (15-50°F).
+            </p>
+            <ul>
+              <li>Duration: {PRECIP_TYPE_CONFIG.hoursToAnalyze / 24} days (Nov-Feb winter period)</li>
+              <li>Tracks: Type changes per event, persistence duration, transition patterns</li>
+              <li>Flags: Excessive cycling (&gt;4 changes/event), low persistence (&lt;3 hours)</li>
+            </ul>
+
+            <Button
+              variant="success"
+              onClick={handleRunTypeAnalysis}
+              disabled={isTypeRunning || isRunning || isPrecipRunning || isThunderstormRunning || isFloodRunning || isHeatIndexRunning || isStreakRunning}
+              size="lg"
+              style={{ backgroundColor: '#20c997', borderColor: '#20c997' }}
+            >
+              <BsArrowRepeat className="me-2" />
+              {isTypeRunning ? 'Analyzing...' : 'Run Precipitation Type Analysis'}
+            </Button>
+
+            {isTypeRunning && (
+              <div className="mt-3">
+                <ProgressBar now={typeProgress} label={`${typeProgress.toFixed(1)}%`} animated style={{ backgroundColor: '#20c997' }} />
+                <small className="text-muted mt-2">Analyzing type transitions across winter biomes...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Wanderer Analysis Card */}
       <Card className="mb-4" style={{ borderColor: '#9966ff' }}>
-        <Card.Body>
-          <h5><BsStar className="me-2" />Wanderer (Falling Star) Analysis</h5>
-          <p className="text-muted">
-            Tests the frequency and distribution of Wanderer events over multiple years.
-            Verifies that streak and local fall rates match expected probabilities.
-          </p>
-          <ul>
-            <li>Duration: 10 years of simulation</li>
-            <li>Expected: ~14 streaks/year, ~2 local falls/year</li>
-            <li>Tracks: Streak frequency, local fall frequency, size distribution, visibility</li>
-          </ul>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#9966ff' }}
+          onClick={() => toggleSection('wanderer')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.wanderer ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsStar className="me-2" />Wanderer (Falling Star) Analysis
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.wanderer}>
+          <Card.Body>
+            <p className="text-muted">
+              Tests the frequency and distribution of Wanderer events over multiple years.
+              Verifies that streak and local fall rates match expected probabilities.
+            </p>
+            <ul>
+              <li>Duration: 10 years of simulation</li>
+              <li>Expected: ~14 streaks/year, ~2 local falls/year</li>
+              <li>Tracks: Streak frequency, local fall frequency, size distribution, visibility</li>
+            </ul>
 
-          <Button
-            variant="secondary"
-            onClick={handleRunWandererAnalysis}
-            disabled={isWandererRunning || isRunning}
-            size="lg"
-            style={{ backgroundColor: '#9966ff', borderColor: '#9966ff' }}
-          >
-            <BsStar className="me-2" />
-            {isWandererRunning ? 'Analyzing...' : 'Run Wanderer Analysis'}
-          </Button>
+            <Button
+              variant="secondary"
+              onClick={handleRunWandererAnalysis}
+              disabled={isWandererRunning || isRunning}
+              size="lg"
+              style={{ backgroundColor: '#9966ff', borderColor: '#9966ff' }}
+            >
+              <BsStar className="me-2" />
+              {isWandererRunning ? 'Analyzing...' : 'Run Wanderer Analysis'}
+            </Button>
 
-          {isWandererRunning && (
-            <div className="mt-3">
-              <ProgressBar now={wandererProgress} label={`${wandererProgress.toFixed(1)}%`} animated style={{ backgroundColor: '#ddd' }} />
-              <small className="text-muted mt-2">Simulating 10 years of Wanderer events...</small>
-            </div>
-          )}
-        </Card.Body>
+            {isWandererRunning && (
+              <div className="mt-3">
+                <ProgressBar now={wandererProgress} label={`${wandererProgress.toFixed(1)}%`} animated style={{ backgroundColor: '#ddd' }} />
+                <small className="text-muted mt-2">Simulating 10 years of Wanderer events...</small>
+              </div>
+            )}
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Wanderer Impact Preview Card */}
       <Card className="mb-4" style={{ borderColor: '#ff6b6b' }}>
-        <Card.Body>
-          <h5><BsExclamationTriangle className="me-2" />Impact Effects Preview</h5>
-          <p className="text-muted">
-            Preview the compositional narrative and mechanical effects for different size/distance combinations.
-          </p>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#ff6b6b' }}
+          onClick={() => toggleSection('impact')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.impact ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsExclamationTriangle className="me-2" />Impact Effects Preview
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.impact}>
+          <Card.Body>
+            <p className="text-muted">
+              Preview the compositional narrative and mechanical effects for different size/distance combinations.
+            </p>
 
-          <Row className="mb-3">
+            <Row className="mb-3">
             <Col md={6}>
               <Form.Group>
                 <Form.Label><strong>Size</strong></Form.Label>
@@ -572,7 +936,338 @@ const WeatherTestHarness = () => {
               )}
             </Card.Body>
           </Card>
-        </Card.Body>
+          </Card.Body>
+        </Collapse>
+      </Card>
+
+      {/* Narrative Weather Preview Card */}
+      <Card className="mb-4" style={{ borderColor: '#20c997' }}>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#20c997' }}
+          onClick={() => toggleSection('narrative')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.narrative ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsChatQuote className="me-2" />Narrative Weather Preview
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.narrative}>
+          <Card.Body>
+            <p className="text-muted">
+              Preview the templated narrative weather descriptions. Adjust parameters to see how prose is generated
+              for different conditions.
+            </p>
+
+            <Row className="mb-3">
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Temperature:</strong> {narrativeTemp}°F</Form.Label>
+                <Form.Range
+                  min={-40}
+                  max={120}
+                  value={narrativeTemp}
+                  onChange={(e) => setNarrativeTemp(parseInt(e.target.value))}
+                />
+                <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                  <span>-40°F</span>
+                  <span>40°F</span>
+                  <span>120°F</span>
+                </div>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Condition</strong></Form.Label>
+                <Form.Select
+                  value={narrativeCondition}
+                  onChange={(e) => setNarrativeCondition(e.target.value)}
+                >
+                  {getConditions().map(condition => (
+                    <option key={condition} value={condition}>{condition}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Hour:</strong> {narrativeHour}:00</Form.Label>
+                <Form.Range
+                  min={0}
+                  max={23}
+                  value={narrativeHour}
+                  onChange={(e) => setNarrativeHour(parseInt(e.target.value))}
+                />
+                <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                  <span>Midnight</span>
+                  <span>Noon</span>
+                  <span>11 PM</span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row className="mb-3">
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Month</strong></Form.Label>
+                <Form.Select
+                  value={narrativeMonth}
+                  onChange={(e) => setNarrativeMonth(parseInt(e.target.value))}
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'].map((name, idx) => (
+                    <option key={idx + 1} value={idx + 1}>{name}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Biome Flavor</strong> (optional)</Form.Label>
+                <Form.Select
+                  value={narrativeBiome}
+                  onChange={(e) => setNarrativeBiome(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {Object.entries(biomeLabels).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Variation</strong> ({narrativeVariant + 1} of {narrativeVariationCount})</Form.Label>
+                <div className="d-flex align-items-center gap-2">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setNarrativeVariant((narrativeVariant + 1) % narrativeVariationCount)}
+                  >
+                    <BsArrowRepeat /> Cycle
+                  </Button>
+                  <span className="text-muted" style={{ fontSize: '0.85em' }}>
+                    Try different phrasings
+                  </span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label><strong>Previous Condition</strong> (for progression)</Form.Label>
+                <Form.Select
+                  value={narrativePrevCondition}
+                  onChange={(e) => setNarrativePrevCondition(e.target.value)}
+                >
+                  <option value="">None (no progression)</option>
+                  {getConditions().map(condition => (
+                    <option key={condition} value={condition}>{condition}</option>
+                  ))}
+                </Form.Select>
+                <Form.Text className="text-muted">
+                  {narrativeProgression
+                    ? `Detected: ${narrativeProgression.phase}${narrativeProgression.transition ? ` (${narrativeProgression.transition})` : ''}`
+                    : 'Set to test onset, clearing, transitions, intensity changes'}
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Sunrise/Sunset controls for dynamic time periods */}
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Check
+                type="switch"
+                id="dynamic-time-switch"
+                label={<strong>Use Dynamic Time Periods (based on sunrise/sunset)</strong>}
+                checked={narrativeUseDynamicTime}
+                onChange={(e) => setNarrativeUseDynamicTime(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                When enabled, time-of-day phrases adjust based on actual sunrise/sunset times instead of fixed hours
+              </Form.Text>
+            </Col>
+          </Row>
+          {narrativeUseDynamicTime && (
+            <Row className="mb-3">
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Sunrise:</strong> {narrativeSunrise}:00</Form.Label>
+                  <Form.Range
+                    min={4}
+                    max={10}
+                    step={0.5}
+                    value={narrativeSunrise}
+                    onChange={(e) => setNarrativeSunrise(parseFloat(e.target.value))}
+                  />
+                  <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                    <span>4 AM</span>
+                    <span>7 AM</span>
+                    <span>10 AM</span>
+                  </div>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Sunset:</strong> {narrativeSunset}:00</Form.Label>
+                  <Form.Range
+                    min={16}
+                    max={22}
+                    step={0.5}
+                    value={narrativeSunset}
+                    onChange={(e) => setNarrativeSunset(parseFloat(e.target.value))}
+                  />
+                  <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                    <span>4 PM</span>
+                    <span>7 PM</span>
+                    <span>10 PM</span>
+                  </div>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <div className="text-muted mt-4" style={{ fontSize: '0.85em' }}>
+                  <strong>Day length:</strong> {(narrativeSunset - narrativeSunrise).toFixed(1)} hours<br />
+                  <strong>Solar noon:</strong> {((narrativeSunrise + narrativeSunset) / 2).toFixed(1)}:00
+                </div>
+              </Col>
+            </Row>
+          )}
+
+          {/* Sunrise/sunset quick presets */}
+          {narrativeUseDynamicTime && (
+            <div className="mb-3">
+              <strong>Day Length Presets:</strong>{' '}
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(4.5); setNarrativeSunset(21); }}>
+                Summer Solstice (16.5h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(7.5); setNarrativeSunset(16.5); }}>
+                Winter Solstice (9h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(6); setNarrativeSunset(18); }}>
+                Equinox (12h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(8); setNarrativeSunset(16); }}>
+                Short Winter Day (8h)
+              </Button>
+            </div>
+          )}
+
+          {/* Quick presets */}
+          <div className="mb-3">
+            <strong>Quick Presets:</strong>{' '}
+            <Button size="sm" variant="outline-danger" className="me-1"
+              onClick={() => { setNarrativeTemp(-25); setNarrativeCondition('Blizzard'); setNarrativeHour(2); setNarrativeMonth(1); setNarrativePrevCondition(''); }}>
+              Deadly Blizzard
+            </Button>
+            <Button size="sm" variant="outline-warning" className="me-1"
+              onClick={() => { setNarrativeTemp(105); setNarrativeCondition('Clear'); setNarrativeHour(14); setNarrativeMonth(7); setNarrativeBiome('desert'); setNarrativePrevCondition(''); }}>
+              Scorching Desert
+            </Button>
+            <Button size="sm" variant="outline-info" className="me-1"
+              onClick={() => { setNarrativeTemp(55); setNarrativeCondition('Rain'); setNarrativeHour(18); setNarrativeMonth(10); setNarrativePrevCondition(''); }}>
+              Autumn Evening Rain
+            </Button>
+            <Button size="sm" variant="outline-success" className="me-1"
+              onClick={() => { setNarrativeTemp(72); setNarrativeCondition('Partly Cloudy'); setNarrativeHour(10); setNarrativeMonth(5); setNarrativePrevCondition(''); }}>
+              Pleasant Spring Morning
+            </Button>
+          </div>
+
+          {/* Progression presets */}
+          <div className="mb-3">
+            <strong>Progression Presets:</strong>{' '}
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Rain'); setNarrativePrevCondition('Cloudy'); }}>
+              Rain Onset
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Heavy Rain'); setNarrativePrevCondition('Rain'); }}>
+              Intensifying
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Light Rain'); setNarrativePrevCondition('Heavy Rain'); }}>
+              Easing
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Cloudy'); setNarrativePrevCondition('Rain'); }}>
+              Clearing
+            </Button>
+            <Button size="sm" variant="outline-danger" className="me-1"
+              onClick={() => { setNarrativeTemp(30); setNarrativeCondition('Sleet'); setNarrativePrevCondition('Rain'); }}>
+              Rain→Sleet
+            </Button>
+            <Button size="sm" variant="outline-info"
+              onClick={() => { setNarrativeTemp(28); setNarrativeCondition('Snow'); setNarrativePrevCondition('Sleet'); }}>
+              Sleet→Snow
+            </Button>
+          </div>
+
+          {/* Results display */}
+          <Card className="mt-3" style={{ borderColor: '#20c997' }}>
+            <Card.Header style={{ backgroundColor: '#20c997', color: '#fff' }}>
+              <strong>Generated Narrative</strong>
+              <Badge className="ms-2" bg="dark">{narrativePreview.metadata.temperatureBand}</Badge>
+              <Badge className="ms-2" bg="secondary">{narrativePreview.metadata.season}</Badge>
+              <Badge className="ms-2" bg="secondary">{narrativePreview.metadata.timePeriod}</Badge>
+              {narrativePreview.metadata.progressionPhase !== 'steady' && (
+                <Badge className="ms-2" bg="info">{narrativePreview.metadata.progressionPhase}</Badge>
+              )}
+            </Card.Header>
+            <Card.Body>
+              <p style={{ fontStyle: 'italic', fontSize: '1.25em', lineHeight: '1.6', marginBottom: '1rem' }}>
+                "{narrativePreview.narrative}"
+              </p>
+
+              <h6>Component Parts</h6>
+              <Table size="sm" bordered>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '120px' }}><strong>Time</strong></td>
+                    <td>{narrativePreview.parts.time}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Temperature</strong></td>
+                    <td>{narrativePreview.parts.temperature}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Condition</strong></td>
+                    <td>{narrativePreview.parts.condition}</td>
+                  </tr>
+                  {narrativePreview.parts.biome && (
+                    <tr>
+                      <td><strong>Biome</strong></td>
+                      <td>{narrativePreview.parts.biome}</td>
+                    </tr>
+                  )}
+                  {narrativePreview.parts.progression && (
+                    <tr>
+                      <td><strong>Progression</strong></td>
+                      <td><Badge bg="info">{narrativePreview.parts.progression}</Badge></td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+
+              <Alert variant="secondary" className="mt-3 mb-0">
+                <small>
+                  <strong>Character:</strong> {narrativePreview.metadata.temperatureCharacter} |{' '}
+                  <strong>Actual Temp:</strong> {narrativePreview.metadata.actualTemp}°F
+                  {narrativePreview.metadata.progressionPhase !== 'steady' && (
+                    <> | <strong>Phase:</strong> {narrativePreview.metadata.progressionPhase}</>
+                  )}
+                </small>
+              </Alert>
+            </Card.Body>
+          </Card>
+          </Card.Body>
+        </Collapse>
       </Card>
 
       {/* Wanderer Analysis Results */}
@@ -796,6 +1491,370 @@ const WeatherTestHarness = () => {
                         <td>{b.stats.dewPointRange.min}-{b.stats.dewPointRange.max}°F</td>
                       </tr>
                     ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
+
+      {/* Precipitation Streak Analysis Results */}
+      {streakResults && (
+        <>
+          <Alert variant={streakResults.issues.length > 0 ? 'danger' : streakResults.summary.biomesWithLongStreaks.length > 0 ? 'warning' : 'success'}>
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <Alert.Heading><BsWater className="me-2" />Precipitation Streak Analysis Complete</Alert.Heading>
+                <p className="mb-0">
+                  Analyzed {streakResults.config.biomesAnalyzed} biomes over {streakResults.config.daysAnalyzed} days.
+                  Longest precip streak: <strong>{Math.floor(streakResults.summary.longestPrecipStreak.hours / 24)} days</strong> ({streakResults.summary.longestPrecipStreak.biome}).
+                  {streakResults.issues.length > 0 && <strong className="text-danger"> {streakResults.issues.length} biome(s) with extreme streaks!</strong>}
+                </p>
+              </div>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(formatStreakResultsAsMarkdown(streakResults));
+                  setStreakCopied(true);
+                  setTimeout(() => setStreakCopied(false), 2000);
+                }}
+              >
+                {streakCopied ? 'Copied!' : 'Copy Results'}
+              </Button>
+            </div>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Summary</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Average Precipitation Frequency</td>
+                    <td>{streakResults.summary.avgPrecipFrequency}% of hours</td>
+                  </tr>
+                  <tr>
+                    <td>Longest Precipitation Streak</td>
+                    <td>
+                      <Badge bg="info">{Math.floor(streakResults.summary.longestPrecipStreak.hours / 24)} days</Badge>
+                      {' '}in {streakResults.summary.longestPrecipStreak.biome}
+                      {streakResults.summary.longestPrecipStreak.dates && (
+                        <span className="text-muted"> ({streakResults.summary.longestPrecipStreak.dates.startDate} - {streakResults.summary.longestPrecipStreak.dates.endDate})</span>
+                      )}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Longest Dry Streak</td>
+                    <td>
+                      <Badge bg="secondary">{Math.floor(streakResults.summary.longestDryStreak.hours / 24)} days</Badge>
+                      {' '}in {streakResults.summary.longestDryStreak.biome}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Biomes with Long Streaks (&gt;7 days)</td>
+                    <td>
+                      <Badge bg={streakResults.summary.biomesWithLongStreaks.length > 0 ? 'warning' : 'success'}>
+                        {streakResults.summary.biomesWithLongStreaks.length}
+                      </Badge>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Biomes with Extreme Streaks (&gt;14 days)</td>
+                    <td>
+                      <Badge bg={streakResults.summary.biomesWithExtremeStreaks.length > 0 ? 'danger' : 'success'}>
+                        {streakResults.summary.biomesWithExtremeStreaks.length}
+                      </Badge>
+                    </td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              {/* Issues list */}
+              {streakResults.issues.length > 0 && (
+                <>
+                  <h6 className="mt-3 text-danger">Extreme Precipitation Streaks (&gt;14 days)</h6>
+                  <Table striped bordered size="sm">
+                    <thead>
+                      <tr>
+                        <th>Biome</th>
+                        <th>Days</th>
+                        <th>Dates</th>
+                        <th>Precip Types</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {streakResults.issues.map((issue, i) => (
+                        <tr key={i}>
+                          <td><strong>{issue.biome}</strong></td>
+                          <td><Badge bg="danger">{issue.details?.days || Math.floor(issue.details?.hours / 24)}</Badge></td>
+                          <td>{issue.details?.startDate} - {issue.details?.endDate}</td>
+                          <td>{issue.details?.types?.join(', ') || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+
+              {/* Long streaks (warning level) */}
+              {streakResults.summary.biomesWithLongStreaks.length > 0 && (
+                <>
+                  <h6 className="mt-3 text-warning">Long Precipitation Streaks (7-14 days)</h6>
+                  <Table striped bordered size="sm">
+                    <thead>
+                      <tr>
+                        <th>Biome</th>
+                        <th>Days</th>
+                        <th>Dates</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {streakResults.summary.biomesWithLongStreaks.map((item, i) => (
+                        <tr key={i}>
+                          <td>{item.biome}</td>
+                          <td><Badge bg="warning" text="dark">{item.days}</Badge></td>
+                          <td>{item.details?.startDate} - {item.details?.endDate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+
+              {/* All biomes breakdown */}
+              <h6 className="mt-3">All Biomes - Precipitation Stats</h6>
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered size="sm">
+                  <thead style={{ position: 'sticky', top: 0, background: '#fff' }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Precip Freq</th>
+                      <th>Longest Precip</th>
+                      <th>Longest Dry</th>
+                      <th>Total Precip Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.values(streakResults.biomes)
+                      .sort((a, b) => b.stats.longestPrecipStreak - a.stats.longestPrecipStreak)
+                      .map((b, i) => (
+                        <tr key={i} className={b.stats.longestPrecipStreak >= 14 * 24 ? 'table-danger' : b.stats.longestPrecipStreak >= 7 * 24 ? 'table-warning' : ''}>
+                          <td>{b.biomeName}</td>
+                          <td>{b.stats.precipFrequency}%</td>
+                          <td>
+                            <Badge bg={b.stats.longestPrecipStreak >= 14 * 24 ? 'danger' : b.stats.longestPrecipStreak >= 7 * 24 ? 'warning' : 'secondary'}>
+                              {Math.floor(b.stats.longestPrecipStreak / 24)}d {b.stats.longestPrecipStreak % 24}h
+                            </Badge>
+                            {b.longestPrecipDetails && <small className="text-muted ms-1">({b.longestPrecipDetails.startDate})</small>}
+                          </td>
+                          <td>{Math.floor(b.stats.longestDryStreak / 24)}d</td>
+                          <td>{b.stats.totalPrecipHours.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
+
+      {/* Precipitation Type Analysis Results */}
+      {typeResults && (
+        <>
+          <Alert variant={typeResults.issues.length > 0 ? 'warning' : 'success'}>
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <Alert.Heading><BsArrowRepeat className="me-2" />Precipitation Type Analysis Complete</Alert.Heading>
+                <p className="mb-0">
+                  Analyzed {typeResults.config.biomesAnalyzed} biomes ({typeResults.config.biomesSkipped} skipped - outside temp range).
+                  Avg type persistence: <strong>{typeResults.summary.avgTypePersistence} hours</strong>.
+                  {typeResults.summary.biomesWithCycling.length > 0 && <strong className="text-warning"> {typeResults.summary.biomesWithCycling.length} biome(s) with cycling issues!</strong>}
+                </p>
+              </div>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(formatTypeResultsAsMarkdown(typeResults));
+                  setTypeCopied(true);
+                  setTimeout(() => setTypeCopied(false), 2000);
+                }}
+              >
+                {typeCopied ? 'Copied!' : 'Copy Results'}
+              </Button>
+            </div>
+          </Alert>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <h5>Summary</h5>
+              <Table striped bordered size="sm">
+                <tbody>
+                  <tr>
+                    <td>Total Precipitation Events</td>
+                    <td>{typeResults.summary.totalPrecipEvents}</td>
+                  </tr>
+                  <tr>
+                    <td>Total Type Changes</td>
+                    <td>{typeResults.summary.totalTypeChanges}</td>
+                  </tr>
+                  <tr>
+                    <td>Avg Type Changes per Event</td>
+                    <td>
+                      <Badge bg={parseFloat(typeResults.summary.avgTypeChangesPerEvent) > 2 ? 'warning' : 'success'}>
+                        {typeResults.summary.avgTypeChangesPerEvent}
+                      </Badge>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Avg Type Persistence</td>
+                    <td>
+                      <Badge bg={parseFloat(typeResults.summary.avgTypePersistence) < 3 ? 'warning' : 'success'}>
+                        {typeResults.summary.avgTypePersistence} hours
+                      </Badge>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Biomes with Cycling Issues</td>
+                    <td>
+                      <Badge bg={typeResults.summary.biomesWithCycling.length > 0 ? 'warning' : 'success'}>
+                        {typeResults.summary.biomesWithCycling.length}
+                      </Badge>
+                    </td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              {/* Transition Counts */}
+              <h6 className="mt-3">Type Transitions (All Biomes)</h6>
+              <Table striped bordered size="sm">
+                <thead>
+                  <tr>
+                    <th>Transition</th>
+                    <th>Count</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Snow → Sleet</td>
+                    <td>{typeResults.summary.transitionCounts.snowToSleet}</td>
+                    <td className="text-muted">Normal warming transition</td>
+                  </tr>
+                  <tr>
+                    <td>Sleet → Snow</td>
+                    <td>{typeResults.summary.transitionCounts.sleetToSnow}</td>
+                    <td className="text-muted">Normal cooling transition</td>
+                  </tr>
+                  <tr>
+                    <td>Sleet → Rain</td>
+                    <td>{typeResults.summary.transitionCounts.sleetToRain}</td>
+                    <td className="text-muted">Normal warming transition</td>
+                  </tr>
+                  <tr>
+                    <td>Rain → Sleet</td>
+                    <td>{typeResults.summary.transitionCounts.rainToSleet}</td>
+                    <td className="text-muted">Normal cooling transition</td>
+                  </tr>
+                  <tr className={typeResults.summary.transitionCounts.snowToRain > 10 ? 'table-danger' : ''}>
+                    <td>Snow → Rain <strong>(Direct)</strong></td>
+                    <td>
+                      <Badge bg={typeResults.summary.transitionCounts.snowToRain > 10 ? 'danger' : 'secondary'}>
+                        {typeResults.summary.transitionCounts.snowToRain}
+                      </Badge>
+                    </td>
+                    <td className="text-danger">Should go through sleet</td>
+                  </tr>
+                  <tr className={typeResults.summary.transitionCounts.rainToSnow > 10 ? 'table-danger' : ''}>
+                    <td>Rain → Snow <strong>(Direct)</strong></td>
+                    <td>
+                      <Badge bg={typeResults.summary.transitionCounts.rainToSnow > 10 ? 'danger' : 'secondary'}>
+                        {typeResults.summary.transitionCounts.rainToSnow}
+                      </Badge>
+                    </td>
+                    <td className="text-danger">Should go through sleet</td>
+                  </tr>
+                  <tr>
+                    <td>Other Transitions</td>
+                    <td>{typeResults.summary.transitionCounts.other}</td>
+                    <td className="text-muted">Freezing rain, etc.</td>
+                  </tr>
+                </tbody>
+              </Table>
+
+              {/* Biomes with cycling issues */}
+              {typeResults.summary.biomesWithCycling.length > 0 && (
+                <>
+                  <h6 className="mt-3 text-warning">Biomes with Cycling Issues</h6>
+                  <Table striped bordered size="sm">
+                    <thead>
+                      <tr>
+                        <th>Biome</th>
+                        <th>Avg Changes/Event</th>
+                        <th>Cycling Events</th>
+                        <th>Worst Event</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {typeResults.summary.biomesWithCycling.map((item, i) => (
+                        <tr key={i}>
+                          <td><strong>{item.biome}</strong></td>
+                          <td><Badge bg="warning" text="dark">{item.avgChangesPerEvent}</Badge></td>
+                          <td>{item.cyclingEvents}</td>
+                          <td style={{ fontSize: '0.85em' }}>
+                            {item.worstEvent ? (
+                              <>
+                                {item.worstEvent.typeChanges} changes in {item.worstEvent.duration}h
+                                <br />
+                                <span className="text-muted">{item.worstEvent.typeSequence}</span>
+                              </>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+
+              {/* All biomes breakdown */}
+              <h6 className="mt-3">All Biomes - Type Stats</h6>
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <Table striped bordered size="sm">
+                  <thead style={{ position: 'sticky', top: 0, background: '#fff' }}>
+                    <tr>
+                      <th>Biome</th>
+                      <th>Winter Mean</th>
+                      <th>Events</th>
+                      <th>Changes/Event</th>
+                      <th>Persistence</th>
+                      <th>Type Distribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.values(typeResults.biomes)
+                      .sort((a, b) => parseFloat(b.stats.avgChangesPerEvent) - parseFloat(a.stats.avgChangesPerEvent))
+                      .map((b, i) => (
+                        <tr key={i} className={parseFloat(b.stats.avgChangesPerEvent) > 2 ? 'table-warning' : ''}>
+                          <td>{b.biomeName}</td>
+                          <td>{b.winterMean}°F</td>
+                          <td>{b.stats.precipEvents}</td>
+                          <td>
+                            <Badge bg={parseFloat(b.stats.avgChangesPerEvent) > 2 ? 'warning' : 'secondary'} text={parseFloat(b.stats.avgChangesPerEvent) > 2 ? 'dark' : 'light'}>
+                              {b.stats.avgChangesPerEvent}
+                            </Badge>
+                          </td>
+                          <td>{b.stats.avgTypePersistence || '-'}h</td>
+                          <td style={{ fontSize: '0.8em' }}>
+                            {b.stats.typeDistribution.snow > 0 && <Badge bg="info" className="me-1">Snow: {b.stats.typeDistribution.snow}</Badge>}
+                            {b.stats.typeDistribution.sleet > 0 && <Badge bg="secondary" className="me-1">Sleet: {b.stats.typeDistribution.sleet}</Badge>}
+                            {b.stats.typeDistribution.rain > 0 && <Badge bg="primary" className="me-1">Rain: {b.stats.typeDistribution.rain}</Badge>}
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </Table>
               </div>

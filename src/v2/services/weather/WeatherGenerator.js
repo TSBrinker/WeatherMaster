@@ -367,7 +367,98 @@ export class WeatherGenerator {
   }
 
   /**
-   * Generate precipitation data with smooth transitions
+   * Get precipitation type for a past hour (simplified, for persistence checking)
+   * This uses a simpler temperature-only check to avoid recursion
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @returns {string|null} Precipitation type or null if not precipitating
+   */
+  getPastPrecipitationType(region, date) {
+    const pattern = this.patternService.getCurrentPattern(region, date);
+    const seed = generateSeed(region.id, date, 'precipitation');
+    const isOccurring = this.patternService.shouldPrecipitate(pattern, region, date, seed);
+
+    if (!isOccurring) return null;
+
+    // Get temperature for this hour
+    const baseTemp = this.tempService.getTemperature(region, date);
+    const patternMod = this.patternService.getTemperatureModifier(pattern, region, date);
+    const temp = Math.round(baseTemp + patternMod);
+
+    // Simple temperature-based type (no persistence check to avoid recursion)
+    if (temp <= 28) return 'snow';
+    if (temp <= 32) return 'mixed'; // Could be freezing-rain or sleet
+    if (temp <= 38) return 'mixed'; // Transition zone
+    return 'rain';
+  }
+
+  /**
+   * Find the dominant precipitation type from recent hours
+   * Looks back up to 6 hours to establish a precipitation "trend"
+   * @param {Object} region - Region data
+   * @param {Object} date - Game date
+   * @returns {Object} { dominantType, streakLength, avgTemp }
+   */
+  getRecentPrecipitationTrend(region, date) {
+    const types = [];
+    const temps = [];
+    let currentDate = { ...date };
+
+    // Look back up to 6 hours
+    for (let i = 1; i <= 6; i++) {
+      // Go back one hour
+      currentDate = { ...currentDate };
+      currentDate.hour -= 1;
+      if (currentDate.hour < 0) {
+        currentDate.hour = 23;
+        currentDate.day -= 1;
+        if (currentDate.day < 1) {
+          currentDate.day = 30;
+          currentDate.month -= 1;
+          if (currentDate.month < 1) {
+            currentDate.month = 12;
+            currentDate.year -= 1;
+          }
+        }
+      }
+
+      const pastType = this.getPastPrecipitationType(region, currentDate);
+      if (pastType === null) break; // Stop if we hit a dry hour
+
+      types.push(pastType);
+
+      // Also get temperature
+      const pattern = this.patternService.getCurrentPattern(region, currentDate);
+      const baseTemp = this.tempService.getTemperature(region, currentDate);
+      const patternMod = this.patternService.getTemperatureModifier(pattern, region, currentDate);
+      temps.push(Math.round(baseTemp + patternMod));
+    }
+
+    if (types.length === 0) {
+      return { dominantType: null, streakLength: 0, avgTemp: null };
+    }
+
+    // Find dominant type (most common in recent hours)
+    const snowCount = types.filter(t => t === 'snow').length;
+    const rainCount = types.filter(t => t === 'rain').length;
+    const mixedCount = types.filter(t => t === 'mixed').length;
+
+    let dominantType;
+    if (snowCount >= rainCount && snowCount >= mixedCount) {
+      dominantType = 'snow';
+    } else if (rainCount >= snowCount && rainCount >= mixedCount) {
+      dominantType = 'rain';
+    } else {
+      dominantType = 'mixed';
+    }
+
+    const avgTemp = temps.reduce((a, b) => a + b, 0) / temps.length;
+
+    return { dominantType, streakLength: types.length, avgTemp };
+  }
+
+  /**
+   * Generate precipitation data with smooth transitions and type persistence
    * @param {Object} region - Region data
    * @param {Object} date - Game date
    * @param {Object} pattern - Current weather pattern
@@ -386,43 +477,71 @@ export class WeatherGenerator {
       };
     }
 
-    // Get previous hour's temperature to detect rapid changes
-    const previousHourDate = { ...date, hour: date.hour - 1 >= 0 ? date.hour - 1 : 23 };
-    const previousTemp = this.tempService.getTemperature(region, previousHourDate);
-    const previousPatternMod = this.patternService.getTemperatureModifier(
-      this.patternService.getCurrentPattern(region, previousHourDate),
-      region,
-      previousHourDate
-    );
-    const prevTemperature = Math.round(previousTemp + previousPatternMod);
+    // Get recent precipitation trend for type persistence
+    const trend = this.getRecentPrecipitationTrend(region, date);
 
-    // Determine type based on temperature with smooth transitions
+    // Determine type based on temperature with persistence
     let type;
-    if (temperature <= 28) {
-      type = 'snow'; // Below 28°F = snow
-    } else if (temperature <= 32) {
-      // 28-32°F = mixed precipitation or freezing rain
-      // Use weather pattern to determine which
-      const rng = new SeededRandom(seed + 999);
-      if (rng.next() < 0.5) {
-        type = 'freezing-rain'; // Rain freezes on contact with cold surface
+
+    // Clear temperature thresholds (no ambiguity)
+    if (temperature <= 25) {
+      type = 'snow'; // Clearly cold - definitely snow
+    } else if (temperature >= 42) {
+      type = 'rain'; // Clearly warm - definitely rain
+    } else if (temperature <= 28) {
+      // Cold but near transition - favor snow, but check trend
+      if (trend.dominantType === 'rain' && trend.streakLength >= 3 && trend.avgTemp > 35) {
+        // Recent rain trend with warmer temps - transition through sleet
+        type = 'sleet';
       } else {
-        type = 'sleet'; // Mixed frozen/liquid
+        type = 'snow';
       }
-    } else if (temperature <= 38) {
-      // 32-38°F = transition zone
-      // If temperature was warmer before and is dropping, favor sleet
-      // If temperature was colder before and is rising, favor sleet
-      // This creates smoother rain↔snow transitions
-      if (prevTemperature > 38) {
-        type = 'sleet'; // Transitioning from rain
-      } else if (prevTemperature <= 32) {
-        type = 'sleet'; // Transitioning from snow
+    } else if (temperature >= 38) {
+      // Warm but near transition - favor rain, but check trend
+      if (trend.dominantType === 'snow' && trend.streakLength >= 3 && trend.avgTemp < 32) {
+        // Recent snow trend with colder temps - transition through sleet
+        type = 'sleet';
       } else {
-        type = 'sleet'; // In the transition zone
+        type = 'rain';
       }
     } else {
-      type = 'rain'; // Above 38°F = rain
+      // Transition zone (28-38°F) - use persistence heavily
+      if (trend.dominantType === 'snow' && trend.streakLength >= 2) {
+        // Continue snow if trending cold or stable
+        if (temperature <= trend.avgTemp + 3) {
+          type = 'snow';
+        } else {
+          // Warming up - transition to sleet
+          type = 'sleet';
+        }
+      } else if (trend.dominantType === 'rain' && trend.streakLength >= 2) {
+        // Continue rain if trending warm or stable
+        if (temperature >= trend.avgTemp - 3) {
+          type = 'rain';
+        } else {
+          // Cooling down - transition to sleet
+          type = 'sleet';
+        }
+      } else if (trend.dominantType === 'mixed' && trend.streakLength >= 2) {
+        // Already in transition - check if we should exit
+        if (temperature <= 30) {
+          type = 'snow'; // Cold enough to solidify
+        } else if (temperature >= 36) {
+          type = 'rain'; // Warm enough to liquify
+        } else {
+          // Stay in mixed - use seeded random to pick sleet vs freezing rain
+          const rng = new SeededRandom(seed + 999);
+          type = rng.next() < 0.5 ? 'freezing-rain' : 'sleet';
+        }
+      } else {
+        // No strong trend - use temperature with some randomness
+        const rng = new SeededRandom(seed + 999);
+        if (temperature <= 32) {
+          type = rng.next() < 0.6 ? 'sleet' : 'freezing-rain';
+        } else {
+          type = 'sleet';
+        }
+      }
     }
 
     // Determine intensity

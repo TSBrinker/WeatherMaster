@@ -4,7 +4,7 @@
  * Patterns last 3-5 days and influence conditions, precipitation, and wind
  */
 
-import { generatePatternSeed, SeededRandom } from '../../utils/seedGenerator';
+import { generatePatternSeed, generateSeed, SeededRandom } from '../../utils/seedGenerator';
 
 /**
  * Weather pattern types
@@ -93,11 +93,223 @@ const PATTERN_FATIGUE = {
 };
 
 /**
+ * Precipitation streak limits by climate type
+ * After hitting the soft cap, precipitation chance decreases exponentially.
+ * After hitting the hard cap, precipitation is forced to stop.
+ * Values are in hours.
+ */
+const PRECIP_STREAK_LIMITS = {
+  // Tropical wet climates - can have long rainy periods but not 40+ days
+  tropical_wet: { softCap: 5 * 24, hardCap: 10 * 24 },      // 5-10 days
+  // Monsoon climates - extended wet seasons but with breaks
+  monsoon: { softCap: 4 * 24, hardCap: 8 * 24 },            // 4-8 days
+  // Maritime/oceanic - frequent rain but fronts pass through
+  maritime: { softCap: 3 * 24, hardCap: 6 * 24 },           // 3-6 days
+  // Open ocean - weather systems move through, fronts are transient
+  ocean: { softCap: 3 * 24, hardCap: 6 * 24 },              // 3-6 days
+  // Polar/arctic - persistent low pressure but still has breaks
+  polar: { softCap: 3 * 24, hardCap: 7 * 24 },              // 3-7 days
+  // Temperate - weather systems move through
+  temperate: { softCap: 2 * 24, hardCap: 5 * 24 },          // 2-5 days
+  // Continental - more variable, drier
+  continental: { softCap: 2 * 24, hardCap: 4 * 24 },        // 2-4 days
+  // Default fallback
+  default: { softCap: 3 * 24, hardCap: 6 * 24 }             // 3-6 days
+};
+
+/**
  * Weather Pattern Service
  */
 export class WeatherPatternService {
   constructor() {
     this.patternCache = new Map();
+    this.precipStreakCache = new Map();  // Cache for precipitation streak counts
+  }
+
+  /**
+   * Get the climate type for streak limiting based on region parameters
+   * @param {Object} climate - Region climate data
+   * @returns {string} Climate type key for PRECIP_STREAK_LIMITS
+   */
+  getClimateTypeForStreakLimit(climate) {
+    const specialFactors = climate.specialFactors || {};
+    const maritimeInfluence = climate.maritimeInfluence || 0;
+    const latitude = climate.latitude || 45;
+    const isOcean = specialFactors.isOcean === true;
+
+    // Polar regions (high latitude) - check first
+    if (latitude >= 65) {
+      if (isOcean) {
+        return 'polar';  // Polar seas, pack ice waters
+      }
+      return 'polar';  // Tundra, polar highlands
+    }
+
+    // Ocean biomes (not polar)
+    if (isOcean) {
+      // Tropical oceans with very high humidity
+      if (latitude <= 25 && specialFactors.highRainfall) {
+        return 'tropical_wet';
+      }
+      return 'ocean';  // General ocean
+    }
+
+    // Land-based climate types
+    if (specialFactors.highRainfall && specialFactors.hasMonsoonSeason) {
+      return 'tropical_wet';
+    }
+    if (specialFactors.hasMonsoonSeason) {
+      return 'monsoon';
+    }
+    if (specialFactors.highRainfall) {
+      return 'tropical_wet';
+    }
+    if (maritimeInfluence > 0.6) {
+      return 'maritime';
+    }
+    if (specialFactors.continental || maritimeInfluence < 0.3) {
+      return 'continental';
+    }
+    return 'temperate';
+  }
+
+  /**
+   * Count consecutive precipitation hours looking backward from current time.
+   * Uses deterministic lookback to maintain consistency with seeded generation.
+   * @param {Object} region - Region data
+   * @param {Object} date - Current game date
+   * @param {Object} pattern - Current weather pattern
+   * @param {number} maxLookback - Maximum hours to look back (default: 10 days)
+   * @returns {number} Number of consecutive precipitation hours
+   */
+  countPrecipStreak(region, date, pattern, maxLookback = 10 * 24) {
+    // Create cache key for this specific hour
+    const cacheKey = `${region.id}:${date.year}:${date.month}:${date.day}:${date.hour}`;
+
+    if (this.precipStreakCache.has(cacheKey)) {
+      return this.precipStreakCache.get(cacheKey);
+    }
+
+    let streakCount = 0;
+    const climate = region.climate || region.parameters || {};
+
+    // Look back hour by hour
+    for (let hoursBack = 1; hoursBack <= maxLookback; hoursBack++) {
+      const pastDate = this.subtractHours(date, hoursBack);
+
+      // Check if precipitation occurred in that hour
+      // We need to compute this WITHOUT calling shouldPrecipitate (to avoid recursion)
+      // Instead, we use a simplified check based on the base probability
+      const hadPrecip = this.checkPastPrecipitation(region, pastDate, climate);
+
+      if (hadPrecip) {
+        streakCount++;
+      } else {
+        // Streak broken
+        break;
+      }
+    }
+
+    // Cache the result (limit cache size)
+    if (this.precipStreakCache.size > 10000) {
+      // Clear oldest entries
+      const keysToDelete = Array.from(this.precipStreakCache.keys()).slice(0, 5000);
+      keysToDelete.forEach(k => this.precipStreakCache.delete(k));
+    }
+    this.precipStreakCache.set(cacheKey, streakCount);
+
+    return streakCount;
+  }
+
+  /**
+   * Check if precipitation occurred in a past hour (simplified check for streak counting)
+   * This avoids recursion by using a direct probability check without streak fatigue.
+   * Uses the same seed as actual precipitation generation for consistency.
+   * @param {Object} region - Region data
+   * @param {Object} date - Past date to check
+   * @param {Object} climate - Climate parameters
+   * @returns {boolean} Whether precipitation likely occurred
+   */
+  checkPastPrecipitation(region, date, climate) {
+    // Use exact same seed as actual precipitation generation (WeatherGenerator.generatePrecipitation)
+    // Note: The original code uses 'precipitation' without hour, meaning all hours of a day
+    // get the same base random roll. We must match this for consistency.
+    const seed = generateSeed(region.id, date, 'precipitation');
+    const rng = new SeededRandom(seed);
+    const roll = rng.next();
+
+    // Get the pattern for that date
+    const pastPattern = this.getCurrentPattern(region, date);
+
+    // Calculate base chance (simplified version without streak fatigue)
+    let chance = pastPattern.characteristics.precipitation;
+
+    const specialFactors = climate.specialFactors || {};
+    const humidity = climate.humidityProfile || {};
+    const season = this.getSeason(date.month);
+
+    // Apply key modifiers (simplified subset)
+    if (specialFactors.dryAir) {
+      chance *= (1 - specialFactors.dryAir * 0.8);
+    }
+    if (specialFactors.permanentIce && specialFactors.permanentIce > 0.7) {
+      chance *= 0.15;
+    }
+    if (specialFactors.coldOceanCurrent) {
+      chance *= (1 - specialFactors.coldOceanCurrent * 0.85);
+    }
+    if (specialFactors.rainShadowEffect) {
+      chance *= (1 - specialFactors.rainShadowEffect * 0.7);
+    }
+    if (specialFactors.highRainfall) {
+      chance *= 1.6;
+    }
+    if (climate.maritimeInfluence && climate.maritimeInfluence > 0.6 && !specialFactors.coldOceanCurrent) {
+      chance *= 1.2;
+    }
+    if (specialFactors.hasMonsoonSeason) {
+      if (season === 'summer') {
+        chance *= 2.5;
+      } else if (season === 'winter') {
+        chance *= 0.3;
+      }
+    }
+    if (specialFactors.hasDrySeason && season === 'winter') {
+      chance *= 0.4;
+    }
+
+    // Clamp
+    chance = Math.max(0, Math.min(1, chance));
+
+    return roll < chance;
+  }
+
+  /**
+   * Subtract hours from a date
+   * @param {Object} date - Game date
+   * @param {number} hours - Hours to subtract
+   * @returns {Object} New date
+   */
+  subtractHours(date, hours) {
+    let { year, month, day, hour } = date;
+
+    hour -= hours;
+
+    while (hour < 0) {
+      hour += 24;
+      day--;
+
+      while (day < 1) {
+        month--;
+        if (month < 1) {
+          month = 12;
+          year--;
+        }
+        day += 30; // 30 days per month in this system
+      }
+    }
+
+    return { year, month, day, hour };
   }
 
   /**
@@ -414,19 +626,67 @@ export class WeatherPatternService {
       }
     }
 
-    // === PRECIPITATION STREAK PREVENTION ===
-    // Even wet climates have occasional dry periods. Use a secondary roll
-    // based on the day-of-pattern to create natural breaks.
-    // This prevents unrealistically long wet streaks (30+ days).
+    // === PRECIPITATION STREAK FATIGUE SYSTEM ===
+    // Use deterministic day-based breaks that don't require lookback.
+    // This ensures every climate gets periodic dry breaks regardless of probability.
+
+    // Get climate-appropriate streak limits
+    const climateType = this.getClimateTypeForStreakLimit(climate);
+    const limits = PRECIP_STREAK_LIMITS[climateType] || PRECIP_STREAK_LIMITS.default;
+
+    // Calculate day of year (1-360)
+    const dayOfYear = (date.month - 1) * 30 + date.day;
+
+    // Hard cap enforcement: Force dry days at regular intervals
+    // The hard cap determines the maximum consecutive wet days before a forced break
+    const hardCapDays = Math.floor(limits.hardCap / 24);
+    const softCapDays = Math.floor(limits.softCap / 24);
+
+    // Create a deterministic "break day" pattern based on region and climate
+    // Use a seed based on region to ensure consistency but variation between regions
+    const breakPatternSeed = generateSeed(region.id, { year: date.year, month: 1, day: 1 }, 'precip-breaks');
+    const breakRng = new SeededRandom(breakPatternSeed);
+
+    // Generate break days for this region (at least every hardCapDays days)
+    // We check if today is within a "break window"
+    const breakInterval = hardCapDays;
+    const cycleDay = dayOfYear % breakInterval;
+
+    // Force a break day at the end of each cycle (last 1-2 days)
+    // The exact break day varies by region using the seed
+    const breakDayOffset = Math.floor(breakRng.next() * 2); // 0 or 1 days before end of cycle
+    const isHardBreakDay = cycleDay >= (breakInterval - 1 - breakDayOffset);
+
+    if (isHardBreakDay) {
+      // On hard break days, dramatically reduce precipitation chance
+      // But use a roll so it's not 100% deterministic
+      const hardBreakRoll = rng.next();
+      if (hardBreakRoll < 0.85) { // 85% chance of actual break
+        return false; // Forced dry hour
+      }
+    }
+
+    // Soft cap: Apply fatigue as we approach the break interval
+    // This creates a gradual reduction in precipitation chance
+    if (cycleDay >= softCapDays) {
+      const daysIntoFatigue = cycleDay - softCapDays;
+      const daysUntilBreak = breakInterval - softCapDays;
+      const fatigueProgress = daysIntoFatigue / daysUntilBreak;
+      // Exponential decay: starts at 1.0, drops to ~0.15 near break
+      const fatigueMultiplier = Math.pow(0.15, fatigueProgress);
+      chance *= fatigueMultiplier;
+    }
+
+    // === DAILY BREAK CHANCE ===
+    // Even before hitting soft cap, there's a small chance for breaks
+    // This creates more natural weather patterns with occasional dry hours
     const patternDay = this.getDayOfPattern(region, date);
     const breakRoll = rng.next();
 
-    // Every 3-4 days within a pattern, there's a chance for a "break day"
-    // This is more likely mid-pattern and less likely at pattern transitions
+    // Mid-pattern break chance
     if (patternDay === 2 || patternDay === 3) {
-      // Mid-pattern break chance (15% chance to skip precipitation)
-      if (breakRoll < 0.15) {
-        chance *= 0.3; // Significantly reduce chance, creating dry breaks
+      if (breakRoll < 0.20) { // 20% chance
+        chance *= 0.25; // Strong reduction for break periods
       }
     }
 
@@ -558,9 +818,10 @@ export class WeatherPatternService {
   }
 
   /**
-   * Clear pattern cache
+   * Clear pattern cache and precipitation streak cache
    */
   clearCache() {
     this.patternCache.clear();
+    this.precipStreakCache.clear();
   }
 }

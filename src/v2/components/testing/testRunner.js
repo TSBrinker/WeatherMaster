@@ -8,7 +8,7 @@ import { WeatherGenerator } from '../../services/weather/WeatherGenerator';
 import { EnvironmentalConditionsService } from '../../services/weather/EnvironmentalConditionsService';
 import { SnowAccumulationService } from '../../services/weather/SnowAccumulationService';
 import { extractClimateProfile } from '../../data/templateHelpers';
-import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG } from './testConfig';
+import { TEST_CONFIG, THRESHOLDS, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG, PRECIP_STREAK_CONFIG, PRECIP_TYPE_CONFIG } from './testConfig';
 import { validateWeather } from './weatherValidation';
 
 /**
@@ -1522,3 +1522,657 @@ export const runHeatIndexAnalysis = async (onProgress) => {
   onProgress(100);
   return results;
 };
+
+/**
+ * Get all biomes for precipitation streak analysis
+ * @returns {Array} Array of biome info objects
+ */
+const getAllBiomes = () => {
+  const allBiomes = [];
+
+  for (const latitudeBand of TEST_CONFIG.latitudeBands) {
+    const templates = regionTemplates[latitudeBand];
+    if (!templates) continue;
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      allBiomes.push({
+        latitudeBand,
+        templateId,
+        template,
+        biomeName: template.name,
+        annualMean: template.parameters?.temperatureProfile?.annual?.mean || 50
+      });
+    }
+  }
+
+  return allBiomes;
+};
+
+/**
+ * Run precipitation streak analysis
+ * Identifies unrealistic patterns like consecutive weeks of rain or extended droughts
+ *
+ * Tracks per biome:
+ * - Longest consecutive precipitation streak (hours)
+ * - Longest dry streak (hours)
+ * - Monthly precipitation frequency
+ * - Streak details (when, what type)
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results
+ */
+export const runPrecipStreakAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const biomes = getAllBiomes();
+  const { hoursToAnalyze, startDate, thresholds } = PRECIP_STREAK_CONFIG;
+
+  const results = {
+    config: {
+      hoursAnalyzed: hoursToAnalyze,
+      daysAnalyzed: Math.floor(hoursToAnalyze / 24),
+      startDate: `${startDate.month}/${startDate.day} Year ${startDate.year}`,
+      biomesAnalyzed: biomes.length,
+      thresholds
+    },
+    biomes: {},
+    summary: {
+      biomesWithLongStreaks: [],      // > warnPrecipStreak
+      biomesWithExtremeStreaks: [],   // > maxReasonablePrecipStreak
+      longestPrecipStreak: { hours: 0, biome: null, dates: null },
+      longestDryStreak: { hours: 0, biome: null, dates: null },
+      avgPrecipFrequency: 0           // % of hours with precip across all biomes
+    },
+    issues: []
+  };
+
+  const weatherGen = new WeatherGenerator();
+
+  let completedHours = 0;
+  const totalOperations = biomes.length * hoursToAnalyze;
+  let totalPrecipHours = 0;
+
+  for (const biomeInfo of biomes) {
+    const { latitudeBand, templateId, template, biomeName } = biomeInfo;
+
+    const region = {
+      id: `streak-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    // Initialize biome results
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      stats: {
+        totalPrecipHours: 0,
+        precipFrequency: 0,           // % of hours with precip
+        longestPrecipStreak: 0,       // hours
+        longestDryStreak: 0,          // hours
+        precipStreaks: [],            // All streaks > 24 hours
+        dryStreaks: [],               // All dry streaks > 72 hours
+        monthlyPrecipHours: Array(12).fill(0)  // Hours of precip per month
+      },
+      longestPrecipDetails: null,     // { startDate, endDate, hours, types }
+      longestDryDetails: null
+    };
+
+    let currentDate = { ...startDate };
+    let currentPrecipStreak = 0;
+    let currentDryStreak = 0;
+    let precipStreakStart = null;
+    let dryStreakStart = null;
+    let precipTypesInStreak = new Set();
+
+    // Clear cache for clean run
+    weatherGen.clearCache();
+
+    for (let hour = 0; hour < hoursToAnalyze; hour++) {
+      try {
+        const weather = weatherGen.generateWeather(region, currentDate);
+        const hasPrecip = weather.precipitation === true;
+        const monthIndex = currentDate.month - 1;
+
+        if (hasPrecip) {
+          biomeResult.stats.totalPrecipHours++;
+          biomeResult.stats.monthlyPrecipHours[monthIndex]++;
+          totalPrecipHours++;
+
+          // Track precipitation streak
+          if (currentPrecipStreak === 0) {
+            precipStreakStart = { ...currentDate };
+            precipTypesInStreak = new Set();
+          }
+          currentPrecipStreak++;
+          if (weather.precipitationType) {
+            precipTypesInStreak.add(weather.precipitationType);
+          }
+
+          // End dry streak
+          if (currentDryStreak > 0) {
+            if (currentDryStreak > biomeResult.stats.longestDryStreak) {
+              biomeResult.stats.longestDryStreak = currentDryStreak;
+              biomeResult.longestDryDetails = {
+                startDate: `${dryStreakStart.month}/${dryStreakStart.day}`,
+                endDate: `${currentDate.month}/${currentDate.day}`,
+                hours: currentDryStreak,
+                days: Math.floor(currentDryStreak / 24)
+              };
+            }
+            // Track notable dry streaks (> 3 days)
+            if (currentDryStreak > 72) {
+              biomeResult.stats.dryStreaks.push({
+                start: `${dryStreakStart.month}/${dryStreakStart.day}`,
+                hours: currentDryStreak,
+                days: Math.floor(currentDryStreak / 24)
+              });
+            }
+            currentDryStreak = 0;
+          }
+        } else {
+          // Track dry streak
+          if (currentDryStreak === 0) {
+            dryStreakStart = { ...currentDate };
+          }
+          currentDryStreak++;
+
+          // End precip streak
+          if (currentPrecipStreak > 0) {
+            if (currentPrecipStreak > biomeResult.stats.longestPrecipStreak) {
+              biomeResult.stats.longestPrecipStreak = currentPrecipStreak;
+              biomeResult.longestPrecipDetails = {
+                startDate: `${precipStreakStart.month}/${precipStreakStart.day}`,
+                endDate: `${currentDate.month}/${currentDate.day}`,
+                hours: currentPrecipStreak,
+                days: Math.floor(currentPrecipStreak / 24),
+                types: Array.from(precipTypesInStreak)
+              };
+            }
+            // Track notable precip streaks (> 1 day)
+            if (currentPrecipStreak > 24) {
+              biomeResult.stats.precipStreaks.push({
+                start: `${precipStreakStart.month}/${precipStreakStart.day}`,
+                hours: currentPrecipStreak,
+                days: Math.floor(currentPrecipStreak / 24),
+                types: Array.from(precipTypesInStreak)
+              });
+            }
+            currentPrecipStreak = 0;
+          }
+        }
+      } catch (error) {
+        // Skip errors, continue analysis
+      }
+
+      currentDate = advanceDate(currentDate, 1);
+      completedHours++;
+
+      // Update progress every 500 hours
+      if (completedHours % 500 === 0) {
+        onProgress((completedHours / totalOperations) * 100);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    // Finalize any ongoing streaks at end of analysis
+    if (currentPrecipStreak > biomeResult.stats.longestPrecipStreak) {
+      biomeResult.stats.longestPrecipStreak = currentPrecipStreak;
+      biomeResult.longestPrecipDetails = {
+        startDate: `${precipStreakStart.month}/${precipStreakStart.day}`,
+        endDate: `${currentDate.month}/${currentDate.day}`,
+        hours: currentPrecipStreak,
+        days: Math.floor(currentPrecipStreak / 24),
+        types: Array.from(precipTypesInStreak)
+      };
+    }
+    if (currentDryStreak > biomeResult.stats.longestDryStreak) {
+      biomeResult.stats.longestDryStreak = currentDryStreak;
+      biomeResult.longestDryDetails = {
+        startDate: `${dryStreakStart.month}/${dryStreakStart.day}`,
+        endDate: `${currentDate.month}/${currentDate.day}`,
+        hours: currentDryStreak,
+        days: Math.floor(currentDryStreak / 24)
+      };
+    }
+
+    // Calculate precipitation frequency
+    biomeResult.stats.precipFrequency = ((biomeResult.stats.totalPrecipHours / hoursToAnalyze) * 100).toFixed(1);
+
+    // Check for issues
+    const precipStreakHours = biomeResult.stats.longestPrecipStreak;
+    if (precipStreakHours >= thresholds.maxReasonablePrecipStreak) {
+      results.summary.biomesWithExtremeStreaks.push({
+        biome: biomeName,
+        hours: precipStreakHours,
+        days: Math.floor(precipStreakHours / 24),
+        details: biomeResult.longestPrecipDetails
+      });
+      results.issues.push({
+        type: 'extreme-precip-streak',
+        biome: biomeName,
+        message: `${Math.floor(precipStreakHours / 24)} consecutive days of precipitation`,
+        details: biomeResult.longestPrecipDetails
+      });
+    } else if (precipStreakHours >= thresholds.warnPrecipStreak) {
+      results.summary.biomesWithLongStreaks.push({
+        biome: biomeName,
+        hours: precipStreakHours,
+        days: Math.floor(precipStreakHours / 24),
+        details: biomeResult.longestPrecipDetails
+      });
+    }
+
+    // Track global maximums
+    if (precipStreakHours > results.summary.longestPrecipStreak.hours) {
+      results.summary.longestPrecipStreak = {
+        hours: precipStreakHours,
+        biome: biomeName,
+        dates: biomeResult.longestPrecipDetails
+      };
+    }
+    if (biomeResult.stats.longestDryStreak > results.summary.longestDryStreak.hours) {
+      results.summary.longestDryStreak = {
+        hours: biomeResult.stats.longestDryStreak,
+        biome: biomeName,
+        dates: biomeResult.longestDryDetails
+      };
+    }
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  // Calculate overall stats
+  results.summary.avgPrecipFrequency = ((totalPrecipHours / totalOperations) * 100).toFixed(1);
+
+  onProgress(100);
+  return results;
+};
+
+/**
+ * Run precipitation TYPE analysis across biomes with winter temperatures
+ * Tracks how precipitation type (snow/sleet/rain) changes during events
+ * Identifies unrealistic rapid cycling between types
+ *
+ * @param {Function} onProgress - Callback for progress updates (0-100)
+ * @returns {Promise<Object>} Analysis results
+ */
+export const runPrecipTypeAnalysis = async (onProgress) => {
+  const { advanceDate } = await import('../../utils/dateUtils');
+
+  const allBiomes = getAllBiomes();
+  const { hoursToAnalyze, startDate, winterTempRange, thresholds } = PRECIP_TYPE_CONFIG;
+
+  // Filter to biomes with winter temps in the transition zone
+  const biomes = allBiomes.filter(biome => {
+    const profile = biome.template.parameters?.temperatureProfile;
+    if (!profile || !profile.winter) return false;
+    const winterMean = profile.winter.mean;
+    return winterMean >= winterTempRange.min && winterMean <= winterTempRange.max;
+  });
+
+  const results = {
+    config: {
+      hoursAnalyzed: hoursToAnalyze,
+      daysAnalyzed: Math.floor(hoursToAnalyze / 24),
+      startDate: `${startDate.month}/${startDate.day} Year ${startDate.year}`,
+      biomesAnalyzed: biomes.length,
+      biomesSkipped: allBiomes.length - biomes.length,
+      thresholds
+    },
+    biomes: {},
+    summary: {
+      totalPrecipEvents: 0,
+      totalTypeChanges: 0,
+      avgTypeChangesPerEvent: 0,
+      avgTypePersistence: 0,        // Average hours a type lasts
+      biomesWithCycling: [],        // Biomes with high cycling rates
+      worstCyclingBiome: null,
+      transitionCounts: {           // How often each transition occurs
+        snowToSleet: 0,
+        sleetToSnow: 0,
+        sleetToRain: 0,
+        rainToSleet: 0,
+        snowToRain: 0,              // Direct transitions (should be rare)
+        rainToSnow: 0,
+        snowToFreezingRain: 0,
+        freezingRainToSnow: 0,
+        other: 0
+      }
+    },
+    issues: []
+  };
+
+  const weatherGen = new WeatherGenerator();
+
+  let completedHours = 0;
+  const totalOperations = biomes.length * hoursToAnalyze;
+  let globalTypeChanges = 0;
+  let globalPrecipHours = 0;
+  let globalEventCount = 0;
+
+  for (const biomeInfo of biomes) {
+    const { latitudeBand, templateId, template, biomeName } = biomeInfo;
+
+    const region = {
+      id: `type-test-${latitudeBand}-${templateId}`,
+      name: `Test ${biomeName}`,
+      latitudeBand,
+      templateId,
+      climate: extractClimateProfile(template)
+    };
+
+    // Initialize biome results
+    const biomeResult = {
+      biomeName,
+      latitudeBand,
+      winterMean: template.parameters?.temperatureProfile?.winter?.mean || 0,
+      stats: {
+        precipEvents: 0,            // Number of precipitation events
+        totalPrecipHours: 0,
+        typeChanges: 0,             // Total type changes during precip
+        avgChangesPerEvent: 0,
+        avgTypePersistence: 0,      // Avg hours before type change
+        cyclingEvents: 0,           // Events with >maxTypeChangesPerEvent changes
+        rapidCyclingHours: 0,       // Hours during rapid cycling
+        typeDistribution: {         // Hours by type
+          snow: 0,
+          sleet: 0,
+          'freezing-rain': 0,
+          rain: 0
+        },
+        transitions: {              // Transition counts for this biome
+          snowToSleet: 0,
+          sleetToSnow: 0,
+          sleetToRain: 0,
+          rainToSleet: 0,
+          snowToRain: 0,
+          rainToSnow: 0,
+          snowToFreezingRain: 0,
+          freezingRainToSnow: 0,
+          other: 0
+        }
+      },
+      events: [],                   // Details of significant events
+      worstEvent: null              // Event with most type changes
+    };
+
+    let currentDate = { ...startDate };
+    let inPrecipEvent = false;
+    let eventStart = null;
+    let eventTypes = [];            // Sequence of types in current event
+    let eventTemps = [];            // Temperatures during event
+    let currentType = null;
+    let typeStartHour = 0;
+    let typePersistenceSum = 0;
+    let typePersistenceCount = 0;
+
+    weatherGen.clearCache();
+
+    for (let hour = 0; hour < hoursToAnalyze; hour++) {
+      try {
+        const weather = weatherGen.generateWeather(region, currentDate);
+        const hasPrecip = weather.precipitation === true;
+        const precipType = weather.precipitationType || null;
+        const temp = weather.temperature;
+
+        if (hasPrecip) {
+          biomeResult.stats.totalPrecipHours++;
+          globalPrecipHours++;
+
+          if (precipType) {
+            biomeResult.stats.typeDistribution[precipType] =
+              (biomeResult.stats.typeDistribution[precipType] || 0) + 1;
+          }
+
+          if (!inPrecipEvent) {
+            // Start new precipitation event
+            inPrecipEvent = true;
+            eventStart = { ...currentDate };
+            eventTypes = [precipType];
+            eventTemps = [temp];
+            currentType = precipType;
+            typeStartHour = hour;
+          } else {
+            // Continue precipitation event
+            eventTypes.push(precipType);
+            eventTemps.push(temp);
+
+            // Check for type change
+            if (precipType !== currentType && precipType && currentType) {
+              biomeResult.stats.typeChanges++;
+              globalTypeChanges++;
+
+              // Track persistence of previous type
+              const persistence = hour - typeStartHour;
+              if (persistence > 0) {
+                typePersistenceSum += persistence;
+                typePersistenceCount++;
+              }
+
+              // Track transition type
+              const transitionKey = getTransitionKey(currentType, precipType);
+              if (biomeResult.stats.transitions[transitionKey] !== undefined) {
+                biomeResult.stats.transitions[transitionKey]++;
+                results.summary.transitionCounts[transitionKey]++;
+              } else {
+                biomeResult.stats.transitions.other++;
+                results.summary.transitionCounts.other++;
+              }
+
+              currentType = precipType;
+              typeStartHour = hour;
+            }
+          }
+        } else {
+          // No precipitation - end event if we were in one
+          if (inPrecipEvent && eventTypes.length >= thresholds.minEventLength) {
+            biomeResult.stats.precipEvents++;
+            globalEventCount++;
+
+            // Count type changes in this event
+            const eventTypeChanges = countTypeChanges(eventTypes);
+
+            // Check for cycling
+            if (eventTypeChanges > thresholds.maxTypeChangesPerEvent) {
+              biomeResult.stats.cyclingEvents++;
+
+              // Check for rapid cycling (>2 changes in 6 hours)
+              const rapidCycling = detectRapidCycling(eventTypes, thresholds.rapidCyclingThreshold);
+              biomeResult.stats.rapidCyclingHours += rapidCycling.hours;
+            }
+
+            // Track worst event
+            if (!biomeResult.worstEvent || eventTypeChanges > biomeResult.worstEvent.typeChanges) {
+              biomeResult.worstEvent = {
+                startDate: `${eventStart.month}/${eventStart.day} ${eventStart.hour}:00`,
+                duration: eventTypes.length,
+                typeChanges: eventTypeChanges,
+                typeSequence: compressTypeSequence(eventTypes),
+                tempRange: {
+                  min: Math.min(...eventTemps),
+                  max: Math.max(...eventTemps),
+                  avg: Math.round(eventTemps.reduce((a, b) => a + b, 0) / eventTemps.length)
+                }
+              };
+            }
+
+            // Store significant events (with cycling)
+            if (eventTypeChanges >= 3 && biomeResult.events.length < 10) {
+              biomeResult.events.push({
+                startDate: `${eventStart.month}/${eventStart.day}`,
+                duration: eventTypes.length,
+                typeChanges: eventTypeChanges,
+                types: compressTypeSequence(eventTypes),
+                avgTemp: Math.round(eventTemps.reduce((a, b) => a + b, 0) / eventTemps.length)
+              });
+            }
+          }
+
+          // Reset event tracking
+          inPrecipEvent = false;
+          eventStart = null;
+          eventTypes = [];
+          eventTemps = [];
+          currentType = null;
+        }
+      } catch (error) {
+        // Skip errors, continue analysis
+      }
+
+      currentDate = advanceDate(currentDate, 1);
+      completedHours++;
+
+      // Update progress every 500 hours
+      if (completedHours % 500 === 0) {
+        onProgress((completedHours / totalOperations) * 100);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+
+    // Finalize biome stats
+    if (biomeResult.stats.precipEvents > 0) {
+      biomeResult.stats.avgChangesPerEvent =
+        (biomeResult.stats.typeChanges / biomeResult.stats.precipEvents).toFixed(2);
+    }
+    if (typePersistenceCount > 0) {
+      biomeResult.stats.avgTypePersistence =
+        (typePersistenceSum / typePersistenceCount).toFixed(1);
+    }
+
+    // Check for issues
+    const avgChanges = parseFloat(biomeResult.stats.avgChangesPerEvent);
+    const avgPersistence = parseFloat(biomeResult.stats.avgTypePersistence);
+
+    if (avgChanges > 2 || biomeResult.stats.cyclingEvents > 5) {
+      results.summary.biomesWithCycling.push({
+        biome: biomeName,
+        avgChangesPerEvent: avgChanges,
+        cyclingEvents: biomeResult.stats.cyclingEvents,
+        worstEvent: biomeResult.worstEvent
+      });
+    }
+
+    if (avgPersistence > 0 && avgPersistence < thresholds.minAvgTypePersistence) {
+      results.issues.push({
+        type: 'low-persistence',
+        biome: biomeName,
+        message: `Avg type persistence only ${avgPersistence} hours (threshold: ${thresholds.minAvgTypePersistence})`,
+        details: biomeResult.stats
+      });
+    }
+
+    if (biomeResult.stats.cyclingEvents > 10) {
+      results.issues.push({
+        type: 'frequent-cycling',
+        biome: biomeName,
+        message: `${biomeResult.stats.cyclingEvents} events with excessive type cycling`,
+        details: biomeResult.worstEvent
+      });
+    }
+
+    results.biomes[biomeName] = biomeResult;
+  }
+
+  // Calculate summary stats
+  if (globalEventCount > 0) {
+    results.summary.totalPrecipEvents = globalEventCount;
+    results.summary.totalTypeChanges = globalTypeChanges;
+    results.summary.avgTypeChangesPerEvent = (globalTypeChanges / globalEventCount).toFixed(2);
+  }
+  if (globalPrecipHours > 0 && globalTypeChanges > 0) {
+    results.summary.avgTypePersistence = (globalPrecipHours / globalTypeChanges).toFixed(1);
+  }
+
+  // Find worst cycling biome
+  if (results.summary.biomesWithCycling.length > 0) {
+    results.summary.worstCyclingBiome = results.summary.biomesWithCycling
+      .sort((a, b) => b.avgChangesPerEvent - a.avgChangesPerEvent)[0];
+  }
+
+  onProgress(100);
+  return results;
+};
+
+/**
+ * Get transition key for tracking type changes
+ */
+function getTransitionKey(fromType, toType) {
+  const normalized = {
+    'snow': 'snow',
+    'sleet': 'sleet',
+    'freezing-rain': 'freezingRain',
+    'rain': 'rain'
+  };
+  const from = normalized[fromType] || fromType;
+  const to = normalized[toType] || toType;
+
+  // Map to known transition keys
+  if (from === 'snow' && to === 'sleet') return 'snowToSleet';
+  if (from === 'sleet' && to === 'snow') return 'sleetToSnow';
+  if (from === 'sleet' && to === 'rain') return 'sleetToRain';
+  if (from === 'rain' && to === 'sleet') return 'rainToSleet';
+  if (from === 'snow' && to === 'rain') return 'snowToRain';
+  if (from === 'rain' && to === 'snow') return 'rainToSnow';
+  if (from === 'snow' && to === 'freezingRain') return 'snowToFreezingRain';
+  if (from === 'freezingRain' && to === 'snow') return 'freezingRainToSnow';
+  return 'other';
+}
+
+/**
+ * Count type changes in a sequence (ignoring nulls)
+ */
+function countTypeChanges(types) {
+  let changes = 0;
+  let lastType = null;
+  for (const type of types) {
+    if (type && lastType && type !== lastType) {
+      changes++;
+    }
+    if (type) lastType = type;
+  }
+  return changes;
+}
+
+/**
+ * Detect rapid cycling in a type sequence
+ * Returns count of 6-hour windows with >threshold changes
+ */
+function detectRapidCycling(types, threshold) {
+  let rapidHours = 0;
+  for (let i = 0; i < types.length - 6; i++) {
+    const window = types.slice(i, i + 6);
+    const changes = countTypeChanges(window);
+    if (changes > threshold) {
+      rapidHours++;
+    }
+  }
+  return { hours: rapidHours };
+}
+
+/**
+ * Compress a type sequence into a readable string
+ * e.g., [snow, snow, snow, sleet, sleet, rain] => "snow(3)→sleet(2)→rain(1)"
+ */
+function compressTypeSequence(types) {
+  if (types.length === 0) return '';
+
+  const segments = [];
+  let currentType = types[0];
+  let count = 1;
+
+  for (let i = 1; i < types.length; i++) {
+    if (types[i] === currentType) {
+      count++;
+    } else {
+      if (currentType) segments.push(`${currentType}(${count})`);
+      currentType = types[i];
+      count = 1;
+    }
+  }
+  if (currentType) segments.push(`${currentType}(${count})`);
+
+  return segments.join('→');
+}

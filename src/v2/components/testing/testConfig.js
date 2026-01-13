@@ -101,6 +101,57 @@ export const HEAT_INDEX_CONFIG = {
   yearsToTest: 3
 };
 
+/**
+ * Configuration for precipitation streak/frequency analysis
+ * Tests that precipitation patterns are realistic across all biomes
+ */
+export const PRECIP_STREAK_CONFIG = {
+  // Test a full year to capture all seasonal patterns
+  startDate: { year: 1, month: 1, day: 1, hour: 0 },
+  // Full year = 8760 hours
+  hoursToAnalyze: 8760,
+  // Thresholds for flagging issues
+  thresholds: {
+    // Max consecutive days of precipitation before flagging (14 days is extreme)
+    maxReasonablePrecipStreak: 14 * 24, // hours
+    // Warn if > 7 days
+    warnPrecipStreak: 7 * 24, // hours
+    // Max consecutive dry days before flagging (depends on biome)
+    maxReasonableDryStreak: 60 * 24, // 60 days for deserts
+    // Reasonable monthly precip frequency range
+    monthlyPrecipHoursMin: 20, // At least ~20 hours/month for most biomes
+    monthlyPrecipHoursMax: 500 // Flag if >500 hours/month (unrealistic)
+  },
+  // Test all biomes, not just cold ones
+  testAllBiomes: true
+};
+
+/**
+ * Configuration for precipitation TYPE analysis
+ * Tests that precipitation type (snow/sleet/rain) transitions are realistic
+ * Identifies unrealistic rapid cycling between types
+ */
+export const PRECIP_TYPE_CONFIG = {
+  // Test winter months when type transitions are most common
+  startDate: { year: 1, month: 11, day: 1, hour: 0 },
+  // 120 days covers Nov-Feb (peak winter with type transitions)
+  hoursToAnalyze: 120 * 24,
+  // Only analyze biomes where winter temps can be near freezing
+  // (where type transitions would occur)
+  winterTempRange: { min: 15, max: 50 }, // Biomes with winter mean in this range
+  // Thresholds for flagging issues
+  thresholds: {
+    // Max type changes per precipitation event before flagging as "cycling"
+    maxTypeChangesPerEvent: 4,
+    // Minimum hours a type should persist on average
+    minAvgTypePersistence: 3, // hours
+    // Flag events with rapid cycling (>2 changes in 6 hours)
+    rapidCyclingThreshold: 2, // changes per 6 hours
+    // Minimum precipitation event length to analyze (skip 1-hour drizzles)
+    minEventLength: 3 // hours
+  }
+};
+
 export const THRESHOLDS = {
   temperature: { min: -100, max: 150 },
   humidity: { min: 0, max: 100 },
