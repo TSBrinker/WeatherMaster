@@ -11,6 +11,7 @@ const DEFAULT_PREFERENCES = {
   debugMode: false,
   conditionPhrasing: 'standard',
   showSnowAccumulation: true,
+  temperatureDisplay: 'precise', // 'precise' (numeric) or 'narrative' (prose)
 };
 
 export const usePreferences = () => {
@@ -70,6 +71,10 @@ export const PreferencesProvider = ({ children }) => {
     updatePreference('showSnowAccumulation', show);
   };
 
+  const setTemperatureDisplay = (mode) => {
+    updatePreference('temperatureDisplay', mode);
+  };
+
   const contextValue = {
     // Preferences
     temperatureUnit: preferences.temperatureUnit,
@@ -79,12 +84,14 @@ export const PreferencesProvider = ({ children }) => {
     debugMode: preferences.debugMode,
     conditionPhrasing: preferences.conditionPhrasing || 'standard',
     showSnowAccumulation: preferences.showSnowAccumulation !== false, // Default true
+    temperatureDisplay: preferences.temperatureDisplay || 'precise',
 
     // Methods
     updatePreference,
     resetPreferences,
     setConditionPhrasing,
     setShowSnowAccumulation,
+    setTemperatureDisplay,
   };
 
   return (

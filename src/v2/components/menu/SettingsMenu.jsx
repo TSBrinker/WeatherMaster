@@ -16,7 +16,7 @@ import { getPhrasingExample } from '../../utils/conditionPhrasing';
  */
 const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteWorld } = useWorld();
-  const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation } = usePreferences();
+  const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation, temperatureDisplay, setTemperatureDisplay } = usePreferences();
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
   const [showGameplayMechanics, setShowGameplayMechanics] = useState(false);
@@ -93,6 +93,22 @@ const SettingsMenu = ({ inline = false }) => {
               />
               <Form.Text className="text-muted">
                 Display snow depth as visual fill on weather card
+              </Form.Text>
+            </div>
+            <div className="temperature-display-toggle mb-2">
+              <Form.Label className="mb-1">Temperature Display</Form.Label>
+              <Form.Select
+                size="sm"
+                value={temperatureDisplay}
+                onChange={(e) => setTemperatureDisplay(e.target.value)}
+              >
+                <option value="precise">Precise (72°)</option>
+                <option value="narrative">Narrative (prose description)</option>
+              </Form.Select>
+              <Form.Text className="text-muted">
+                {temperatureDisplay === 'narrative'
+                  ? 'Shows evocative prose for setting the scene'
+                  : 'Shows exact temperature reading'}
               </Form.Text>
             </div>
             <Button
@@ -204,6 +220,11 @@ const SettingsMenu = ({ inline = false }) => {
             onClick={() => setConditionPhrasing(conditionPhrasing === 'standard' ? 'descriptive' : 'standard')}
           >
             Phrasing: {conditionPhrasing === 'standard' ? 'Standard' : 'Descriptive'}
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => setTemperatureDisplay(temperatureDisplay === 'precise' ? 'narrative' : 'precise')}
+          >
+            Display: {temperatureDisplay === 'narrative' ? 'Narrative' : 'Precise'}
           </Dropdown.Item>
           <Dropdown.Item onClick={handleClearWeatherCache}>
             <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />

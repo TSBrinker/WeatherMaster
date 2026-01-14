@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Container, Button, Card, ProgressBar, Alert, Table, Badge, Form, Row, Col, Collapse } from 'react-bootstrap';
-import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh, BsStar, BsExclamationTriangle, BsArrowRepeat, BsChevronDown, BsChevronRight } from 'react-icons/bs';
+import { BsArrowLeft, BsSnow, BsThermometerSnow, BsLightningCharge, BsWater, BsThermometerHigh, BsStar, BsExclamationTriangle, BsChatQuote, BsArrowRepeat, BsChevronDown, BsChevronRight } from 'react-icons/bs';
+import { generateNarrative, getTemperatureBands, getConditions, getVariationCount, detectProgression } from '../../utils/narrativeWeather';
+import { biomeLabels } from '../../data/region-templates';
 import { regionTemplates } from '../../data/region-templates';
 import { TEST_CONFIG, PRECIP_ANALYSIS_CONFIG, THUNDERSTORM_CONFIG, FLOOD_ANALYSIS_CONFIG, HEAT_INDEX_CONFIG, PRECIP_STREAK_CONFIG, PRECIP_TYPE_CONFIG } from './testConfig';
 import { runTests, runPrecipitationAnalysis, runThunderstormAnalysis, runFloodAnalysis, runHeatIndexAnalysis, runPrecipStreakAnalysis, runPrecipTypeAnalysis } from './testRunner';
@@ -218,17 +220,61 @@ const WeatherTestHarness = () => {
     streak: false,
     precipType: false,
     wanderer: false,
-    impact: false
+    impact: false,
+    narrative: false
   });
 
   const toggleSection = (section) => {
     setSectionsOpen(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Narrative preview state
+  const [narrativeTemp, setNarrativeTemp] = useState(45);
+  const [narrativeCondition, setNarrativeCondition] = useState('Partly Cloudy');
+  const [narrativeHour, setNarrativeHour] = useState(14);
+  const [narrativeMonth, setNarrativeMonth] = useState(3);
+  const [narrativeBiome, setNarrativeBiome] = useState('');
+  const [narrativeVariant, setNarrativeVariant] = useState(0);
+  const [narrativePrevCondition, setNarrativePrevCondition] = useState(''); // For progression testing
+  const [narrativeSunrise, setNarrativeSunrise] = useState(6); // Sunrise hour for dynamic time periods
+  const [narrativeSunset, setNarrativeSunset] = useState(18); // Sunset hour for dynamic time periods
+  const [narrativeUseDynamicTime, setNarrativeUseDynamicTime] = useState(true); // Toggle dynamic time periods
+
   // Compute impact effects for preview
   const impactPreview = useMemo(() => {
     return WandererService.generateImpactEffects(previewSize, previewDistance, 'Open plains');
   }, [previewSize, previewDistance]);
+
+  // Compute narrative preview with progression
+  const narrativeProgression = useMemo(() => {
+    if (!narrativePrevCondition) return null;
+    return detectProgression(
+      { condition: narrativeCondition },
+      { condition: narrativePrevCondition }
+    );
+  }, [narrativeCondition, narrativePrevCondition]);
+
+  const narrativePreview = useMemo(() => {
+    return generateNarrative({
+      temperature: narrativeTemp,
+      condition: narrativeCondition,
+      hour: narrativeHour,
+      month: narrativeMonth,
+      biome: narrativeBiome || undefined,
+      variant: narrativeVariant,
+      progression: narrativeProgression,
+      sunriseHour: narrativeUseDynamicTime ? narrativeSunrise : undefined,
+      sunsetHour: narrativeUseDynamicTime ? narrativeSunset : undefined
+    });
+  }, [narrativeTemp, narrativeCondition, narrativeHour, narrativeMonth, narrativeBiome, narrativeVariant, narrativeProgression, narrativeSunrise, narrativeSunset, narrativeUseDynamicTime]);
+
+  const narrativeVariationCount = useMemo(() => {
+    return getVariationCount({
+      temperature: narrativeTemp,
+      condition: narrativeCondition,
+      month: narrativeMonth
+    });
+  }, [narrativeTemp, narrativeCondition, narrativeMonth]);
 
   const totalBiomes = getTotalBiomeCount();
   const newBiomes = getNewBiomeCount();
@@ -888,6 +934,336 @@ const WeatherTestHarness = () => {
                   <strong>Suggested Mechanics:</strong> {impactPreview.mechanics}
                 </Alert>
               )}
+            </Card.Body>
+          </Card>
+          </Card.Body>
+        </Collapse>
+      </Card>
+
+      {/* Narrative Weather Preview Card */}
+      <Card className="mb-4" style={{ borderColor: '#20c997' }}>
+        <Card.Header
+          style={{ cursor: 'pointer', borderColor: '#20c997' }}
+          onClick={() => toggleSection('narrative')}
+        >
+          <h5 className="mb-0 d-flex align-items-center">
+            {sectionsOpen.narrative ? <BsChevronDown className="me-2" /> : <BsChevronRight className="me-2" />}
+            <BsChatQuote className="me-2" />Narrative Weather Preview
+          </h5>
+        </Card.Header>
+        <Collapse in={sectionsOpen.narrative}>
+          <Card.Body>
+            <p className="text-muted">
+              Preview the templated narrative weather descriptions. Adjust parameters to see how prose is generated
+              for different conditions.
+            </p>
+
+            <Row className="mb-3">
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Temperature:</strong> {narrativeTemp}°F</Form.Label>
+                <Form.Range
+                  min={-40}
+                  max={120}
+                  value={narrativeTemp}
+                  onChange={(e) => setNarrativeTemp(parseInt(e.target.value))}
+                />
+                <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                  <span>-40°F</span>
+                  <span>40°F</span>
+                  <span>120°F</span>
+                </div>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Condition</strong></Form.Label>
+                <Form.Select
+                  value={narrativeCondition}
+                  onChange={(e) => setNarrativeCondition(e.target.value)}
+                >
+                  {getConditions().map(condition => (
+                    <option key={condition} value={condition}>{condition}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Hour:</strong> {narrativeHour}:00</Form.Label>
+                <Form.Range
+                  min={0}
+                  max={23}
+                  value={narrativeHour}
+                  onChange={(e) => setNarrativeHour(parseInt(e.target.value))}
+                />
+                <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                  <span>Midnight</span>
+                  <span>Noon</span>
+                  <span>11 PM</span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row className="mb-3">
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Month</strong></Form.Label>
+                <Form.Select
+                  value={narrativeMonth}
+                  onChange={(e) => setNarrativeMonth(parseInt(e.target.value))}
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'].map((name, idx) => (
+                    <option key={idx + 1} value={idx + 1}>{name}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Biome Flavor</strong> (optional)</Form.Label>
+                <Form.Select
+                  value={narrativeBiome}
+                  onChange={(e) => setNarrativeBiome(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {Object.entries(biomeLabels).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label><strong>Variation</strong> ({narrativeVariant + 1} of {narrativeVariationCount})</Form.Label>
+                <div className="d-flex align-items-center gap-2">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setNarrativeVariant((narrativeVariant + 1) % narrativeVariationCount)}
+                  >
+                    <BsArrowRepeat /> Cycle
+                  </Button>
+                  <span className="text-muted" style={{ fontSize: '0.85em' }}>
+                    Try different phrasings
+                  </span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label><strong>Previous Condition</strong> (for progression)</Form.Label>
+                <Form.Select
+                  value={narrativePrevCondition}
+                  onChange={(e) => setNarrativePrevCondition(e.target.value)}
+                >
+                  <option value="">None (no progression)</option>
+                  {getConditions().map(condition => (
+                    <option key={condition} value={condition}>{condition}</option>
+                  ))}
+                </Form.Select>
+                <Form.Text className="text-muted">
+                  {narrativeProgression
+                    ? `Detected: ${narrativeProgression.phase}${narrativeProgression.transition ? ` (${narrativeProgression.transition})` : ''}`
+                    : 'Set to test onset, clearing, transitions, intensity changes'}
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Sunrise/Sunset controls for dynamic time periods */}
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Check
+                type="switch"
+                id="dynamic-time-switch"
+                label={<strong>Use Dynamic Time Periods (based on sunrise/sunset)</strong>}
+                checked={narrativeUseDynamicTime}
+                onChange={(e) => setNarrativeUseDynamicTime(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                When enabled, time-of-day phrases adjust based on actual sunrise/sunset times instead of fixed hours
+              </Form.Text>
+            </Col>
+          </Row>
+          {narrativeUseDynamicTime && (
+            <Row className="mb-3">
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Sunrise:</strong> {narrativeSunrise}:00</Form.Label>
+                  <Form.Range
+                    min={4}
+                    max={10}
+                    step={0.5}
+                    value={narrativeSunrise}
+                    onChange={(e) => setNarrativeSunrise(parseFloat(e.target.value))}
+                  />
+                  <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                    <span>4 AM</span>
+                    <span>7 AM</span>
+                    <span>10 AM</span>
+                  </div>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label><strong>Sunset:</strong> {narrativeSunset}:00</Form.Label>
+                  <Form.Range
+                    min={16}
+                    max={22}
+                    step={0.5}
+                    value={narrativeSunset}
+                    onChange={(e) => setNarrativeSunset(parseFloat(e.target.value))}
+                  />
+                  <div className="d-flex justify-content-between" style={{ fontSize: '0.75em' }}>
+                    <span>4 PM</span>
+                    <span>7 PM</span>
+                    <span>10 PM</span>
+                  </div>
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <div className="text-muted mt-4" style={{ fontSize: '0.85em' }}>
+                  <strong>Day length:</strong> {(narrativeSunset - narrativeSunrise).toFixed(1)} hours<br />
+                  <strong>Solar noon:</strong> {((narrativeSunrise + narrativeSunset) / 2).toFixed(1)}:00
+                </div>
+              </Col>
+            </Row>
+          )}
+
+          {/* Sunrise/sunset quick presets */}
+          {narrativeUseDynamicTime && (
+            <div className="mb-3">
+              <strong>Day Length Presets:</strong>{' '}
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(4.5); setNarrativeSunset(21); }}>
+                Summer Solstice (16.5h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(7.5); setNarrativeSunset(16.5); }}>
+                Winter Solstice (9h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(6); setNarrativeSunset(18); }}>
+                Equinox (12h)
+              </Button>
+              <Button size="sm" variant="outline-secondary" className="me-1"
+                onClick={() => { setNarrativeSunrise(8); setNarrativeSunset(16); }}>
+                Short Winter Day (8h)
+              </Button>
+            </div>
+          )}
+
+          {/* Quick presets */}
+          <div className="mb-3">
+            <strong>Quick Presets:</strong>{' '}
+            <Button size="sm" variant="outline-danger" className="me-1"
+              onClick={() => { setNarrativeTemp(-25); setNarrativeCondition('Blizzard'); setNarrativeHour(2); setNarrativeMonth(1); setNarrativePrevCondition(''); }}>
+              Deadly Blizzard
+            </Button>
+            <Button size="sm" variant="outline-warning" className="me-1"
+              onClick={() => { setNarrativeTemp(105); setNarrativeCondition('Clear'); setNarrativeHour(14); setNarrativeMonth(7); setNarrativeBiome('desert'); setNarrativePrevCondition(''); }}>
+              Scorching Desert
+            </Button>
+            <Button size="sm" variant="outline-info" className="me-1"
+              onClick={() => { setNarrativeTemp(55); setNarrativeCondition('Rain'); setNarrativeHour(18); setNarrativeMonth(10); setNarrativePrevCondition(''); }}>
+              Autumn Evening Rain
+            </Button>
+            <Button size="sm" variant="outline-success" className="me-1"
+              onClick={() => { setNarrativeTemp(72); setNarrativeCondition('Partly Cloudy'); setNarrativeHour(10); setNarrativeMonth(5); setNarrativePrevCondition(''); }}>
+              Pleasant Spring Morning
+            </Button>
+          </div>
+
+          {/* Progression presets */}
+          <div className="mb-3">
+            <strong>Progression Presets:</strong>{' '}
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Rain'); setNarrativePrevCondition('Cloudy'); }}>
+              Rain Onset
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Heavy Rain'); setNarrativePrevCondition('Rain'); }}>
+              Intensifying
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Light Rain'); setNarrativePrevCondition('Heavy Rain'); }}>
+              Easing
+            </Button>
+            <Button size="sm" variant="outline-primary" className="me-1"
+              onClick={() => { setNarrativeCondition('Cloudy'); setNarrativePrevCondition('Rain'); }}>
+              Clearing
+            </Button>
+            <Button size="sm" variant="outline-danger" className="me-1"
+              onClick={() => { setNarrativeTemp(30); setNarrativeCondition('Sleet'); setNarrativePrevCondition('Rain'); }}>
+              Rain→Sleet
+            </Button>
+            <Button size="sm" variant="outline-info"
+              onClick={() => { setNarrativeTemp(28); setNarrativeCondition('Snow'); setNarrativePrevCondition('Sleet'); }}>
+              Sleet→Snow
+            </Button>
+          </div>
+
+          {/* Results display */}
+          <Card className="mt-3" style={{ borderColor: '#20c997' }}>
+            <Card.Header style={{ backgroundColor: '#20c997', color: '#fff' }}>
+              <strong>Generated Narrative</strong>
+              <Badge className="ms-2" bg="dark">{narrativePreview.metadata.temperatureBand}</Badge>
+              <Badge className="ms-2" bg="secondary">{narrativePreview.metadata.season}</Badge>
+              <Badge className="ms-2" bg="secondary">{narrativePreview.metadata.timePeriod}</Badge>
+              {narrativePreview.metadata.progressionPhase !== 'steady' && (
+                <Badge className="ms-2" bg="info">{narrativePreview.metadata.progressionPhase}</Badge>
+              )}
+            </Card.Header>
+            <Card.Body>
+              <p style={{ fontStyle: 'italic', fontSize: '1.25em', lineHeight: '1.6', marginBottom: '1rem' }}>
+                "{narrativePreview.narrative}"
+              </p>
+
+              <h6>Component Parts</h6>
+              <Table size="sm" bordered>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '120px' }}><strong>Time</strong></td>
+                    <td>{narrativePreview.parts.time}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Temperature</strong></td>
+                    <td>{narrativePreview.parts.temperature}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Condition</strong></td>
+                    <td>{narrativePreview.parts.condition}</td>
+                  </tr>
+                  {narrativePreview.parts.biome && (
+                    <tr>
+                      <td><strong>Biome</strong></td>
+                      <td>{narrativePreview.parts.biome}</td>
+                    </tr>
+                  )}
+                  {narrativePreview.parts.progression && (
+                    <tr>
+                      <td><strong>Progression</strong></td>
+                      <td><Badge bg="info">{narrativePreview.parts.progression}</Badge></td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+
+              <Alert variant="secondary" className="mt-3 mb-0">
+                <small>
+                  <strong>Character:</strong> {narrativePreview.metadata.temperatureCharacter} |{' '}
+                  <strong>Actual Temp:</strong> {narrativePreview.metadata.actualTemp}°F
+                  {narrativePreview.metadata.progressionPhase !== 'steady' && (
+                    <> | <strong>Phase:</strong> {narrativePreview.metadata.progressionPhase}</>
+                  )}
+                </small>
+              </Alert>
             </Card.Body>
           </Card>
           </Card.Body>

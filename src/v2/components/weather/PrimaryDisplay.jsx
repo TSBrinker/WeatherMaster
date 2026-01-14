@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { OverlayTrigger, Tooltip, Modal, Button, Badge } from 'react-bootstrap';
 import { WiDaySunny, WiCloudy, WiRain, WiSnow, WiThunderstorm, WiFog, WiDayCloudy, WiNightClear, WiNightAltCloudy, WiStrongWind } from 'react-icons/wi';
 import { BsInfoCircle, BsExclamationTriangleFill, BsSnow2 } from 'react-icons/bs';
@@ -8,6 +8,8 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { transformCondition } from '../../utils/conditionPhrasing';
 import { parseTimeToHour, isNightTime } from '../../utils/skyGradientUtils';
 import { getGameplayIndicators, getFullWeatherEffects } from '../../utils/gameplayEffects';
+import { generateNarrative, detectProgression } from '../../utils/narrativeWeather';
+import { advanceDate } from '../../utils/dateUtils';
 import SeaStateCard from './SeaStateCard';
 import './PrimaryDisplay.css';
 
@@ -95,7 +97,7 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
   const [showSnowModal, setShowSnowModal] = useState(false);
   const [showSeaStateModal, setShowSeaStateModal] = useState(false);
   const [showGameplayModal, setShowGameplayModal] = useState(false);
-  const { conditionPhrasing, showSnowAccumulation } = usePreferences();
+  const { conditionPhrasing, showSnowAccumulation, temperatureDisplay } = usePreferences();
 
   if (!region || !weather) {
     return (
@@ -124,10 +126,33 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
   // Determine if feels like is different enough to show
   const showFeelsLike = feelsLike && Math.abs(temperature - feelsLike) >= 3;
 
-  // Shared time-of-day calculations
+  // Shared time-of-day calculations (moved before narrative to use in generateNarrative)
   const hour = currentDate?.hour ?? 12; // Use in-game time, default to noon if not available
   const sunriseHour = parseTimeToHour(weather?.celestial?.sunriseTime);
   const sunsetHour = parseTimeToHour(weather?.celestial?.sunsetTime);
+
+  // Narrative mode: generate prose description with progression awareness
+  const isNarrativeMode = temperatureDisplay === 'narrative';
+  const narrativeResult = useMemo(() => {
+    if (!isNarrativeMode || !currentDate || !weatherService) return null;
+
+    // Get previous hour's weather to detect progression
+    const prevDate = advanceDate(currentDate, -1);
+    const prevWeather = weatherService.getWeather?.(region, prevDate);
+    const progression = detectProgression(weather, prevWeather);
+
+    return generateNarrative({
+      temperature,
+      condition: rawCondition,
+      hour: currentDate.hour ?? 12,
+      month: currentDate.month ?? 6,
+      biome: template?.defaultBiome,
+      seed: `${region?.id}-${currentDate?.day}`,
+      progression,
+      sunriseHour,
+      sunsetHour
+    });
+  }, [isNarrativeMode, temperature, rawCondition, currentDate, template, region, weather, weatherService, sunriseHour, sunsetHour]);
 
   // Night detection for icon selection
   const isNight = isNightTime(hour, sunriseHour, sunsetHour);
@@ -210,46 +235,60 @@ const PrimaryDisplay = ({ region, weather, world, currentDate, weatherService })
           {region.name}
         </div>
 
-        {/* Temperature */}
-        <div className="temperature-hero">
-          {Math.round(temperature)}°
-        </div>
+        {/* Narrative Mode: Prose description instead of numeric temperature */}
+        {isNarrativeMode && narrativeResult ? (
+          <>
+            <div className="narrative-hero">
+              {narrativeResult.narrative}
+            </div>
+            <div className="narrative-temp-badge">
+              {Math.round(temperature)}° • {narrativeResult.metadata.temperatureBand}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Temperature */}
+            <div className="temperature-hero">
+              {Math.round(temperature)}°
+            </div>
 
-        {/* Wind - centered below temperature */}
-        {weather.windSpeed > 0 && (
-          <div className="wind-hero">
-            <WiStrongWind className="wind-icon" />
-            <span className="wind-speed">{weather.windSpeed}</span>
-            <span className="wind-unit">mph</span>
-            {weather.windDirection && (
-              <span className="wind-direction">{weather.windDirection}</span>
+            {/* Wind - centered below temperature */}
+            {weather.windSpeed > 0 && (
+              <div className="wind-hero">
+                <WiStrongWind className="wind-icon" />
+                <span className="wind-speed">{weather.windSpeed}</span>
+                <span className="wind-unit">mph</span>
+                {weather.windDirection && (
+                  <span className="wind-direction">{weather.windDirection}</span>
+                )}
+              </div>
             )}
-          </div>
+
+            {/* Condition Line: Icon + Condition + High/Low */}
+            <div className="condition-line">
+              <span className="condition-icon">{getWeatherIcon()}</span>
+              <span className="condition-text">
+                {condition}
+                {hasConditionEffects && (
+                  <OverlayTrigger placement="bottom" overlay={conditionTooltip}>
+                    <BsInfoCircle className="info-icon clickable" onClick={() => setShowConditionModal(true)} />
+                  </OverlayTrigger>
+                )}
+              </span>
+              {high !== null && low !== null && (
+                <>
+                  <span className="condition-separator">•</span>
+                  <span className="high-low-inline">H:{Math.round(high)}° L:{Math.round(low)}°</span>
+                </>
+              )}
+            </div>
+
+            {/* Feels Like - always rendered, visibility controlled via CSS to prevent layout shift */}
+            <div className={`feels-like-hero ${showFeelsLike ? '' : 'feels-like-hidden'}`}>
+              {showFeelsLike ? `Feels like ${Math.round(feelsLike)}°` : '\u00A0'}
+            </div>
+          </>
         )}
-
-        {/* Condition Line: Icon + Condition + High/Low */}
-        <div className="condition-line">
-          <span className="condition-icon">{getWeatherIcon()}</span>
-          <span className="condition-text">
-            {condition}
-            {hasConditionEffects && (
-              <OverlayTrigger placement="bottom" overlay={conditionTooltip}>
-                <BsInfoCircle className="info-icon clickable" onClick={() => setShowConditionModal(true)} />
-              </OverlayTrigger>
-            )}
-          </span>
-          {high !== null && low !== null && (
-            <>
-              <span className="condition-separator">•</span>
-              <span className="high-low-inline">H:{Math.round(high)}° L:{Math.round(low)}°</span>
-            </>
-          )}
-        </div>
-
-        {/* Feels Like - always rendered, visibility controlled via CSS to prevent layout shift */}
-        <div className={`feels-like-hero ${showFeelsLike ? '' : 'feels-like-hidden'}`}>
-          {showFeelsLike ? `Feels like ${Math.round(feelsLike)}°` : '\u00A0'}
-        </div>
 
         {/* Info Badges Section */}
         <div className="info-badges">

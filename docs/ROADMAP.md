@@ -1,6 +1,6 @@
 # WeatherMaster Roadmap
 
-**Last Updated**: 2025-12-31 (Sprint 50)
+**Last Updated**: 2026-01-12 (Sprint 56)
 
 This is the single source of truth for feature planning and priorities.
 
@@ -89,6 +89,15 @@ This is the single source of truth for feature planning and priorities.
 - [x] Expand weather-effects.js to inline all cross-references *(Sprint 55)*
 - [x] Add gameplay impact indicators to main display *(Sprint 55)*
 - [x] Visibility/movement/combat modifiers prominently displayed *(Sprint 55)*
+
+**Narrative Weather Mode** - COMPLETE *(Sprint 56)*
+- [x] Templated phrase composition system for prose weather descriptions
+- [x] 9 temperature bands with season-aware variants
+- [x] Time-of-day and weather condition phrases
+- [x] Precipitation progression awareness (onset, clearing, transitions)
+- [x] Biome flavor text (with variety/frequency controls)
+- [x] Test harness integration with interactive preview
+- [x] Settings toggle (Precise vs Narrative display)
 
 **Wanderers (Falling Stars)** - *Marai Setting Specific* - COMPLETE ✅
 - [x] WandererService for rare celestial events *(Sprint 41)*
@@ -208,6 +217,8 @@ This is the single source of truth for feature planning and priorities.
 | 42 | Cove | Wanderer calibration and impact effects |
 | 43 | Stone | Loading screen implementation |
 | 50 | Dusk | Ocean & Maritime: Sea state system, ocean templates |
+| 55 | Nova | D&D Gameplay Integration: Impact indicators, mechanics modal |
+| 56 | Solstice | Narrative Weather Mode: Prose descriptions, progression awareness |
 
 See `sprint-logs/` for detailed sprint documentation.
 

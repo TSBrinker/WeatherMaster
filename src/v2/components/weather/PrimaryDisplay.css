@@ -432,3 +432,77 @@
     0 1px 3px rgba(0, 0, 0, 0.6),
     0 0 10px rgba(0, 0, 0, 0.5);
 }
+
+/* ========================================
+   Narrative Mode - Prose Display
+   ======================================== */
+
+/* Narrative text - evocative prose description */
+.narrative-hero {
+  font-size: 1.75rem;
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 600px;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  margin: 1rem 0;
+  position: relative;
+  z-index: 10;
+}
+
+/* Small badge showing actual temp + band for reference */
+.narrative-temp-badge {
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: 0.85;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+/* Responsive adjustments for narrative mode */
+@media (max-width: 992px) {
+  .narrative-hero {
+    font-size: 1.5rem;
+    max-width: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .narrative-hero {
+    font-size: 1.35rem;
+    max-width: 400px;
+  }
+
+  .narrative-temp-badge {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .narrative-hero {
+    font-size: 1.2rem;
+    max-width: 300px;
+    margin: 0.75rem 0;
+  }
+
+  .narrative-temp-badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* Snow-covered enhancement for narrative text */
+.primary-display.snow-covered .narrative-hero {
+  text-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.7),
+    0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.primary-display.snow-covered .narrative-temp-badge {
+  background: rgba(0, 0, 0, 0.5);
+}
