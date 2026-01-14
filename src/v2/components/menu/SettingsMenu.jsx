@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dropdown, Modal, Button, Form } from 'react-bootstrap';
 import { FaBomb } from 'react-icons/fa';
-import { Cloud, Shield, RefreshCw, Globe } from 'lucide-react';
+import { Cloud, Shield, RefreshCw, Globe, Bug, FlaskConical } from 'lucide-react';
 import { useWorld } from '../../contexts/WorldContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import WeatherPrimerModal from '../modals/WeatherPrimerModal';
@@ -16,7 +16,7 @@ import { getPhrasingExample } from '../../utils/conditionPhrasing';
  */
 const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteWorld } = useWorld();
-  const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation, temperatureDisplay, setTemperatureDisplay } = usePreferences();
+  const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation, temperatureDisplay, setTemperatureDisplay, debugMode, setDebugMode } = usePreferences();
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
   const [showGameplayMechanics, setShowGameplayMechanics] = useState(false);
@@ -67,34 +67,8 @@ const SettingsMenu = ({ inline = false }) => {
             </Button>
           </div>
 
-          <h6 className="mb-3 mt-4">Settings</h6>
+          <h6 className="mb-3 mt-4">Display Settings</h6>
           <div className="d-grid gap-2 mb-3">
-            <div className="phrasing-toggle mb-2">
-              <Form.Label className="mb-1">Condition Phrasing</Form.Label>
-              <Form.Select
-                size="sm"
-                value={conditionPhrasing}
-                onChange={(e) => setConditionPhrasing(e.target.value)}
-              >
-                <option value="standard">Standard (Mist, Heavy Rain)</option>
-                <option value="descriptive">Descriptive (Misty, Raining Heavily)</option>
-              </Form.Select>
-              <Form.Text className="text-muted">
-                {getPhrasingExample(conditionPhrasing)}
-              </Form.Text>
-            </div>
-            <div className="snow-visual-toggle mb-2">
-              <Form.Check
-                type="switch"
-                id="snow-accumulation-toggle"
-                label="Show Snow Accumulation Visual"
-                checked={showSnowAccumulation}
-                onChange={(e) => setShowSnowAccumulation(e.target.checked)}
-              />
-              <Form.Text className="text-muted">
-                Display snow depth as visual fill on weather card
-              </Form.Text>
-            </div>
             <div className="temperature-display-toggle mb-2">
               <Form.Label className="mb-1">Temperature Display</Form.Label>
               <Form.Select
@@ -111,6 +85,39 @@ const SettingsMenu = ({ inline = false }) => {
                   : 'Shows exact temperature reading'}
               </Form.Text>
             </div>
+            <div className={`phrasing-toggle mb-2${temperatureDisplay === 'narrative' ? ' opacity-50' : ''}`}>
+              <Form.Label className="mb-1">Condition Phrasing</Form.Label>
+              <Form.Select
+                size="sm"
+                value={conditionPhrasing}
+                onChange={(e) => setConditionPhrasing(e.target.value)}
+                disabled={temperatureDisplay === 'narrative'}
+              >
+                <option value="standard">Standard (Mist, Heavy Rain)</option>
+                <option value="descriptive">Descriptive (Misty, Raining Heavily)</option>
+              </Form.Select>
+              <Form.Text className="text-muted">
+                {temperatureDisplay === 'narrative'
+                  ? 'Only applies in Precise mode'
+                  : getPhrasingExample(conditionPhrasing)}
+              </Form.Text>
+            </div>
+            <div className="snow-visual-toggle mb-2">
+              <Form.Check
+                type="switch"
+                id="snow-accumulation-toggle"
+                label="Show Snow Accumulation Visual"
+                checked={showSnowAccumulation}
+                onChange={(e) => setShowSnowAccumulation(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                Display snow depth as visual fill on weather card
+              </Form.Text>
+            </div>
+          </div>
+
+          <h6 className="mb-3 mt-4">World Settings</h6>
+          <div className="d-grid gap-2 mb-3">
             <Button
               variant="outline-primary"
               onClick={() => setShowWorldEditor(true)}
@@ -124,6 +131,29 @@ const SettingsMenu = ({ inline = false }) => {
             >
               <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
               Clear Weather Cache
+            </Button>
+          </div>
+
+          <h6 className="mb-3 mt-4">Developer</h6>
+          <div className="d-grid gap-2 mb-3">
+            <div className="debug-toggle mb-2">
+              <Form.Check
+                type="switch"
+                id="debug-mode-toggle"
+                label="Show Debug Panel"
+                checked={debugMode}
+                onChange={(e) => setDebugMode(e.target.checked)}
+              />
+              <Form.Text className="text-muted">
+                Display weather calculation breakdown
+              </Form.Text>
+            </div>
+            <Button
+              variant="outline-secondary"
+              onClick={() => window.open(`${window.location.pathname}?test=true`, '_blank')}
+            >
+              <FlaskConical size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+              Open Test Harness
             </Button>
           </div>
 
@@ -211,24 +241,38 @@ const SettingsMenu = ({ inline = false }) => {
             Gameplay Mechanics
           </Dropdown.Item>
           <Dropdown.Divider />
-          <Dropdown.Header>Settings</Dropdown.Header>
+          <Dropdown.Header>Display</Dropdown.Header>
+          <Dropdown.Item
+            onClick={() => setTemperatureDisplay(temperatureDisplay === 'precise' ? 'narrative' : 'precise')}
+          >
+            Temperature: {temperatureDisplay === 'narrative' ? 'Narrative' : 'Precise'}
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => setConditionPhrasing(conditionPhrasing === 'standard' ? 'descriptive' : 'standard')}
+            disabled={temperatureDisplay === 'narrative'}
+            className={temperatureDisplay === 'narrative' ? 'text-muted' : ''}
+          >
+            Phrasing: {conditionPhrasing === 'standard' ? 'Standard' : 'Descriptive'}
+          </Dropdown.Item>
+          <Dropdown.Divider />
+          <Dropdown.Header>World</Dropdown.Header>
           <Dropdown.Item onClick={() => setShowWorldEditor(true)}>
             <Globe size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Edit World Name
           </Dropdown.Item>
-          <Dropdown.Item
-            onClick={() => setConditionPhrasing(conditionPhrasing === 'standard' ? 'descriptive' : 'standard')}
-          >
-            Phrasing: {conditionPhrasing === 'standard' ? 'Standard' : 'Descriptive'}
-          </Dropdown.Item>
-          <Dropdown.Item
-            onClick={() => setTemperatureDisplay(temperatureDisplay === 'precise' ? 'narrative' : 'precise')}
-          >
-            Display: {temperatureDisplay === 'narrative' ? 'Narrative' : 'Precise'}
-          </Dropdown.Item>
           <Dropdown.Item onClick={handleClearWeatherCache}>
             <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Clear Weather Cache
+          </Dropdown.Item>
+          <Dropdown.Divider />
+          <Dropdown.Header>Developer</Dropdown.Header>
+          <Dropdown.Item onClick={() => setDebugMode(!debugMode)}>
+            <Bug size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Debug: {debugMode ? 'On' : 'Off'}
+          </Dropdown.Item>
+          <Dropdown.Item onClick={() => window.open(`${window.location.pathname}?test=true`, '_blank')}>
+            <FlaskConical size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
+            Test Harness
           </Dropdown.Item>
           <Dropdown.Divider />
           <Dropdown.Header>Danger Zone</Dropdown.Header>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Container, Button } from 'react-bootstrap';
 import { BiError } from 'react-icons/bi';
-import { PreferencesProvider } from './contexts/PreferencesContext';
+import { PreferencesProvider, usePreferences } from './contexts/PreferencesContext';
 import { WorldProvider, useWorld } from './contexts/WorldContext';
 import WorldSetup from './components/world/WorldSetup';
 import RegionCreator from './components/region/RegionCreator';
@@ -44,6 +44,7 @@ const LOADING_PHRASES = [
  */
 const AppContent = () => {
   const { activeWorld, activeRegion, selectRegion, advanceTime, jumpToDate, deleteRegion, scanWandererGates, isLoading } = useWorld();
+  const { debugMode } = usePreferences();
   const [showWorldSetup, setShowWorldSetup] = useState(false);
   const [showRegionCreator, setShowRegionCreator] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -263,8 +264,8 @@ const AppContent = () => {
                 {/* Details Card - Combined conditions + celestial (collapsed) */}
                 <DetailsCard weather={weatherData} />
 
-                {/* Debug panel */}
-                <WeatherDebug weatherData={weatherData} />
+                {/* Debug panel - only shown when debugMode is enabled */}
+                {debugMode && <WeatherDebug weatherData={weatherData} />}
               </>
             )}
 

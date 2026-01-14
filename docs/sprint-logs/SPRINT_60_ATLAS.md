@@ -42,8 +42,56 @@
 5. Verified build succeeds with all pieces in place
 6. Committed everything together
 
+### Settings Menu Reorganization
+
+Tyler requested cleanup of the settings menu UI. Reorganized both inline (hamburger) and dropdown versions:
+
+**New structure:**
+- **Help & Resources** (unchanged)
+- **Display Settings** - Grouped related display options
+  - Temperature Display (Precise/Narrative)
+  - Condition Phrasing (Standard/Descriptive) - disabled when Narrative mode active
+  - Snow Accumulation Visual toggle
+- **World Settings** - Grouped world management
+  - Edit World Name
+  - Clear Weather Cache
+- **Danger Zone** (unchanged)
+
+**Key changes:**
+- Temperature Display and Condition Phrasing now grouped together
+- Condition Phrasing disabled (grayed out) when Narrative mode is active, with helper text "Only applies in Precise mode"
+- Clearer section headers in both menu variants
+
+### Developer Section Added
+
+Added new **Developer** section to settings menu with:
+- **Debug Panel toggle** - Shows/hides the weather calculation breakdown card on main display (was always visible before)
+- **Test Harness link** - Opens `?test=true` in a new tab
+
+Also wired up `debugMode` preference properly:
+- Added `setDebugMode` method to PreferencesContext
+- App.jsx now conditionally renders WeatherDebug based on preference
+- Debug panel hidden by default
+
 ---
 
 ## Handoff Notes
 
-*(To be completed at end of sprint)*
+**Sprint 60 Complete**
+
+### What Was Done
+1. **File Reconciliation** - Recovered ~1,950 lines of Narrative Weather feature from Sprints 56-57 that were never pushed
+2. **Settings Menu Reorganization** - Grouped related settings (Display, World, Developer, Danger Zone)
+3. **Debug Mode Toggle** - Debug panel now hidden by default, controllable via settings
+4. **Test Harness Link** - Easy access from settings menu
+
+### Key Files Modified
+- `SettingsMenu.jsx` - Reorganized sections, added Developer section
+- `PreferencesContext.jsx` - Added `setDebugMode` method
+- `App.jsx` - Conditional debug panel rendering
+
+### Suggested Next Work
+- Export/Import Worlds as JSON (Data Management)
+- Exact sunrise/sunset from pin Y position (Map precision)
+- Hurricanes/Ice storms (Extreme Weather Phase C)
+- Mobile optimization

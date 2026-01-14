@@ -30,7 +30,9 @@
       "Bash(then)",
       "Bash(echo:*)",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

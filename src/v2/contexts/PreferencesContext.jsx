@@ -75,6 +75,10 @@ export const PreferencesProvider = ({ children }) => {
     updatePreference('temperatureDisplay', mode);
   };
 
+  const setDebugMode = (enabled) => {
+    updatePreference('debugMode', enabled);
+  };
+
   const contextValue = {
     // Preferences
     temperatureUnit: preferences.temperatureUnit,
@@ -92,6 +96,7 @@ export const PreferencesProvider = ({ children }) => {
     setConditionPhrasing,
     setShowSnowAccumulation,
     setTemperatureDisplay,
+    setDebugMode,
   };
 
   return (
