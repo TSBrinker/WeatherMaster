@@ -148,3 +148,27 @@ export const isOceanRegion = (region) => {
          climate.biome === 'ocean' ||
          region.biome === 'ocean';
 };
+
+/**
+ * Extract real-world examples from a template description
+ * Returns the examples string (e.g., "Seattle, Portland Oregon, Vancouver BC") or null
+ */
+export const extractRealWorldExamples = (template) => {
+  if (!template?.description) return null;
+
+  const match = template.description.match(/Real-world examples?:\s*([^.]+)/i);
+  return match ? match[1].trim() : null;
+};
+
+/**
+ * Get the template description without the real-world examples
+ * Returns the description with "Real-world examples: ..." sentence removed
+ */
+export const getDescriptionWithoutExamples = (template) => {
+  if (!template?.description) return '';
+
+  // Remove the "Real-world examples: ..." sentence
+  return template.description
+    .replace(/\s*Real-world examples?:\s*[^.]+\./i, '')
+    .trim();
+};

@@ -132,8 +132,8 @@ export class WeatherGenerator {
     // Create wind object with potentially boosted speed for effects
     const effectiveWind = { speed: finalWindSpeed, direction: wind.direction };
 
-    // Get visibility
-    const visibility = this.atmosphericService.getVisibility(cloudCover, precipitation, humidity);
+    // Get visibility (pass condition for fog/blizzard handling)
+    const visibility = this.atmosphericService.getVisibility(cloudCover, precipitation, humidity, condition);
 
     // Generate any weather effects (including look-ahead for approaching storms)
     // Use effectiveWind so storm severity thresholds account for boosted wind

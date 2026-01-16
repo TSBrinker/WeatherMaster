@@ -308,11 +308,30 @@ export class AtmosphericService {
    * @param {Object} cloudCover - Cloud cover data
    * @param {Object} precipitation - Precipitation data
    * @param {number} humidity - Humidity percentage
+   * @param {string} condition - Weather condition string (e.g., "Fog", "Blizzard")
    * @returns {Object} Visibility data { distance, description }
    */
-  getVisibility(cloudCover, precipitation, humidity) {
+  getVisibility(cloudCover, precipitation, humidity, condition = '') {
     let visibilityMiles = 10; // Default: excellent visibility
     let description = 'Excellent';
+
+    const conditionLower = condition.toLowerCase();
+
+    // Fog severely limits visibility (60 feet = ~0.01 miles)
+    if (conditionLower.includes('fog') || conditionLower.includes('mist')) {
+      return {
+        distance: 0.01,
+        description: 'Near Zero (Fog)'
+      };
+    }
+
+    // Blizzard: whiteout conditions (20 feet = ~0.004 miles)
+    if (conditionLower.includes('blizzard')) {
+      return {
+        distance: 0.004,
+        description: 'Near Zero (Blizzard)'
+      };
+    }
 
     // Precipitation reduces visibility
     if (precipitation && precipitation.isOccurring) {
@@ -333,9 +352,6 @@ export class AtmosphericService {
       visibilityMiles = Math.min(visibilityMiles, 3);
       description = 'Poor (Haze)';
     }
-
-    // Fog (from weather generator) would override this
-    // but we provide a baseline
 
     return {
       distance: visibilityMiles,

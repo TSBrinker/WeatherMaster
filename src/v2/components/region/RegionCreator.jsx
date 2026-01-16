@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Alert, ButtonGroup, ToggleButton } from 'react-bootstrap';
+import { Modal, Button, Form, Alert, ButtonGroup, ToggleButton, Dropdown } from 'react-bootstrap';
 import { useWorld } from '../../contexts/WorldContext';
 import {
   getAllLatitudeBands,
@@ -7,8 +7,11 @@ import {
   getLandTemplatesByLatitude,
   getOceanTemplatesByLatitude,
   getTemplate,
-  extractClimateProfile
+  extractClimateProfile,
+  extractRealWorldExamples,
+  getDescriptionWithoutExamples
 } from '../../data/templateHelpers';
+import './RegionCreator.css';
 
 const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition = null, initialContinentId = null }) => {
   const { createRegion, worldContinents } = useWorld();
@@ -199,16 +202,32 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
             <Form.Label>Region Template</Form.Label>
             {availableTemplates.length > 0 ? (
               <>
-                <Form.Select
-                  value={selectedTemplateId}
-                  onChange={(e) => setSelectedTemplateId(e.target.value)}
-                >
-                  {availableTemplates.map(template => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Dropdown className="template-dropdown">
+                  <Dropdown.Toggle variant="outline-secondary" className="template-dropdown-toggle">
+                    <div className="template-selected">
+                      <div className="template-name">{selectedTemplate?.name || 'Select a template'}</div>
+                      {selectedTemplate && extractRealWorldExamples(selectedTemplate) && (
+                        <div className="template-examples">{extractRealWorldExamples(selectedTemplate)}</div>
+                      )}
+                    </div>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="template-dropdown-menu">
+                    {availableTemplates.map(template => {
+                      const examples = extractRealWorldExamples(template);
+                      return (
+                        <Dropdown.Item
+                          key={template.id}
+                          active={template.id === selectedTemplateId}
+                          onClick={() => setSelectedTemplateId(template.id)}
+                          className="template-dropdown-item"
+                        >
+                          <div className="template-name">{template.name}</div>
+                          {examples && <div className="template-examples">{examples}</div>}
+                        </Dropdown.Item>
+                      );
+                    })}
+                  </Dropdown.Menu>
+                </Dropdown>
                 <Form.Text className="text-muted">
                   Pre-configured climate settings for common {regionType} types
                 </Form.Text>
@@ -224,7 +243,7 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
           {selectedTemplate && (
             <Alert variant="info">
               <Alert.Heading>{selectedTemplate.name}</Alert.Heading>
-              <p className="mb-2">{selectedTemplate.description}</p>
+              <p className="mb-2">{getDescriptionWithoutExamples(selectedTemplate)}</p>
               {selectedTemplate.gameplayImpact && (
                 <>
                   <hr />
