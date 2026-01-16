@@ -1,32 +1,25 @@
 # Handoff Document
 
-**Last Updated**: 2026-01-14
-**Previous Agent**: ATLAS (Sprint 60)
-**Current Sprint Count**: 60 (next agent creates `SPRINT_61_*.md`)
-**Status**: Sprint 60 COMPLETE. Settings menu reorganized, debug toggle added, file reconciliation done.
+**Last Updated**: 2026-01-16
+**Previous Agent**: EVERGREEN (Sprint 61)
+**Current Sprint Count**: 61 (next agent creates `SPRINT_62_*.md`)
+**Status**: Sprint 61 COMPLETE. UI polish and UX improvements.
 
 ---
 
-## What Was Done This Sprint (Sprint 60)
+## What Was Done This Sprint (Sprint 61)
 
-### 1. File Reconciliation
-Recovered ~1,950 lines of Narrative Weather feature from Sprints 56-57 (SOLSTICE, FLARE) that existed locally but were never pushed. The remote had removed the test harness UI due to build failures from missing `narrativeWeather.js`.
+### 1. UI Cleanup (Tyler's Requests)
+- **Forecast cards** - Now flex to fill available width instead of fixed size
+- **Detail cards** - Fixed height (100px) for consistent appearance
+- **Time display** - Fixed min-width with tabular-nums to prevent button jumping
 
-### 2. Settings Menu Reorganization
-Cleaned up both inline (hamburger) and dropdown settings menus:
-- **Display Settings**: Temperature Display, Condition Phrasing (disabled when Narrative mode), Snow Visual toggle
-- **World Settings**: Edit World Name, Clear Weather Cache
-- **Developer**: Debug Panel toggle, Test Harness link
-- **Danger Zone**: Nuke All Data
+### 2. UX Improvements
+- **Clickable badges** - Added visible border, hover glow, and active state so users know info badges are interactive
+- **Styled modals** - Replaced browser `alert()` with Bootstrap modals for Clear Cache and Nuke Data confirmations
 
-### 3. Debug Mode Toggle
-- Debug panel now hidden by default
-- Added `setDebugMode` to PreferencesContext
-- App.jsx conditionally renders WeatherDebug based on preference
-- Toggle in Settings menu under Developer section
-
-### 4. Test Harness Link
-Added easy access to test harness (`?test=true`) from settings menu.
+### 3. Bug Fix
+- **Z-index layering** - Fixed settings popover z-index so modals appear on top correctly
 
 ---
 
@@ -34,9 +27,12 @@ Added easy access to test harness (`?test=true`) from settings menu.
 
 | File | Changes |
 |------|---------|
-| `src/v2/components/menu/SettingsMenu.jsx` | Reorganized sections, added Developer section with debug toggle and test harness link |
-| `src/v2/contexts/PreferencesContext.jsx` | Added `setDebugMode` method |
-| `src/v2/App.jsx` | Conditional debug panel rendering based on `debugMode` preference |
+| `src/v2/components/weather/WeekForecastStrip.css` | Forecast card flex behavior |
+| `src/v2/components/weather/DetailsCard.css` | Fixed detail card heights |
+| `src/v2/components/header/WeatherHeader.css` | Time display fixed width |
+| `src/v2/components/weather/PrimaryDisplay.css` | Info badge hover/active states |
+| `src/v2/components/menu/SettingsMenu.jsx` | Confirmation and success modals |
+| `src/v2/components/menu/HamburgerMenu.css` | Z-index adjustments |
 
 ---
 
@@ -63,7 +59,7 @@ Added easy access to test harness (`?test=true`) from settings menu.
 
 3. **Extreme Weather Phase C** - Hurricanes and ice storms are the remaining unimplemented extreme weather types
 
-4. **Mobile optimization** - UI polish for smaller screens
+4. **Mobile optimization** - Further UI polish for smaller screens
 
 ---
 

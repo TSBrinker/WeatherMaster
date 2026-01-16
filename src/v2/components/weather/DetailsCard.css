@@ -87,11 +87,12 @@
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 0.2s;
-  min-height: 90px;
+  height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  position: relative;
 }
 
 .detail-item:hover {
@@ -124,6 +125,9 @@
   font-size: 0.75rem;
   color: var(--text-secondary);
   opacity: 0.8;
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
 }
 
 /* Wanderer streak alert banner */
@@ -165,7 +169,7 @@
   }
 
   .detail-item {
-    min-height: 80px;
+    height: 90px;
     padding: 0.625rem 0.375rem;
   }
 

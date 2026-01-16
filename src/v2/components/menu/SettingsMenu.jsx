@@ -18,12 +18,16 @@ const SettingsMenu = ({ inline = false }) => {
   const { worlds, deleteWorld } = useWorld();
   const { conditionPhrasing, setConditionPhrasing, showSnowAccumulation, setShowSnowAccumulation, temperatureDisplay, setTemperatureDisplay, debugMode, setDebugMode } = usePreferences();
   const [showNukeAllConfirm, setShowNukeAllConfirm] = useState(false);
+  const [showClearCacheConfirm, setShowClearCacheConfirm] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [showWeatherPrimer, setShowWeatherPrimer] = useState(false);
   const [showGameplayMechanics, setShowGameplayMechanics] = useState(false);
   const [showWorldEditor, setShowWorldEditor] = useState(false);
 
   // Get all regions from all worlds (for display in nuke confirmation)
   const allRegions = worlds.flatMap(world => world.regions);
+
 
   const handleNukeAll = () => {
     // Delete all worlds (which cascades to delete all regions)
@@ -33,15 +37,19 @@ const SettingsMenu = ({ inline = false }) => {
     setShowNukeAllConfirm(false);
     // Clear all localStorage
     localStorage.clear();
-    alert('All data has been deleted. Refreshing page...');
-    window.location.reload();
+    setSuccessMessage('All data has been deleted. Refreshing page...');
+    setShowSuccessModal(true);
+    // Reload after a brief delay so user sees the confirmation
+    setTimeout(() => window.location.reload(), 1500);
   };
 
   const handleClearWeatherCache = () => {
     weatherService.clearCache();
-    alert('Weather cache cleared! Weather will regenerate on next view.');
-    // Force a page reload to ensure fresh weather data
-    window.location.reload();
+    setShowClearCacheConfirm(false);
+    setSuccessMessage('Weather cache cleared! Weather will regenerate on next view.');
+    setShowSuccessModal(true);
+    // Reload after a brief delay so user sees the confirmation
+    setTimeout(() => window.location.reload(), 1500);
   };
 
   // If inline (used in hamburger menu), show menu items directly
@@ -127,7 +135,7 @@ const SettingsMenu = ({ inline = false }) => {
             </Button>
             <Button
               variant="outline-secondary"
-              onClick={handleClearWeatherCache}
+              onClick={() => setShowClearCacheConfirm(true)}
             >
               <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
               Clear Weather Cache
@@ -218,6 +226,33 @@ const SettingsMenu = ({ inline = false }) => {
             </Button>
           </Modal.Footer>
         </Modal>
+
+        {/* Clear Cache Confirmation Modal */}
+        <Modal show={showClearCacheConfirm} onHide={() => setShowClearCacheConfirm(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Clear Weather Cache?</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>This will clear all cached weather data. Weather will be regenerated fresh on the next view.</p>
+            <p className="text-muted small">The page will refresh after clearing.</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowClearCacheConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleClearWeatherCache}>
+              Clear Cache
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Success Modal */}
+        <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered>
+          <Modal.Body className="text-center py-4">
+            <div className="mb-3" style={{ fontSize: '2rem' }}>✓</div>
+            <p className="mb-0">{successMessage}</p>
+          </Modal.Body>
+        </Modal>
       </>
     );
   }
@@ -260,7 +295,7 @@ const SettingsMenu = ({ inline = false }) => {
             <Globe size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Edit World Name
           </Dropdown.Item>
-          <Dropdown.Item onClick={handleClearWeatherCache}>
+          <Dropdown.Item onClick={() => setShowClearCacheConfirm(true)}>
             <RefreshCw size={16} className="me-2" style={{ display: 'inline', verticalAlign: 'text-bottom' }} />
             Clear Weather Cache
           </Dropdown.Item>
@@ -326,6 +361,33 @@ const SettingsMenu = ({ inline = false }) => {
             Delete Everything
           </Button>
         </Modal.Footer>
+      </Modal>
+
+      {/* Clear Cache Confirmation Modal */}
+      <Modal show={showClearCacheConfirm} onHide={() => setShowClearCacheConfirm(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Clear Weather Cache?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>This will clear all cached weather data. Weather will be regenerated fresh on the next view.</p>
+          <p className="text-muted small">The page will refresh after clearing.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowClearCacheConfirm(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleClearWeatherCache}>
+            Clear Cache
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered>
+        <Modal.Body className="text-center py-4">
+          <div className="mb-3" style={{ fontSize: '2rem' }}>✓</div>
+          <p className="mb-0">{successMessage}</p>
+        </Modal.Body>
       </Modal>
     </>
   );

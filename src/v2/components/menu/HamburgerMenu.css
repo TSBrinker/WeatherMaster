@@ -138,9 +138,10 @@
 }
 
 /* ===== SETTINGS POPOVER (Portal-rendered) ===== */
+/* z-index 1051 puts it above .locations-fullpage (1050) but below Bootstrap modals (1055) */
 .settings-popover {
   position: fixed;
-  z-index: 9999;
+  z-index: 1051;
   background: rgba(30, 35, 50, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -245,7 +246,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9998;
+  z-index: 1050;
   background: transparent;
 }
 
