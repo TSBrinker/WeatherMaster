@@ -71,7 +71,7 @@ export const regionTemplates = {
     },
     "polar-coast": {
       name: "Polar Coast",
-      description: "Coastal areas in polar regions where ocean influence moderates the extreme cold. Sea ice forms seasonally, extending the coastline in winter and retreating in summer.",
+      description: "Coastal areas in polar regions where ocean influence moderates the extreme cold. Sea ice forms seasonally, extending the coastline in winter and retreating in summer. Real-world examples: Prudhoe Bay Alaska, Svalbard Norway, northern Greenland coast.",
       gameplayImpact: "Sea ice allows winter travel but presents dangers. Coastal storms with wind-driven snow. Marine mammal hunting opportunities. Physical and psychological challenges of polar night.",
       parameters: {
         latitude: 75,
@@ -109,7 +109,7 @@ export const regionTemplates = {
     },
     "ice-sheet": {
       name: "Ice Sheet",
-      description: "Permanent ice fields with extreme cold and minimal precipitation. Weather is dominated by katabatic winds flowing off the ice sheet. Essentially a cold desert.",
+      description: "Permanent ice fields with extreme cold and minimal precipitation. Weather is dominated by katabatic winds flowing off the ice sheet. Essentially a cold desert. Real-world examples: interior Greenland, central Antarctica, Vatnajökull Iceland.",
       gameplayImpact: "Extreme survival challenges. Specialized equipment essential. Disorientating white-out conditions. UV reflection causes snow blindness. Requires expert navigation.",
       parameters: {
         latitude: 85,
@@ -147,7 +147,7 @@ export const regionTemplates = {
     },
     "polar-desert": {
       name: "Polar Desert",
-      description: "High latitude regions with extremely low precipitation, despite cold temperatures. Bare rock and gravel dominate the landscape, with minimal vegetation.",
+      description: "High latitude regions with extremely low precipitation, despite cold temperatures. Bare rock and gravel dominate the landscape, with minimal vegetation. Real-world examples: McMurdo Dry Valleys Antarctica, Peary Land Greenland, Arctic islands of Nunavut.",
       gameplayImpact: "Extremely limited resources. Water availability issues despite cold environment. Wind-driven snow creates drifts and bare areas. Survival challenges from aridity and cold.",
       parameters: {
         latitude: 80,
@@ -185,7 +185,7 @@ export const regionTemplates = {
     },
     "polar-highland": {
       name: "Polar Highland",
-      description: "Mountainous terrain at high latitudes, combining the challenges of high elevation with polar conditions. Extreme wind and temperature conditions dominate.",
+      description: "Mountainous terrain at high latitudes, combining the challenges of high elevation with polar conditions. Extreme wind and temperature conditions dominate. Real-world examples: Ellesmere Island mountains, Transantarctic Mountains, Svalbard peaks.",
       gameplayImpact: "Some of the most challenging terrain and conditions on the planet. Severe windchill factor. Rapid weather changes. Avalanche risk. Specialized mountaineering skills required.",
       parameters: {
         latitude: 78,
@@ -224,7 +224,7 @@ export const regionTemplates = {
     // === POLAR OCEAN TEMPLATES ===
     "polar-seas": {
       name: "Polar Seas",
-      description: "Frigid waters near the disc center where pack ice dominates for much of the year. Brief summer thaw allows limited navigation, but ice can reform rapidly. Icebergs and growlers pose constant hazards.",
+      description: "Frigid waters near the disc center where pack ice dominates for much of the year. Brief summer thaw allows limited navigation, but ice can reform rapidly. Icebergs and growlers pose constant hazards. Real-world examples: Beaufort Sea, Weddell Sea Antarctica, Arctic Ocean basin.",
       gameplayImpact: "Ice navigation requires specialized vessels. Icebergs can appear suddenly in fog. Summer provides brief window for travel. Hypothermia risk if crew goes overboard is near-instant.",
       parameters: {
         latitude: 80,
@@ -268,7 +268,7 @@ export const regionTemplates = {
     },
     "pack-ice-waters": {
       name: "Pack Ice Waters",
-      description: "Transitional zone where seasonal pack ice forms and breaks up. In summer, channels open through the ice allowing passage. Winter locks the sea in continuous ice sheet.",
+      description: "Transitional zone where seasonal pack ice forms and breaks up. In summer, channels open through the ice allowing passage. Winter locks the sea in continuous ice sheet. Real-world examples: Northwest Passage, Northern Sea Route, Baffin Bay.",
       gameplayImpact: "Navigable only in summer months. Ice pressure can crush vessels caught in freeze-up. Leads and polynyas provide unpredictable routes. Rich hunting grounds for marine mammals.",
       parameters: {
         latitude: 75,
@@ -315,7 +315,7 @@ export const regionTemplates = {
   "subtropical": {
     "monsoon-coast": {
       name: "Monsoon Coast",
-      description: "Coastal regions with dramatic seasonal rainfall patterns. A distinct wet season brings torrential rains, while the dry season can be quite pleasant.",
+      description: "Coastal regions with dramatic seasonal rainfall patterns. A distinct wet season brings torrential rains, while the dry season can be quite pleasant. Real-world examples: Mumbai India, Bangkok Thailand, Darwin Australia.",
       gameplayImpact: "Seasonal flooding can make travel impossible during monsoon. Roads wash out. Rivers change course. Humidity causes equipment deterioration during wet season.",
       parameters: {
         latitude: 15,
@@ -356,7 +356,7 @@ export const regionTemplates = {
     },
     "tropical-savanna": {
       name: "Tropical Savanna",
-      description: "Open grasslands with scattered trees. Distinct wet and dry seasons, with most rainfall concentrated in 4-5 months of the year.",
+      description: "Open grasslands with scattered trees. Distinct wet and dry seasons, with most rainfall concentrated in 4-5 months of the year. Real-world examples: Serengeti Tanzania, Cerrado Brazil, Northern Territory Australia.",
       gameplayImpact: "Grass fires possible in dry season. Seasonal changes in water availability. Wildlife concentrates near water sources in dry season. Tall grass limits visibility.",
       parameters: {
         latitude: 18,
@@ -476,7 +476,7 @@ export const regionTemplates = {
     },
     "tropical-deciduous-forest": {
       name: "Tropical Deciduous Forest",
-      description: "Forests that shed leaves during the dry season. Pronounced seasonality for a tropical climate, with comfortable winters and hot, humid summers.",
+      description: "Forests that shed leaves during the dry season. Pronounced seasonality for a tropical climate, with comfortable winters and hot, humid summers. Real-world examples: central India, western Mexico, northeastern Brazil caatinga.",
       gameplayImpact: "Seasonal variation in visibility through forest. Leaf litter in dry season can increase fire risk. Wet season brings lusher vegetation and more challenging travel.",
       parameters: {
         latitude: 25,
@@ -516,7 +516,7 @@ export const regionTemplates = {
     },
     "tropical-maritime": {
       name: "Tropical Maritime",
-      description: "Coastal regions dominated by ocean influence, with steady trade winds and moderated temperatures. Seasonal hurricane risk during late summer and fall.",
+      description: "Coastal regions dominated by ocean influence, with steady trade winds and moderated temperatures. Seasonal hurricane risk during late summer and fall. Real-world examples: Caribbean islands, Hawaii, Bermuda.",
       gameplayImpact: "Predictable daily sea breezes. Excellent sailing conditions most of the year. Storm surge risk during hurricane season. Afternoon thunderstorms common but brief.",
       parameters: {
         latitude: 22,
@@ -557,7 +557,7 @@ export const regionTemplates = {
     },
     "mangrove-coast": {
       name: "Mangrove Coast",
-      description: "Low-lying coastal wetlands dominated by salt-tolerant trees. Tidal influences combine with high rainfall to create unique semi-aquatic environments.",
+      description: "Low-lying coastal wetlands dominated by salt-tolerant trees. Tidal influences combine with high rainfall to create unique semi-aquatic environments. Real-world examples: Florida Everglades, Sundarbans Bangladesh, Queensland Australia coast.",
       gameplayImpact: "Challenging terrain requiring boats or specialized travel. Tidal fluctuations affect passability. Hurricane vulnerability with storm surge risks. Insect activity high.",
       parameters: {
         latitude: 15,
@@ -638,7 +638,7 @@ export const regionTemplates = {
     // === SUBTROPICAL OCEAN TEMPLATES ===
     "trade-wind-belt": {
       name: "Trade Wind Belt",
-      description: "Warm waters dominated by steady northeast or southeast trade winds. Reliable sailing conditions most of the year, though hurricane season brings serious risks in late summer and fall.",
+      description: "Warm waters dominated by steady northeast or southeast trade winds. Reliable sailing conditions most of the year, though hurricane season brings serious risks in late summer and fall. Real-world examples: Caribbean Sea, Atlantic trade routes, South Pacific islands.",
       gameplayImpact: "Trade winds provide consistent sailing. Hurricane season (summer/fall) requires careful planning. Squalls can develop quickly in afternoon. Generally excellent visibility.",
       parameters: {
         latitude: 25,
@@ -682,7 +682,7 @@ export const regionTemplates = {
     },
     "gulf-waters": {
       name: "Gulf Waters",
-      description: "Semi-enclosed warm waters with limited fetch reducing wave heights. Strong tidal currents near entrances. Water temperatures can become very warm in summer, fueling storm development.",
+      description: "Semi-enclosed warm waters with limited fetch reducing wave heights. Strong tidal currents near entrances. Water temperatures can become very warm in summer, fueling storm development. Real-world examples: Gulf of Mexico, Persian Gulf, Gulf of Thailand.",
       gameplayImpact: "Calmer than open ocean but currents can be treacherous. Summer heat can be oppressive at sea. Storm surge extremely dangerous in enclosed waters. Good for coastal trading.",
       parameters: {
         latitude: 28,
@@ -856,7 +856,7 @@ export const regionTemplates = {
 
     "boreal-highland": {
       name: "Boreal Highland",
-      description: "Mountain environments with significant elevation. Large temperature variations between day and night. Summer thunderstorms are common, winter brings significant snowfall that persists through the season.",
+      description: "Mountain environments with significant elevation. Large temperature variations between day and night. Summer thunderstorms are common, winter brings significant snowfall that persists through the season. Real-world examples: Canadian Rockies, Scottish Highlands, Scandinavian mountains.",
       gameplayImpact: "Mountain passes closed by snow in winter. Lightning risk above treeline in summer. Avalanche risk in winter/spring. Higher UV exposure requiring protection.",
       parameters: {
         latitude: 42,
@@ -897,7 +897,7 @@ export const regionTemplates = {
     // === BOREAL OCEAN TEMPLATES ===
     "northern-seas": {
       name: "Northern Seas",
-      description: "Cold but navigable waters with strong seasonal variation. Powerful storms sweep through regularly, especially in autumn and winter. Long summer days provide extended sailing windows.",
+      description: "Cold but navigable waters with strong seasonal variation. Powerful storms sweep through regularly, especially in autumn and winter. Long summer days provide extended sailing windows. Real-world examples: North Sea, Baltic Sea, Gulf of Alaska.",
       gameplayImpact: "Autumn gales are particularly dangerous. Summer sailing relatively safe but still unpredictable. Winter storms can last for days. Strong tidal currents near coasts.",
       parameters: {
         latitude: 50,
@@ -1027,7 +1027,7 @@ export const regionTemplates = {
     },
     "temperate-desert": {
       name: "Temperate Desert",
-      description: "Arid landscapes in mid-latitudes with large temperature swings between seasons and between day and night. Vegetation is sparse and adapted to drought.",
+      description: "Arid landscapes in mid-latitudes with large temperature swings between seasons and between day and night. Vegetation is sparse and adapted to drought. Real-world examples: Great Basin Nevada, Gobi Desert Mongolia, Patagonian steppe Argentina.",
       gameplayImpact: "Extreme temperature shifts from day to night require adaptable clothing. Limited water sources. Flash flood risk in arroyos. Heat exhaustion risk in summer.",
       parameters: {
         latitude: 40,
@@ -1067,7 +1067,7 @@ export const regionTemplates = {
     },
     "temperate-rainforest": {
       name: "Temperate Rainforest",
-      description: "Lush forests with extremely high rainfall, often along coastal mountain ranges. Mild temperature variations but near-constant precipitation and high humidity.",
+      description: "Lush forests with extremely high rainfall, often along coastal mountain ranges. Mild temperature variations but near-constant precipitation and high humidity. Real-world examples: Olympic Peninsula Washington, Fiordland New Zealand, Chilean coast.",
       gameplayImpact: "Constant dampness affects equipment and comfort. Limited visibility in dense forest. Moss-covered surfaces are slippery. Rain gear essential year-round.",
       parameters: {
         latitude: 48,
@@ -1107,7 +1107,7 @@ export const regionTemplates = {
     },
     "river-valley": {
       name: "River Valley",
-      description: "Fertile valleys with significant river influence. Spring flooding fertilizes soil. Morning fog is common, especially in fall and spring.",
+      description: "Fertile valleys with significant river influence. Spring flooding fertilizes soil. Morning fog is common, especially in fall and spring. Real-world examples: Loire Valley France, Rhine Valley Germany, Willamette Valley Oregon.",
       gameplayImpact: "Spring floods may block travel routes. Morning fog impacts visibility. River systems provide transportation. Rich agricultural settlements.",
       parameters: {
         latitude: 45,
@@ -1148,7 +1148,7 @@ export const regionTemplates = {
     },
     "seasonal-wetland": {
       name: "Seasonal Wetland",
-      description: "Low-lying areas that flood seasonally, creating temporary wetlands. Rich biodiversity with seasonal variations in water levels and accessibility.",
+      description: "Low-lying areas that flood seasonally, creating temporary wetlands. Rich biodiversity with seasonal variations in water levels and accessibility. Real-world examples: Okavango Delta Botswana, Pantanal Brazil, Camargue France.",
       gameplayImpact: "Seasonal changes in passability. Areas impassable in spring may be easily traversed by late summer. Mosquitoes and disease risk during wet periods.",
       parameters: {
         latitude: 40,
@@ -1187,7 +1187,7 @@ export const regionTemplates = {
     },
     "maritime-islands": {
       name: "Maritime Islands",
-      description: "Island environments with heavily moderated temperatures due to ocean influence. Typically windier than mainland areas with unpredictable coastal storms.",
+      description: "Island environments with heavily moderated temperatures due to ocean influence. Typically windier than mainland areas with unpredictable coastal storms. Real-world examples: British Isles, Faroe Islands, Aleutian Islands Alaska.",
       gameplayImpact: "Sailing conditions can change rapidly. Fog can develop suddenly. Minimal temperature variation but wind is a constant factor. Coastal erosion concerns.",
       parameters: {
         latitude: 45,
@@ -1228,7 +1228,7 @@ export const regionTemplates = {
     // === TEMPERATE OCEAN TEMPLATES ===
     "temperate-ocean": {
       name: "Temperate Ocean",
-      description: "Open ocean waters with classic four-season variation. Westerly winds dominate, bringing regular weather systems. Good sailing conditions in summer, challenging in winter.",
+      description: "Open ocean waters with classic four-season variation. Westerly winds dominate, bringing regular weather systems. Good sailing conditions in summer, challenging in winter. Real-world examples: North Atlantic shipping lanes, North Pacific, Southern Ocean.",
       gameplayImpact: "Seasonal weather patterns are somewhat predictable. Summer provides reliable sailing windows. Autumn storms require caution. Winter crossings are risky but possible.",
       parameters: {
         latitude: 42,
@@ -1271,7 +1271,7 @@ export const regionTemplates = {
     },
     "coastal-waters": {
       name: "Coastal Waters",
-      description: "Nearshore waters where land effects modify ocean conditions. Tidal influences are strong, and local winds create variable conditions. Sheltered harbors provide refuge.",
+      description: "Nearshore waters where land effects modify ocean conditions. Tidal influences are strong, and local winds create variable conditions. Sheltered harbors provide refuge. Real-world examples: English Channel, Puget Sound, Bay of Fundy.",
       gameplayImpact: "Land-sea breezes create predictable daily patterns. Tidal currents can be hazardous near headlands. Fog common in certain seasons. Generally safer than open ocean.",
       parameters: {
         latitude: 44,
@@ -1319,7 +1319,7 @@ export const regionTemplates = {
   "subarctic": {
     "coastal-taiga": {
       name: "Coastal Taiga",
-      description: "Northern forests with maritime influence moderating the extreme continental cold. Winter storms bring heavy snow, but temperatures are less severe than inland areas.",
+      description: "Northern forests with maritime influence moderating the extreme continental cold. Winter storms bring heavy snow, but temperatures are less severe than inland areas. Real-world examples: Anchorage Alaska, coastal Norway, Kamchatka Russia.",
       gameplayImpact: "Deep winter snow. Coastal storms can create blizzard conditions. Muddy conditions during spring thaw. Short but intense growing season in summer.",
       parameters: {
         latitude: 62,
@@ -1396,7 +1396,7 @@ export const regionTemplates = {
     },
     "subarctic-highland": {
       name: "Subarctic Highland",
-      description: "Rugged mountain terrain at high latitudes, with significant winter precipitation falling as snow. Very short growing season limited to a few summer months.",
+      description: "Rugged mountain terrain at high latitudes, with significant winter precipitation falling as snow. Very short growing season limited to a few summer months. Real-world examples: Brooks Range Alaska, Ural Mountains Russia, northern Rockies Canada.",
       gameplayImpact: "Passes closed most of the year. Avalanche risk. Periods of 24-hour daylight in summer, near-continuous darkness in winter. Dangerous winter conditions.",
       parameters: {
         latitude: 65,
@@ -1434,7 +1434,7 @@ export const regionTemplates = {
     },
     "northern-grassland": {
       name: "Northern Grassland",
-      description: "Cold steppe environments with extreme temperature shifts between seasons. Winter brings harsh conditions with wind-driven snow, while summers are surprisingly warm.",
+      description: "Cold steppe environments with extreme temperature shifts between seasons. Winter brings harsh conditions with wind-driven snow, while summers are surprisingly warm. Real-world examples: Mongolian steppe, Kazakhstan plains, central Siberian grasslands.",
       gameplayImpact: "Winter travel is dangerous but easier on frozen ground. Spring mud season makes travel difficult. Little shelter from elements. Dust storms in dry periods.",
       parameters: {
         latitude: 60,
@@ -1473,7 +1473,7 @@ export const regionTemplates = {
     },
     "subarctic-maritime": {
       name: "Subarctic Maritime",
-      description: "Coastal regions with significant ocean influence. Moderated temperatures compared to continental areas at the same latitude, but prone to powerful coastal storms.",
+      description: "Coastal regions with significant ocean influence. Moderated temperatures compared to continental areas at the same latitude, but prone to powerful coastal storms. Real-world examples: Iceland, coastal Greenland, Faroe Islands.",
       gameplayImpact: "Challenging sailing conditions with frequent storms. Snow mixed with rain in winter creates hazardous conditions. Coastal infrastructure vulnerable to storm damage.",
       parameters: {
         latitude: 62,
@@ -1512,7 +1512,7 @@ export const regionTemplates = {
     },
     "peatland-muskeg": {
       name: "Peatland/Muskeg",
-      description: "Waterlogged terrain with sphagnum moss and stunted trees growing on partially frozen soil. Frozen in winter, but thaws into challenging terrain in summer.",
+      description: "Waterlogged terrain with sphagnum moss and stunted trees growing on partially frozen soil. Frozen in winter, but thaws into challenging terrain in summer. Real-world examples: Hudson Bay lowlands Canada, western Siberian bogs, Finnish Lapland.",
       gameplayImpact: "Extremely difficult terrain for travel when thawed. Firm travel surface in winter when frozen. Insect swarms in summer. Fire risk in dry periods despite wet appearance.",
       parameters: {
         latitude: 65,
@@ -1552,7 +1552,7 @@ export const regionTemplates = {
     // === SUBARCTIC OCEAN TEMPLATES ===
     "subarctic-waters": {
       name: "Subarctic Waters",
-      description: "Cold, stormy seas with frequent fog and unpredictable weather. Rich fishing grounds but treacherous conditions. Seasonal ice possible in winter months.",
+      description: "Cold, stormy seas with frequent fog and unpredictable weather. Rich fishing grounds but treacherous conditions. Seasonal ice possible in winter months. Real-world examples: Bering Sea, Norwegian Sea, Labrador Sea.",
       gameplayImpact: "Dangerous sailing conditions year-round. Fog banks appear suddenly. Strong currents near coastlines. Winter storms can be devastating. Excellent fishing when conditions allow.",
       parameters: {
         latitude: 62,
@@ -1640,7 +1640,7 @@ export const regionTemplates = {
     },
     "equatorial-highland": {
       name: "Equatorial Highland",
-      description: "Cool mountain environments near the equator, often called \"eternal spring\" climates. Morning fog and afternoon rain are common, with pleasant temperatures year-round.",
+      description: "Cool mountain environments near the equator, often called \"eternal spring\" climates. Morning fog and afternoon rain are common, with pleasant temperatures year-round. Real-world examples: Nairobi Kenya, Quito Ecuador, Medellín Colombia.",
       gameplayImpact: "Morning fog can limit visibility. Steep terrain slows travel. Afternoon storms develop quickly and can cause flash floods in ravines.",
       parameters: {
         latitude: 5,
@@ -1679,7 +1679,7 @@ export const regionTemplates = {
     },
     "island-archipelago": {
       name: "Island Archipelago",
-      description: "Scattered islands with extremely stable temperatures and consistent trade winds. Afternoon showers are common but typically brief.",
+      description: "Scattered islands with extremely stable temperatures and consistent trade winds. Afternoon showers are common but typically brief. Real-world examples: Indonesia, Philippines, Maldives.",
       gameplayImpact: "Predictable weather patterns with reliable sea breezes. Ocean travel affected by afternoon squalls. Volcanic islands may have unique microclimates.",
       parameters: {
         latitude: 5,
@@ -1719,7 +1719,7 @@ export const regionTemplates = {
     },
     "volcanic-zone": {
       name: "Volcanic Zone",
-      description: "Dramatic landscapes with active volcanoes and unpredictable local weather patterns. Fertile soil supports lush vegetation despite rugged terrain.",
+      description: "Dramatic landscapes with active volcanoes and unpredictable local weather patterns. Fertile soil supports lush vegetation despite rugged terrain. Real-world examples: Hawaii Big Island, Java Indonesia, Réunion Island.",
       gameplayImpact: "Potentially hazardous volcanic events. Unpredictable local weather due to terrain complexity. Steep slopes and difficult terrain. Frequent earth tremors.",
       parameters: {
         latitude: 5,
@@ -1759,7 +1759,7 @@ export const regionTemplates = {
     },
     "equatorial-swamp": {
       name: "Equatorial Swamp",
-      description: "Low-lying, waterlogged areas with extremely high humidity and heat. Standing water is common year-round with minimal seasonal variation.",
+      description: "Low-lying, waterlogged areas with extremely high humidity and heat. Standing water is common year-round with minimal seasonal variation. Real-world examples: Congo Basin swamps, Borneo peat swamps, Papua New Guinea lowlands.",
       gameplayImpact: "Difficult terrain with standing water. Disease risk from insects. Limited visibility in tangled vegetation. Almost constant high humidity affects equipment and comfort.",
       parameters: {
         latitude: 5,
@@ -1800,7 +1800,7 @@ export const regionTemplates = {
     // === TROPICAL OCEAN TEMPLATES ===
     "tropical-seas": {
       name: "Tropical Seas",
-      description: "Warm, calm waters with gentle trade wind swells. Generally excellent sailing conditions with predictable weather patterns. Occasional afternoon squalls, especially near islands.",
+      description: "Warm, calm waters with gentle trade wind swells. Generally excellent sailing conditions with predictable weather patterns. Occasional afternoon squalls, especially near islands. Real-world examples: Coral Sea, South China Sea, Bay of Bengal.",
       gameplayImpact: "Easy sailing most of the time. Afternoon squalls may require shelter. Heat affects crew stamina. Doldrums possible near equator with becalmed conditions.",
       parameters: {
         latitude: 10,
@@ -1844,7 +1844,7 @@ export const regionTemplates = {
     },
     "coral-reef-waters": {
       name: "Coral Reef Waters",
-      description: "Shallow, crystal-clear tropical waters over reef systems. Beautiful but hazardous for navigation - coral heads and sudden shallows demand careful piloting.",
+      description: "Shallow, crystal-clear tropical waters over reef systems. Beautiful but hazardous for navigation - coral heads and sudden shallows demand careful piloting. Real-world examples: Great Barrier Reef, Red Sea reefs, Belize Barrier Reef.",
       gameplayImpact: "Stunning underwater visibility but extreme navigation hazards. Grounding on reef can be catastrophic. Rich marine life for fishing and diving. Calm conditions inside reef barriers.",
       parameters: {
         latitude: 15,
@@ -1893,7 +1893,7 @@ export const regionTemplates = {
   "special": {
     "mountain-microclimate": {
       name: "Mountain Microclimate",
-      description: "Protected valleys, sunny slopes, or wind-sheltered areas that create distinct local climates that differ significantly from the surrounding region.",
+      description: "Protected valleys, sunny slopes, or wind-sheltered areas that create distinct local climates that differ significantly from the surrounding region. Real-world examples: Okanagan Valley Canada, Valais Switzerland, Hunza Valley Pakistan.",
       gameplayImpact: "May support agriculture or habitation in otherwise inhospitable areas. Distinct flora and fauna. Rapid weather changes when leaving the protected zone.",
       parameters: {
         latitude: 40, // Can be adjusted based on location
@@ -1934,7 +1934,7 @@ export const regionTemplates = {
     },
     "geothermal-zone": {
       name: "Geothermal Zone",
-      description: "Areas with active volcanic or geothermal features creating localized heating and unique environmental conditions. Hot springs, geysers, and steam vents are common.",
+      description: "Areas with active volcanic or geothermal features creating localized heating and unique environmental conditions. Hot springs, geysers, and steam vents are common. Real-world examples: Yellowstone Wyoming, Rotorua New Zealand, Iceland geothermal areas.",
       gameplayImpact: "Local micro-habitats in otherwise harsh environments. Potential health benefits/hazards from mineral waters. Unpredictable geologic activity. Unique resources.",
       parameters: {
         latitude: 55, // Can be adjusted based on location
@@ -1976,7 +1976,7 @@ export const regionTemplates = {
     },
     "convergence-zone": {
       name: "Convergence Zone",
-      description: "Areas where different climate systems regularly collide, creating highly variable and often dramatic weather patterns. Rapid changes are the norm rather than the exception.",
+      description: "Areas where different climate systems regularly collide, creating highly variable and often dramatic weather patterns. Rapid changes are the norm rather than the exception. Real-world examples: Tornado Alley USA, Puget Sound convergence zone, South Africa's Cape.",
       gameplayImpact: "Unpredictable weather requires flexible planning. Storms develop rapidly. Temperature swings require adaptable clothing. Weather forecasting particularly challenging.",
       parameters: {
         latitude: 45, // Can be adjusted based on location
@@ -2018,7 +2018,7 @@ export const regionTemplates = {
     },
     "rain-shadow": {
       name: "Rain Shadow",
-      description: "Dry regions on the leeward side of mountain ranges where most moisture is blocked by the mountains. Stark contrast often exists between opposite sides of the same mountain range.",
+      description: "Dry regions on the leeward side of mountain ranges where most moisture is blocked by the mountains. Stark contrast often exists between opposite sides of the same mountain range. Real-world examples: eastern Washington state, Tibetan Plateau, Patagonian Desert.",
       gameplayImpact: "Water scarcity is a primary concern. Large temperature variations between day and night. Vegetation and resources differ dramatically across short distances.",
       parameters: {
         latitude: 40, // Can be adjusted based on location
@@ -2059,7 +2059,7 @@ export const regionTemplates = {
     },
     "coastal-desert": {
       name: "Coastal Desert",
-      description: "Unusual arid regions adjacent to oceans, created by cold offshore currents. Often characterized by morning fog but minimal precipitation, creating unique ecosystems.",
+      description: "Unusual arid regions adjacent to oceans, created by cold offshore currents. Often characterized by morning fog but minimal precipitation, creating unique ecosystems. Real-world examples: Atacama Desert Chile, Namib Desert Namibia, Baja California coast.",
       gameplayImpact: "Morning fog provides water for unique desert-adapted plants. Fishing opportunities despite desert conditions. Cooler temperatures than inland deserts at the same latitude.",
       parameters: {
         latitude: 25, // Can be adjusted based on location
@@ -2101,7 +2101,7 @@ export const regionTemplates = {
     // === SPECIAL OCEAN TEMPLATES ===
     "strait-passage": {
       name: "Strait Passage",
-      description: "Narrow waterway connecting larger bodies of water. Strong tidal currents accelerate through the constriction, creating challenging but predictable sailing conditions.",
+      description: "Narrow waterway connecting larger bodies of water. Strong tidal currents accelerate through the constriction, creating challenging but predictable sailing conditions. Real-world examples: Strait of Gibraltar, Strait of Magellan, Bosphorus.",
       gameplayImpact: "Timing is everything - slack tide required for safe passage. Strong currents can exceed vessel speed. Excellent defensive chokepoint. Weather funnels through strait.",
       parameters: {
         latitude: 45,
@@ -2146,7 +2146,7 @@ export const regionTemplates = {
     },
     "archipelago-waters": {
       name: "Archipelago Waters",
-      description: "Complex waters threading between numerous islands. Sheltered passages alternate with exposed crossings. Local knowledge is essential for safe navigation.",
+      description: "Complex waters threading between numerous islands. Sheltered passages alternate with exposed crossings. Local knowledge is essential for safe navigation. Real-world examples: Greek Islands, Stockholm archipelago Sweden, Thousand Islands St. Lawrence.",
       gameplayImpact: "Many route options but navigation is complex. Shelter always nearby. Currents unpredictable between islands. Excellent for ambushes and evasion. Rich fishing.",
       parameters: {
         latitude: 40,
