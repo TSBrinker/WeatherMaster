@@ -1,28 +1,44 @@
 # Handoff Document
 
 **Last Updated**: 2026-01-16
-**Previous Agent**: COMPASS (Sprint 62)
-**Current Sprint Count**: 62 (next agent creates `SPRINT_63_*.md`)
-**Status**: Sprint 62 COMPLETE. Visibility fix, template selector UX, real-world examples.
+**Previous Agent**: HORIZON (Sprint 63)
+**Current Sprint Count**: 63 (next agent creates `SPRINT_64_*.md`)
+**Status**: Sprint 63 COMPLETE. Searchable climate templates with two-page wizard.
 
 ---
 
-## What Was Done This Sprint (Sprint 62)
+## What Was Done This Sprint (Sprint 63)
 
-### 1. Visibility Discrepancy Fix
-Fixed a bug where the gameplay effects badge showed "Vis: 60 ft" for fog but the conditions card showed "3 mi". The root cause was that `AtmosphericService.getVisibility()` wasn't aware of the weather condition.
+### 1. Searchable Climate Templates
+Added a search bar at the top of the Climate section in Region Creator:
+- Search filters across template name, description, real-world examples, AND new searchTerms arrays
+- Results appear in autocomplete-style dropdown below search input
+- Each result shows: template name, latitude band tag, real-world location examples
+- Clicking a result auto-selects it AND updates the latitude band dropdown
 
-**Solution**: Added `condition` parameter to `getVisibility()` that returns appropriate visibility (60 ft for fog, 20 ft for blizzard).
+### 2. Two-Page Wizard Design
+Split the Region Creator modal into two pages to reduce height:
+- **Page 1**: Region Type, Region Name, Continent selection
+- **Page 2**: Climate selection (search bar + browse dropdowns)
+- Navigation: Cancel/Next on Page 1, Back/Create Region on Page 2
+- State A/B pattern on Page 2: selecting mode vs. selected display with Clear Selection button
 
-### 2. Region Template Selector UX Improvement
-Replaced standard dropdown with custom two-line format:
-- **Template name** (bold, primary line)
-- **Real-world examples** (smaller, italic subtitle)
+### 3. Search Terms for All 52 Templates
+Added `searchTerms` arrays to all 52 region templates for broader search matching:
+- Example: "continental-prairie" now matches "plains", "grassland", "midwest", "farming", "tornado", "heartland", "iowa", "kansas", "nebraska"
+- Helps users find templates with intuitive terms like "plains" for Prairie biomes
 
-Added dark theme styling. Removed redundant examples from info box since they're now shown inline.
+### 4. Latitude Band Descriptions
+Added contextual descriptions for each latitude band:
+- Polar: "Extreme cold, extended darkness in winter, midnight sun in summer"
+- Subarctic: "Very cold winters, short cool summers, significant seasonal daylight variation"
+- Boreal: "Cold snowy winters, mild summers, coniferous forests"
+- Temperate: "Four distinct seasons, moderate temperatures, mixed forests"
+- Subtropical: "Mild winters, hot humid summers, longer growing season"
+- Tropical: "Warm year-round, minimal temperature variation, wet/dry seasons"
 
-### 3. Real-World Examples for All 52 Templates
-Added location examples across every latitude band so users can relate templates to familiar places (e.g., "Seattle, Portland Oregon, Vancouver BC" for Maritime Forest).
+### 5. Modal Scroll Fix
+Fixed body scrolling when modals are open by changing `overflow: auto` to `overflow: hidden` in app.css.
 
 ---
 
@@ -30,12 +46,10 @@ Added location examples across every latitude band so users can relate templates
 
 | File | Changes |
 |------|---------|
-| `src/v2/services/weather/AtmosphericService.js` | Condition-aware visibility |
-| `src/v2/services/weather/WeatherGenerator.js` | Pass condition to getVisibility() |
-| `src/v2/components/region/RegionCreator.jsx` | Custom dropdown with two-line display |
-| `src/v2/components/region/RegionCreator.css` | NEW - dark theme dropdown styling |
-| `src/v2/data/templateHelpers.js` | extractRealWorldExamples(), getDescriptionWithoutExamples() |
-| `src/v2/data/region-templates.js` | Real-world examples for all 52 templates |
+| `src/v2/components/region/RegionCreator.jsx` | Two-page wizard, search autocomplete, State A/B pattern |
+| `src/v2/components/region/RegionCreator.css` | Search dropdown, "or" divider, result items, clear selection header |
+| `src/v2/data/region-templates.js` | Added `searchTerms` arrays to all 52 templates |
+| `src/v2/styles/app.css` | Fixed modal scroll prevention |
 
 ---
 
@@ -52,6 +66,17 @@ Added location examples across every latitude band so users can relate templates
 | Narrative weather | `src/v2/utils/narrativeWeather.js` |
 | Test harness | `src/v2/components/testing/WeatherTestHarness.jsx` |
 | Main display | `src/v2/components/weather/PrimaryDisplay.jsx` |
+| Region creator | `src/v2/components/region/RegionCreator.jsx` |
+
+---
+
+## Notes for Future
+
+### Special Biomes Need Revisiting
+Tyler noted that "special" biomes don't fit well in the current system. They appear across multiple latitude bands which creates UX confusion. Consider:
+- Removing special biomes entirely
+- Making them their own category/tab
+- Rethinking how cross-latitude templates should work
 
 ---
 
@@ -65,13 +90,16 @@ Added location examples across every latitude band so users can relate templates
 
 4. **Mobile optimization** - Further UI polish for smaller screens
 
+5. **Special biomes refactor** - Address the cross-latitude template UX issue
+
 ---
 
 ## Technical Notes
 
-- `extractRealWorldExamples()` regex: `/Real-world examples?:\s*([^.]+)/i`
-- Visibility: 0.01 mi (~60 ft) for fog, 0.004 mi (~20 ft) for blizzard
-- Dark theme dropdown uses rgba() colors for transparency
+- Search uses `searchTerms` arrays joined into a single string for matching
+- Click-outside detection via `useEffect` with `mousedown` listener
+- Search results only show when actively typing (not on focus with empty input)
+- Template deduplication uses JavaScript `Set` by template id
 
 ---
 
