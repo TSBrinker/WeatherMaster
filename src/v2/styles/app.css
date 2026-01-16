@@ -78,10 +78,10 @@ body {
   font-style: italic;
 }
 
-/* Prevent layout shift when modal/offcanvas opens */
+/* Prevent body scrolling when modal/offcanvas opens */
 body.modal-open,
 body.offcanvas-open {
-  overflow: auto !important;
+  overflow: hidden !important;
   padding-right: 0 !important;
 }
 

@@ -32,7 +32,8 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(git fetch:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }
