@@ -172,6 +172,10 @@
   cursor: pointer;
   z-index: 10;
   transform-origin: center bottom;
+  /* Prevent blurry rendering when parent is scaled */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .pin-icon {
@@ -199,6 +203,10 @@
   opacity: 0;
   transition: opacity 0.15s ease;
   pointer-events: none;
+  /* Prevent blurry text rendering */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .location-pin:hover .pin-label {
@@ -414,6 +422,16 @@
 
 .click-hint.placing {
   background: rgba(244, 67, 54, 0.9);
+  color: white;
+}
+
+/* Location Assignment Mode */
+.map-container.assigning-mode {
+  cursor: crosshair;
+}
+
+.click-hint.assigning {
+  background: rgba(76, 175, 80, 0.9);
   color: white;
 }
 
@@ -750,4 +768,90 @@
 .context-menu-info.linked {
   color: #2ecc71;
   font-style: normal;
+}
+
+/* ===== MOVABLE LOCATION PINS ===== */
+
+/* Default: pointer cursor for clicking */
+.location-pin {
+  cursor: pointer;
+}
+
+/* Move mode: grab cursor when pin is selected for moving */
+.location-pin.movable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.location-pin.movable .pin-icon {
+  color: #ff9800;
+  animation: pin-pulse 0.8s ease-in-out infinite alternate;
+}
+
+.location-pin.movable .pin-label {
+  opacity: 1;
+  background: rgba(255, 152, 0, 0.9);
+}
+
+@keyframes pin-pulse {
+  from {
+    transform: scale(1);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  }
+  to {
+    transform: scale(1.15);
+    filter: drop-shadow(0 4px 8px rgba(255, 152, 0, 0.6));
+  }
+}
+
+/* Active dragging state */
+.location-pin.dragging {
+  cursor: grabbing;
+  z-index: 100;
+}
+
+.location-pin.dragging .pin-icon {
+  transform: scale(1.3);
+  color: #ff9800;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  animation: none;
+}
+
+.location-pin.dragging .pin-label {
+  opacity: 1;
+  background: rgba(255, 152, 0, 0.9);
+}
+
+/* Drag hint shown during drag */
+.map-container.dragging-pin {
+  cursor: grabbing;
+}
+
+/* ===== PIN CONTEXT MENU ===== */
+
+.pin-context-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.pin-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(30, 30, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  min-width: 160px;
+  overflow: hidden;
+}
+
+/* Drag/move hint styling */
+.click-hint.dragging-pin,
+.click-hint.move-mode {
+  background: rgba(255, 152, 0, 0.9);
+  color: white;
 }

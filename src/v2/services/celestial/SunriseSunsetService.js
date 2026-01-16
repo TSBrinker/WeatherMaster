@@ -33,11 +33,18 @@ class SunriseSunsetService {
   }
 
   /**
-   * Convert latitude band to observer distance from disc center
+   * Convert latitude band to observer distance from disc center.
+   * If an explicit observerRadius is provided, it takes precedence over the latitude band.
    * @param {string} latitudeBand - Latitude band key
+   * @param {number} [observerRadius] - Optional exact observer radius in miles (from map Y position)
    * @returns {number} Distance from disc center in miles
    */
-  getObserverRadius(latitudeBand) {
+  getObserverRadius(latitudeBand, observerRadius) {
+    // If explicit radius provided (from map pin Y position), use it for precise calculations
+    if (observerRadius !== undefined && observerRadius !== null) {
+      return observerRadius;
+    }
+    // Fall back to latitude band midpoint
     return LATITUDE_BAND_RADIUS[latitudeBand] || LATITUDE_BAND_RADIUS.temperate;
   }
 
@@ -65,10 +72,11 @@ class SunriseSunsetService {
    * @param {string} latitudeBand - Latitude band
    * @param {GameDate} gameDate - Date object {year, month, day, hour}
    * @param {number} θ_obs - Observer angular position (default 0°)
+   * @param {number} [observerRadius] - Optional exact observer radius in miles
    * @returns {number} Distance to sun in miles
    */
-  getDistanceToSun(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE) {
-    const R_obs = this.getObserverRadius(latitudeBand);
+  getDistanceToSun(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE, observerRadius) {
+    const R_obs = this.getObserverRadius(latitudeBand, observerRadius);
     const dayOfYear = getDayOfYear(gameDate.month, gameDate.day);
     const R_sun = getSunOrbitalRadius(dayOfYear);
     const θ_sun = getSunAngle(gameDate.hour, DEFAULT_SUN_PHASE_OFFSET);
@@ -85,10 +93,11 @@ class SunriseSunsetService {
    * @param {number} targetDistance - Distance threshold to find
    * @param {boolean} findRising - True for sunrise, false for sunset
    * @param {number} θ_obs - Observer angular position
+   * @param {number} [observerRadius] - Optional exact observer radius in miles
    * @returns {number|null} Hour of crossing, or null if never crosses
    */
-  findDistanceCrossing(latitudeBand, gameDate, targetDistance, findRising = true, θ_obs = DEFAULT_OBSERVER_ANGLE) {
-    const R_obs = this.getObserverRadius(latitudeBand);
+  findDistanceCrossing(latitudeBand, gameDate, targetDistance, findRising = true, θ_obs = DEFAULT_OBSERVER_ANGLE, observerRadius) {
+    const R_obs = this.getObserverRadius(latitudeBand, observerRadius);
     const dayOfYear = getDayOfYear(gameDate.month, gameDate.day);
     const R_sun = getSunOrbitalRadius(dayOfYear);
 
@@ -172,16 +181,24 @@ class SunriseSunsetService {
    * Get cached daily sun data (sunrise/sunset hours, day length)
    * This is the expensive calculation that only needs to run once per day per location
    * @private
+   * @param {string} latitudeBand - Latitude band
+   * @param {GameDate} gameDate - Date object
+   * @param {number} θ_obs - Observer angular position
+   * @param {number} [observerRadius] - Optional exact observer radius in miles
    */
-  getDailySunData(latitudeBand, gameDate, θ_obs) {
-    // Cache key doesn't include hour - sunrise/sunset is the same all day
-    const cacheKey = `${latitudeBand}:${gameDate.year}:${gameDate.month}:${gameDate.day}:${θ_obs}`;
+  getDailySunData(latitudeBand, gameDate, θ_obs, observerRadius) {
+    // Cache key: use observerRadius if provided (rounded to nearest mile for cache efficiency),
+    // otherwise use latitude band
+    const radiusKey = observerRadius !== undefined && observerRadius !== null
+      ? `r${Math.round(observerRadius)}`
+      : latitudeBand;
+    const cacheKey = `${radiusKey}:${gameDate.year}:${gameDate.month}:${gameDate.day}:${θ_obs}`;
 
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
 
-    const R_obs = this.getObserverRadius(latitudeBand);
+    const R_obs = this.getObserverRadius(latitudeBand, observerRadius);
 
     // Special case: Disc center (R_obs = 0) is NEVER illuminated
     if (R_obs < 100) {
@@ -197,10 +214,10 @@ class SunriseSunsetService {
 
     // Find sunrise and sunset times (when sun crosses illumination radius)
     const sunriseHour = this.findDistanceCrossing(
-      latitudeBand, gameDate, SUN_ILLUMINATION_RADIUS, true, θ_obs
+      latitudeBand, gameDate, SUN_ILLUMINATION_RADIUS, true, θ_obs, observerRadius
     );
     const sunsetHour = this.findDistanceCrossing(
-      latitudeBand, gameDate, SUN_ILLUMINATION_RADIUS, false, θ_obs
+      latitudeBand, gameDate, SUN_ILLUMINATION_RADIUS, false, θ_obs, observerRadius
     );
 
     // Calculate day length
@@ -214,7 +231,7 @@ class SunriseSunsetService {
       }
     } else if (sunriseHour === null && sunsetHour === null) {
       // Check if always day or always night
-      const midnightDistance = this.getDistanceToSun(latitudeBand, { ...gameDate, hour: 0 }, θ_obs);
+      const midnightDistance = this.getDistanceToSun(latitudeBand, { ...gameDate, hour: 0 }, θ_obs, observerRadius);
       dayLengthHours = midnightDistance <= SUN_ILLUMINATION_RADIUS ? 24 : 0;
     }
 
@@ -234,14 +251,15 @@ class SunriseSunsetService {
    * @param {string} latitudeBand - Latitude band key
    * @param {GameDate} gameDate - Date object {year, month, day, hour}
    * @param {number} θ_obs - Observer angular position (default 0°)
+   * @param {number} [observerRadius] - Optional exact observer radius in miles (from map Y position)
    * @returns {Object} Sunrise/sunset data
    */
-  getSunriseSunset(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE) {
+  getSunriseSunset(latitudeBand, gameDate, θ_obs = DEFAULT_OBSERVER_ANGLE, observerRadius) {
     // Get cached daily data (the expensive part)
-    const dailyData = this.getDailySunData(latitudeBand, gameDate, θ_obs);
+    const dailyData = this.getDailySunData(latitudeBand, gameDate, θ_obs, observerRadius);
 
     // Get current state (cheap - just one distance calculation)
-    const currentDistance = this.getDistanceToSun(latitudeBand, gameDate, θ_obs);
+    const currentDistance = this.getDistanceToSun(latitudeBand, gameDate, θ_obs, observerRadius);
     const twilightLevel = this.getIlluminationState(currentDistance);
     const isDaytime = twilightLevel === ILLUMINATION_STATE.DAYLIGHT;
 
@@ -309,10 +327,11 @@ class SunriseSunsetService {
    * @param {GameDate} gameDate
    * @param {boolean} use24Hour
    * @param {number} θ_obs - Observer angular position
+   * @param {number} [observerRadius] - Optional exact observer radius in miles (from map Y position)
    * @returns {Object} Formatted times
    */
-  getFormattedTimes(latitudeBand, gameDate, use24Hour = false, θ_obs = DEFAULT_OBSERVER_ANGLE) {
-    const data = this.getSunriseSunset(latitudeBand, gameDate, θ_obs);
+  getFormattedTimes(latitudeBand, gameDate, use24Hour = false, θ_obs = DEFAULT_OBSERVER_ANGLE, observerRadius) {
+    const data = this.getSunriseSunset(latitudeBand, gameDate, θ_obs, observerRadius);
 
     return {
       sunriseTime: data.isPermanentNight ? 'Never' :

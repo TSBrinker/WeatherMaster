@@ -8,6 +8,7 @@ import SettingsMenu from './SettingsMenu';
 import WorldMapView from '../map/WorldMapView';
 import RegionCreator from '../region/RegionCreator';
 import RegionEditor from '../region/RegionEditor';
+import RegionAssigner from '../region/RegionAssigner';
 import weatherService from '../../services/weather/WeatherService';
 import { useWorld } from '../../contexts/WorldContext';
 import './HamburgerMenu.css';
@@ -41,6 +42,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
   const [selectedRegions, setSelectedRegions] = useState(new Set());
   const [viewingContinentId, setViewingContinentId] = useState(null); // ID of continent being viewed on map
   const [showRegionCreator, setShowRegionCreator] = useState(false);
+  const [showRegionAssigner, setShowRegionAssigner] = useState(false);
   const [mapClickData, setMapClickData] = useState(null); // { x, y, latitudeBand }
   const [newContinentName, setNewContinentName] = useState('');
   const [showNewContinentInput, setShowNewContinentInput] = useState(false);
@@ -97,6 +99,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setEditingRegion(null);
     setEditingContinentId(null);
     setEditingContinentName('');
+    setShowRegionAssigner(false);
   };
 
   // Handle placing a location from the map
@@ -109,9 +112,24 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
     setShowRegionCreator(true);
   };
 
+  // Handle assigning an existing location to a map position
+  const handleMapAssignLocation = (clickData) => {
+    setMapClickData({
+      ...clickData,
+      continentId: viewingContinent?.id,
+    });
+    setShowRegionAssigner(true);
+  };
+
   // Handle region creator close
   const handleRegionCreatorClose = () => {
     setShowRegionCreator(false);
+    setMapClickData(null);
+  };
+
+  // Handle region assigner close
+  const handleRegionAssignerClose = () => {
+    setShowRegionAssigner(false);
     setMapClickData(null);
   };
 
@@ -259,6 +277,7 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
           <WorldMapView
             continent={viewingContinent}
             onPlaceLocation={handleMapPlaceLocation}
+            onAssignLocation={handleMapAssignLocation}
             onSelectRegion={handleMapSelectRegion}
           />
         </div>
@@ -270,6 +289,14 @@ const HamburgerMenu = ({ show, onHide, regions, activeRegion, onSelectRegion, on
           initialLatitudeBand={mapClickData?.latitudeBand}
           mapPosition={mapClickData}
           initialContinentId={mapClickData?.continentId}
+        />
+
+        {/* Region Assigner Modal (for linking existing regions to map) */}
+        <RegionAssigner
+          show={showRegionAssigner}
+          onHide={handleRegionAssignerClose}
+          mapPosition={mapClickData}
+          continentId={mapClickData?.continentId}
         />
       </div>
     );

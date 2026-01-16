@@ -39,6 +39,9 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
   const [latitudeBand, setLatitudeBand] = useState(initialLatitudeBand || 'temperate');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
+  // When placed via map, latitude band is locked to the clicked position
+  const isLatitudeLocked = mapPosition !== null && initialLatitudeBand !== null;
+
   // Search state
   const [templateSearch, setTemplateSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -50,23 +53,29 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     ? getOceanTemplatesByLatitude(latitudeBand)
     : getLandTemplatesByLatitude(latitudeBand);
 
-  // Get search results (all templates filtered by search and region type, deduplicated)
+  // Get search results (filtered by search, region type, and optionally locked latitude band)
   const getSearchResults = () => {
     const searchLower = templateSearch.toLowerCase().trim();
     if (!searchLower) return [];
 
-    const allTemplates = getAllTemplates();
+    // When latitude is locked (map-placed pin), only search within that band's templates
+    const templatesToSearch = isLatitudeLocked
+      ? availableTemplates
+      : getAllTemplates();
+
     const seenIds = new Set();
 
-    return allTemplates.filter(template => {
+    return templatesToSearch.filter(template => {
       // Deduplicate by template id (same template can appear in multiple bands)
       if (seenIds.has(template.id)) return false;
       seenIds.add(template.id);
 
-      // Filter by region type
-      const isOcean = isOceanTemplate(template);
-      if (regionType === 'ocean' && !isOcean) return false;
-      if (regionType === 'land' && isOcean) return false;
+      // Filter by region type (only needed when searching all templates)
+      if (!isLatitudeLocked) {
+        const isOcean = isOceanTemplate(template);
+        if (regionType === 'ocean' && !isOcean) return false;
+        if (regionType === 'land' && isOcean) return false;
+      }
 
       // Search in name, description, real-world examples, and search terms
       const name = template.name?.toLowerCase() || '';
@@ -142,8 +151,8 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
 
   // Handle selecting a template from search results
   const handleSearchResultSelect = (template) => {
-    // Update latitude band to match the template
-    if (template.latitudeBand && template.latitudeBand !== 'special') {
+    // Update latitude band to match the template (only if not locked by map position)
+    if (!isLatitudeLocked && template.latitudeBand && template.latitudeBand !== 'special') {
       setLatitudeBand(template.latitudeBand);
     }
     setSelectedTemplateId(template.id);
@@ -200,10 +209,12 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
     }
 
     // Add map position if region was created via map click
+    // Include observerRadius for precise sunrise/sunset calculations
     if (mapPosition) {
       regionData.mapPosition = {
         x: mapPosition.x,
-        y: mapPosition.y
+        y: mapPosition.y,
+        observerRadius: mapPosition.observerRadius
       };
     }
 
@@ -300,12 +311,23 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
               {!selectedTemplate ? (
                 /* State A: Selecting a climate */
                 <>
+                  {/* Show locked latitude band info when placed via map */}
+                  {isLatitudeLocked && (
+                    <Alert variant="secondary" className="mb-3">
+                      <strong>{latitudeBands.find(b => b.key === latitudeBand)?.label}</strong>
+                      <span className="text-muted ms-2">({latitudeBands.find(b => b.key === latitudeBand)?.range})</span>
+                      <div className="small text-muted mt-1">{latitudeBandDescriptions[latitudeBand]}</div>
+                    </Alert>
+                  )}
+
                   {/* Search Bar with Autocomplete Dropdown */}
                   <div className="climate-search-container" ref={searchContainerRef}>
                     <Form.Control
                       ref={searchInputRef}
                       type="text"
-                      placeholder="Search climates (e.g., Minnesota, Island, Desert, Seattle...)"
+                      placeholder={isLatitudeLocked
+                        ? `Search ${latitudeBands.find(b => b.key === latitudeBand)?.label.toLowerCase()} climates...`
+                        : "Search climates (e.g., Minnesota, Island, Desert, Seattle...)"}
                       value={templateSearch}
                       onChange={handleSearchChange}
                       onFocus={() => templateSearch.trim() && setShowSearchResults(true)}
@@ -326,7 +348,8 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
                             >
                               <div className="climate-search-result-name">
                                 {template.name}
-                                {bandLabel && <span className="climate-band-tag">{bandLabel}</span>}
+                                {/* Only show band tag when not locked (searching all bands) */}
+                                {!isLatitudeLocked && bandLabel && <span className="climate-band-tag">{bandLabel}</span>}
                               </div>
                               {examples && <div className="climate-search-result-examples">{examples}</div>}
                             </div>
@@ -340,6 +363,7 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
                       <div className="climate-search-dropdown">
                         <div className="climate-search-no-results">
                           No {regionType} climates match "{templateSearch}"
+                          {isLatitudeLocked && ` in ${latitudeBands.find(b => b.key === latitudeBand)?.label.toLowerCase()} band`}
                         </div>
                       </div>
                     )}
@@ -347,36 +371,42 @@ const RegionCreator = ({ show, onHide, initialLatitudeBand = null, mapPosition =
                     <Form.Text className="text-muted">
                       {templateSearch.trim()
                         ? `${searchResults.length} matching climate${searchResults.length !== 1 ? 's' : ''}`
-                        : 'Search by climate name, description, or real-world location'}
+                        : isLatitudeLocked
+                          ? `${availableTemplates.length} ${regionType} climate${availableTemplates.length !== 1 ? 's' : ''} available`
+                          : 'Search by climate name, description, or real-world location'}
                     </Form.Text>
                   </div>
 
-                  {/* OR Divider */}
-                  <div className="climate-or-divider">
-                    <span>or browse by latitude</span>
-                  </div>
+                  {/* OR Divider - only show when latitude is NOT locked */}
+                  {!isLatitudeLocked && (
+                    <div className="climate-or-divider">
+                      <span>or browse by latitude</span>
+                    </div>
+                  )}
 
-                  {/* Latitude Band Dropdown */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Latitude Band</Form.Label>
-                    <Form.Select
-                      value={latitudeBand}
-                      onChange={(e) => handleLatitudeBandChange(e.target.value)}
-                    >
-                      {latitudeBands.map(band => (
-                        <option key={band.key} value={band.key}>
-                          {band.label} ({band.range})
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Text className="text-muted">
-                      {latitudeBandDescriptions[latitudeBand]}
-                    </Form.Text>
-                  </Form.Group>
+                  {/* Latitude Band Dropdown - only show when NOT locked */}
+                  {!isLatitudeLocked && (
+                    <Form.Group className="mb-3">
+                      <Form.Label>Latitude Band</Form.Label>
+                      <Form.Select
+                        value={latitudeBand}
+                        onChange={(e) => handleLatitudeBandChange(e.target.value)}
+                      >
+                        {latitudeBands.map(band => (
+                          <option key={band.key} value={band.key}>
+                            {band.label} ({band.range})
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Text className="text-muted">
+                        {latitudeBandDescriptions[latitudeBand]}
+                      </Form.Text>
+                    </Form.Group>
+                  )}
 
                   {/* Template Dropdown */}
                   <Form.Group className="mb-3">
-                    <Form.Label>Climate Template</Form.Label>
+                    <Form.Label>{isLatitudeLocked ? 'Select Climate' : 'Climate Template'}</Form.Label>
                     {availableTemplates.length > 0 ? (
                       <Dropdown className="climate-template-dropdown">
                         <Dropdown.Toggle variant="outline-secondary" className="climate-template-toggle">

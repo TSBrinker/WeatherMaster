@@ -170,8 +170,10 @@ export class TemperatureService {
     const hoursSinceMidnight = date.hour;
 
     // Get actual sunrise/sunset times for this region and date
+    // Use exact observer radius from map position if available for precise calculations
     const latitudeBand = region.latitudeBand || 'temperate';
-    const sunData = SunriseSunsetService.getSunriseSunset(latitudeBand, date);
+    const observerRadius = region.mapPosition?.observerRadius;
+    const sunData = SunriseSunsetService.getSunriseSunset(latitudeBand, date, 0, observerRadius);
 
     let minHour, maxHour;
 

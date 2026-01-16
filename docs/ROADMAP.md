@@ -177,7 +177,9 @@ This is the single source of truth for feature planning and priorities.
 - [x] Vertex snapping (click near existing vertex to reuse exact point) *(Sprint 53)*
 - [x] **HIGH PRIORITY**: Non-overlapping region enforcement (territories should butt up, not overlap) *(Sprint 54)*
 - [x] **HIGH PRIORITY**: Mobile touch gestures (pinch-to-zoom, two-finger pan) *(Sprint 54)*
-- [ ] Exact sunrise/sunset times from pin Y position (precision enhancement)
+- [x] Exact sunrise/sunset times from pin Y position (precision enhancement) *(Sprint 64)*
+- [x] Assign existing regions to map pins (place unpinned locations) *(Sprint 65)*
+- [x] Movable pins (drag to reposition, right-click for edit menu) *(Sprint 66)*
 
 **Spatial Weather System**
 - [ ] Adjacent regions system
@@ -219,6 +221,7 @@ This is the single source of truth for feature planning and priorities.
 | 50 | Dusk | Ocean & Maritime: Sea state system, ocean templates |
 | 55 | Nova | D&D Gameplay Integration: Impact indicators, mechanics modal |
 | 56 | Solstice | Narrative Weather Mode: Prose descriptions, progression awareness |
+| 65 | Solaris | Map pins: Blurry fix, assign existing regions feature |
 
 See `sprint-logs/` for detailed sprint documentation.
 

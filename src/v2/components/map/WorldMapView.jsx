@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Button } from 'react-bootstrap';
-import { Settings, Plus, MapPin, ZoomIn, ZoomOut, RotateCcw, Layers, Route, Thermometer, Cloud, Crown } from 'lucide-react';
+import { Settings, Plus, MapPin, ZoomIn, ZoomOut, RotateCcw, Layers, Route, Thermometer, Cloud, Crown, Link } from 'lucide-react';
 import { useGesture } from '@use-gesture/react';
 import { useWorld } from '../../contexts/WorldContext';
 import {
@@ -8,6 +8,7 @@ import {
   calculateCurvedBands,
   generateBandPath,
   getLatitudeBandAtPosition,
+  pixelToMiles,
   BAND_LABELS
 } from '../../utils/mapUtils';
 import {
@@ -38,10 +39,11 @@ import './WorldMapView.css';
  * Props:
  * - continent: The continent object to display (has mapImage, mapScale)
  * - onPlaceLocation: Callback when user clicks to place a new location
+ * - onAssignLocation: Callback when user clicks to assign an existing location to a map position
  * - onSelectRegion: Callback when user clicks on a region pin
  */
-const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
-  const { activeWorld, groupedRegions, createPath, updatePath, createWeatherRegion, updateWeatherRegion, createPoliticalRegion, updatePoliticalRegion, deletePoliticalRegionVertex, insertPoliticalRegionVertex, updateLinkedPoliticalVertices, setPoliticalVertexSharedId } = useWorld();
+const WorldMapView = ({ continent, onPlaceLocation, onAssignLocation, onSelectRegion }) => {
+  const { activeWorld, groupedRegions, createPath, updatePath, createWeatherRegion, updateWeatherRegion, createPoliticalRegion, updatePoliticalRegion, deletePoliticalRegionVertex, insertPoliticalRegionVertex, updateLinkedPoliticalVertices, setPoliticalVertexSharedId, updateRegion } = useWorld();
   const mapContainerRef = useRef(null);
   const imageRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 }); // Natural image dimensions
@@ -83,6 +85,19 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const [vertexContextMenu, setVertexContextMenu] = useState(null);
   // { x, y (screen coords), regionId, vertex, nearbyVertices: [{regionId, vertex, distance}] }
 
+  // Location pin dragging state
+  const [draggingPin, setDraggingPin] = useState(null);
+  // { regionId, startX, startY, currentX, currentY }
+  const draggingPinRef = useRef(null); // Ref mirror for gesture callbacks
+  const pinDragOccurredRef = useRef(false); // Track if actual movement happened
+
+  // Pin move mode - activated via right-click menu, allows dragging
+  const [movingPinId, setMovingPinId] = useState(null);
+
+  // Location pin context menu state
+  const [pinContextMenu, setPinContextMenu] = useState(null);
+  // { x, y (screen coords), region }
+
   // Layer visibility (default off to reduce visual clutter)
   const [showPaths, setShowPaths] = useState(false);
   const [showClimate, setShowClimate] = useState(false);
@@ -91,6 +106,8 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
   // Location placement mode
   const [placingLocation, setPlacingLocation] = useState(false);
+  // Location assignment mode (linking existing regions)
+  const [assigningLocation, setAssigningLocation] = useState(false);
 
   // Zoom and pan state
   const [zoom, setZoom] = useState(1);
@@ -596,6 +613,115 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     setVertexContextMenu(null);
   }, []);
 
+  // Close pin context menu
+  const handleClosePinContextMenu = useCallback(() => {
+    setPinContextMenu(null);
+  }, []);
+
+  // === LOCATION PIN DRAGGING ===
+
+  const handlePinMouseDown = useCallback((e, region) => {
+    // Only start drag on left click (not right-click for context menu)
+    if (e.button !== 0) return;
+
+    // Only allow dragging if this pin is in move mode (activated via right-click menu)
+    if (movingPinId !== region.id) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    const pos = getImagePosition(e);
+    if (!pos || !region.mapPosition) return;
+
+    const dragInfo = {
+      regionId: region.id,
+      region,
+      startX: region.mapPosition.x,
+      startY: region.mapPosition.y,
+      currentX: region.mapPosition.x,
+      currentY: region.mapPosition.y,
+    };
+    setDraggingPin(dragInfo);
+    draggingPinRef.current = dragInfo;
+    pinDragOccurredRef.current = false; // Reset - no movement yet
+    dragStartRef.current = pos;
+  }, [getImagePosition, movingPinId]);
+
+  const handlePinTouchStart = useCallback((e, region) => {
+    // Only allow dragging if this pin is in move mode (activated via right-click menu)
+    if (movingPinId !== region.id) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.touches.length !== 1) return;
+
+    if (!region.mapPosition) return;
+
+    const dragInfo = {
+      regionId: region.id,
+      region,
+      startX: region.mapPosition.x,
+      startY: region.mapPosition.y,
+      currentX: region.mapPosition.x,
+      currentY: region.mapPosition.y,
+    };
+    setDraggingPin(dragInfo);
+    draggingPinRef.current = dragInfo;
+  }, [movingPinId]);
+
+  // Right-click context menu for location pins
+  const handlePinContextMenu = useCallback((e, region) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setPinContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      region,
+    });
+  }, []);
+
+  // Finalize pin drag - update region's mapPosition
+  const finalizePinDrag = useCallback(() => {
+    const dragInfo = draggingPinRef.current;
+    if (!dragInfo || !mapScale) return;
+
+    const { regionId, startX, startY, currentX, currentY } = dragInfo;
+
+    // Only save if position actually changed
+    if (currentX !== startX || currentY !== startY) {
+      // Calculate new latitude band and observer radius from new Y position
+      const newLatitudeBand = getLatitudeBandAtPosition(currentY, imageSize.height, mapScale);
+      const newObserverRadius = pixelToMiles(currentY, mapScale);
+
+      updateRegion(regionId, {
+        mapPosition: {
+          x: currentX,
+          y: currentY,
+          observerRadius: newObserverRadius,
+        },
+        // Update latitude band if it changed
+        ...(newLatitudeBand && { latitudeBand: newLatitudeBand }),
+      });
+    }
+
+    setDraggingPin(null);
+    draggingPinRef.current = null;
+    dragStartRef.current = null;
+    setMovingPinId(null); // Exit move mode after drop
+  }, [mapScale, imageSize.height, updateRegion]);
+
+  // Remove pin from map (unassign from location)
+  const handleUnassignPin = useCallback(() => {
+    if (!pinContextMenu) return;
+
+    updateRegion(pinContextMenu.region.id, {
+      mapPosition: null,
+    });
+
+    setPinContextMenu(null);
+  }, [pinContextMenu, updateRegion]);
+
   const handleMouseMove = useCallback((e) => {
     // Handle band hover
     if (!mapScale || imageSize.height === 0) return;
@@ -794,17 +920,48 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
         });
       }
     }
-  }, [mapScale, imageSize, draggingWaypoint, draggingPoliticalVertex, continent, getImagePosition, updatePath, updatePoliticalRegion, updateLinkedPoliticalVertices, drawingMode, snapPreview, selectedPoliticalRegionId, showPoliticalRegions, edgeSubdividePreview]);
+
+    // Handle location pin dragging
+    if (draggingPin) {
+      const pos = getImagePosition(e);
+      if (!pos) return;
+
+      // Update the visual position during drag (stored in state, not persisted yet)
+      const updatedDragInfo = {
+        ...draggingPin,
+        currentX: pos.x,
+        currentY: pos.y,
+      };
+      setDraggingPin(updatedDragInfo);
+      draggingPinRef.current = updatedDragInfo;
+
+      // Mark that actual movement occurred (so click handler knows to skip)
+      if (pos.x !== draggingPin.startX || pos.y !== draggingPin.startY) {
+        pinDragOccurredRef.current = true;
+      }
+    }
+  }, [mapScale, imageSize, draggingWaypoint, draggingPoliticalVertex, draggingPin, continent, getImagePosition, updatePath, updatePoliticalRegion, updateLinkedPoliticalVertices, drawingMode, snapPreview, selectedPoliticalRegionId, showPoliticalRegions, edgeSubdividePreview]);
 
   const handleMouseUp = useCallback(() => {
+    // Finalize pin drag if active
+    if (draggingPin) {
+      finalizePinDrag();
+    }
     setDraggingWaypoint(null);
     setDraggingPoliticalVertex(null);
+    draggingPoliticalVertexRef.current = null;
     dragStartRef.current = null;
-  }, []);
+  }, [draggingPin, finalizePinDrag]);
 
   const handleMapClick = (e) => {
     // If dragging just ended, don't process as a click
     if (dragStartRef.current) {
+      return;
+    }
+
+    // If in pin move mode, clicking on the map (not on the pin) cancels it
+    if (movingPinId) {
+      setMovingPinId(null);
       return;
     }
 
@@ -866,12 +1023,33 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
       const latitudeBand = getLatitudeBandAtPosition(pos.y, imageSize.height, mapScale);
 
       if (latitudeBand) {
+        // Calculate exact observer radius from Y position for precise sunrise/sunset
+        const observerRadius = pixelToMiles(pos.y, mapScale);
+
         onPlaceLocation({
           x: pos.x,
           y: pos.y,
-          latitudeBand
+          latitudeBand,
+          observerRadius
         });
         setPlacingLocation(false); // Exit placement mode after placing
+      }
+    }
+
+    // In location assignment mode, open the assignment modal
+    if (assigningLocation && mapScale && onAssignLocation) {
+      const latitudeBand = getLatitudeBandAtPosition(pos.y, imageSize.height, mapScale);
+
+      if (latitudeBand) {
+        const observerRadius = pixelToMiles(pos.y, mapScale);
+
+        onAssignLocation({
+          x: pos.x,
+          y: pos.y,
+          latitudeBand,
+          observerRadius
+        });
+        setAssigningLocation(false); // Exit assignment mode after clicking
       }
     }
   };
@@ -886,7 +1064,12 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
     }
     if (draggingPoliticalVertex) {
       setDraggingPoliticalVertex(null);
+      draggingPoliticalVertexRef.current = null;
       dragStartRef.current = null;
+    }
+    if (draggingPin) {
+      // Finalize pin drag when mouse leaves (save position)
+      finalizePinDrag();
     }
     if (isPanning) {
       setIsPanning(false);
@@ -1131,6 +1314,12 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
   const handlePinClick = (e, region) => {
     e.stopPropagation(); // Don't trigger map click
 
+    // If we just finished dragging this pin (with actual movement), don't also select it
+    if (pinDragOccurredRef.current) {
+      pinDragOccurredRef.current = false; // Reset for next interaction
+      return;
+    }
+
     // In path drawing mode, add waypoint at the pin's location instead of selecting region
     if (drawingMode === 'path' && region.mapPosition) {
       handleAddWaypoint({ x: region.mapPosition.x, y: region.mapPosition.y });
@@ -1191,11 +1380,29 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
             <Button
               variant={placingLocation ? 'primary' : 'outline-secondary'}
               size="sm"
-              onClick={() => setPlacingLocation(!placingLocation)}
+              onClick={() => {
+                setPlacingLocation(!placingLocation);
+                setAssigningLocation(false);
+              }}
               title={placingLocation ? 'Cancel adding location' : 'Add a new location'}
               className="layer-toggle"
             >
               <MapPin size={14} />
+            </Button>
+          )}
+          {/* Link Existing Location button */}
+          {onAssignLocation && (
+            <Button
+              variant={assigningLocation ? 'success' : 'outline-secondary'}
+              size="sm"
+              onClick={() => {
+                setAssigningLocation(!assigningLocation);
+                setPlacingLocation(false);
+              }}
+              title={assigningLocation ? 'Cancel linking' : 'Link existing location to map'}
+              className="layer-toggle"
+            >
+              <Link size={14} />
             </Button>
           )}
           <div className="header-divider" />
@@ -1280,7 +1487,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
 
       <div
         ref={mapContainerRef}
-        className={`map-container ${drawingMode !== 'none' ? 'drawing-mode' : ''} ${placingLocation ? 'placing-mode' : ''} ${draggingWaypoint ? 'dragging' : ''} ${isPanning ? 'panning' : ''}`}
+        className={`map-container ${drawingMode !== 'none' ? 'drawing-mode' : ''} ${placingLocation ? 'placing-mode' : ''} ${assigningLocation ? 'assigning-mode' : ''} ${draggingWaypoint ? 'dragging' : ''} ${draggingPin ? 'dragging-pin' : ''} ${isPanning ? 'panning' : ''}`}
         onClick={handleMapClick}
         onMouseMove={(e) => { handleMouseMove(e); handlePanMove(e); }}
         onMouseUp={(e) => { handleMouseUp(); handlePanEnd(); }}
@@ -1773,22 +1980,33 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
           )}
 
           {/* Location pins - scale inversely with zoom */}
-          {regionsWithPositions.map((region) => (
-            <div
-              key={region.id}
-              className={`location-pin ${onSelectRegion ? 'clickable' : ''}`}
-              style={{
-                left: `${(region.mapPosition.x / imageSize.width) * 100}%`,
-                top: `${(region.mapPosition.y / imageSize.height) * 100}%`,
-                transform: `translate(-50%, -100%) scale(${1 / zoom})`,
-              }}
-              title={region.name}
-              onClick={(e) => handlePinClick(e, region)}
-            >
-              <MapPin size={24} className="pin-icon" />
-              <span className="pin-label">{region.name}</span>
-            </div>
-          ))}
+          {regionsWithPositions.map((region) => {
+            // Check if this pin is being dragged or in move mode
+            const isDragging = draggingPin?.regionId === region.id;
+            const isMovable = movingPinId === region.id;
+            const pinX = isDragging ? draggingPin.currentX : region.mapPosition.x;
+            const pinY = isDragging ? draggingPin.currentY : region.mapPosition.y;
+
+            return (
+              <div
+                key={region.id}
+                className={`location-pin ${onSelectRegion ? 'clickable' : ''} ${isDragging ? 'dragging' : ''} ${isMovable ? 'movable' : ''}`}
+                style={{
+                  left: `${(pinX / imageSize.width) * 100}%`,
+                  top: `${(pinY / imageSize.height) * 100}%`,
+                  transform: `translate(-50%, -100%) scale(${1 / zoom})`,
+                }}
+                title={isMovable ? 'Drag to reposition, or click elsewhere to cancel' : region.name}
+                onClick={(e) => handlePinClick(e, region)}
+                onMouseDown={(e) => handlePinMouseDown(e, region)}
+                onTouchStart={(e) => handlePinTouchStart(e, region)}
+                onContextMenu={(e) => handlePinContextMenu(e, region)}
+              >
+                <MapPin size={24} className="pin-icon" />
+                <span className="pin-label">{region.name}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Click hint overlay */}
@@ -1819,12 +2037,33 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
             )}
             {activePoliticalRegion?.vertices?.length >= 3 && ' - Click checkmark to finish'}
           </div>
-        ) : placingLocation && (
+        ) : placingLocation ? (
           <div className="click-hint placing">
             Click to place a new location
             {hoveredBand && (
               <span className="hint-band"> in {BAND_LABELS[hoveredBand]}</span>
             )}
+          </div>
+        ) : assigningLocation ? (
+          <div className="click-hint assigning">
+            Click to link an existing location here
+            {hoveredBand && (
+              <span className="hint-band"> in {BAND_LABELS[hoveredBand]}</span>
+            )}
+          </div>
+        ) : draggingPin && mapScale ? (
+          <div className="click-hint dragging-pin">
+            Dragging {draggingPin.region.name}
+            {(() => {
+              const newBand = getLatitudeBandAtPosition(draggingPin.currentY, imageSize.height, mapScale);
+              return newBand ? (
+                <span className="hint-band"> to {BAND_LABELS[newBand]}</span>
+              ) : null;
+            })()}
+          </div>
+        ) : movingPinId && (
+          <div className="click-hint move-mode">
+            Drag pin to reposition - click elsewhere to cancel
           </div>
         )}
 
@@ -1945,6 +2184,63 @@ const WorldMapView = ({ continent, onPlaceLocation, onSelectRegion }) => {
                 ✓ Already linked
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Pin Context Menu */}
+      {pinContextMenu && (
+        <>
+          {/* Backdrop to close menu */}
+          <div
+            className="pin-context-backdrop"
+            onClick={handleClosePinContextMenu}
+          />
+          <div
+            className="pin-context-menu"
+            style={{
+              left: pinContextMenu.x,
+              top: pinContextMenu.y,
+            }}
+          >
+            <div className="context-menu-header">
+              {pinContextMenu.region.name}
+            </div>
+
+            {/* Move pin option - enables drag mode */}
+            <button
+              className="context-menu-item"
+              onClick={() => {
+                setMovingPinId(pinContextMenu.region.id);
+                setPinContextMenu(null);
+              }}
+            >
+              Move Pin
+            </button>
+
+            {/* Edit option - select the region */}
+            <button
+              className="context-menu-item"
+              onClick={() => {
+                if (onSelectRegion) {
+                  onSelectRegion(pinContextMenu.region.id);
+                }
+                setPinContextMenu(null);
+              }}
+            >
+              Edit Region
+            </button>
+
+            <div className="context-menu-divider" />
+
+            {/* Remove from map option */}
+            <button
+              className="context-menu-item danger"
+              onClick={handleUnassignPin}
+              title="Remove this pin from the map (region data is preserved)"
+            >
+              Remove from Map
+            </button>
           </div>
         </>
       )}

@@ -141,8 +141,11 @@ export class WeatherService {
   getCelestialData(region, date) {
     const latitudeBand = region.latitudeBand || 'temperate';
 
-    // Get sun data
-    const sunData = this.sunService.getFormattedTimes(latitudeBand, date, false);
+    // Use exact observer radius from map position if available, otherwise fall back to latitude band
+    const observerRadius = region.mapPosition?.observerRadius;
+
+    // Get sun data - pass observerRadius for precise sunrise/sunset based on map pin Y position
+    const sunData = this.sunService.getFormattedTimes(latitudeBand, date, false, 0, observerRadius);
 
     // Get moon data
     const moonData = this.moonService.getFormattedMoonInfo(date, 0, false);
