@@ -1,25 +1,28 @@
 # Handoff Document
 
 **Last Updated**: 2026-01-16
-**Previous Agent**: EVERGREEN (Sprint 61)
-**Current Sprint Count**: 61 (next agent creates `SPRINT_62_*.md`)
-**Status**: Sprint 61 COMPLETE. UI polish and UX improvements.
+**Previous Agent**: COMPASS (Sprint 62)
+**Current Sprint Count**: 62 (next agent creates `SPRINT_63_*.md`)
+**Status**: Sprint 62 COMPLETE. Visibility fix, template selector UX, real-world examples.
 
 ---
 
-## What Was Done This Sprint (Sprint 61)
+## What Was Done This Sprint (Sprint 62)
 
-### 1. UI Cleanup (Tyler's Requests)
-- **Forecast cards** - Now flex to fill available width instead of fixed size
-- **Detail cards** - Fixed height (100px) for consistent appearance
-- **Time display** - Fixed min-width with tabular-nums to prevent button jumping
+### 1. Visibility Discrepancy Fix
+Fixed a bug where the gameplay effects badge showed "Vis: 60 ft" for fog but the conditions card showed "3 mi". The root cause was that `AtmosphericService.getVisibility()` wasn't aware of the weather condition.
 
-### 2. UX Improvements
-- **Clickable badges** - Added visible border, hover glow, and active state so users know info badges are interactive
-- **Styled modals** - Replaced browser `alert()` with Bootstrap modals for Clear Cache and Nuke Data confirmations
+**Solution**: Added `condition` parameter to `getVisibility()` that returns appropriate visibility (60 ft for fog, 20 ft for blizzard).
 
-### 3. Bug Fix
-- **Z-index layering** - Fixed settings popover z-index so modals appear on top correctly
+### 2. Region Template Selector UX Improvement
+Replaced standard dropdown with custom two-line format:
+- **Template name** (bold, primary line)
+- **Real-world examples** (smaller, italic subtitle)
+
+Added dark theme styling. Removed redundant examples from info box since they're now shown inline.
+
+### 3. Real-World Examples for All 52 Templates
+Added location examples across every latitude band so users can relate templates to familiar places (e.g., "Seattle, Portland Oregon, Vancouver BC" for Maritime Forest).
 
 ---
 
@@ -27,12 +30,12 @@
 
 | File | Changes |
 |------|---------|
-| `src/v2/components/weather/WeekForecastStrip.css` | Forecast card flex behavior |
-| `src/v2/components/weather/DetailsCard.css` | Fixed detail card heights |
-| `src/v2/components/header/WeatherHeader.css` | Time display fixed width |
-| `src/v2/components/weather/PrimaryDisplay.css` | Info badge hover/active states |
-| `src/v2/components/menu/SettingsMenu.jsx` | Confirmation and success modals |
-| `src/v2/components/menu/HamburgerMenu.css` | Z-index adjustments |
+| `src/v2/services/weather/AtmosphericService.js` | Condition-aware visibility |
+| `src/v2/services/weather/WeatherGenerator.js` | Pass condition to getVisibility() |
+| `src/v2/components/region/RegionCreator.jsx` | Custom dropdown with two-line display |
+| `src/v2/components/region/RegionCreator.css` | NEW - dark theme dropdown styling |
+| `src/v2/data/templateHelpers.js` | extractRealWorldExamples(), getDescriptionWithoutExamples() |
+| `src/v2/data/region-templates.js` | Real-world examples for all 52 templates |
 
 ---
 
@@ -43,34 +46,32 @@
 | Weather pattern generation | `src/v2/services/weather/WeatherPatternService.js` |
 | Weather generator (precip type) | `src/v2/services/weather/WeatherGenerator.js` |
 | Temperature service | `src/v2/services/weather/TemperatureService.js` |
+| Visibility calculation | `src/v2/services/weather/AtmosphericService.js` |
+| Region templates | `src/v2/data/region-templates.js` |
+| Template helpers | `src/v2/data/templateHelpers.js` |
 | Narrative weather | `src/v2/utils/narrativeWeather.js` |
 | Test harness | `src/v2/components/testing/WeatherTestHarness.jsx` |
 | Main display | `src/v2/components/weather/PrimaryDisplay.jsx` |
-| Settings menu | `src/v2/components/menu/SettingsMenu.jsx` |
-| Preferences | `src/v2/contexts/PreferencesContext.jsx` |
 
 ---
 
 ## Suggested Next Work
 
-1. **Export/Import Worlds as JSON** - Tyler has expressed interest in data portability
+1. **Export/Import Worlds as JSON** - Data portability for sharing/backup
 
 2. **Exact sunrise/sunset from pin Y position** - Map system precision enhancement
 
-3. **Extreme Weather Phase C** - Hurricanes and ice storms are the remaining unimplemented extreme weather types
+3. **Extreme Weather Phase C** - Hurricanes and ice storms are remaining unimplemented
 
 4. **Mobile optimization** - Further UI polish for smaller screens
 
 ---
 
-## Remaining Roadmap Items
+## Technical Notes
 
-From ROADMAP.md (high-priority items first):
-- Export/Import Worlds as JSON
-- Exact sunrise/sunset from pin Y position
-- Hurricanes/ice storms (Extreme Weather Phase C)
-- Wind system enhancements (Phase D)
-- Voyage Mode
+- `extractRealWorldExamples()` regex: `/Real-world examples?:\s*([^.]+)/i`
+- Visibility: 0.01 mi (~60 ft) for fog, 0.004 mi (~20 ft) for blizzard
+- Dark theme dropdown uses rgba() colors for transparency
 
 ---
 
