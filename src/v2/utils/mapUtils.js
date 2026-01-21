@@ -280,7 +280,8 @@ export function generateBandPath(band, imageWidth, imageHeight) {
 
   if (!outerArc || outerArc.points.length < 2) return '';
 
-  // Build path: start from outer arc left, go along outer arc, then inner arc (reversed), close
+  // Build path: trace outer arc clockwise (left down, bottom curve, right up),
+  // then inner arc counter-clockwise, close
   const outerPoints = outerArc.points;
   const innerPoints = innerArc ? innerArc.points : [];
 
@@ -295,9 +296,37 @@ export function generateBandPath(band, imageWidth, imageHeight) {
     path += ` L ${outerPoints[i].leftX} ${outerPoints[i].y}`;
   }
 
-  // Draw bottom edge across (if we have points)
+  // Check if we need to draw the curved bottom of the outer arc
+  // This happens when the circle's bottom (centerY + radius) is within the map bounds
   const lastOuter = outerPoints[outerPoints.length - 1];
-  path += ` L ${lastOuter.rightX} ${lastOuter.y}`;
+  const outerCircleBottom = centerYPx + outerRadiusPx;
+  const isOuterBottomVisible = outerCircleBottom <= imageHeight && outerCircleBottom >= 0;
+
+  if (isOuterBottomVisible && lastOuter.leftX !== lastOuter.rightX) {
+    // The curve continues - trace along the bottom arc from left to right
+    // Generate additional points along the bottom curve
+    const bottomY = outerCircleBottom;
+    // We're at lastOuter.leftX, need to get to lastOuter.rightX following the curve
+    // Since the bottom of a circle is symmetric, we can sample from left to center to right
+    const steps = 20;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      // Interpolate X from leftX to rightX
+      const x = lastOuter.leftX + (lastOuter.rightX - lastOuter.leftX) * t;
+      // Calculate Y on the circle for this X
+      const dx = x - centerXPx;
+      const discriminant = outerRadiusPx * outerRadiusPx - dx * dx;
+      if (discriminant >= 0) {
+        // Use the lower intersection (centerY + sqrt)
+        const y = centerYPx + Math.sqrt(discriminant);
+        const clampedY = Math.min(imageHeight, y);
+        path += ` L ${x} ${clampedY}`;
+      }
+    }
+  } else {
+    // Bottom is clipped by map edge - straight line across (map boundary)
+    path += ` L ${lastOuter.rightX} ${lastOuter.y}`;
+  }
 
   // Draw right edge up (outer arc right side, reversed)
   for (let i = outerPoints.length - 2; i >= 0; i--) {
@@ -315,9 +344,30 @@ export function generateBandPath(band, imageWidth, imageHeight) {
       path += ` L ${innerPoints[i].rightX} ${innerPoints[i].y}`;
     }
 
-    // Draw inner bottom across
+    // Check if inner arc bottom is visible
     const lastInner = innerPoints[innerPoints.length - 1];
-    path += ` L ${lastInner.leftX} ${lastInner.y}`;
+    const innerCircleBottom = centerYPx + innerRadiusPx;
+    const isInnerBottomVisible = innerCircleBottom <= imageHeight && innerCircleBottom >= 0;
+
+    if (isInnerBottomVisible && lastInner.leftX !== lastInner.rightX) {
+      // Trace inner bottom curve from right to left
+      const steps = 20;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        // Interpolate X from rightX to leftX (reverse direction)
+        const x = lastInner.rightX + (lastInner.leftX - lastInner.rightX) * t;
+        const dx = x - centerXPx;
+        const discriminant = innerRadiusPx * innerRadiusPx - dx * dx;
+        if (discriminant >= 0) {
+          const y = centerYPx + Math.sqrt(discriminant);
+          const clampedY = Math.min(imageHeight, y);
+          path += ` L ${x} ${clampedY}`;
+        }
+      }
+    } else {
+      // Inner bottom clipped - straight line
+      path += ` L ${lastInner.leftX} ${lastInner.y}`;
+    }
 
     // Draw inner arc left side up
     for (let i = innerPoints.length - 2; i >= 0; i--) {

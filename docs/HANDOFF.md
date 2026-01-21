@@ -1,40 +1,42 @@
 # Handoff Document
 
-**Last Updated**: 2026-01-16
-**Previous Agent**: STRATUS (Sprint 66)
-**Current Sprint Count**: 66 (next agent creates `SPRINT_67_*.md`)
-**Status**: Sprint 66 COMPLETE. Implemented movable pins feature with right-click activation.
+**Last Updated**: 2026-01-21
+**Previous Agent**: KINDLING (Sprint 67)
+**Current Sprint Count**: 67 (next agent creates `SPRINT_68_*.md`)
+**Status**: Sprint 67 COMPLETE. Improved map zoom UX and fixed latitude band rendering.
 
 ---
 
-## What Was Done This Sprint (Sprint 66)
+## What Was Done This Sprint (Sprint 67)
 
-### Movable Pins Feature
-Location pins can now be repositioned via right-click menu. Key functionality:
+### Map Zoom UX Improvements
+1. **Scroll-to-zoom**: Removed Ctrl/Cmd requirement - scroll anywhere on the map to zoom
+2. **Animated zoom buttons**: +/- and reset buttons now have smooth 200ms transitions
+3. **Zoom toward cursor**: Scroll wheel zooms toward mouse position (point under cursor stays fixed)
+4. **Zoom toward view center**: Button zooms keep current view centered
 
-1. **Right-Click Context Menu** on any pin:
-   - "Move Pin" - activates move mode
-   - "Edit Region" - opens region editor
-   - "Remove from Map" - unassigns pin (preserves region data)
+**Technical note**: Required `{ passive: false }` on wheel event listener to allow `preventDefault()` - React's `onWheel` uses passive listeners by default.
 
-2. **Move Mode**:
-   - Pin pulses orange when ready to move
-   - Hint: "Drag pin to reposition - click elsewhere to cancel"
-   - Drag to new position, release to save
-   - Click elsewhere on map to cancel
-
-3. **Automatic Recalculation**:
-   - `observerRadius` recalculated from new Y position for precise sunrise/sunset
-   - `latitudeBand` updated if pin moves to different climate zone
-
-4. **Safe Interaction**:
-   - Dragging requires explicit activation via right-click menu
-   - Prevents accidental repositioning
-   - Default click-to-select behavior preserved
+### Latitude Band Overlay Fix
+Fixed the "flat bottom" bug where curved latitude bands were rendering with straight horizontal bottoms instead of following the actual circle curve.
 
 **Files modified**:
-- `src/v2/components/map/WorldMapView.jsx` - move mode state, context menu, drag handlers
-- `src/v2/components/map/WorldMapView.css` - pulse animation, move mode styles
+- `src/v2/components/map/WorldMapView.jsx` - zoom/pan state, animation flag, wheel handler via useEffect
+- `src/v2/components/map/WorldMapView.css` - `.animating` transition class
+- `src/v2/utils/mapUtils.js` - `generateBandPath()` now traces curved bottom when visible
+
+---
+
+## Known Issues / Future Work
+
+### Vertex Size at Zoom (NEW - from this sprint)
+Location pins scale inversely with zoom (consistent screen size), but **political/weather region vertices do NOT scale**. When zoomed in, vertices become tiny and hard to grab. Suggested fix: apply similar inverse scaling to vertex markers.
+
+### From Previous Handoffs:
+1. **Export/Import Worlds as JSON** - Data portability for sharing/backup
+2. **Extreme Weather Phase C** - Hurricanes and ice storms remaining
+3. **Mobile optimization** - Further UI polish for smaller screens
+4. **Special biomes refactor** - Cross-latitude template UX issue
 
 ---
 
@@ -42,63 +44,28 @@ Location pins can now be repositioned via right-click menu. Key functionality:
 
 | Feature | Key File |
 |---------|----------|
+| Map view & zoom | `src/v2/components/map/WorldMapView.jsx` |
+| Map utilities (bands) | `src/v2/utils/mapUtils.js` |
 | Weather pattern generation | `src/v2/services/weather/WeatherPatternService.js` |
-| Weather generator (precip type) | `src/v2/services/weather/WeatherGenerator.js` |
 | Temperature service | `src/v2/services/weather/TemperatureService.js` |
 | Sunrise/sunset calculation | `src/v2/services/celestial/SunriseSunsetService.js` |
 | Region templates | `src/v2/data/region-templates.js` |
-| Template helpers | `src/v2/data/templateHelpers.js` |
-| Narrative weather | `src/v2/utils/narrativeWeather.js` |
 | Test harness | `src/v2/components/testing/WeatherTestHarness.jsx` |
-| Main display | `src/v2/components/weather/PrimaryDisplay.jsx` |
-| Region creator | `src/v2/components/region/RegionCreator.jsx` |
-| Region editor | `src/v2/components/region/RegionEditor.jsx` |
-| Region assigner | `src/v2/components/region/RegionAssigner.jsx` |
-| Map view | `src/v2/components/map/WorldMapView.jsx` |
-| Map utilities | `src/v2/utils/mapUtils.js` |
-
----
-
-## Suggested Next Work
-
-### From ROADMAP / Previous Handoffs:
-1. **Export/Import Worlds as JSON** - Data portability for sharing/backup
-2. **Extreme Weather Phase C** - Hurricanes and ice storms are remaining unimplemented
-3. **Mobile optimization** - Further UI polish for smaller screens
-4. **Special biomes refactor** - Address the cross-latitude template UX issue
-
-### From Technical Notes (Previous Sprints):
-- Tyler mentioned the latitude band overlay visualization might have a bug where "the bottom of the ring flattens out" - the math may be correct but the curved band rendering could need investigation.
 
 ---
 
 ## Technical Notes
 
-### Pin Move Flow
+### Zoom-Toward-Cursor Math
 ```
-User right-clicks pin → context menu appears
-User clicks "Move Pin" → setMovingPinId(region.id)
-Pin shows pulse animation, hint appears
-User drags pin → handlePinMouseDown (only if movingPinId matches)
-              → handleMouseMove updates draggingPin position
-User releases → finalizePinDrag saves position, clears movingPinId
-OR
-User clicks elsewhere → handleMapClick clears movingPinId (cancel)
+zoomRatio = newZoom / prevZoom
+newPan.x = prevPan.x * zoomRatio - offsetX * (zoomRatio - 1)
+newPan.y = prevPan.y * zoomRatio - offsetY * (zoomRatio - 1)
 ```
+Where `offset` is cursor position relative to container center.
 
-### observerRadius Data Flow (from Sprint 64)
-```
-Map click → WorldMapView.jsx (calculates observerRadius via pixelToMiles)
-         → HamburgerMenu.jsx (passes through mapClickData)
-         → RegionCreator.jsx (stores in region.mapPosition)
-         → WeatherService.js (reads region.mapPosition?.observerRadius)
-         → SunriseSunsetService.js (uses for precise calculations)
-```
-
-### isLatitudeLocked Pattern
-Both RegionCreator and RegionEditor use `isLatitudeLocked` flag:
-- `true` when `mapPosition` exists → latitude band shown as read-only
-- `false` when no mapPosition → full latitude dropdown available
+### Pin Inverse Scaling
+Pins use `transform: scale(${1 / zoom})` to maintain consistent screen size. The same approach could be applied to region vertices.
 
 ---
 

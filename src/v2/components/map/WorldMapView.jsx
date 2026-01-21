@@ -114,6 +114,7 @@ const WorldMapView = ({ continent, onPlaceLocation, onAssignLocation, onSelectRe
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef(null);
+  const [isAnimatingZoom, setIsAnimatingZoom] = useState(false); // For smooth button zoom
 
   // Gesture state refs (for use-gesture)
   const gestureStateRef = useRef({
@@ -1080,24 +1081,87 @@ const WorldMapView = ({ continent, onPlaceLocation, onAssignLocation, onSelectRe
   // === ZOOM AND PAN ===
 
   const handleZoomIn = useCallback(() => {
-    setZoom(prev => Math.min(prev * 1.5, 5)); // Max 5x zoom
+    setIsAnimatingZoom(true);
+    setZoom(prevZoom => {
+      const newZoom = Math.min(prevZoom * 1.5, 5);
+      // Scale pan to keep current view center stable
+      const zoomChange = newZoom / prevZoom;
+      setPan(prevPan => ({
+        x: prevPan.x * zoomChange,
+        y: prevPan.y * zoomChange,
+      }));
+      return newZoom;
+    });
+    setTimeout(() => setIsAnimatingZoom(false), 200);
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoom(prev => Math.max(prev / 1.5, 1)); // Min 1x (no zoom)
+    setIsAnimatingZoom(true);
+    setZoom(prevZoom => {
+      const newZoom = Math.max(prevZoom / 1.5, 1);
+      // Scale pan to keep current view center stable
+      const zoomChange = newZoom / prevZoom;
+      setPan(prevPan => ({
+        x: prevPan.x * zoomChange,
+        y: prevPan.y * zoomChange,
+      }));
+      return newZoom;
+    });
+    setTimeout(() => setIsAnimatingZoom(false), 200);
   }, []);
 
   const handleResetZoom = useCallback(() => {
+    setIsAnimatingZoom(true);
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setTimeout(() => setIsAnimatingZoom(false), 200);
   }, []);
 
-  const handleWheel = useCallback((e) => {
-    if (e.ctrlKey || e.metaKey) {
+  // Scroll-to-zoom: attach wheel handler with { passive: false } to allow preventDefault
+  // Zooms toward cursor position for intuitive navigation
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      setZoom(prev => Math.min(Math.max(prev * delta, 1), 5));
-    }
+
+      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+
+      // Get current values synchronously to avoid stale closure issues
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+
+      // Offset from center to cursor (in screen pixels)
+      const offsetX = cursorX - centerX;
+      const offsetY = cursorY - centerY;
+
+      setZoom(prevZoom => {
+        const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 1), 5);
+
+        // If zoom didn't actually change (hit min/max), don't adjust pan
+        if (newZoom === prevZoom) return prevZoom;
+
+        // Adjust pan so the point under cursor stays fixed
+        // The key insight: cursor offset from center stays constant in screen space,
+        // but represents different image coordinates at different zoom levels.
+        // We need to adjust pan to compensate.
+        const zoomRatio = newZoom / prevZoom;
+
+        setPan(prevPan => ({
+          x: prevPan.x * zoomRatio - offsetX * (zoomRatio - 1),
+          y: prevPan.y * zoomRatio - offsetY * (zoomRatio - 1),
+        }));
+
+        return newZoom;
+      });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
   }, []);
 
   const handlePanStart = useCallback((e) => {
@@ -1493,12 +1557,11 @@ const WorldMapView = ({ continent, onPlaceLocation, onAssignLocation, onSelectRe
         onMouseUp={(e) => { handleMouseUp(); handlePanEnd(); }}
         onMouseDown={handlePanStart}
         onMouseLeave={handleMouseLeave}
-        onWheel={handleWheel}
         {...bindGestures()}
       >
         {/* Wrapper that matches the image's displayed size exactly */}
         <div
-          className="map-image-wrapper"
+          className={`map-image-wrapper ${isAnimatingZoom ? 'animating' : ''}`}
           style={{
             transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
             transformOrigin: 'center center',

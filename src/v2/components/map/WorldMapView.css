@@ -92,8 +92,13 @@
   position: relative;
   display: inline-block;
   width: 100%;
-  /* No transition - allows smooth touch gestures without lag */
+  /* No transition by default - allows smooth touch/scroll gestures without lag */
   will-change: transform;
+}
+
+/* Animated zoom - only enabled when using +/- buttons or reset */
+.map-image-wrapper.animating {
+  transition: transform 0.2s ease-out;
 }
 
 .map-image {
